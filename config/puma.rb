@@ -10,16 +10,16 @@ port ENV.fetch("PORT", 3000)
 environment ENV.fetch("RAILS_ENV", "development")
 
 if ENV.fetch("RAILS_ENV", "development") == "production"
-  require 'puma/daemon'
+  # require 'puma/daemon'
   
   workers ENV.fetch("WEB_CONCURRENCY", 3)
   preload_app!
   
   bind "tcp://127.0.0.1:9292"
-  daemonize true
+  daemonize false
   
-  pidfile "tmp/pids/puma.pid"
-  state_path "tmp/pids/puma.state"
+  # pidfile "tmp/pids/puma.pid"
+  # state_path "tmp/pids/puma.state"
   
   on_worker_boot do
     ActiveRecord::Base.establish_connection if defined?(ActiveRecord)
