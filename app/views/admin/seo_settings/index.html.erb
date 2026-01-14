@@ -1,0 +1,89 @@
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="mb-1"><i class="bi bi-search"></i> SEO Settings</h1>
+      <p class="text-muted mb-0">Gerencie as meta tags e configurações de SEO das páginas</p>
+    </div>
+    <%= link_to new_admin_seo_setting_path, class: "btn btn-primary" do %>
+      <i class="bi bi-plus-circle"></i> Nova Página SEO
+    <% end %>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <% if @seo_settings.any? %>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th width="150">Página</th>
+                <th>Meta Title</th>
+                <th>Meta Description</th>
+                <th width="150" class="text-center">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @seo_settings.each do |seo| %>
+                <tr>
+                  <td>
+                    <span class="badge bg-primary">
+                      <i class="bi bi-file-earmark-text me-1"></i>
+                      <%= seo.page_name %>
+                    </span>
+                  </td>
+                  <td>
+                    <strong class="d-block mb-1"><%= seo.meta_title %></strong>
+                    <% if seo.meta_keywords.present? %>
+                      <small class="text-muted">
+                        <i class="bi bi-tags me-1"></i>
+                        <%= truncate(seo.meta_keywords, length: 50) %>
+                      </small>
+                    <% end %>
+                  </td>
+                  <td>
+                    <% if seo.meta_description.present? %>
+                      <small class="text-muted">
+                        <%= truncate(seo.meta_description, length: 100) %>
+                      </small>
+                    <% else %>
+                      <small class="text-muted fst-italic">Sem descrição</small>
+                    <% end %>
+                  </td>
+                  <td class="text-center">
+                    <div class="btn-group" role="group">
+                      <%= link_to edit_admin_seo_setting_path(seo), class: "btn btn-sm btn-warning", title: "Editar" do %>
+                        <i class="bi bi-pencil"></i>
+                      <% end %>
+                      <%= link_to admin_seo_setting_path(seo), method: :delete, 
+                          data: { confirm: "Tem certeza que deseja excluir o SEO desta página?" }, 
+                          class: "btn btn-sm btn-danger", title: "Excluir" do %>
+                        <i class="bi bi-trash"></i>
+                      <% end %>
+                    </div>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% else %>
+        <div class="text-center py-5">
+          <i class="bi bi-search text-muted" style="font-size: 4rem;"></i>
+          <p class="text-muted mt-3">Nenhuma configuração de SEO cadastrada.</p>
+          <%= link_to "Criar primeira página", new_admin_seo_setting_path, class: "btn btn-primary" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Info Box -->
+  <div class="alert alert-info mt-4">
+    <h5 class="alert-heading"><i class="bi bi-info-circle"></i> Sobre SEO Settings</h5>
+    <p class="mb-2">Configure as meta tags (title, description, keywords) para cada página do site.</p>
+    <ul class="mb-0 small">
+      <li><strong>Meta Title:</strong> Título que aparece no Google (até 60 caracteres)</li>
+      <li><strong>Meta Description:</strong> Descrição nos resultados de busca (até 160 caracteres)</li>
+      <li><strong>Meta Keywords:</strong> Palavras-chave separadas por vírgula</li>
+    </ul>
+  </div>
+</div>

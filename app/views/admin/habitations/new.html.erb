@@ -1,0 +1,13 @@
+<% content_for :submit_text, "Criar Imóvel" %>
+
+<div class="mb-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><%= link_to "Imóveis", admin_habitations_path %></li>
+      <li class="breadcrumb-item active" aria-current="page">Novo Imóvel</li>
+    </ol>
+  </nav>
+  <h1 class="h3 mb-0 text-gray-800">Novo Imóvel</h1>
+</div>
+
+<%= render 'form', habitation: @habitation %>

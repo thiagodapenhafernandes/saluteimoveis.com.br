@@ -1,16 +1,136 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
   <head>
-    <title>SaluteImoveisV3</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <% seo = SeoSetting.for_page(@page_name || 'home') %>
+    
+    <%# Dynamic Metadata %>
+    <title><%= @page_title || seo.meta_title || "#{@layout_setting&.site_name.presence || 'Salute Imóveis'} - Encontre seu Imóvel Ideal" %></title>
+    <meta name="description" content="<%= strip_tags(@page_description || seo.meta_description || "Os melhores imóveis para venda e locação. Encontre seu imóvel ideal com a #{@layout_setting&.site_name.presence || 'Salute Imóveis'}.") %>">
+    <% if (keywords = @page_keywords || seo.meta_keywords).present? %>
+      <meta name="keywords" content="<%= keywords %>">
+    <% end %>
+    <meta name="author" content="<%= @layout_setting&.site_name.presence || 'Salute Imóveis' %>">
+    <meta name="robots" content="index, follow">
+    
+    <%# Resource Hints %>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    
+    <%# Image Metadata Logic %>
+    <% 
+      image_source = @page_image || (seo.og_image_file.attached? ? rails_blob_url(seo.og_image_file) : asset_path('salute.icon.svg'))
+      final_image = image_source.start_with?('http') ? image_source : "#{request.base_url}#{image_source}"
+    %>
+    
+    <%# Open Graph / Facebook %>
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="<%= request.original_url %>">
+    <meta property="og:title" content="<%= @page_title || seo.meta_title %>">
+    <meta property="og:description" content="<%= strip_tags(@page_description || seo.meta_description) %>">
+    <meta property="og:site_name" content="<%= @layout_setting&.site_name.presence || 'Salute Imóveis' %>">
+    <meta property="og:locale" content="pt_BR">
+    <meta property="og:image" content="<%= final_image %>">
+    
+    <%# Twitter %>
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="<%= @page_title || seo.meta_title %>">
+    <meta name="twitter:image" content="<%= final_image %>">
+    
+    <link rel="canonical" href="<%= request.original_url %>">
+    <% if @layout_setting&.favicon&.attached? %>
+      <link rel="icon" href="<%= rails_blob_path(@layout_setting.favicon) %>">
+    <% else %>
+      <link rel="icon" href="<%= asset_path "salute.icon.svg" %>">
+    <% end %>
+    
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
+    <%# Critical Third Party Styles %>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css" media="print" onload="this.media='all'">
+
+    <%# Fonts loading with swap %>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&family=Raleway:wght@300;400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    
+    <%# Layout Settings (Colors) %>
+    <style>
+      :root {
+        --color-primary: <%= @layout_setting&.primary_color || '#022B3A' %>;
+        --color-secondary: <%= @layout_setting&.secondary_color || '#053C5E' %>;
+        --color-accent: <%= @layout_setting&.accent_color || '#BFAB25' %>;
+        --color-hero-button: <%= @home_setting&.hero_button_color || '#BFAB25' %>;
+        --color-hero-button-text: <%= @home_setting&.hero_button_text_color || '#FFFFFF' %>;
+      }
+    </style>
+
+    <%# Theme Styles %>
+    <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    
+    <%# JS with Defer %>
     <%= javascript_importmap_tags %>
   </head>
 
-  <body>
-    <%= yield %>
+  <body class="antialiased"
+        data-controller="lead-capture"
+        data-lead-capture-enabled-value="<%= WebhookSetting.active.where(lead_capture_enabled: true).exists? %>">
+    <%= render 'layouts/header' %>
+    
+    <main role="main">
+      <% if flash[:notice] %>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+          <%= flash[:notice] %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      <% end %>
+      
+      <% if flash[:alert] %>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          <%= flash[:alert] %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      <% end %>
+      
+      <%= yield %>
+    </main>
+    
+    <%= render 'layouts/footer' %>
+    
+    <%# Performance: Defer non-critical external libraries %>
+    <script>
+      function loadDeferredAssets() {
+        // Load Scripts
+        var scripts = [
+          'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js',
+          'https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js',
+          'https://unpkg.com/aos@2.3.1/dist/aos.js' // Added AOS deferral
+        ];
+        
+        scripts.forEach(function(src) {
+          var s = document.createElement('script');
+          s.src = src;
+          s.async = true;
+          if (src.includes('aos.js')) {
+            s.onload = function() { AOS.init({ duration: 800, once: true }); };
+          }
+          if (src.includes('fancybox')) {
+            s.onload = function() { Fancybox.bind("[data-fancybox]", {}); };
+          }
+          document.body.appendChild(s);
+        });
+      }
+      
+      if (window.addEventListener) window.addEventListener('load', loadDeferredAssets);
+      else if (window.attachEvent) window.attachEvent('onload', loadDeferredAssets);
+    </script>
+    
+    <%= render 'shared/code_search_modal' %>
+    <%= render 'shared/lead_modal' %>
   </body>
 </html>

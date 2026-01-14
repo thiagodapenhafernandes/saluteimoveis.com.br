@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <title><%= @layout_setting&.site_name.presence || 'Salute Imóveis' %> - Admin</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <meta name="theme-color" content="#022B3A">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icon.png">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Tom Select -->
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+    <!-- Trix Editor -->
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/trix@2.0.8/dist/trix.css">
+    
+    <!-- Google Fonts: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+      /* PREMIUM DESIGN SYSTEM VARIABLES */
+      :root {
+        --admin-primary: #6366f1;
+        --admin-primary-hover: #4f46e5;
+        --admin-bg: #f8fafc;
+        --admin-card-bg: #ffffff;
+        --admin-border: #e2e8f0;
+        --admin-text-main: #0f172a;
+        --admin-text-muted: #64748b;
+        --admin-radius: 12px;
+        --admin-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+        --admin-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      body.admin-layout {
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+        background: #f8f9fa;
+        overflow-x: hidden;
+      }
+      
+      /* Navbar */
+      .admin-navbar {
+        background: white;
+        border-bottom: 1px solid #e5e7eb;
+        padding: 12px 24px;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 64px;
+      }
+      
+      .admin-navbar-brand {
+        font-size: 20px;
+        font-weight: 700;
+        color: #667eea;
+        text-decoration: none;
+      }
+      
+      .admin-navbar-user {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      
+      .admin-container {
+        display: flex;
+        margin-top: 64px;
+      }
+      
+      /* Sidebar */
+      .admin-sidebar {
+        width: 260px;
+        background: white;
+        border-right: 1px solid #e5e7eb;
+        height: calc(100vh - 64px);
+        position: fixed;
+        left: 0;
+        top: 64px;
+        overflow-y: auto;
+        padding: 20px 0;
+      }
+      
+      .sidebar-menu {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      
+      .sidebar-menu-item a {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 24px;
+        color: #6b7280;
+        text-decoration: none;
+        transition: all 0.2s;
+        font-weight: 500;
+        font-size: 14px;
+      }
+      
+      .sidebar-menu-item a:hover,
+      .sidebar-menu-item a.active {
+        background: #f3f4f6;
+        color: #667eea;
+        border-left: 3px solid #667eea;
+      }
+      
+      .sidebar-menu-item i {
+        font-size: 18px;
+        width: 20px;
+      }
+
+      .nav-section-title {
+        padding: 24px 24px 8px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #94a3b8;
+        list-style: none;
+      }
+      
+      /* Content Layout */
+      .admin-content {
+        margin-left: 260px;
+        padding: 1.25rem;
+        width: calc(100% - 260px);
+        min-height: calc(100vh - 64px);
+      }
+      
+      /* SOPHISTICATED COMPONENTS */
+      .admin-header {
+        background: white !important;
+        padding: 1.5rem 2rem !important;
+        border-radius: 12px !important;
+        border: 1px solid #e5e7eb !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
+        margin-bottom: 2rem !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        flex-wrap: wrap;
+        gap: 1rem;
+      }
+
+      .admin-header-title h1 {
+        font-size: 1.75rem !important;
+        font-weight: 800 !important;
+        color: #111827 !important;
+        margin: 0 !important;
+        letter-spacing: -0.025em !important;
+      }
+
+      .admin-header-title p {
+        color: #6b7280 !important;
+        margin: 0.25rem 0 0 !important;
+        font-size: 0.95rem !important;
+      }
+
+      .card-luxury {
+        background: var(--admin-card-bg);
+        border-radius: var(--admin-radius);
+        border: 1px solid var(--admin-border);
+        box-shadow: var(--admin-shadow);
+        overflow: visible !important;
+        margin-bottom: 2rem;
+      }
+
+      .card-luxury .card-header {
+        background: #fdfdfd;
+        padding: 1.25rem 2rem;
+        border-bottom: 1px solid var(--admin-border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .table-premium {
+        width: 100%;
+        margin-bottom: 0;
+        border-collapse: separate;
+        border-spacing: 0;
+      }
+
+      .table-premium thead th {
+        background: #f8fafc;
+        padding: 1rem 2rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--admin-text-muted);
+        border-bottom: 1px solid var(--admin-border);
+      }
+
+      .table-premium tbody td {
+        padding: 1.5rem 2rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f5f9;
+        color: var(--admin-text-main);
+        font-size: 0.875rem;
+      }
+
+      .btn-action-group {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: flex-end;
+      }
+
+      .btn-action {
+        padding: 0.6rem 1rem;
+        border-radius: 8px;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+        text-decoration: none;
+        border: 1px solid var(--admin-border);
+        background: white;
+        color: var(--admin-text-muted);
+      }
+
+      .btn-action:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      }
+
+      .btn-action-view:hover { color: var(--admin-primary); border-color: var(--admin-primary); background: #f5f3ff; }
+      .btn-action-edit:hover { color: #d97706; border-color: #fcd34d; background: #fffcf0; }
+      .btn-action-delete:hover { color: #ef4444; border-color: #fecaca; background: #fef2f2; }
+
+      .badge-pill {
+        padding: 0.35rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+      }
+
+      .badge-soft-success { background: #dcfce7; color: #166534; }
+      .badge-soft-info { background: #dbeafe; color: #1e40af; }
+      .badge-soft-secondary { background: #f1f5f9; color: #475569; }
+
+      .preview-image-wrapper {
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: var(--admin-shadow);
+        border: 1px solid var(--admin-border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* LEGACY CARD COMPATIBILITY */
+      .card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      }
+      
+      .btn-primary {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 10px 24px !important;
+        font-weight: 600 !important;
+        color: white !important;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3) !important;
+        transition: all 0.2s !important;
+        width: auto !important;
+        white-space: nowrap !important;
+        text-decoration: none !important;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 6px 15px rgba(59, 130, 246, 0.4) !important;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+      }
+
+      /* Tom Select Premium Overrides */
+      .ts-wrapper .ts-control {
+        border: 1px solid var(--admin-border) !important;
+        border-radius: 8px !important;
+        padding: 0.6rem 0.75rem !important;
+        box-shadow: none !important;
+        min-height: 48px;
+        background: white !important;
+      }
+
+      .ts-wrapper.multi .ts-control>div {
+        background: var(--admin-primary) !important;
+        color: white !important;
+        border-radius: 6px !important;
+        padding: 2px 10px !important;
+        margin: 3px 6px 3px 0 !important;
+        font-weight: 500;
+        font-size: 0.85rem;
+      }
+
+      .ts-wrapper.multi .ts-control>div .remove {
+        border-left: 1px solid rgba(255,255,255,0.2) !important;
+        margin-left: 6px !important;
+      }
+
+      .ts-dropdown {
+        border-radius: 12px !important;
+        box-shadow: var(--admin-shadow-lg) !important;
+        border: 1px solid var(--admin-border) !important;
+        margin-top: 8px !important;
+        z-index: 2000 !important;
+        padding: 0.5rem !important;
+      }
+
+      .ts-dropdown .option {
+        padding: 0.6rem 1rem !important;
+        border-radius: 6px !important;
+        font-size: 0.9rem !important;
+      }
+
+      .ts-dropdown .active {
+        background-color: #f5f3ff !important;
+        color: var(--admin-primary) !important;
+      }
+    </style>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body class="admin-layout">
+    <!-- Navbar -->
+    <nav class="admin-navbar">
+      <a href="/admin" class="admin-navbar-brand">
+        <i class="bi bi-speedometer2"></i> <%= @layout_setting&.site_name.presence || 'Salute' %> Admin
+      </a>
+      <div class="admin-navbar-user">
+        <span style="font-size: 14px; color: #6b7280;">
+          <i class="bi bi-person-circle"></i> <%= current_admin_user&.name || current_admin_user&.email %>
+        </span>
+        <%= link_to destroy_admin_user_session_path, method: :delete, class: "btn btn-sm btn-outline-danger", style: "font-size: 13px;" do %>
+          <i class="bi bi-box-arrow-right"></i> Sair
+        <% end %>
+      </div>
+    </nav>
+    
+    <div class="admin-container">
+      <!-- Sidebar -->
+      <%= render 'admin/shared/sidebar' %>
+      
+      <!-- Content -->
+      <main class="admin-content">
+        <%= render 'shared/flash_messages' if flash.any? %>
+        <%= yield %>
+      </main>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(function(registration) {
+            console.log('Service Worker Registered');
+          })
+          .catch(function(err) {
+            console.log('Service Worker Failed to Register', err);
+          });
+      }
+    </script>
+  </body>
+</html>

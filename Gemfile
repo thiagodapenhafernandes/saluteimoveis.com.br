@@ -15,7 +15,7 @@ gem "turbo-rails"
 gem "sassc-rails"
 gem "terser"
 gem "image_processing", "~> 1.12"
-gem "bootstrap", "~> 5.3"
+gem "tailwindcss-rails", "~> 2.0"
 
 # Environment & Configuration
 gem "dotenv-rails"
@@ -50,7 +50,7 @@ gem "fog-aws"
 gem "bcrypt", "~> 3.1.7"
 
 # Utilities
-gem "brazilian-rails"
+# gem "brazilian-rails"
 gem "device_detector"
 
 # Required
@@ -72,3 +72,5 @@ end
 group :production do
   gem "lograge"
 end
+
+gem "devise", "~> 4.9"

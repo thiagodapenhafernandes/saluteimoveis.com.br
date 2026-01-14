@@ -1,0 +1,503 @@
+/* refined admin components */
+@import url("https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css");
+
+:root {
+  --admin-primary: #6366f1;
+  --admin-primary-hover: #4f46e5;
+  --admin-bg: #f8fafc;
+  --admin-card-bg: #ffffff;
+  --admin-border: #e2e8f0;
+  --admin-text-main: #0f172a;
+  --admin-text-muted: #64748b;
+  --admin-radius: 12px;
+  --admin-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --admin-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+}
+
+/* Body & Font Overrides for Content */
+.admin-layout {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+  color: var(--admin-text-main);
+}
+
+/* Header Section */
+.admin-header {
+  background: var(--admin-card-bg);
+  padding: 2rem;
+  border-radius: var(--admin-radius);
+  border: 1px solid var(--admin-border);
+  box-shadow: var(--admin-shadow);
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admin-header-title h1 {
+  font-size: 1.875rem;
+  font-weight: 800;
+  color: var(--admin-text-main);
+  margin: 0;
+  letter-spacing: -0.025em;
+}
+
+.admin-header-title p {
+  color: var(--admin-text-muted);
+  margin: 0.5rem 0 0;
+  font-size: 1rem;
+}
+
+/* Cards */
+.card-luxury {
+  background: var(--admin-card-bg);
+  border-radius: var(--admin-radius);
+  border: 1px solid var(--admin-border);
+  box-shadow: var(--admin-shadow);
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.card-luxury .card-header {
+  background: #fdfdfd;
+  padding: 1.25rem 2rem;
+  border-bottom: 1px solid var(--admin-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-luxury .card-header h5 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--admin-text-main);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.card-body-p4 {
+  padding: 2rem;
+}
+
+/* Premium Table */
+.table-premium {
+  width: 100%;
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-premium thead th {
+  background: #f8fafc;
+  padding: 1rem 2rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--admin-text-muted);
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.table-premium tbody td {
+  padding: 1.5rem 2rem;
+  vertical-align: middle;
+  border-bottom: 1px solid #f1f5f9;
+  color: var(--admin-text-main);
+  font-size: 0.875rem;
+}
+
+.table-premium tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table-premium tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+/* Actions Group */
+.btn-action-group {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.btn-action {
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+  text-decoration: none;
+  border: 1px solid var(--admin-border);
+  background: white;
+  color: var(--admin-text-muted);
+}
+
+.btn-action i {
+  font-size: 1rem;
+}
+
+.btn-action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btn-action-view:hover {
+  color: var(--admin-primary);
+  border-color: var(--admin-primary);
+  background: #f5f3ff;
+}
+
+.btn-action-edit:hover {
+  color: #d97706;
+  border-color: #fcd34d;
+  background: #fffcf0;
+}
+
+.btn-action-delete:hover {
+  color: #ef4444;
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+/* Status Badges */
+.badge-pill {
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-soft-success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge-soft-info {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.badge-soft-secondary {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+/* Preview Grid */
+.preview-container {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  background: #f8fafc;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.preview-box {
+  flex: 1;
+  background: #f8fafc;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.preview-box.mobile {
+  max-width: 320px;
+}
+
+.preview-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--admin-text-muted);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.preview-image-wrapper {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: var(--admin-shadow);
+  border: 1px solid var(--admin-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+}
+
+.preview-image-wrapper img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 4px;
+}
+
+/* UI Helpers */
+.mb-margin-4 {
+  margin-bottom: 2rem;
+}
+
+.p-content {
+  padding: 2rem;
+}
+
+.ts-dropdown .active {
+  background-color: #f5f3ff !important;
+  color: var(--admin-primary) !important;
+}
+
+/* KPI Cards for Dashboard */
+.kpi-card {
+  background: white;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: var(--admin-shadow);
+}
+
+.kpi-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--admin-text-muted);
+  letter-spacing: 0.025em;
+  margin-bottom: 0.5rem;
+}
+
+.kpi-value {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--admin-primary);
+  letter-spacing: -0.01em;
+}
+
+.kpi-minmax {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--admin-text-main);
+  margin-top: 2px;
+}
+
+.shadow-xs {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.extra-small {
+  font-size: 0.6rem;
+}
+
+/* Enhanced Preview Dashboard */
+.preview-stat-hero {
+  text-align: center;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-radius: 12px;
+  border: 1px solid #bae6fd;
+  margin-bottom: 2rem;
+}
+
+.preview-stat-hero .hero-value {
+  display: block;
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #0369a1;
+  line-height: 1;
+}
+
+.preview-stat-hero .hero-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #075985;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 0.5rem;
+}
+
+.preview-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.preview-stat-card {
+  background: white;
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  padding: 1.25rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.preview-stat-card .stat-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--admin-text-muted);
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.preview-stat-card .stat-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--admin-text-main);
+}
+
+.preview-stat-card .stat-sub {
+  font-size: 0.875rem;
+  color: var(--admin-text-muted);
+  margin-top: 0.25rem;
+}
+
+.distribution-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.distribution-item {
+  width: 100%;
+}
+
+.distribution-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.4rem;
+  font-size: 0.8125rem;
+}
+
+.distribution-label {
+  font-weight: 600;
+  color: var(--admin-text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.distribution-count {
+  font-weight: 700;
+  color: var(--admin-primary);
+}
+
+.progress-thin {
+  height: 6px;
+  background-color: #f1f5f9;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-thin .progress-bar {
+  background-color: var(--admin-primary);
+  border-radius: 10px;
+}
+
+.preview-footer-actions {
+  background: #f8fafc;
+  margin: -24px;
+  margin-top: 2rem;
+  padding: 1.5rem;
+  border-top: 1px solid var(--admin-border);
+}
+
+.custom-switch-lg .form-check-input {
+  width: 2.5rem;
+  height: 1.25rem;
+}
+
+.custom-switch-lg .form-check-label {
+  padding-left: 0.5rem;
+  padding-top: 2px;
+}
+
+/* Custom Checkbox Card */
+.custom-checkbox-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  transition: all 0.2s;
+  background: white;
+  cursor: pointer;
+  margin-bottom: 0;
+}
+
+.custom-checkbox-card:hover {
+  border-color: var(--admin-primary);
+  background: #f5f3ff;
+}
+
+.custom-checkbox-card .form-check-input {
+  margin-top: 0.25rem;
+  cursor: pointer;
+  width: 1.1rem;
+  height: 1.1rem;
+  flex-shrink: 0;
+}
+
+.custom-checkbox-card .form-check-label {
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--admin-text-main);
+  padding-left: 0.75rem;
+  line-height: 1.4;
+  margin-bottom: 0;
+}
+
+.custom-checkbox-card .form-check-input:checked+.form-check-label {
+  color: var(--admin-primary);
+  font-weight: 600;
+}
+
+.custom-checkbox-card:has(.form-check-input:checked) {
+  border-color: var(--admin-primary);
+  background: #f5f3ff;
+  box-shadow: 0 0 0 1px var(--admin-primary);
+}
+
+/* Tom Select Overrides */
+@import url("https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css");
+
+.ts-wrapper .ts-control {
+  border: 1px solid var(--admin-border) !important;
+  border-radius: 0.375rem !important;
+  padding: 0.5rem 0.75rem !important;
+  box-shadow: none !important;
+  min-height: 42px;
+}
+
+.ts-wrapper.multi .ts-control>div {
+  background: var(--admin-primary) !important;
+  color: white !important;
+  border-radius: 4px !important;
+  padding: 2px 8px !important;
+  margin: 2px 4px 2px 0 !important;
+}
+
+.ts-dropdown {
+  border-radius: 8px !important;
+  box-shadow: var(--admin-shadow-lg) !important;
+  border: 1px solid var(--admin-border) !important;
+  margin-top: 4px !important;
+}
+
+.ts-dropdown .active {
+  background-color: #f5f3ff !important;
+  color: var(--admin-primary) !important;
+}

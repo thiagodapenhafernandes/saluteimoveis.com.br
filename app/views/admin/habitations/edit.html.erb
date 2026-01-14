@@ -1,0 +1,23 @@
+<% content_for :submit_text, "Atualizar Imóvel" %>
+
+<div class="mb-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><%= link_to "Imóveis", admin_habitations_path %></li>
+      <li class="breadcrumb-item active" aria-current="page">Editar: <%= @habitation.codigo %></li>
+    </ol>
+  </nav>
+  <div class="d-flex justify-content-between align-items-center">
+    <h1 class="h3 mb-0 text-gray-800">Editar Imóvel</h1>
+    <div class="d-flex gap-2">
+      <%= button_to sync_admin_habitation_path(@habitation), method: :post, class: "btn btn-info btn-sm text-white fw-bold" do %>
+        <i class="bi bi-arrow-repeat me-1"></i> Sincronizar com Vista
+      <% end %>
+      <%= link_to habitation_path(@habitation), target: "_blank", class: "btn btn-outline-secondary btn-sm" do %>
+        <i class="bi bi-eye me-1"></i> Visualizar no Site
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<%= render 'form', habitation: @habitation %>

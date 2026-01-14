@@ -1,0 +1,100 @@
+<aside class="admin-sidebar">
+  <ul class="sidebar-menu">
+    <li class="sidebar-menu-item">
+      <%= link_to admin_root_path, class: request.path == admin_root_path ? 'active' : '' do %>
+        <i class="bi bi-speedometer2"></i>
+        <span>Dashboard</span>
+      <% end %>
+    </li>
+
+    <li class="sidebar-menu-item">
+      <%= link_to admin_habitations_path, class: controller_name == 'habitations' ? 'active' : '' do %>
+        <i class="bi bi-houses"></i>
+        <span>Imóveis</span>
+      <% end %>
+    </li>
+
+    <li class="sidebar-menu-item">
+      <%= link_to admin_leads_path, class: controller_name == 'leads' ? 'active' : '' do %>
+        <i class="bi bi-person-badge"></i>
+        <span>Leads</span>
+      <% end %>
+    </li>
+
+    <li class="sidebar-menu-item">
+      <%= link_to admin_landing_pages_path, class: controller_name == 'landing_pages' ? 'active' : '' do %>
+        <i class="bi bi-file-earmark-post"></i>
+        <span>Páginas SEO</span>
+      <% end %>
+    </li>
+
+    <li class="nav-section-title">Conteúdo</li>
+    
+    <li class="sidebar-menu-item">
+      <%= link_to edit_admin_home_setting_path, class: controller_name == 'home_settings' ? 'active' : '' do %>
+        <i class="bi bi-house-door"></i>
+        <span>Home Page</span>
+      <% end %>
+    </li>
+
+    <li class="sidebar-menu-item">
+      <%= link_to edit_admin_layout_setting_path, class: controller_name == 'layout_settings' ? 'active' : '' do %>
+        <i class="bi bi-palette"></i>
+        <span>Layout do Site</span>
+      <% end %>
+    </li>
+    
+    <li class="sidebar-menu-item">
+      <%= link_to edit_admin_footer_setting_path, class: controller_name == 'footer_settings' ? 'active' : '' do %>
+        <i class="bi bi-layout-sidebar"></i>
+        <span>Rodapé</span>
+      <% end %>
+    </li>
+
+    <li class="sidebar-menu-item">
+      <%= link_to edit_admin_contact_setting_path, class: controller_name == 'contact_settings' ? 'active' : '' do %>
+        <i class="bi bi-telephone"></i>
+        <span>Contatos</span>
+      <% end %>
+    </li>
+
+    <li class="sidebar-menu-item">
+      <%= link_to admin_seo_settings_path, class: controller_name == 'seo_settings' ? 'active' : '' do %>
+        <i class="bi bi-search"></i>
+        <span>SEO</span>
+      <% end %>
+    </li>
+    
+    <li class="sidebar-menu-item">
+      <%= link_to admin_banners_path, class: controller_name == 'banners' ? 'active' : '' do %>
+        <i class="bi bi-image"></i>
+        <span>Banners</span>
+      <% end %>
+    </li>
+    
+    <li class="sidebar-menu-item">
+      <%= link_to admin_home_sections_path, class: controller_name == 'home_sections' ? 'active' : '' do %>
+        <i class="bi bi-layout-text-sidebar"></i>
+        <span>Seções da Home</span>
+      <% end %>
+    </li>
+
+    <li class="sidebar-menu-item">
+      <%= link_to admin_webhook_settings_path, class: controller_name == 'webhook_settings' ? 'active' : '' do %>
+        <i class="bi bi-broadcast"></i>
+        <span>Webhooks</span>
+      <% end %>
+    </li>
+    
+    <% if current_admin_user&.admin? %>
+      <li class="nav-section-title">Administração</li>
+      
+      <li class="sidebar-menu-item">
+        <%= link_to admin_admin_users_path, class: controller_name == 'admin_users' ? 'active' : '' do %>
+          <i class="bi bi-people"></i>
+          <span>Usuários Admin</span>
+        <% end %>
+      </li>
+    <% end %>
+  </ul>
+</aside>

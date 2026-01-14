@@ -1,0 +1,386 @@
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="mb-1"><i class="bi bi-speedometer2"></i> Dashboard</h1>
+      <p class="text-muted mb-0">Visão geral do sistema</p>
+    </div>
+    <div class="text-muted">
+      <i class="bi bi-calendar3"></i> <%= l(Date.today, format: :long) %>
+    </div>
+  </div>
+
+  <!-- Main Stats Cards -->
+  <div class="row g-3 mb-4">
+    <!-- Properties -->
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <div class="bg-primary bg-opacity-10 rounded-3 p-3">
+                <i class="bi bi-building text-primary" style="font-size: 2rem;"></i>
+              </div>
+            </div>
+            <div class="ms-3">
+              <h2 class="mb-0"><%= number_with_delimiter(@properties_count) %></h2>
+              <p class="text-muted mb-0 small">Imóveis Ativos</p>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer bg-transparent border-0 pt-0">
+          <%= link_to raw('<i class="bi bi-arrow-right"></i> Ver todos'), '#', class: 'btn btn-sm btn-link text-primary text-decoration-none' %>
+        </div>
+      </div>
+    </div>
+
+    <!-- For Sale -->
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <div class="bg-success bg-opacity-10 rounded-3 p-3">
+                <i class="bi bi-tag text-success" style="font-size: 2rem;"></i>
+              </div>
+            </div>
+            <div class="ms-3">
+              <h2 class="mb-0"><%= number_with_delimiter(@for_sale_count) %></h2>
+              <p class="text-muted mb-0 small">Para Venda</p>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer bg-transparent border-0 pt-0">
+          <small class="text-muted">
+            <i class="bi bi-star-fill text-warning"></i> <%= @featured_count %> destaques
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <!-- For Rent -->
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <div class="bg-info bg-opacity-10 rounded-3 p-3">
+                <i class="bi bi-key text-info" style="font-size: 2rem;"></i>
+              </div>
+            </div>
+            <div class="ms-3">
+              <h2 class="mb-0"><%= number_with_delimiter(@for_rent_count) %></h2>
+              <p class="text-muted mb-0 small">Para Locação</p>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer bg-transparent border-0 pt-0">
+          <small class="text-muted">
+            <i class="bi bi-building"></i> <%= @developments_count %> empreendimentos
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Total Value -->
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <div class="bg-warning bg-opacity-10 rounded-3 p-3">
+                <i class="bi bi-cash-stack text-warning" style="font-size: 2rem;"></i>
+              </div>
+            </div>
+            <div class="ms-3">
+              <h2 class="mb-0" style="font-size: 1.3rem;"><%= number_to_currency(@total_sale_value / 1_000_000, unit: 'R$', precision: 1) %>M</h2>
+              <p class="text-muted mb-0 small">Valor Total em Venda</p>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer bg-transparent border-0 pt-0">
+          <small class="text-muted">
+            Média: <%= number_to_currency(@avg_sale_value, precision: 0) %>
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leads Stats Row -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 bg-info bg-gradient text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <p class="mb-0 opacity-75">Total de Leads</p>
+              <h3 class="mb-0"><%= @total_leads %></h3>
+            </div>
+            <i class="bi bi-person-badge text-white opacity-25" style="font-size: 2.5rem;"></i>
+          </div>
+          <%= link_to admin_leads_path, class: "text-white text-decoration-none small mt-2 d-block" do %>
+            Ver todos <i class="bi bi-arrow-right ms-1"></i>
+          <% end %>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 bg-primary bg-gradient text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <p class="mb-0 opacity-75">Novos Leads (Pendente)</p>
+              <h3 class="mb-0"><%= @new_leads %></h3>
+            </div>
+            <i class="bi bi-bell text-white opacity-25" style="font-size: 2.5rem;"></i>
+          </div>
+          <small class="mt-2 d-block opacity-75">Aguardando atendimento</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 bg-success bg-gradient text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <p class="mb-0 opacity-75">Últimos 30 dias</p>
+              <h3 class="mb-0"><%= @leads_last_30_days %></h3>
+            </div>
+            <i class="bi bi-graph-up-arrow text-white opacity-25" style="font-size: 2.5rem;"></i>
+          </div>
+          <small class="mt-2 d-block opacity-75"><%= @leads_last_7_days %> nos últimos 7 dias</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <div class="bg-primary bg-opacity-10 rounded-circle p-2">
+                <i class="bi bi-person-circle text-primary" style="font-size: 2rem;"></i>
+              </div>
+            </div>
+            <div class="ms-3">
+              <h6 class="mb-0">Bem-vindo!</h6>
+              <p class="mb-0 text-muted"><%= current_admin_user.name %></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sync & Performance Row -->
+  <div class="row g-3 mb-4">
+    <!-- Sync Status -->
+    <div class="col-md-6">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header bg-transparent border-0 pt-4 d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="bi bi-arrow-repeat text-info"></i> Sincronização (Vista API)</h5>
+          <% if @sync_errors_count > 0 %>
+            <span class="badge bg-danger rounded-pill"><%= @sync_errors_count %> erros</span>
+          <% end %>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-sm table-borderless align-middle mb-0">
+              <thead class="text-muted small">
+                <tr>
+                  <th>Código</th>
+                  <th>Data/Hora</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @last_syncs.each do |property| %>
+                  <tr>
+                    <td><span class="fw-bold"><%= property.codigo %></span></td>
+                    <td class="small text-muted"><%= property.last_sync_at&.strftime("%d/%m %H:%M") %></td>
+                    <td>
+                      <% if property.last_sync_status == 'success' %>
+                        <span class="badge bg-success py-1 text-white">Sucesso</span>
+                      <% else %>
+                        <span class="badge bg-danger py-1 text-white" title="<%= property.last_sync_message %>">Erro</span>
+                      <% end %>
+                    </td>
+                  </tr>
+                <% end %>
+                <% if @last_syncs.empty? %>
+                  <tr><td colspan="3" class="text-center py-3 text-muted">Nenhuma sincronização recente.</td></tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card-footer bg-transparent border-0 pt-0 d-flex justify-content-between">
+          <small class="text-muted">Total sincronizado: <%= @total_synced_count %> imóveis</small>
+          <%= link_to admin_habitations_path, class: "small text-decoration-none" do %>
+            Ver todos <i class="bi bi-arrow-right"></i>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Leads Distribution -->
+    <div class="col-md-6">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header bg-transparent border-0 pt-4">
+          <h5 class="mb-0"><i class="bi bi-pie-chart text-primary"></i> Distribuição de Leads</h5>
+        </div>
+        <div class="card-body">
+           <% @leads_by_status.each do |status, count| %>
+             <% 
+               badge_class = case status
+               when 'Novo' then 'bg-primary'
+               when 'Em Atendimento' then 'bg-info'
+               when 'Convertido' then 'bg-success'
+               when 'Perdido' then 'bg-secondary'
+               else 'bg-dark'
+               end
+             %>
+             <div class="d-flex justify-content-between align-items-center mb-2 pb-2 <%= 'border-bottom' unless status == @leads_by_status.keys.last %>">
+               <span><span class="badge <%= badge_class %> rounded-circle p-1 me-2" style="width: 10px; height: 10px; display: inline-block;"></span><%= status.presence || 'Não definido' %></span>
+               <span class="fw-bold"><%= count %></span>
+             </div>
+           <% end %>
+           <% if @leads_by_status.empty? %>
+             <p class="text-muted text-center py-4">Sem leads para exibir.</p>
+           <% end %>
+        </div>
+        <div class="card-footer bg-transparent border-0 pt-0 text-center">
+           <%= link_to admin_leads_path, class: "btn btn-sm btn-link text-decoration-none" do %>
+             <i class="bi bi-list-task me-1"></i> Gerenciar Funil de Vendas
+           <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="row g-3 mb-4">
+    <!-- Top Neighborhoods (Leads) -->
+    <div class="col-md-6">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header bg-transparent border-0 pt-4">
+          <h5 class="mb-0"><i class="bi bi-heart-fill text-danger"></i> Bairros mais buscados (Leads)</h5>
+        </div>
+        <div class="card-body">
+          <% if @top_neighborhoods.present? && @top_neighborhoods.any? %>
+            <% max_leads = @top_neighborhoods.values.max %>
+            <% @top_neighborhoods.each do |neighborhood, count| %>
+              <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="text-muted small"><%= neighborhood %></span>
+                  <strong><%= count %> contatos</strong>
+                </div>
+                <div class="progress" style="height: 6px;">
+                  <div class="progress-bar bg-danger" role="progressbar" 
+                       style="width: <%= (count.to_f / max_leads * 100).round %>%"></div>
+                </div>
+              </div>
+            <% end %>
+          <% else %>
+            <p class="text-muted text-center py-4">Nenhum lead gerado por imóvel ainda.</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="col-md-6">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header bg-transparent border-0 pt-4">
+          <h5 class="mb-0"><i class="bi bi-lightning-charge-fill text-warning"></i> Ações Rápidas</h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-2">
+            <div class="col-6">
+              <%= link_to edit_admin_home_setting_path, class: 'btn btn-outline-primary w-100 text-start btn-sm' do %>
+                <i class="bi bi-house-gear-fill me-2"></i> Configurar Home
+              <% end %>
+            </div>
+            <div class="col-6">
+              <%= link_to admin_banners_path, class: 'btn btn-outline-success w-100 text-start btn-sm' do %>
+                <i class="bi bi-image me-2"></i> Gerenciar Banners
+              <% end %>
+            </div>
+            <div class="col-6">
+              <%= link_to admin_seo_settings_path, class: 'btn btn-outline-info w-100 text-start btn-sm' do %>
+                <i class="bi bi-search me-2"></i> Configurar SEO
+              <% end %>
+            </div>
+            <div class="col-6">
+              <%= link_to admin_home_sections_path, class: 'btn btn-outline-warning w-100 text-start btn-sm' do %>
+                <i class="bi bi-layout-text-sidebar me-2"></i> Seções Home
+              <% end %>
+            </div>
+            <div class="col-6">
+              <%= link_to edit_admin_contact_setting_path, class: 'btn btn-outline-dark w-100 text-start btn-sm' do %>
+                <i class="bi bi-envelope-fill me-2"></i> Contato
+              <% end %>
+            </div>
+            <div class="col-6">
+                <%= link_to edit_admin_layout_setting_path, class: "btn btn-outline-secondary w-100 btn-sm text-start" do %>
+                  <i class="bi bi-palette me-2"></i> Layout
+                <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Properties Table -->
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-transparent border-0 pt-4 pb-0">
+      <h5 class="mb-0"><i class="bi bi-clock-history text-primary"></i> Imóveis Recentes</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Código</th>
+              <th>Título</th>
+              <th>Cidade</th>
+              <th>Tipo</th>
+              <th>Valor</th>
+              <th>Status</th>
+              <th width="100" class="text-center">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @recent_properties.each do |property| %>
+              <tr>
+                <td><span class="badge bg-secondary"><%= property.codigo %></span></td>
+                <td>
+                  <strong><%= truncate(property.display_title, length: 50) %></strong>
+                  <% if property.destaque_web_flag %>
+                    <i class="bi bi-star-fill text-warning ms-1" title="Destaque"></i>
+                  <% end %>
+                </td>
+                <td><%= property.cidade %></td>
+                <td><span class="badge bg-info"><%= property.tipo %></span></td>
+                <td><strong><%= property.preco_principal %></strong></td>
+                <td>
+                  <% if property.exibir_no_site_flag %>
+                    <span class="badge bg-success">Ativo</span>
+                  <% else %>
+                    <span class="badge bg-secondary">Inativo</span>
+                  <% end %>
+                </td>
+                <td class="text-center">
+                  <%= link_to habitation_path(property), target: '_blank', class: 'btn btn-sm btn-outline-primary', title: 'Ver no site' do %>
+                    <i class="bi bi-eye"></i>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

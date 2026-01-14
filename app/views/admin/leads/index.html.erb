@@ -1,0 +1,97 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h3 mb-0 text-gray-800">Gerenciar Leads</h1>
+</div>
+
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <%= form_with url: admin_leads_path, method: :get, class: "row g-3" do |f| %>
+      <div class="col-md-5">
+        <%= f.text_field :q, value: params[:q], class: "form-control", placeholder: "Buscar por nome, email ou telefone..." %>
+      </div>
+      <div class="col-md-4">
+        <%= f.select :status, ["Novo", "Em Atendimento", "Convertido", "Perdido"], { include_blank: "Todos os Status", selected: params[:status] }, class: "form-select" %>
+      </div>
+      <div class="col-md-3">
+        <button type="submit" class="btn btn-secondary w-100">
+          <i class="bi bi-search me-1"></i> Filtrar
+        </button>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div class="card shadow-sm overflow-hidden">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="bg-light">
+        <tr>
+          <th class="ps-4">Contato</th>
+          <th>Origem/Imóvel</th>
+          <th>Status</th>
+          <th>Data</th>
+          <th class="text-end pe-4">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @leads.each do |lead| %>
+          <tr>
+            <td class="ps-4">
+              <div class="fw-bold text-dark"><%= lead.name %></div>
+              <small class="text-muted"><%= lead.email %> | <%= lead.phone %></small>
+            </td>
+            <td>
+              <% if lead.property_id.present? %>
+                <% property = Habitation.find_by(id: lead.property_id) %>
+                <% if property %>
+                  <div class="small">
+                    <%= link_to property.display_title, admin_habitation_path(property), class: "text-decoration-none" %>
+                    <br>
+                    <code class="text-muted"><%= property.codigo %></code>
+                  </div>
+                <% else %>
+                  <span class="text-muted small">Imóvel Indisponível</span>
+                <% end %>
+              <% else %>
+                <span class="badge bg-light text-dark">Geral</span>
+              <% end %>
+            </td>
+            <td>
+              <% status_color = case lead.status 
+                 when 'Novo' then 'info'
+                 when 'Em Atendimento' then 'primary'
+                 when 'Convertido' then 'success'
+                 when 'Perdido' then 'danger'
+                 else 'secondary'
+                 end %>
+              <span class="badge bg-<%= status_color %>"><%= lead.status.presence || 'Novo' %></span>
+            </td>
+            <td>
+              <div class="small text-muted">
+                <%= lead.created_at.strftime("%d/%m/%Y") %><br>
+                <%= lead.created_at.strftime("%H:%M") %>
+              </div>
+            </td>
+            <td class="text-end pe-4">
+              <div class="btn-group btn-group-sm">
+                <%= link_to admin_lead_path(lead), class: "btn btn-outline-primary", title: "Ver Detalhes" do %>
+                  <i class="bi bi-eye"></i>
+                <% end %>
+                <%= button_to admin_lead_path(lead), method: :delete, data: { confirm: "Tem certeza?" }, class: "btn btn-outline-danger", title: "Excluir" do %>
+                  <i class="bi bi-trash"></i>
+                <% end %>
+              </div>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+  
+  <% if @leads.total_pages > 1 %>
+    <div class="card-footer bg-white py-3">
+      <div class="d-flex justify-content-center">
+        <%= will_paginate @leads %>
+      </div>
+    </div>
+  <% end %>
+</div>

@@ -1,0 +1,73 @@
+<% 
+  # Performance Optimization: Use pre-calculated unit count if available
+  display_unit_count = local_assigns[:unit_count] || development.available_units_count 
+  primary_pic = development.primary_image
+%>
+<!-- Card de Empreendimento - Otimizado para Performance -->
+<div class="group bg-white rounded-xl overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-400 cursor-pointer"
+     data-controller="clickable-card"
+     data-clickable-card-url-value="<%= empreendimento_details_path(development) %>">
+  
+  <!-- Image Area - Optimized with Aspect Ratio for CLS -->
+  <div class="relative aspect-[16/10] overflow-hidden bg-gray-100">
+    
+    <!-- Code Badge (Top Right) -->
+    <div class="absolute top-3 right-3 z-20">
+      <span class="px-2 py-1 bg-white/90 backdrop-blur-sm text-gray-600 text-[10px] font-bold rounded shadow-sm border border-gray-100">
+        <%= development.codigo || development.id %>
+      </span>
+    </div>
+
+    <!-- Development Units Badge (Bottom Right) -->
+    <div class="absolute bottom-3 right-3 z-20">
+      <span class="px-3 py-1.5 bg-blue-three text-white text-xs font-bold rounded-full shadow-lg flex items-center gap-1.5">
+        <i class="bi bi-building"></i>
+        <%= display_unit_count %> <%= display_unit_count == 1 ? 'unidade' : 'unidades' %>
+      </span>
+    </div>
+
+    <!-- Primary Image Only -->
+    <% if primary_pic.present? %>
+      <img src="<%= primary_pic['url'] %>" 
+           alt="<%= development.nome_empreendimento %>" 
+           width="600" height="375"
+           class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+           loading="lazy">
+    <% else %>
+      <div class="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
+        <i class="bi bi-image text-4xl"></i>
+      </div>
+    <% end %>
+    
+    <!-- Link Overlay para navegação -->
+    <%= link_to empreendimento_details_path(development), class: "absolute inset-0 z-5" %>
+  </div>
+
+  <!-- Content -->
+  <div class="p-5">
+    
+    <!-- Location -->
+    <div class="flex items-center gap-2 text-gray-500 mb-2">
+      <i class="bi bi-geo-alt text-golden-one text-xs"></i>
+      <span class="text-xs uppercase tracking-wide">
+        <%= [development.bairro, development.cidade].compact.join(' - ') %>
+      </span>
+    </div>
+    
+    <!-- Nome do Empreendimento -->
+    <h3 class="text-base font-bold text-gray-900 mb-4 line-clamp-2 group-hover:text-blue-three transition-colors leading-tight">
+      <%= development.nome_empreendimento || development.display_title %>
+    </h3>
+
+    <!-- Info Badge -->
+    <div class="flex items-center justify-center gap-2 py-3 px-4 bg-gray-50 rounded-lg">
+      <i class="bi bi-building text-blue-three text-xl"></i>
+      <div class="text-center">
+        <p class="text-xs text-gray-500">Empreendimento</p>
+        <p class="text-sm font-bold text-gray-900"><%= display_unit_count %> unidades</p>
+      </div>
+    </div>
+    
+  </div>
+
+</div>

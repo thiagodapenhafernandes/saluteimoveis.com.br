@@ -1,0 +1,29 @@
+/*
+ * Salute Imóveis V3 - Custom Styles
+ * Tailwind is loaded separately via application.tailwind.css
+ */
+
+/* CSS Variables */
+:root {
+  /* Brand Colors */
+  --blue-one: #053C5E;
+  --blue-two: #1F7A8C;
+  --blue-three: #022B3A;
+  --golden-one: #BFAB25;
+  --golden-two: #E1C340;
+}
+
+/* Import pagination styles */
+@import "pagination";
+
+/* Import admin styles - removed from here as it is linked separately in admin layout */
+/* @import "admin"; */
+
+/* Global overrides for legacy components if needed */
+.container-custom {
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}

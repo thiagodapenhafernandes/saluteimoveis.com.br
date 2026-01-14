@@ -28,15 +28,22 @@ module SaluteImoveisV3
     # Common ones are `templates`, `generators`, or `middleware`, for example.
     config.autoload_lib(ignore: %w(assets tasks))
 
+    config.hosts << "dev.notificalead.com.br"
+
     # Configuration for the application, engines, and railties goes here.
     #
     # These settings can be overridden in specific environments using the files
     # in config/environments, which are processed later.
     #
-    # config.time_zone = "Central Time (US & Canada)"
-    # config.eager_load_paths << Rails.root.join("extras")
+    config.time_zone = "Brasilia"
+    config.i18n.default_locale = :'pt-BR'
 
     # Don't generate system test files.
     config.generators.system_tests = nil
+
+    # Active Storage configuration
+    config.active_storage.variant_processor = :mini_magick
+    config.active_storage.content_types_allowed_inline << "image/svg+xml"
+    config.active_storage.content_types_to_serve_as_binary.delete("image/svg+xml")
   end
 end

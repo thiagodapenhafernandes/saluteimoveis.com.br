@@ -1,0 +1,59 @@
+          <!-- Tipo com Autocomplete -->
+          <div class="relative min-w-[200px]" 
+               data-controller="autocomplete" 
+               data-autocomplete-options-value='<%= (@property_types || Habitation.active.distinct.pluck(:tipo).compact.sort).to_json %>'>
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+              <i class="bi bi-building text-gray-400"></i>
+            </div>
+            <%= f.text_field :category, 
+                value: params[:category], 
+                placeholder: "Tipo de imóvel", 
+                data: { autocomplete_target: "input", action: "input->autocomplete#search focus->autocomplete#focus" },
+                class: "block w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-three focus:border-blue-three sm:text-sm",
+                autocomplete: "off" %>
+            <!-- Autocomplete Results -->
+            <div class="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-64 overflow-y-auto"
+                 data-autocomplete-target="results">
+            </div>
+          </div>
+
+          <!-- Localização com Autocomplete -->
+          <div class="relative flex-grow min-w-[200px]" data-controller="autocomplete" data-autocomplete-min-chars-value="0">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+              <i class="bi bi-geo-alt text-gray-400"></i>
+            </div>
+            <%= f.text_field :city, 
+                value: params[:city], 
+                placeholder: "Localização (Cidade, Bairro ou Edifício)", 
+                data: { autocomplete_target: "input", action: "input->autocomplete#search focus->autocomplete#focus" },
+                class: "block w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-three focus:border-blue-three sm:text-sm",
+                autocomplete: "off" %>
+            <!-- Autocomplete Results -->
+            <div class="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-64 overflow-y-auto"
+                 data-autocomplete-target="results">
+            </div>
+          </div>
+
+          <!-- Finalidade (Hidden but preserved) -->
+          <%= f.hidden_field :transaction_type, value: params[:transaction_type] %>
+
+          <!-- Preço (Text Input) -->
+          <div class="relative min-w-[160px]">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <span class="text-gray-400 text-sm font-bold">R$</span>
+            </div>
+            <%= f.text_field :target_price, 
+                value: params[:target_price],
+                placeholder: "Preço até",
+                data: { controller: "currency-mask", action: "input->currency-mask#format" },
+                class: "block w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-three focus:border-blue-three sm:text-sm" %>
+          </div>
+
+          <!-- Código (Botão Modal) -->
+          <button type="button" 
+                  onclick="document.dispatchEvent(new CustomEvent('open-code-search'))"
+                  class="px-4 py-2.5 bg-white border border-gray-200 rounded-lg hover:border-blue-three hover:text-blue-three text-gray-500 text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap"
+                  title="Buscar por código">
+            <i class="bi bi-house-check"></i>
+            <span>Cód</span>
+          </button>

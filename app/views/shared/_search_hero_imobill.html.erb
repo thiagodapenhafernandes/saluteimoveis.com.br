@@ -1,0 +1,104 @@
+<!-- Imobill-Style Search Component (Tabs Outside) -->
+<div class="w-full max-w-5xl mx-auto mt-8 relative z-20" data-controller="search-tabs">
+  
+  <!-- Tabs (Comprar / Alugar) - Outside and Centered -->
+  <div class="flex justify-center mb-4">
+    <div class="bg-white/90 backdrop-blur-sm p-1.5 rounded-full inline-flex shadow-lg border border-white/20">
+      <button type="button" 
+              class="px-8 py-2 rounded-full text-sm font-bold text-hero-button-text bg-hero-button shadow-sm transition-all active-tab"
+              data-search-tabs-target="tab"
+              data-action="click->search-tabs#switch"
+              data-value="venda">
+        Comprar
+      </button>
+      <button type="button" 
+              class="px-8 py-2 rounded-full text-sm font-bold text-gray-600 hover:text-blue-three transition-all"
+              data-search-tabs-target="tab"
+              data-action="click->search-tabs#switch"
+              data-value="aluguel">
+        Alugar
+      </button>
+    </div>
+  </div>
+
+  <!-- Search Form Container -->
+  <div class="bg-white rounded-2xl shadow-xl border border-gray-100">
+    <%= form_with url: habitations_path, method: :get, class: "p-6 lg:p-8" do |f| %>
+      
+      <input type="hidden" name="transaction_type" id="transaction_type_input" value="<%= params[:transaction_type] || 'venda' %>" data-search-tabs-target="input">
+      
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+        
+        <!-- Tipo de Imóvel com Autocomplete -->
+        <div class="md:col-span-3" data-controller="autocomplete" data-autocomplete-options-value='<%= (@property_types || []).to_json %>'>
+          <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Tipo de Imóvel</label>
+          <div class="relative">
+            <i class="bi bi-building absolute left-3 top-3 text-gray-400 z-10"></i>
+            <%= f.text_field :category, 
+                value: params[:category],
+                placeholder: "Todos os tipos",
+                data: { autocomplete_target: "input", action: "input->autocomplete#search focus->autocomplete#focus" },
+                class: "w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-lg focus:ring-1 focus:ring-blue-three focus:border-blue-three text-gray-700 text-sm font-medium placeholder-gray-400",
+                autocomplete: "off" %>
+            <!-- Autocomplete Results -->
+            <div class="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-64 overflow-y-auto"
+                 data-autocomplete-target="results">
+            </div>
+          </div>
+        </div>
+        
+        <!-- Localização com Autocomplete -->
+        <div class="md:col-span-4" data-controller="autocomplete" data-autocomplete-min-chars-value="0">
+          <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Localização</label>
+          <div class="relative">
+            <i class="bi bi-geo-alt absolute left-3 top-3 text-gray-400 z-10"></i>
+            <%= f.text_field :city, 
+                value: params[:city],
+                placeholder: "Digite o bairro ou cidade",
+                data: { autocomplete_target: "input", action: "input->autocomplete#search focus->autocomplete#focus" },
+                class: "w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-lg focus:ring-1 focus:ring-blue-three focus:border-blue-three text-gray-700 text-sm font-medium placeholder-gray-400",
+                autocomplete: "off" %>
+            <!-- Autocomplete Results -->
+            <div class="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-64 overflow-y-auto"
+                 data-autocomplete-target="results">
+            </div>
+          </div>
+        </div>
+        
+        <!-- Preço Até (Target Price) -->
+        <div class="md:col-span-2">
+          <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Preço até</label>
+          <div class="relative">
+            <span class="absolute left-3 top-3 text-gray-400 z-10 text-sm font-bold pt-0.5">R$</span>
+            <%= f.text_field :target_price, 
+                value: params[:target_price],
+                placeholder: "Valor aprox.",
+                data: { controller: "currency-mask", action: "input->currency-mask#format" },
+                class: "w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-lg focus:ring-1 focus:ring-blue-three focus:border-blue-three text-gray-700 text-sm font-medium placeholder-gray-400" %>
+          </div>
+        </div>
+
+        <!-- Código (Botão Modal) -->
+        <div class="md:col-span-1">
+          <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Código</label>
+          <button type="button" 
+                  onclick="document.dispatchEvent(new CustomEvent('open-code-search'))"
+                  class="w-full px-2 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-three hover:text-blue-three text-gray-500 text-sm font-medium transition-colors flex items-center justify-center gap-1"
+                  title="Buscar por código">
+            <i class="bi bi-house-check"></i>
+            <span class="hidden md:inline">Cód</span>
+          </button>
+        </div>
+        
+        <div class="md:col-span-2">
+          <%= button_tag type: 'submit', class: "w-full py-3 bg-hero-button hover:opacity-90 text-hero-button-text font-bold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 uppercase tracking-wide text-sm" do %>
+            <i class="bi bi-search"></i>
+            <%= @home_setting.hero_cta_text.presence || "Buscar" %>
+          <% end %>
+        </div>
+        
+      </div>
+      
+    <% end %>
+  </div>
+</div>

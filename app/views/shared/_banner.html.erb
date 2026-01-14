@@ -1,0 +1,26 @@
+<% if banner.present? %>
+  <% 
+    options ||= {}
+    # Use default container-custom unless specified otherwise
+    container_class = options.key?(:container_class) ? options[:container_class] : 'container-custom my-8'
+    force_mobile = options[:force_mobile] == true
+  %>
+  
+  <div class="<%= container_class %>">
+    <%= link_to banner.link_url.presence || '#', target: '_blank', class: 'block' do %>
+      <% if force_mobile && banner.image_mobile.attached? %>
+        <%= image_tag url_for(banner.image_mobile), 
+                      alt: banner.title,
+                      class: 'w-full rounded-lg shadow-md hover:shadow-xl transition-shadow' %>
+      <% else %>
+        <picture>
+          <source media="(max-width: 768px)" 
+                  srcset="<%= banner.image_mobile.attached? ? url_for(banner.image_mobile) : '' %>">
+          <%= image_tag (banner.image_desktop.attached? ? url_for(banner.image_desktop) : ''), 
+                        alt: banner.title,
+                        class: 'w-full rounded-lg shadow-md hover:shadow-xl transition-shadow' %>
+        </picture>
+      <% end %>
+    <% end %>
+  </div>
+<% end %>
