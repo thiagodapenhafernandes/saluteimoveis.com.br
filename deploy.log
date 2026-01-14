@@ -1,0 +1,279 @@
+[32m----->[0m Creating a temporary build path
+[32m----->[0m Using RVM environment "ruby-3.2.3@default"
+       [33mWarning! PATH is not properly set up, /usr/local/rvm/gems/ruby-3.2.3/bin is not at first place.
+                [0mUsually this is caused by shell initialization files. Search for [34mPATH=...[0m entries.
+                You can also re-add RVM to your profile by running: [34mrvm get stable --auto-dotfiles[0m
+                To fix it temporarily in this shell session run: [34mrvm use ruby-3.2.3[0m
+                To ignore this error add [34mrvm_silence_path_mismatch_check_flag=1[0m to your [34m~/.rvmrc[0m file.[0m
+       [0mUsing /usr/local/rvm/gems/ruby-3.2.3
+[32m----->[0m Fetching new git commits
+[32m----->[0m Using git branch 'master'
+       Cloning into '.'...
+       done.
+[32m----->[0m Updating submodules
+[32m----->[0m Using this git commit
+       Thiago Fernandes (459a061):
+       > New site salte version 2026 v1
+[32m----->[0m Symlinking shared paths
+[32m----->[0m Installing gem dependencies using Bundler
+       [31mThe `--deployment` flag has been removed because it relied on being remembered
+       across bundler invocations, which bundler no longer does. Instead please use
+       `bundle config set deployment true`, and stop using this flag[0m
+       [32mBundle complete! 41 Gemfile dependencies, 127 gems now installed.[0m
+       [32mGems in the groups 'development' and 'test' were not installed.[0m
+       [32mBundled gems are installed into `./vendor/bundle`[0m
+       2 installed gems you directly depend on are looking for funding.
+         Run `bundle fund` for details
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20251122125042_create_habitations.rb and ./db/migrate/20251122125042_create_habitations.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20251122125348_create_featured_properties_view.rb and ./db/migrate/20251122125348_create_featured_properties_view.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20251122130154_create_friendly_id_slugs.rb and ./db/migrate/20251122130154_create_friendly_id_slugs.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20251123005900_enable_unaccent_extension.rb and ./db/migrate/20251123005900_enable_unaccent_extension.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20251123040000_add_characteristic_flags_to_habitations.rb and ./db/migrate/20251123040000_add_characteristic_flags_to_habitations.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20251123102600_add_vista_fields_to_habitations.rb and ./db/migrate/20251123102600_add_vista_fields_to_habitations.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20251124003706_devise_create_admin_users.rb and ./db/migrate/20251124003706_devise_create_admin_users.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20251124011430_create_home_settings.rb and ./db/migrate/20251124011430_create_home_settings.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20251124011435_create_banners.rb and ./db/migrate/20251124011435_create_banners.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20251124011439_create_home_sections.rb and ./db/migrate/20251124011439_create_home_sections.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20251124011442_create_home_section_items.rb and ./db/migrate/20251124011442_create_home_section_items.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20251125160425_add_hero_fields_to_home_settings.rb and ./db/migrate/20251125160425_add_hero_fields_to_home_settings.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20251125160804_add_positions_to_banners.rb and ./db/migrate/20251125160804_add_positions_to_banners.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20251125160805_add_active_and_order_to_home_sections.rb and ./db/migrate/20251125160805_add_active_and_order_to_home_sections.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20251125160807_create_contact_settings.rb and ./db/migrate/20251125160807_create_contact_settings.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20251125160808_create_seo_settings.rb and ./db/migrate/20251125160808_create_seo_settings.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20251125165431_create_active_storage_tables.active_storage.rb and ./db/migrate/20251125165431_create_active_storage_tables.active_storage.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20251125174440_add_overlay_color_to_home_settings.rb and ./db/migrate/20251125174440_add_overlay_color_to_home_settings.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20251125175442_change_position_to_array_in_banners.rb and ./db/migrate/20251125175442_change_position_to_array_in_banners.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20251126042444_create_webhook_settings.rb and ./db/migrate/20251126042444_create_webhook_settings.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20260109131432_create_property_pages.rb and ./db/migrate/20260109131432_create_property_pages.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20260109161447_add_whats_app_fields_to_webhook_settings.rb and ./db/migrate/20260109161447_add_whats_app_fields_to_webhook_settings.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20260109161448_create_leads.rb and ./db/migrate/20260109161448_create_leads.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20260109210040_create_layout_settings.rb and ./db/migrate/20260109210040_create_layout_settings.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20260109210957_add_site_name_to_layout_settings.rb and ./db/migrate/20260109210957_add_site_name_to_layout_settings.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20260109215740_add_accent_color_to_layout_settings.rb and ./db/migrate/20260109215740_add_accent_color_to_layout_settings.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20260109215741_add_hero_button_colors_to_home_settings.rb and ./db/migrate/20260109215741_add_hero_button_colors_to_home_settings.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20260109222214_add_hero_button_text_color_to_home_settings.rb and ./db/migrate/20260109222214_add_hero_button_text_color_to_home_settings.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20260110004526_create_footer_settings.rb and ./db/migrate/20260110004526_create_footer_settings.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20260110004527_create_footer_links.rb and ./db/migrate/20260110004527_create_footer_links.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20260110004529_create_footer_stores.rb and ./db/migrate/20260110004529_create_footer_stores.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20260110004530_create_footer_social_links.rb and ./db/migrate/20260110004530_create_footer_social_links.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20260110011550_add_footer_setting_to_footer_models.rb and ./db/migrate/20260110011550_add_footer_setting_to_footer_models.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20260110185210_add_status_and_notes_to_leads.rb and ./db/migrate/20260110185210_add_status_and_notes_to_leads.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20260110185519_create_landing_pages.rb and ./db/migrate/20260110185519_create_landing_pages.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20260110192156_unified_landing_pages.rb and ./db/migrate/20260110192156_unified_landing_pages.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20260111230256_create_action_text_tables.action_text.rb and ./db/migrate/20260111230256_create_action_text_tables.action_text.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20260111230258_add_photo_ids_order_to_habitations.rb and ./db/migrate/20260111230258_add_photo_ids_order_to_habitations.rb differ
+       Files /home/salute/salute-imoveis-v3/current/db/migrate/20260112012254_add_sync_stats_to_habitations.rb and ./db/migrate/20260112012254_add_sync_stats_to_habitations.rb differ
+[32m----->[0m Migrating database
+       I, [2026-01-14T16:42:10.116064 #131989]  INFO -- : [dotenv] Loaded [33m.env[0m
+       I, [2026-01-14T16:42:10.361381 #131989]  INFO -- : Migrating to EnableUnaccentExtension (20251123005900)
+       == 20251123005900 EnableUnaccentExtension: migrating ==========================
+       -- enable_extension("unaccent")
+       rake aborted!
+       StandardError: An error has occurred, this and all later migrations canceled: (StandardError)
+       
+       PG::FeatureNotSupported: ERROR:  extension "unaccent" is not available
+       DETAIL:  Could not open extension control file "/usr/share/pgsql/extension/unaccent.control": No such file or directory.
+       HINT:  The extension must first be installed on the system where PostgreSQL is running.
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/postgresql_adapter.rb:894:in `exec_params'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/postgresql_adapter.rb:894:in `block (2 levels) in exec_no_cache'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/abstract_adapter.rb:1027:in `block in with_raw_connection'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activesupport-7.1.6/lib/active_support/concurrency/null_lock.rb:9:in `synchronize'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/abstract_adapter.rb:999:in `with_raw_connection'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/postgresql_adapter.rb:893:in `block in exec_no_cache'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activesupport-7.1.6/lib/active_support/notifications/instrumenter.rb:58:in `instrument'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/abstract_adapter.rb:1142:in `log'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/postgresql_adapter.rb:892:in `exec_no_cache'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/postgresql_adapter.rb:872:in `execute_and_clear'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/postgresql/database_statements.rb:64:in `internal_exec_query'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/postgresql_adapter.rb:475:in `enable_extension'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration/default_strategy.rb:10:in `method_missing'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1047:in `block in method_missing'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1017:in `block in say_with_time'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/benchmark-0.5.0/lib/benchmark.rb:305:in `measure'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1017:in `say_with_time'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1036:in `method_missing'
+       /home/salute/salute-imoveis-v3/tmp/build-176842692525879/db/migrate/20251123005900_enable_unaccent_extension.rb:3:in `up'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:989:in `public_send'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:989:in `exec_migration'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:970:in `block (2 levels) in migrate'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/benchmark-0.5.0/lib/benchmark.rb:305:in `measure'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:969:in `block in migrate'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/abstract/connection_pool.rb:227:in `with_connection'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:968:in `migrate'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1178:in `migrate'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1529:in `block in execute_migration_in_transaction'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/abstract/transaction.rb:535:in `block in within_new_transaction'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activesupport-7.1.6/lib/active_support/concurrency/null_lock.rb:9:in `synchronize'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/abstract/transaction.rb:532:in `within_new_transaction'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/abstract/database_statements.rb:344:in `transaction'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1580:in `ddl_transaction'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1528:in `execute_migration_in_transaction'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1503:in `each'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1503:in `migrate_without_lock'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1448:in `block in migrate'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1600:in `with_advisory_lock'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1448:in `migrate'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1274:in `up'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1249:in `migrate'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/tasks/database_tasks.rb:262:in `migrate'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/railties/databases.rake:93:in `block (2 levels) in <main>'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/rake-13.3.1/exe/rake:27:in `<top (required)>'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/cli/exec.rb:58:in `load'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/cli/exec.rb:58:in `kernel_load'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/cli/exec.rb:23:in `run'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/cli.rb:451:in `exec'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/vendor/thor/lib/thor/command.rb:28:in `run'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/vendor/thor/lib/thor/invocation.rb:127:in `invoke_command'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/vendor/thor/lib/thor.rb:527:in `dispatch'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/cli.rb:34:in `dispatch'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/vendor/thor/lib/thor/base.rb:584:in `start'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/cli.rb:28:in `start'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/exe/bundle:28:in `block in <top (required)>'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/friendly_errors.rb:117:in `with_friendly_errors'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/exe/bundle:20:in `<top (required)>'
+       /usr/local/rvm/gems/ruby-3.2.3/bin/bundle:25:in `load'
+       /usr/local/rvm/gems/ruby-3.2.3/bin/bundle:25:in `<main>'
+       /usr/local/rvm/gems/ruby-3.2.3/bin/ruby_executable_hooks:22:in `eval'
+       /usr/local/rvm/gems/ruby-3.2.3/bin/ruby_executable_hooks:22:in `<main>'
+       
+       Caused by:
+       ActiveRecord::StatementInvalid: PG::FeatureNotSupported: ERROR:  extension "unaccent" is not available (ActiveRecord::StatementInvalid)
+       DETAIL:  Could not open extension control file "/usr/share/pgsql/extension/unaccent.control": No such file or directory.
+       HINT:  The extension must first be installed on the system where PostgreSQL is running.
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/postgresql_adapter.rb:894:in `exec_params'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/postgresql_adapter.rb:894:in `block (2 levels) in exec_no_cache'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/abstract_adapter.rb:1027:in `block in with_raw_connection'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activesupport-7.1.6/lib/active_support/concurrency/null_lock.rb:9:in `synchronize'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/abstract_adapter.rb:999:in `with_raw_connection'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/postgresql_adapter.rb:893:in `block in exec_no_cache'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activesupport-7.1.6/lib/active_support/notifications/instrumenter.rb:58:in `instrument'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/abstract_adapter.rb:1142:in `log'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/postgresql_adapter.rb:892:in `exec_no_cache'
+       [31mConnection to 143.110.138.67 closed.
+[0mndle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/postgresql_adapter.rb:872:in `execute_and_clear'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/postgresql/database_statements.rb:64:in `internal_exec_query'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/postgresql_adapter.rb:475:in `enable_extension'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration/default_strategy.rb:10:in `method_missing'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1047:in `block in method_missing'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1017:in `block in say_with_time'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/benchmark-0.5.0/lib/benchmark.rb:305:in `measure'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1017:in `say_with_time'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1036:in `method_missing'
+       /home/salute/salute-imoveis-v3/tmp/build-176842692525879/db/migrate/20251123005900_enable_unaccent_extension.rb:3:in `up'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:989:in `public_send'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:989:in `exec_migration'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:970:in `block (2 levels) in migrate'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/benchmark-0.5.0/lib/benchmark.rb:305:in `measure'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:969:in `block in migrate'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/abstract/connection_pool.rb:227:in `with_connection'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:968:in `migrate'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1178:in `migrate'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1529:in `block in execute_migration_in_transaction'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/abstract/transaction.rb:535:in `block in within_new_transaction'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activesupport-7.1.6/lib/active_support/concurrency/null_lock.rb:9:in `synchronize'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/abstract/transaction.rb:532:in `within_new_transaction'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/abstract/database_statements.rb:344:in `transaction'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1580:in `ddl_transaction'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1528:in `execute_migration_in_transaction'
+       [31mConnection to 143.110.138.67 closed.
+[0m
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1503:in `each'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1503:in `migrate_without_lock'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1448:in `block in migrate'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1600:in `with_advisory_lock'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1448:in `migrate'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1274:in `up'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1249:in `migrate'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/tasks/database_tasks.rb:262:in `migrate'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/railties/databases.rake:93:in `block (2 levels) in <main>'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/rake-13.3.1/exe/rake:27:in `<top (required)>'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/cli/exec.rb:58:in `load'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/cli/exec.rb:58:in `kernel_load'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/cli/exec.rb:23:in `run'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/cli.rb:451:in `exec'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/vendor/thor/lib/thor/command.rb:28:in `run'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/vendor/thor/lib/thor/invocation.rb:127:in `invoke_command'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/vendor/thor/lib/thor.rb:527:in `dispatch'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/cli.rb:34:in `dispatch'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/vendor/thor/lib/thor/base.rb:584:in `start'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/cli.rb:28:in `start'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/exe/bundle:28:in `block in <top (required)>'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/friendly_errors.rb:117:in `with_friendly_errors'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/exe/bundle:20:in `<top (required)>'
+       /usr/local/rvm/gems/ruby-3.2.3/bin/bundle:25:in `load'
+       /usr/local/rvm/gems/ruby-3.2.3/bin/bundle:25:in `<main>'
+       /usr/local/rvm/gems/ruby-3.2.3/bin/ruby_executable_hooks:22:in `eval'
+       /usr/local/rvm/gems/ruby-3.2.3/bin/ruby_executable_hooks:22:in `<main>'
+       
+       Caused by:
+       PG::FeatureNotSupported: ERROR:  extension "unaccent" is not available (PG::FeatureNotSupported)
+       DETAIL:  Could not open extension control file "/usr/share/pgsql/extension/unaccent.control": No such file or directory.
+       HINT:  The extension must first be installed on the system where PostgreSQL is running.
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/postgresql_adapter.rb:894:in `exec_params'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/postgresql_adapter.rb:894:in `block (2 levels) in exec_no_cache'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/abstract_adapter.rb:1027:in `block in with_raw_connection'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activesupport-7.1.6/lib/active_support/concurrency/null_lock.rb:9:in `synchronize'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/abstract_adapter.rb:999:in `with_raw_connection'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/postgresql_adapter.rb:893:in `block in exec_no_cache'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activesupport-7.1.6/lib/active_support/notifications/instrumenter.rb:58:in `instrument'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/abstract_adapter.rb:1142:in `log'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/postgresql_adapter.rb:892:in `exec_no_cache'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/postgresql_adapter.rb:872:in `execute_and_clear'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/postgresql/database_statements.rb:64:in `internal_exec_query'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/postgresql_adapter.rb:475:in `enable_extension'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration/default_strategy.rb:10:in `method_missing'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1047:in `block in method_missing'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1017:in `block in say_with_time'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/benchmark-0.5.0/lib/benchmark.rb:305:in `measure'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1017:in `say_with_time'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1036:in `method_missing'
+       /home/salute/salute-imoveis-v3/tmp/build-176842692525879/db/migrate/20251123005900_enable_unaccent_extension.rb:3:in `up'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:989:in `public_send'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:989:in `exec_migration'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:970:in `block (2 levels) in migrate'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/benchmark-0.5.0/lib/benchmark.rb:305:in `measure'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:969:in `block in migrate'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/abstract/connection_pool.rb:227:in `with_connection'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:968:in `migrate'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1178:in `migrate'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1529:in `block in execute_migration_in_transaction'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/abstract/transaction.rb:535:in `block in within_new_transaction'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activesupport-7.1.6/lib/active_support/concurrency/null_lock.rb:9:in `synchronize'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/abstract/transaction.rb:532:in `within_new_transaction'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/connection_adapters/abstract/database_statements.rb:344:in `transaction'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1580:in `ddl_transaction'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1528:in `execute_migration_in_transaction'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1503:in `each'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1503:in `migrate_without_lock'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1448:in `block in migrate'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1600:in `with_advisory_lock'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1448:in `migrate'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1274:in `up'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/migration.rb:1249:in `migrate'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/tasks/database_tasks.rb:262:in `migrate'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/activerecord-7.1.6/lib/active_record/railties/databases.rake:93:in `block (2 levels) in <main>'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/rake-13.3.1/exe/rake:27:in `<top (required)>'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/cli/exec.rb:58:in `load'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/cli/exec.rb:58:in `kernel_load'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/cli/exec.rb:23:in `run'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/cli.rb:451:in `exec'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/vendor/thor/lib/thor/command.rb:28:in `run'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/vendor/thor/lib/thor/invocation.rb:127:in `invoke_command'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/vendor/thor/lib/thor.rb:527:in `dispatch'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/cli.rb:34:in `dispatch'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/vendor/thor/lib/thor/base.rb:584:in `start'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/cli.rb:28:in `start'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/exe/bundle:28:in `block in <top (required)>'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/lib/bundler/friendly_errors.rb:117:in `with_friendly_errors'
+       /home/salute/salute-imoveis-v3/shared/vendor/bundle/ruby/3.2.0/gems/bundler-2.5.3/exe/bundle:20:in `<top (required)>'
+       /usr/local/rvm/gems/ruby-3.2.3/bin/bundle:25:in `load'
+       /usr/local/rvm/gems/ruby-3.2.3/bin/bundle:25:in `<main>'
+       /usr/local/rvm/gems/ruby-3.2.3/bin/ruby_executable_hooks:22:in `eval'
+       /usr/local/rvm/gems/ruby-3.2.3/bin/ruby_executable_hooks:22:in `<main>'
+       Tasks: TOP => db:migrate
+       (See full trace by running task with --trace)
+ [33m![0m     [31mERROR: Deploy failed.[0m
+[32m----->[0m Cleaning up build
+       Unlinking current
+       OK
+ [33m![0m     [31mRun Error[0m

@@ -3,7 +3,7 @@
 require 'mina/rails'
 require 'mina/git'
 # require 'mina/rbenv'  # for rbenv support. (https://rbenv.org)
-# require 'mina/rvm'    # for rvm support. (https://rvm.io)
+require 'mina/rvm'    # for rvm support. (https://rvm.io)
 
 # Basic settings:
 #   domain       - The hostname to SSH to.
@@ -11,40 +11,74 @@ require 'mina/git'
 #   repository   - Git repo to clone from. (needed by mina/git)
 #   branch       - Branch name to deploy. (needed by mina/git)
 
-set :application_name, 'foobar'
-set :domain, 'foobar.com'
-set :deploy_to, '/var/www/foobar.com'
-set :repository, 'git://...'
+set :application_name, 'salute_imoveis_v3'
+set :domain, '143.110.138.67'
+set :deploy_to, '/home/salute/salute-imoveis-v3'
+set :repository, 'https://github.com/thiagodapenhafernandes/saluteimoveis.com.br.git'
 set :branch, 'master'
 
-# Optional settings:
-#   set :user, 'foobar'          # Username in the server to SSH to.
-#   set :port, '30000'           # SSH port number.
-#   set :forward_agent, true     # SSH forward_agent.
+set :user, 'salute'          # Username in the server to SSH to.
+# set :port, '30000'           # SSH port number.
+set :forward_agent, true     # SSH forward_agent.
 
 # Shared dirs and files will be symlinked into the app-folder by the 'deploy:link_shared_paths' step.
 # Some plugins already add folders to shared_dirs like `mina/rails` add `public/assets`, `vendor/bundle` and many more
 # run `mina -d` to see all folders and files already included in `shared_dirs` and `shared_files`
-# set :shared_dirs, fetch(:shared_dirs, []).push('public/assets')
-# set :shared_files, fetch(:shared_files, []).push('config/database.yml', 'config/secrets.yml')
+set :shared_dirs, fetch(:shared_dirs, []).push('public/uploads', 'storage', 'public/assets', 'tmp/pids', 'tmp/sockets', 'log')
+set :shared_files, fetch(:shared_files, []).push('config/database.yml', 'config/master.key', '.env')
 
 # This task is the environment that is loaded for all remote run commands, such as
 # `mina deploy` or `mina rake`.
-task :remote_environment do
-  # If you're using rbenv, use this to load the rbenv environment.
-  # Be sure to commit your .ruby-version or .rbenv-version to your repository.
-  # invoke :'rbenv:load'
+# Configuração explícita do RVM
+set :rvm_use_path, '/usr/local/rvm/scripts/rvm'
 
-  # For those using RVM, use this to load an RVM version@gemset.
-  # invoke :'rvm:use', 'ruby-2.5.3@default'
+task :remote_environment do
+  # Carrega o RVM manualmente para garantir
+  command %{
+    if [ -s "/usr/local/rvm/scripts/rvm" ]; then
+      source "/usr/local/rvm/scripts/rvm"
+    elif [ -s "$HOME/.rvm/scripts/rvm" ]; then
+      source "$HOME/.rvm/scripts/rvm"
+    elif [ -s "/etc/profile.d/rvm.sh" ]; then
+      source "/etc/profile.d/rvm.sh"
+    fi
+    
+    # Load Homebrew
+    if [ -f "/home/linuxbrew/.linuxbrew/bin/brew" ]; then
+      eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+    fi
+    
+    # Load .env if it exists in shared path
+    if [ -f "/home/salute/salute-imoveis-v3/shared/.env" ]; then
+      set -a
+      source "/home/salute/salute-imoveis-v3/shared/.env"
+      set +a
+    fi
+  }
+
+  invoke :'rvm:use', 'ruby-3.2.3@default'
+end
+
+# Override default bundle:install to fix deprecated --deployment flag
+namespace :bundle do
+  desc "Install gem dependencies using Bundler."
+  task :install do
+    command %{
+      echo "-----> Installing gem dependencies using Bundler"
+      bundle config set --local deployment 'true'
+      bundle config set --local path 'vendor/bundle'
+      bundle config set --local without 'development test'
+      bundle install
+    }
+  end
 end
 
 # Put any custom commands you need to run at setup
 # All paths in `shared_dirs` and `shared_paths` will be created on their own.
 task :setup do
   # command %{rbenv install 2.5.3 --skip-existing}
-  # command %{rvm install ruby-2.5.3}
-  # command %{gem install bundler}
+  command %{rvm install ruby-3.2.3}
+  command %{gem install bundler}
 end
 
 desc 'Deploys the current version to the server.'
@@ -65,6 +99,8 @@ task :deploy do
       in_path(fetch(:current_path)) do
         command %(mkdir -p tmp/)
         command %(touch tmp/restart.txt)
+        command %(sudo systemctl restart puma_salute_imoveis_v3_production)
+        command %(sudo systemctl restart sidekiq_salute_imoveis_v3_production)
       end
     end
   end

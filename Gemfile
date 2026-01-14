@@ -12,7 +12,6 @@ gem "sprockets-rails"
 gem "importmap-rails"
 gem "stimulus-rails"
 gem "turbo-rails"
-gem "sassc-rails"
 gem "terser"
 gem "image_processing", "~> 1.12"
 gem "tailwindcss-rails", "~> 2.0"
@@ -74,3 +73,5 @@ group :production do
 end
 
 gem "devise", "~> 4.9"
+
+gem "dartsass-rails", "~> 0.5.1"
