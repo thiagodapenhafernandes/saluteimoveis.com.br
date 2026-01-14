@@ -240,121 +240,95 @@ class HabitationsController < ApplicationController
     params.permit(:name, :email, :phone, :preferred_date, :preferred_time, :message)
   end
   
-  # SEO OPTIMIZATION - Dynamic Meta Tags Based on Search Filters
+  # SEO OPTIMIZATION - Dynamic & Varied Meta Tags (Style: Conexão Imobiliária)
   def build_index_title
-    parts = []
     count = @habitations.total_entries rescue @habitations.count
+    city = params[:city].presence || params[:bairro].presence || "Balneário Camboriú"
+    category = params[:category].presence || "Imóveis"
     
-    # Transaction Type (Venda/Aluguel)
-    transaction = case params[:transaction_type]
-    when 'venda' then 'à Venda'
-    when 'aluguel', 'locacao' then 'para Alugar'
-    else ''
-    end
+    # Determine Transaction Context
+    transaction_term = case params[:transaction_type]
+                       when 'venda' then 'à Venda'
+                       when 'aluguel', 'locacao' then 'para Alugar'
+                       else ''
+                       end
+
+    # Check for specific scenarios
+    is_reduced = params[:characteristics]&.include?('opportunity') || 
+                 @habitations.any? { |h| h.valor_venda_anterior_cents.to_i > h.valor_venda_cents && h.valor_venda_anterior_cents > 0 }
     
-    # Category (Apartamento, Casa, etc)
-    category = params[:category].presence
+    is_luxury = params[:min_price].to_i > 2_000_000 || params[:quadra_mar] == '1' || params[:frente_mar] == '1'
     
-    # Special Characteristics
-    features = []
+    # Varied Templates (Randomized selection to avoid robotic patterns)
+    templates = []
     
-    # Valor Reduzido (high priority - attracts clicks!)
-    if @habitations.any? { |h| h.valor_venda_anterior_cents.to_i > h.valor_venda_cents }
-      features << 'Valor Reduzido'
-    end
-    
-    features << 'Frente Mar' if params[:vista_frente_mar_flag] == '1' || params[:characteristics]&.include?('vista_frente_mar_flag')
-    features << 'com Piscina' if params[:piscina_flag] == '1' || params[:characteristics]&.include?('piscina_flag')
-    features << 'Mobiliado' if params[:mobiliado_flag] == '1' || params[:furnished] == '1'
-    
-    # City/Location
-    city = params[:city].presence || params[:bairro].presence
-    
-    # Build Title (max 60 chars for SEO)
-    if features.any?
-      parts << features.join(' ')
-    end
-    
-    parts << category if category
-    parts << transaction if transaction.present?
-    
-    if city
-      parts << "em #{city}"
+    if is_reduced
+      templates << "Oportunidade: #{category} com Valor Reduzido em #{city}"
+      templates << "Preço Baixo: #{category} em #{city} com Desconto"
+      templates << "Ofertas de #{category} em #{city} - Aproveite"
+    elsif is_luxury
+      templates << "#{category} de Alto Padrão em #{city} - Exclusividade"
+      templates << "Luxo e Sofisticação: #{category} em #{city}"
+      templates << "Os Melhores #{category} em #{city} estão Aqui"
     else
-      parts << "em Balneário Camboriú"
+      # Standard variations
+      if transaction_term.present?
+        templates << "#{category} #{transaction_term} em #{city}"
+        templates << "Encontre seu #{category} #{transaction_term} em #{city}"
+        templates << "Busca de #{category} #{transaction_term} na região de #{city}"
+        templates << "#{category} em #{city} - Veja Opções #{transaction_term}"
+      else
+        templates << "#{category} em #{city} - Confira as Novidades"
+        templates << "Imobiliária em #{city} - Veja #{category}"
+        templates << "Seleção de #{category} em #{city} e Região"
+      end
     end
     
-    title = parts.join(' ')
-    title += " (#{count})" if count > 0
-    title += " | Salute Imóveis"
+    # Select a template deterministically based on page content to avoid SEO flickering
+    # Using params hash ensures the same search always yields the same title
+    seed = params.to_s.chars.sum(&:ord)
+    selected_title = templates[seed % templates.length]
     
-    # Ensure title is between 50-60 characters (SEO best practice)
-    title.truncate(60, omission: '...')
+    # Append minimal suffix
+    "#{selected_title} (#{count}) | Salute"
   end
   
   def build_index_description
-    parts = []
-    count = @habitations.total_entries rescue @habitations.count
+    city = params[:city].presence || "Balneário Camboriú"
+    category = params[:category].presence || "imóveis"
     
-    # Opening (action verb for engagement)
-    parts << "Encontre"
+    # Varied Hooks/Intros
+    intros = [
+      "Procurando por #{category.downcase} em #{city}?",
+      "Descubra as melhores opções de #{category.downcase} em #{city}.",
+      "A Salute Imóveis selecionou #{category.downcase} incríveis em #{city} para você.",
+      "Não feche negócio antes de ver estes #{category.downcase} em #{city}.",
+      "Seu sonho de morar em #{city} comece aqui com estes #{category.downcase}."
+    ]
     
-    # Add count if available
-    if count > 0
-      parts << "#{count} #{count == 1 ? 'imóvel' : 'imóveis'}"
-    else
-      parts << "os melhores imóveis"
-    end
+    # Varied CTAs/Closings
+    ctas = [
+      "Agende sua visita hoje mesmo!",
+      "Confira fotos e detalhes exclusivos.",
+      "Fale com nossos corretores especialistas.",
+      "Acesse e veja todas as oportunidades.",
+      "Venha conhecer seu novo lar."
+    ]
     
-    # Category
-    parts << params[:category].downcase if params[:category].present?
+    # Select deterministically
+    seed = params.to_s.chars.sum(&:ord)
+    intro = intros[seed % intros.length]
+    cta = ctas[(seed + 1) % ctas.length]
     
-    # Transaction type
-    case params[:transaction_type]
-    when 'venda'
-      parts << "à venda"
-    when 'aluguel', 'locacao'
-      parts << "para alugar"
-    end
-    
-    # Location (critical for local SEO)
-    if params[:city].present?
-      parts << "em #{params[:city]}"
-    elsif params[:bairro].present?
-      parts << "no bairro #{params[:bairro]}"
-    else
-      parts << "em Balneário Camboriú e região"
-    end
-    
-    # Special features (frente mar is VERY valuable for SEO)
+    # Features List
     features = []
-    
-    # Valor Reduzido - muito atrativo!
-    if @habitations.any? { |h| h.valor_venda_anterior_cents.to_i > h.valor_venda_cents }
-      features << "com valor reduzido"
-    end
-    
-    features << "frente mar" if params[:vista_frente_mar_flag] == '1' || params[:characteristics]&.include?('vista_frente_mar_flag')
-    features << "com piscina" if params[:piscina_flag] == '1' ||params[:characteristics]&.include?('piscina_flag')
+    features << "frente mar" if params[:vista_frente_mar_flag] == '1'
     features << "mobiliado" if params[:mobiliado_flag] == '1'
-    features << "aceita financiamento" if params[:accepts_financing] == '1'
+    features << "com valor reduzido" if @habitations.any? { |h| h.valor_venda_anterior_cents.to_i > h.valor_venda_cents }
     
-    if features.any?
-      parts << "- #{features.join(', ')}"
-    end
+    feature_text = features.any? ? " Opções com #{features.join(', ')}." : ""
     
-    # Price range (if specified)
-    if params[:min_price].present? || params[:max_price].present?
-      price_range = []
-      price_range << "a partir de R$ #{number_to_currency(params[:min_price].to_i, unit: '', delimiter: '.', separator: ',')}" if params[:min_price].present?
-      price_range << "até R$ #{number_to_currency(params[:max_price].to_i, unit: '', delimiter: '.', separator: ',')}" if params[:max_price].present?
-      parts << "(#{price_range.join(' ')})" if price_range.any?
-    end
-    
-    description = parts.join(' ') + ". Salute Imóveis - Imobiliária de confiança em Balneário Camboriú."
-    
-    # SEO best practice: 150-160 characters
-    description.truncate(160, omission: '...')
+    "#{intro}#{feature_text} Temos diversas opções à sua espera. #{cta}"
   end
   
   def build_index_keywords

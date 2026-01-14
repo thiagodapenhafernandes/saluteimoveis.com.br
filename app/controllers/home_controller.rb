@@ -58,8 +58,8 @@ class HomeController < ApplicationController
     
     # SEO
     @page_name = 'home'
-    @page_title = @home_setting.seo_title.presence || 'Salute Imóveis | Encontre seu Imóvel Ideal'
-    @page_description = @home_setting.seo_description.presence || 'Os melhores imóveis para venda e locação. Apartamentos, casas, terrenos e mais.'
+    @page_title = 'Salute Imóveis | Encontre seu Imóvel Ideal'
+    @page_description = 'Os melhores imóveis para venda e locação. Apartamentos, casas, terrenos e mais.'
     
     # Cache da página (Browser)
     expires_in 15.minutes, public: true

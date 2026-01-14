@@ -79,63 +79,149 @@ module Habitation::SeoHelpers
   private
   
   def generate_seo_title
+    # Templates variados baseados no perfil do imóvel
+    templates = []
+    
+    # Identificar Power Features (Características de alto valor)
+    power_features = []
+    
+    # Flags seguras via helper ou colunas explícitas conhecidas
+    is_frente_mar = has_characteristic?('frente_mar') || has_characteristic?('vista_frente_mar')
+    is_quadra_mar = has_characteristic?('quadra_mar')
+    is_vista_mar = has_characteristic?('vista_mar')
+    
+    power_features << "Frente Mar" if is_frente_mar
+    power_features << "Quadra Mar" if is_quadra_mar
+    power_features << "Vista Mar" if is_vista_mar && !is_frente_mar
+    power_features << "Mobiliado" if has_characteristic?('mobiliado')
+    power_features << "Decorado" if has_characteristic?('decorado')
+    power_features << "Com Piscina" if has_characteristic?('piscina')
+    power_features << "Alto Padrão" if valor_venda_cents.to_i > 2_500_000
+    power_features << "Oportunidade" if valor_venda_anterior_cents.to_i > valor_venda_cents.to_i
+    
+    # Identificar Estado (Status)
+    status_imovel = []
+    status_imovel << "Lançamento" if has_characteristic?('lancamento')
+    status_imovel << "Na Planta" if has_characteristic?('na_planta')
+    status_imovel << "Pronto para Morar" if has_characteristic?('pronto')
+    status_imovel << "Novo" if created_at > 3.months.ago
+    
+    # Prefixo (Adjetivo de impacto)
+    prefix = status_imovel.first || power_features.find { |f| ["Alto Padrão", "Oportunidade"].include?(f) }
+    
+    # Construção do Título
     parts = []
     
-    # Categoria + características
-    if categoria.present?
-      parts << categoria
-      parts << "#{dormitorios_qtd} dormitórios" if dormitorios_qtd.to_i > 0
+    # 1. O Que é?
+    main_subject = categoria || "Imóvel"
+    
+    # 2. Onde?
+    location_term = if bairro.present? && cidade.present?
+                      "#{bairro}, #{cidade}"
+                    elsif cidade.present?
+                      cidade
+                    else
+                      "Balneário Camboriú"
+                    end
+    
+    # Lógica de Templates Variados
+    if prefix.present? && prefix != "Oportunidade"
+       # Ex: Lançamento: Apartamento Frente Mar no Centro, BC
+       feature = (power_features - [prefix]).first # Pega outra feature se disponível
+       parts << "#{prefix}: #{main_subject}"
+       parts << feature if feature
+       parts << "em #{location_term}"
+    elsif power_features.any?
+       # Ex: Apartamento Frente Mar Mobiliado em BC
+       parts << main_subject
+       parts << power_features.first(2).join(' ') # Até 2 features
+       parts << "em #{location_term}"
+    else
+       # Padrão
+       parts << main_subject
+       parts << "#{dormitorios_qtd} Quartos" if dormitorios_qtd.to_i > 0
+       parts << "em #{location_term}"
     end
     
-    # Localização
-    if bairro.present? && cidade.present?
-      parts << "no #{bairro}"
-      parts << cidade
-    elsif cidade.present?
-      parts << "em #{cidade}"
-    end
-    
-    # Tipo de transação
-    parts << "para #{tipo_transacao}"
-    
-    # Adicionar Salute Imóveis
+    # Sufixo de Preço ou Salute
     title = parts.join(' ')
-    "#{title} | Salute Imóveis"
+    if title.length < 50
+       title += " | Salute Imóveis"
+    end
+    
+    title
   end
   
   def generate_seo_description
-    parts = []
+    # Copywriting Dinâmico
     
-    # Descrição base
-    if categoria.present?
-      parts << "#{categoria} para #{tipo_transacao&.downcase}"
+    # Features para narrative
+    features_list = []
+    features_list << "frente para o mar" if has_characteristic?('frente_mar')
+    features_list << "totalmente mobiliado" if has_characteristic?('mobiliado')
+    features_list << "finamente decorado" if has_characteristic?('decorado')
+    features_list << "com ampla sacada com churrasqueira" if has_characteristic?('sacada') && has_characteristic?('churrasqueira')
+    features_list << "com piscina privativa" if has_characteristic?('piscina')
+    features_list << "com #{suites_qtd} suítes" if suites_qtd.to_i > 0
+    features_list << "#{vagas_qtd} vagas de garagem" if vagas_qtd.to_i > 0
+    
+    # Location
+    loc = bairro.present? ? "no bairro #{bairro}" : "em #{cidade}"
+    
+    # Templates de Introdução (Hooks)
+    intros = []
+    
+    if has_characteristic?('lancamento')
+      intros << "Conheça este lançamento exclusivo #{loc}."
+      intros << "Invista no futuro com este empreendimento na planta #{loc}."
+    elsif valor_venda_anterior_cents.to_i > valor_venda_cents.to_i
+      intros << "Oportunidade Imperdível! Valor reduzido para este #{categoria&.downcase} #{loc}."
+      intros << "Excelente negócio! #{categoria} com preço especial #{loc}."
+    elsif valor_venda_cents.to_i > 3_000_000
+      intros << "Viva o luxo e a sofisticação neste #{categoria&.downcase} de alto padrão #{loc}."
+      intros << "Exclusividade define este imóvel #{loc}."
+    else
+      intros << "Encante-se com este #{categoria&.downcase} #{loc}."
+      intros << "Seu novo lar espera por você #{loc}."
+      intros << "Excelente opção de #{categoria&.downcase} para #{tipo_transacao&.downcase}."
     end
     
-    # Características
-    features = []
-    features << "#{dormitorios_qtd} dormitórios" if dormitorios_qtd.to_i > 0
-    features << "#{suites_qtd} suítes" if suites_qtd.to_i > 0
-    features << "#{vagas_qtd} vagas" if vagas_qtd.to_i > 0
-    features << "#{area_total_m2.to_i}m²" if area_total_m2.to_f > 0
+    # Selecionar intro baseada no ID para consistência (mas pseudo-randomica)
+    intro = intros[id % intros.length]
     
-    parts << "com #{features.join(', ')}" if features.any?
+    # Corpo
+    body = "Este imóvel conta com #{features_list.to_sentence(last_word_connector: ' e ')}."
     
-    # Localização
-    if bairro.present? && cidade.present?
-      parts << "localizado no #{bairro}, #{cidade}"
-    elsif cidade.present?
-      parts << "em #{cidade}"
-    end
+    # CTA
+    ctas = [
+      "Agende sua visita hoje mesmo e surpreenda-se!",
+      "Entre em contato com a Salute Imóveis para mais detalhes.",
+      "Não perca essa chance, fale conosco agora.",
+      "Veja mais fotos e informações exclusivas."
+    ]
+    cta = ctas[(id + 1) % ctas.length]
     
-    # Preço
-    if preco_principal != 'Sob Consulta'
-      parts << "por #{preco_principal}"
-    end
+    "#{intro} #{body} #{cta}"
+  end
+  
+  # Helper para verificar características no JSONB ou Flags
+  def has_characteristic?(term)
+    # Verifica nas flags explícitas se existirem (metaprogramação segura ou check manual)
+    return true if respond_to?("#{term}_flag") && send("#{term}_flag")
     
-    # Adicionar call to action
-    parts << "Confira fotos, vídeos e mais detalhes!"
+    # Verifica no JSONB de características
+    return true if caracteristicas.is_a?(Hash) && 
+                   caracteristicas.keys.any? { |k| k.to_s.parameterize.include?(term.parameterize) } ||
+                   caracteristicas.is_a?(Hash) && caracteristicas[term.to_s] == true
+                   
+    # Verifica em infraestrutura array
+    return true if infra_estrutura.is_a?(Array) && 
+                   infra_estrutura.any? { |i| i.to_s.parameterize.include?(term.parameterize) }
+                   
+    # Verifica strings especiais
+    return true if term == 'frente_mar' && (respond_to?(:frente_mar_avenida_atlantica_flag) && frente_mar_avenida_atlantica_flag)
     
-    parts.join(' ')
+    false
   end
   
   def generate_seo_keywords

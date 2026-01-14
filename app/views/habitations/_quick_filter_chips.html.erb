@@ -1,4 +1,5 @@
           <% quick_filters = [
+            ['opportunity', 'Oportunidade', 'bi-tag-fill'],
             ['lancamento', 'Lançamento', 'bi-stars'],
             ['na_planta', 'Na Planta', 'bi-map'],
             ['frente_mar', 'Frente Mar', 'bi-water'],
@@ -14,7 +15,7 @@
               <%= check_box_tag "characteristics[]", value, (params[:characteristics] || []).include?(value), class: "peer sr-only", onchange: "this.form.submit()" %>
               <div class="flex items-center gap-2 px-4 py-1.5 rounded-full border border-gray-200 bg-white text-xs font-medium text-gray-600 peer-checked:bg-gray-200 peer-checked:text-gray-900 peer-checked:border-gray-300 hover:border-blue-three hover:text-blue-three transition-all select-none">
                 <% if icon.present? %>
-                  <i class="bi <%= icon %>"></i>
+                  <i class="bi <%= icon %> <%= 'text-red-500' if value == 'opportunity' %>"></i>
                 <% end %>
                 <%= label %>
                 <% if (params[:characteristics] || []).include?(value) %>

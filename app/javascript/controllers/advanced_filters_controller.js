@@ -4,6 +4,12 @@ export default class extends Controller {
   static targets = ["sidebar", "overlay"]
 
   connect() {
+    // Check if we should open automatically
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.get('open_filters') === 'true') {
+      setTimeout(() => this.open(), 300)
+    }
+
     // Close sidebar on escape key
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') this.close()

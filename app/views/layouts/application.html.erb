@@ -58,6 +58,10 @@
     <%# Fonts loading with swap %>
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&family=Raleway:wght@300;400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     
+    <%# Select2 CSS Premium %>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.5.2/dist/select2-bootstrap4.min.css">
+    
     <%# Layout Settings (Colors) %>
     <style>
       :root {
@@ -107,6 +111,8 @@
       function loadDeferredAssets() {
         // Load Scripts
         var scripts = [
+          'https://code.jquery.com/jquery-3.7.1.min.js',
+          'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js',
           'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js',
           'https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js',
           'https://unpkg.com/aos@2.3.1/dist/aos.js' // Added AOS deferral
@@ -121,6 +127,16 @@
           }
           if (src.includes('fancybox')) {
             s.onload = function() { Fancybox.bind("[data-fancybox]", {}); };
+          }
+          if (src.includes('select2.min.js')) {
+            s.onload = function() { 
+              $('.select2-premium').select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                placeholder: 'Selecione',
+                allowClear: true
+              });
+            };
           }
           document.body.appendChild(s);
         });

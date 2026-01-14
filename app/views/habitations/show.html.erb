@@ -14,6 +14,11 @@
     </div>
   </div>
 
+  <!-- JSON-LD Structured Data for SEO -->
+  <script type="application/ld+json">
+    <%= @habitation.structured_data.to_json.html_safe %>
+  </script>
+
   <div class="container-custom mt-6">
     
     <!-- Header: Título e Preço -->

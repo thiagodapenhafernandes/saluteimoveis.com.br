@@ -72,3 +72,6 @@ application.register("tom-select", TomSelectController)
 
 import TransactionToggleController from "./transaction_toggle_controller"
 application.register("transaction-toggle", TransactionToggleController)
+
+import ScrollVisibilityController from "./scroll_visibility_controller"
+application.register("scroll-visibility", ScrollVisibilityController)
