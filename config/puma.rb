@@ -10,13 +10,10 @@ port ENV.fetch("PORT", 3000)
 environment ENV.fetch("RAILS_ENV", "development")
 
 if ENV.fetch("RAILS_ENV", "development") == "production"
-  # require 'puma/daemon'
-  
   workers ENV.fetch("WEB_CONCURRENCY", 3)
   preload_app!
   
   bind "tcp://127.0.0.1:9292"
-  daemonize false
   
   # pidfile "tmp/pids/puma.pid"
   # state_path "tmp/pids/puma.state"
