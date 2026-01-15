@@ -11,6 +11,7 @@ export default class extends Controller {
   connect() {
     this.timeout = null
     this.closeResults = this.closeResults.bind(this)
+    this.isOpen = false
 
     // Close results when clicking outside
     document.addEventListener('click', this.closeResults)
@@ -22,8 +23,7 @@ export default class extends Controller {
 
   // Mostra dropdown quando focar no input
   focus(event) {
-    // Se já estiver aberto e focar de novo, não faz nada (evita flicker)
-    if (!this.resultsTarget.classList.contains('hidden')) return
+    if (this.isOpen) return
 
     // Se tem opções estáticas (tipos), mostra todas
     if (this.hasOptionsValue && this.optionsValue.length > 0) {
@@ -39,10 +39,14 @@ export default class extends Controller {
 
   // Toggle dropdown on click
   toggle(event) {
-    if (this.resultsTarget.classList.contains('hidden')) {
-      this.focus(event)
-    } else {
+    // Se clicou e já está aberto, fecha. Se está fechado, abre.
+    // O evento de focus geralmente dispara antes do click no primeiro foco.
+    if (this.isOpen) {
+      // Pequeno delay para evitar fechar imediatamente se o focus acabou de abrir
+      if (this.lastOpenTime && (Date.now() - this.lastOpenTime < 300)) return
       this.hideResults()
+    } else {
+      this.focus(event)
     }
   }
 
@@ -190,10 +194,13 @@ export default class extends Controller {
 
   showResults() {
     this.resultsTarget.classList.remove('hidden')
+    this.isOpen = true
+    this.lastOpenTime = Date.now()
   }
 
   hideResults() {
     this.resultsTarget.classList.add('hidden')
+    this.isOpen = false
   }
 
   closeResults(event) {

@@ -108,6 +108,7 @@ task :restart => :remote_environment do
   comment 'Restarting Puma and Sidekiq...'
   command %(sudo systemctl restart puma_salute_imoveis_v3_production)
   command %(sudo systemctl restart sidekiq_salute_imoveis_v3_production)
+  command %(cd #{fetch(:current_path)} && bundle exec rails runner "Rails.cache.clear")
 end
 
 
