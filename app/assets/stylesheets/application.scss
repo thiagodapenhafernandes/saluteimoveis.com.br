@@ -3,6 +3,9 @@
  * Tailwind is loaded separately via application.tailwind.css
  */
 
+@use "components/hero";
+@use "pagination";
+
 /* CSS Variables */
 :root {
   /* Brand Colors */
@@ -13,8 +16,6 @@
   --golden-two: #E1C340;
 }
 
-@use "components/hero";
-@use "pagination";
 
 /* Import admin styles - removed from here as it is linked separately in admin layout */
 /* @import "admin"; */
