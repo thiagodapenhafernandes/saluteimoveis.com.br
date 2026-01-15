@@ -6,7 +6,7 @@ module Habitation::SearchScopes
     # IMPORTANTE: Apenas imóveis com status válido para exibição pública
     scope :active, -> { 
       where(exibir_no_site_flag: true)
-        .where(status: ['Venda', 'Aluguel', 'Venda e Aluguel'])
+        .where(status: ['Venda', 'Aluguel', 'Venda e Aluguel', 'Locação', 'Locacao'])
         .with_photos
         .with_price 
     }
@@ -16,8 +16,10 @@ module Habitation::SearchScopes
     scope :pronto, -> { where("unaccent(caracteristica_unica) ILIKE unaccent('%pronto%')") }
     scope :em_construcao, -> { where("unaccent(caracteristica_unica) ILIKE unaccent('%construção%')") }
     
-    # Scope para imóveis com fotos (verifica se é array e tem elementos)
-    scope :with_photos, -> { where("jsonb_typeof(pictures) = 'array' AND jsonb_array_length(pictures) > 0") }
+    # Scope para imóveis com fotos (verifica se é array e tem elementos OU se tem fotos anexadas)
+    scope :with_photos, -> { 
+      where("(jsonb_typeof(pictures) = 'array' AND jsonb_array_length(pictures) > 0) OR (EXISTS (SELECT 1 FROM active_storage_attachments WHERE active_storage_attachments.record_id = habitations.id AND active_storage_attachments.record_type = 'Habitation'))") 
+    }
     
     # Scope para imóveis com preço (venda ou locação)
     scope :with_price, -> { where("valor_venda_cents > 0 OR valor_locacao_cents > 0") }

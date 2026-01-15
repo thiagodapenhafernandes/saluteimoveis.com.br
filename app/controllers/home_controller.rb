@@ -1,7 +1,7 @@
 class HomeController < ApplicationController
   def index
     # Load active home sections
-    @home_sections = Rails.cache.fetch("home_sections_active", expires_in: 1.hour) do
+    @home_sections = Rails.cache.fetch("home_sections_active_v2", expires_in: 1.hour) do
       HomeSection.active.to_a
     end
     @sections_map = @home_sections.index_by(&:section_type)
