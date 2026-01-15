@@ -98,18 +98,18 @@ task :deploy do
     invoke :'deploy:cleanup'
 
     on :launch do
-      in_path(fetch(:current_path)) do
-        command %(mkdir -p tmp/)
-        command %(touch tmp/restart.txt)
-        command %(sudo systemctl restart puma_salute_imoveis_v3_production)
-        command %(sudo systemctl restart sidekiq_salute_imoveis_v3_production)
-      end
+      invoke :restart
     end
   end
-
-  # you can use `run :local` to run tasks on local machine before or after the deploy scripts
-  # run(:local){ say 'done' }
 end
+
+desc "Reinicia o Puma e Sidekiq"
+task :restart => :remote_environment do
+  comment 'Restarting Puma and Sidekiq...'
+  command %(sudo systemctl restart puma_salute_imoveis_v3_production)
+  command %(sudo systemctl restart sidekiq_salute_imoveis_v3_production)
+end
+
 
 desc "Mostra os logs da aplicação (Puma) em tempo real"
 task :logs do
