@@ -54,6 +54,8 @@ task :remote_environment do
       source "/home/salute/salute-imoveis-v3/shared/.env"
       set +a
     fi
+    # Silence RVM path mismatch warnings
+    export rvm_silence_path_mismatch_check_flag=1
   }
 
   invoke :'rvm:use', 'ruby-3.2.3@default'
@@ -68,7 +70,7 @@ namespace :bundle do
       bundle config set --local deployment 'true'
       bundle config set --local path 'vendor/bundle'
       bundle config set --local without 'development test'
-      bundle install
+      bundle install --quiet
     }
   end
 end

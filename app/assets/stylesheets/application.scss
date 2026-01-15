@@ -13,10 +13,8 @@
   --golden-two: #E1C340;
 }
 
-@import "components/hero";
-
-/* Import pagination styles */
-@import "pagination";
+@use "components/hero";
+@use "pagination";
 
 /* Import admin styles - removed from here as it is linked separately in admin layout */
 /* @import "admin"; */
