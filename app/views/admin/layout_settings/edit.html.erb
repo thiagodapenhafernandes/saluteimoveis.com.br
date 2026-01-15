@@ -95,10 +95,14 @@
               <%= f.label :logo, "Logo do Site", class: "form-label" %>
               <%= f.file_field :logo, class: "form-control" %>
               
-              <% if @layout_setting.logo.attached? %>
+              <% if @layout_setting.logo.attached? && @layout_setting.logo.persisted? %>
                 <div class="mt-3 p-3 bg-light rounded text-center">
                   <p class="text-muted mb-2">Logo atual:</p>
-                  <%= image_tag @layout_setting.logo, style: "max-height: 80px; max-width: 100%;" %>
+                  <% if @layout_setting.logo.content_type == 'image/svg+xml' %>
+                    <%= image_tag @layout_setting.logo, style: "max-height: 80px; max-width: 100%;" %>
+                  <% else %>
+                    <%= image_tag @layout_setting.logo.variant(resize_to_limit: [400, 160]), style: "max-height: 80px; max-width: 100%;" %>
+                  <% end %>
                 </div>
               <% else %>
                  <div class="mt-3 p-3 bg-light rounded text-center">
@@ -114,7 +118,7 @@
               <%= f.label :favicon, "Favicon (ícone da aba)", class: "form-label" %>
               <%= f.file_field :favicon, class: "form-control" %>
               
-              <% if @layout_setting.favicon.attached? %>
+              <% if @layout_setting.favicon.attached? && @layout_setting.favicon.persisted? %>
                 <div class="mt-3 p-3 bg-light rounded text-center">
                   <p class="text-muted mb-2">Favicon atual:</p>
                   <%= image_tag @layout_setting.favicon, style: "width: 32px; height: 32px;" %>

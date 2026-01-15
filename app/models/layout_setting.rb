@@ -8,11 +8,23 @@ class LayoutSetting < ApplicationRecord
   validates :accent_color, presence: true
 
   def self.instance
-    first_or_create!(
-      primary_color: '#022B3A', # Default blue-three
-      secondary_color: '#053C5E', # Default blue-one
-      accent_color: '#BFAB25', # Default golden-one
+    setting = first_or_initialize(
+      primary_color: '#022B3A',
+      secondary_color: '#053C5E',
+      accent_color: '#BFAB25',
       site_name: 'Salute Imóveis'
     )
+    
+    # Se já existir mas algum campo estiver nulo (como o accent_color do erro)
+    if setting.persisted?
+      setting.accent_color ||= '#BFAB25'
+      setting.primary_color ||= '#022B3A'
+      setting.secondary_color ||= '#053C5E'
+      setting.save if setting.changed?
+    else
+      setting.save!
+    end
+    
+    setting
   end
 end
