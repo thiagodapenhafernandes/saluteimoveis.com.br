@@ -2,76 +2,88 @@
 // Run that command whenever you add a new controller or create them with
 // ./bin/rails generate stimulus controllerName
 
-import { application } from "./application"
+import { application } from "controllers/application"
 
-import AdvancedFiltersController from "./advanced_filters_controller"
+import AdvancedFiltersController from "controllers/advanced_filters_controller"
 application.register("advanced-filters", AdvancedFiltersController)
 
-import AutocompleteController from "./autocomplete_controller"
+import AutocompleteController from "controllers/autocomplete_controller"
 application.register("autocomplete", AutocompleteController)
 
-import CardSwiperController from "./card_swiper_controller"
+import CardSwiperController from "controllers/card_swiper_controller"
 application.register("card-swiper", CardSwiperController)
 
-import ClickableCardController from "./clickable_card_controller"
+import ClickableCardController from "controllers/clickable_card_controller"
 application.register("clickable-card", ClickableCardController)
 
-import CodeSearchController from "./code_search_controller"
+import CodeSearchController from "controllers/code_search_controller"
 application.register("code-search", CodeSearchController)
 
-import CurrencyMaskController from "./currency_mask_controller"
+import CurrencyMaskController from "controllers/currency_mask_controller"
 application.register("currency-mask", CurrencyMaskController)
 
-import FavoritesController from "./favorites_controller"
+import DynamicListController from "controllers/dynamic_list_controller"
+application.register("dynamic-list", DynamicListController)
+
+import FavoritesController from "controllers/favorites_controller"
 application.register("favorites", FavoritesController)
 
-import FiltersController from "./filters_controller"
+import FiltersController from "controllers/filters_controller"
 application.register("filters", FiltersController)
 
-import HelloController from "./hello_controller"
+import HelloController from "controllers/hello_controller"
 application.register("hello", HelloController)
 
-import LeadCaptureController from "./lead_capture_controller"
+import HeroSliderController from "controllers/hero_slider_controller"
+application.register("hero-slider", HeroSliderController)
+
+import LeadCaptureController from "controllers/lead_capture_controller"
 application.register("lead-capture", LeadCaptureController)
 
-import MaskController from "./mask_controller"
+import MaskController from "controllers/mask_controller"
 application.register("mask", MaskController)
 
-import NavbarController from "./navbar_controller"
+import NavbarController from "controllers/navbar_controller"
 application.register("navbar", NavbarController)
 
-import NestedFormController from "./nested_form_controller"
+import NestedFormController from "controllers/nested_form_controller"
 application.register("nested-form", NestedFormController)
 
-import PhotoCarouselController from "./photo_carousel_controller"
+import PhotoCarouselController from "controllers/photo_carousel_controller"
 application.register("photo-carousel", PhotoCarouselController)
 
-import PhotoGalleryController from "./photo_gallery_controller"
+import PhotoGalleryController from "controllers/photo_gallery_controller"
 application.register("photo-gallery", PhotoGalleryController)
 
-import PropertyCarouselController from "./property_carousel_controller"
+import PhotoUploadController from "controllers/photo_upload_controller"
+application.register("photo-upload", PhotoUploadController)
+
+import PropertyCarouselController from "controllers/property_carousel_controller"
 application.register("property-carousel", PropertyCarouselController)
 
-import PropertyPagePreviewController from "./property_page_preview_controller"
+import PropertyPagePreviewController from "controllers/property_page_preview_controller"
 application.register("property-page-preview", PropertyPagePreviewController)
 
-import SearchFormController from "./search_form_controller"
+import ScrollVisibilityController from "controllers/scroll_visibility_controller"
+application.register("scroll-visibility", ScrollVisibilityController)
+
+import SearchFormController from "controllers/search_form_controller"
 application.register("search-form", SearchFormController)
 
-import SearchTabsController from "./search_tabs_controller"
+import SearchTabsController from "controllers/search_tabs_controller"
 application.register("search-tabs", SearchTabsController)
 
-import ShareController from "./share_controller"
+import ShareController from "controllers/share_controller"
 application.register("share", ShareController)
 
-import SidebarController from "./sidebar_controller"
+import SidebarController from "controllers/sidebar_controller"
 application.register("sidebar", SidebarController)
 
-import TomSelectController from "./tom_select_controller"
+import TagInputController from "controllers/tag_input_controller"
+application.register("tag-input", TagInputController)
+
+import TomSelectController from "controllers/tom_select_controller"
 application.register("tom-select", TomSelectController)
 
-import TransactionToggleController from "./transaction_toggle_controller"
+import TransactionToggleController from "controllers/transaction_toggle_controller"
 application.register("transaction-toggle", TransactionToggleController)
-
-import ScrollVisibilityController from "./scroll_visibility_controller"
-application.register("scroll-visibility", ScrollVisibilityController)
