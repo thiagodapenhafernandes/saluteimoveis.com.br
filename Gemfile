@@ -19,6 +19,7 @@ gem "tailwindcss-rails", "~> 2.0"
 # Environment & Configuration
 gem "dotenv-rails"
 gem "meta-tags"
+gem "rails-i18n"
 
 # Database & Background Jobs
 gem "redis", "~> 5.0"
