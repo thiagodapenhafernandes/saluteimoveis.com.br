@@ -10,17 +10,21 @@ export default class extends Controller {
 
   connect() {
     this.timeout = null
+    this.closeResults = this.closeResults.bind(this)
 
     // Close results when clicking outside
-    document.addEventListener('click', this.closeResults.bind(this))
+    document.addEventListener('click', this.closeResults)
   }
 
   disconnect() {
-    document.removeEventListener('click', this.closeResults.bind(this))
+    document.removeEventListener('click', this.closeResults)
   }
 
   // Mostra dropdown quando focar no input
   focus(event) {
+    // Se já estiver aberto e focar de novo, não faz nada (evita flicker)
+    if (!this.resultsTarget.classList.contains('hidden')) return
+
     // Se tem opções estáticas (tipos), mostra todas
     if (this.hasOptionsValue && this.optionsValue.length > 0) {
       this.displayStaticOptions()
@@ -30,6 +34,15 @@ export default class extends Controller {
       if (this.minCharsValue === 0 || query.length >= this.minCharsValue) {
         this.fetchResults(query)
       }
+    }
+  }
+
+  // Toggle dropdown on click
+  toggle(event) {
+    if (this.resultsTarget.classList.contains('hidden')) {
+      this.focus(event)
+    } else {
+      this.hideResults()
     }
   }
 
@@ -189,3 +202,4 @@ export default class extends Controller {
     }
   }
 }
+

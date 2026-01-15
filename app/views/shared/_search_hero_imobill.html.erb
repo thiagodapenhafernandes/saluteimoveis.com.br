@@ -30,14 +30,14 @@
       <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
         
         <!-- Tipo de Imóvel com Autocomplete -->
-        <div class="md:col-span-3" data-controller="autocomplete" data-autocomplete-options-value='<%= (@property_types || []).to_json %>'>
+        <div class="md:col-span-3" data-controller="autocomplete" data-autocomplete-options-value="<%= (@property_types || []).to_json %>">
           <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Tipo de Imóvel</label>
           <div class="relative">
             <i class="bi bi-building absolute left-3 top-3 text-gray-400 z-10"></i>
             <%= f.text_field :category, 
                 value: params[:category],
                 placeholder: "Todos os tipos",
-                data: { autocomplete_target: "input", action: "input->autocomplete#search focus->autocomplete#focus" },
+                data: { autocomplete_target: "input", action: "input->autocomplete#search focus->autocomplete#focus click->autocomplete#toggle" },
                 class: "w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-lg focus:ring-1 focus:ring-blue-three focus:border-blue-three text-gray-700 text-sm font-medium placeholder-gray-400",
                 autocomplete: "off" %>
             <!-- Autocomplete Results -->
@@ -55,7 +55,7 @@
             <%= f.text_field :city, 
                 value: params[:city],
                 placeholder: "Digite o bairro ou cidade",
-                data: { autocomplete_target: "input", action: "input->autocomplete#search focus->autocomplete#focus" },
+                data: { autocomplete_target: "input", action: "input->autocomplete#search focus->autocomplete#focus click->autocomplete#toggle" },
                 class: "w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-lg focus:ring-1 focus:ring-blue-three focus:border-blue-three text-gray-700 text-sm font-medium placeholder-gray-400",
                 autocomplete: "off" %>
             <!-- Autocomplete Results -->
