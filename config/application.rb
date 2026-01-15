@@ -29,6 +29,11 @@ module SaluteImoveisV3
     config.autoload_lib(ignore: %w(assets tasks))
 
     config.hosts << "dev.notificalead.com.br"
+    config.hosts << "143.110.138.67"
+    config.hosts << "saluteimoveis.com.br"
+    config.hosts << "www.saluteimoveis.com.br"
+    config.hosts << "localhost"
+    config.hosts << "127.0.0.1"
 
     # Configuration for the application, engines, and railties goes here.
     #
