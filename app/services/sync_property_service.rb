@@ -85,7 +85,7 @@ class SyncPropertyService
       exibir_no_site_flag: hb['ExibirNoSite'] == 'Sim',
       destaque_web_flag: hb['DestaqueWeb'] == 'Sim',
       lancamento_flag: hb['Lancamento'] == 'Sim',
-      data_atualizacao_crm: Time.zone.parse(hb['DataAtualizacao']) rescue Time.current,
+      data_atualizacao_crm: (Time.zone.parse(hb['DataAtualizacao']) rescue Time.current),
       pictures: format_photos(hb['Foto'])
     }
   end
