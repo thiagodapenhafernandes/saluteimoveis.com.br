@@ -109,6 +109,16 @@ task :deploy do
   # run(:local){ say 'done' }
 end
 
+desc "Mostra os logs da aplicação (Puma) em tempo real"
+task :log do
+  command "journalctl -u puma_salute_imoveis_v3_production -f"
+end
+
+desc "Mostra os logs do Sidekiq em tempo real"
+task :'sidekiq:log' do
+  command "journalctl -u sidekiq_salute_imoveis_v3_production -f"
+end
+
 # For help in making your deploy script, see the Mina documentation:
 #
 #  - https://github.com/mina-deploy/mina/tree/master/docs
