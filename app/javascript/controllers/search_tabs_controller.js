@@ -17,11 +17,11 @@ export default class extends Controller {
   updateTabs(activeValue) {
     this.tabTargets.forEach(tab => {
       if (tab.dataset.value === activeValue) {
-        tab.classList.remove('text-gray-600', 'hover:text-blue-three')
-        tab.classList.add('bg-golden-one', 'text-white', 'shadow-sm')
+        tab.classList.remove('text-gray-600', 'hover:text-blue-three', 'bg-transparent')
+        tab.classList.add('bg-hero-button', 'text-hero-button-text', 'shadow-sm')
       } else {
-        tab.classList.add('text-gray-600', 'hover:text-blue-three')
-        tab.classList.remove('bg-golden-one', 'text-white', 'shadow-sm')
+        tab.classList.add('text-gray-600', 'hover:text-blue-three', 'bg-transparent')
+        tab.classList.remove('bg-hero-button', 'text-hero-button-text', 'shadow-sm')
       }
     })
   }
