@@ -1,3 +1,45 @@
+<%
+  cadastro_categories = {
+    "apartamentos" => ["Apartamento", "Cobertura", "Loft", "Studio"],
+    "comerciais_industriais" => ["Sala Comercial", "Loja", "Prédio Comercial", "Galpão", "Galpão Industrial", "Área", "Casa comercial", "Condomínio Industrial", "Ponto Comercial", "Salas/Conjuntos"],
+    "empreendimento" => ["Empreendimento"],
+    "imoveis_residenciais" => ["Casa", "Casa em Condomínio", "Sobrado", "Rural", "Condomínio", "Chácara", "Sítio"],
+    "terrenos" => ["Terreno", "Terreno em Condomínio", "Área", "Terreno Comercial", "Terreno Industrial"]
+  }
+  cadastro_tipo_by_type = {
+    "empreendimento" => "Empreendimento",
+    "apartamentos" => "Unitário",
+    "comerciais_industriais" => "Unitário",
+    "imoveis_residenciais" => "Unitário",
+    "terrenos" => "Unitário"
+  }
+  cadastro_type_labels = {
+    "apartamentos" => "Apartamentos",
+    "comerciais_industriais" => "Comerciais e Industriais",
+    "empreendimento" => "Empreendimento",
+    "imoveis_residenciais" => "Imóveis Residenciais",
+    "terrenos" => "Terrenos"
+  }
+  inferred_cadastro_type =
+    if habitation.tipo == "Empreendimento"
+      "empreendimento"
+    else
+      cadastro_categories.find { |_key, values| values.include?(habitation.categoria) }&.first || "imoveis_residenciais"
+    end
+  show_development_context = habitation.codigo_empreendimento.present? || habitation.constructor_id.present? || habitation.tipo == "Empreendimento"
+  development_lookup = @developments.each_with_object({}) do |development, hash|
+    hash[development.codigo.to_s] = {
+      nome_empreendimento: development.nome_empreendimento.to_s,
+      constructor_id: development.constructor_id&.to_s,
+      edit_url: edit_admin_habitation_path(development)
+    }
+  end
+%>
+<div data-controller="attribute-manager habitation-form"
+     data-attribute-manager-modal-id-value="attributeManagerModal"
+     data-habitation-form-categories-by-type-value="<%= json_escape(cadastro_categories.to_json) %>"
+     data-habitation-form-tipo-by-type-value="<%= json_escape(cadastro_tipo_by_type.to_json) %>"
+     data-habitation-form-developments-value="<%= json_escape(development_lookup.to_json) %>">
 <%= form_with(model: [:admin, habitation], local: true, class: "needs-validation", style: "min-height: 80vh;") do |f| %>
   <% if habitation.errors.any? %>
     <div class="alert alert-danger shadow-sm border-0 mb-4">
@@ -11,405 +53,893 @@
   <% end %>
 
   <!-- Navigation Tabs -->
-  <ul class="nav nav-pills mb-4 gap-2" id="habitationTabs" role="tablist">
-    <li class="nav-item" role="presentation">
-      <button class="nav-link active" id="general-tab" data-bs-toggle="pill" data-bs-target="#general" type="button" role="tab" aria-selected="true">
-        <i class="bi bi-house-door me-2"></i>Geral
-      </button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="details-tab" data-bs-toggle="pill" data-bs-target="#details" type="button" role="tab" aria-selected="false">
-        <i class="bi bi-grid-3x3 me-2"></i>Detalhes & Áreas
-      </button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="financial-tab" data-bs-toggle="pill" data-bs-target="#financial" type="button" role="tab" aria-selected="false">
-        <i class="bi bi-currency-dollar me-2"></i>Financeiro
-      </button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="features-tab" data-bs-toggle="pill" data-bs-target="#features" type="button" role="tab" aria-selected="false">
-        <i class="bi bi-tags me-2"></i>Características
-      </button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="media-tab" data-bs-toggle="pill" data-bs-target="#media" type="button" role="tab" aria-selected="false">
-        <i class="bi bi-images me-2"></i>Mídia
-      </button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="seo-tab" data-bs-toggle="pill" data-bs-target="#seo" type="button" role="tab" aria-selected="false">
-        <i class="bi bi-google me-2"></i>SEO & Controle
-      </button>
-    </li>
-  </ul>
+  <div class="border-bottom mb-4">
+    <ul class="nav nav-tabs border-0 gap-3" id="habitationTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active border-0 bg-transparent py-2 px-1 fw-bold text-primary border-bottom border-2 border-primary" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab" aria-selected="true">
+          <i class="bi bi-house-door me-2"></i>Visão geral
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link border-0 bg-transparent py-2 px-1 text-muted" id="features-tab" data-bs-toggle="tab" data-bs-target="#features" type="button" role="tab" aria-selected="false">
+          <i class="bi bi-tags me-2"></i>Características
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link border-0 bg-transparent py-2 px-1 text-muted" id="infra-tab" data-bs-toggle="tab" data-bs-target="#infra" type="button" role="tab" aria-selected="false">
+          <i class="bi bi-building me-2"></i>Infraestrutura
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link border-0 bg-transparent py-2 px-1 text-muted" id="comercial-tab" data-bs-toggle="tab" data-bs-target="#comercial" type="button" role="tab" aria-selected="false">
+          <i class="bi bi-briefcase me-2"></i>Comercial
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link border-0 bg-transparent py-2 px-1 text-muted" id="media-tab" data-bs-toggle="tab" data-bs-target="#media" type="button" role="tab" aria-selected="false">
+          <i class="bi bi-images me-2"></i>Mídia
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link border-0 bg-transparent py-2 px-1 text-muted" id="seo-tab" data-bs-toggle="tab" data-bs-target="#seo" type="button" role="tab" aria-selected="false">
+          <i class="bi bi-google me-2"></i>SEO & Controle
+        </button>
+      </li>
+    </ul>
+  </div>
+
+  <style>
+    /* Custom Tab Styles for "Modern UI" */
+    #habitationTabs .nav-link {
+        font-size: 0.9rem;
+        transition: all 0.2s;
+        color: #6c757d; /* text-muted */
+        border-bottom: 2px solid transparent !important;
+    }
+    #habitationTabs .nav-link:hover {
+        color: var(--bs-primary);
+    }
+    #habitationTabs .nav-link.active {
+        color: var(--bs-primary) !important;
+        border-bottom: 2px solid var(--bs-primary) !important;
+        font-weight: bold;
+    }
+  </style>
 
   <!-- Tab Content -->
   <div class="tab-content" id="habitationTabsContent">
     
-    <!-- Tab: Geral -->
+    <!-- Tab: Visão Geral -->
     <div class="tab-pane fade show active" id="general" role="tabpanel" aria-labelledby="general-tab">
-      <div class="row g-4">
-        <!-- Identificação -->
-        <div class="col-lg-12">
-          <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white py-3 border-bottom-0">
-              <h6 class="card-title fw-bold text-primary mb-0"><i class="bi bi-info-circle me-2"></i>Identificação do Imóvel</h6>
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="form-section mb-3">
+            <div class="form-section-header">
+              <i class="bi bi-card-list"></i> Identificação e Sinalizadores
             </div>
-            <div class="card-body">
-              <div class="row g-3">
-                <div class="col-md-8">
-                  <%= f.label :titulo_anuncio, "Título do Anúncio", class: "form-label fw-bold" %>
-                  <%= f.text_field :titulo_anuncio, class: "form-control form-control-lg", placeholder: "Ex: Mansão Suspensa Frente Mar" %>
+            <div class="row g-3 align-items-end mb-2">
+              <div class="col-md-2">
+                <%= f.label :codigo, "Referência:", class: "form-label fw-bold mb-1" %>
+                <%= f.text_field :codigo, class: "form-control form-control-sm bg-light", readonly: f.object.persisted? %>
+              </div>
+              <div class="col-md-2">
+                <%= f.label :codigo_dwv, "Cód. DWV:", class: "form-label fw-bold mb-1" %>
+                <%= f.text_field :codigo_dwv, class: "form-control form-control-sm" %>
+              </div>
+              <div class="col-md-3">
+                <div class="row g-2">
+                  <div class="col-6">
+                    <label class="form-label small text-muted mb-0">Cadastro:</label>
+                    <input type="text" class="form-control form-control-sm bg-light" value="<%= f.object.data_cadastro_crm&.strftime("%d/%m/%Y") %>" readonly>
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small text-muted mb-0">Atualização:</label>
+                    <input type="text" class="form-control form-control-sm bg-light" value="<%= (f.object.data_atualizacao_crm || f.object.updated_at)&.strftime("%d/%m/%Y") %>" readonly>
+                  </div>
                 </div>
-                <div class="col-md-2">
-                   <%= f.label :codigo, "Código", class: "form-label" %>
-                   <%= f.text_field :codigo, class: "form-control", placeholder: "AUTO", readonly: f.object.persisted? %>
-                </div>
-                <div class="col-md-2">
-                  <%= f.label :status, "Status", class: "form-label" %>
-                  <%= f.select :status, ["Em Venda", "Em Locação", "Venda e Locação", "Vendido", "Locado"], {}, class: "form-select border-primary" %>
-                </div>
-
-                <div class="col-md-4">
-                  <%= f.label :categoria, "Categoria", class: "form-label" %>
-                  <%= f.select :categoria, @categories, { include_blank: true }, 
-                      data: { controller: "tom-select", tom_select_create_value: true }, 
-                      class: "form-select", placeholder: "Selecione ou digite..." %>
-                </div>
-                <div class="col-md-4">
-                   <%= f.label :nome_empreendimento, "Nome do Empreendimento", class: "form-label" %>
-                   <%= f.text_field :nome_empreendimento, class: "form-control" %>
-                </div>
-                 <div class="col-md-4">
-                  <%= f.label :construtora, "Construtora", class: "form-label" %>
-                  <%= f.select :construtora, @constructors, { include_blank: true },
-                      data: { controller: "tom-select", tom_select_create_value: true },
-                      class: "form-select", placeholder: "Selecione ou digite..." %>
+              </div>
+            </div>
+            <div class="row g-2">
+              <div class="col-12">
+                <div class="d-flex flex-wrap gap-2 pb-1">
+                  <label class="custom-checkbox-card">
+                    <%= f.check_box :exibir_no_site_flag, class: "form-check-input mt-0" %>
+                    <span class="small fw-semibold">Exibir no site</span>
+                  </label>
+                  <label class="custom-checkbox-card">
+                    <%= f.check_box :destaque_web_flag, class: "form-check-input mt-0" %>
+                    <span class="small fw-semibold">Destaque Web</span>
+                  </label>
+                  <label class="custom-checkbox-card">
+                    <%= f.check_box :festival_salute_flag, class: "form-check-input mt-0" %>
+                    <span class="small fw-semibold">Super Destaque</span>
+                  </label>
+                  <label class="custom-checkbox-card">
+                    <%= f.check_box :lancamento_flag, class: "form-check-input mt-0" %>
+                    <span class="small fw-semibold">Lançamento</span>
+                  </label>
+                  <label class="custom-checkbox-card">
+                    <%= f.check_box :tem_placa_flag, class: "form-check-input mt-0" %>
+                    <span class="small fw-semibold">Tem Placa</span>
+                  </label>
+                  <label class="custom-checkbox-card">
+                    <%= f.check_box :exclusivo_flag, class: "form-check-input mt-0" %>
+                    <span class="small fw-semibold">Exclusivo</span>
+                  </label>
+                  <label class="custom-checkbox-card">
+                    <%= f.check_box :imovel_dwv, { class: "form-check-input mt-0" }, "Sim", "Não" %>
+                    <span class="small fw-semibold">Imóvel DWV</span>
+                  </label>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Localização -->
-        <div class="col-lg-12">
-          <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white py-3 border-bottom-0">
-               <h6 class="card-title fw-bold text-primary mb-0"><i class="bi bi-geo-alt me-2"></i>Localização</h6>
+          <div class="form-section mb-3">
+            <div class="form-section-header">
+              <i class="bi bi-sliders"></i> Definições Básicas
             </div>
-            <div class="card-body">
-              <div class="row g-3">
-                <div class="col-md-2">
-                   <%= f.label :cep, "CEP", class: "form-label" %>
-                   <%= f.text_field :cep, class: "form-control", data: { controller: "mask", mask_type_value: "cep" } %>
-                </div>
-                <div class="col-md-6">
-                   <%= f.label :endereco, "Logradouro", class: "form-label" %>
-                   <%= f.text_field :endereco, class: "form-control" %>
-                </div>
-                <div class="col-md-2">
-                   <%= f.label :numero, "Número", class: "form-label" %>
-                   <%= f.text_field :numero, class: "form-control" %>
-                </div>
-                <div class="col-md-2">
-                   <%= f.label :complemento, "Complemento", class: "form-label" %>
-                   <%= f.text_field :complemento, class: "form-control" %>
+            <div class="row g-2 mb-0">
+              <div class="col-md-3">
+                <label class="form-label small fw-bold mb-1">Tipo de cadastro:</label>
+                <%= select_tag :ui_cadastro_type,
+                    options_for_select(cadastro_type_labels.map { |k, v| [v, k] }, inferred_cadastro_type),
+                    class: "form-select form-select-sm",
+                    data: {
+                      controller: "tom-select",
+                      habitation_form_target: "cadastroType",
+                      action: "change->habitation-form#cadastroTypeChanged"
+                    } %>
+                <%= f.hidden_field :tipo, value: (f.object.tipo.presence || cadastro_tipo_by_type[inferred_cadastro_type]), data: { habitation_form_target: "tipo" } %>
+              </div>
+              <div class="col-md-2">
+                <%= f.label :categoria, "Categoria:", class: "form-label small fw-bold mb-1" %>
+                <%= f.select :categoria, (@categories.presence || Habitation::CATEGORIES), { include_blank: true },
+                    data: { controller: "tom-select", tom_select_create_value: true, placeholder: "Selecione...", habitation_form_target: "category" },
+                    class: "form-select form-select-sm" %>
+              </div>
+              <div class="col-md-2">
+                <%= f.label :status, "Status:", class: "form-label small fw-bold mb-1" %>
+                <%= f.select :status, Habitation::STATUS_OPTIONS, { include_blank: true },
+                    class: "form-select form-select-sm", data: { controller: "tom-select", placeholder: "Selecione..." } %>
+              </div>
+              <div class="col-md-2">
+                <%= f.label :situacao, "Situação:", class: "form-label small fw-bold mb-1" %>
+                <%= f.select :situacao, Habitation::SITUATIONS, { include_blank: true },
+                    class: "form-select form-select-sm", data: { controller: "tom-select", placeholder: "Selecione..." } %>
+              </div>
+              <div class="col-md-2">
+                <%= f.label :ocupacao_status, "Ocupação:", class: "form-label small fw-bold mb-1" %>
+                <%= f.select :ocupacao_status, Habitation::OCUPACAO_STATUS, { include_blank: true },
+                    class: "form-select form-select-sm" %>
+              </div>
+              <div class="col-md-2">
+                <%= f.label :estado_conservacao, "Estado:", class: "form-label small fw-bold mb-1" %>
+                <%= f.select :estado_conservacao, Habitation::ESTADO_CONSERVACAO, { include_blank: true },
+                    class: "form-select form-select-sm" %>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section mb-3">
+            <div class="form-section-header d-flex align-items-center justify-content-between">
+              <span><i class="bi bi-building"></i> Definições de Empreendimento e Construtora</span>
+              <button class="btn btn-sm btn-link text-decoration-none p-0"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#developmentContextCollapse"
+                      aria-expanded="<%= show_development_context ? 'true' : 'false' %>"
+                      aria-controls="developmentContextCollapse">
+                Abrir/fechar <i class="bi bi-chevron-down ms-1"></i>
+              </button>
+            </div>
+            <div class="collapse <%= 'show' if show_development_context %>" id="developmentContextCollapse">
+              <div class="pt-2">
+                <div class="row g-2 mb-3">
+                  <div class="col-md-5" data-habitation-form-target="unitOnly">
+                    <%= f.label :codigo_empreendimento, "Pertence ao empreendimento:", class: "form-label small fw-bold mb-1" %>
+                    <div class="input-group input-group-sm">
+                      <%= f.collection_select :codigo_empreendimento, @developments, :codigo, :nome_empreendimento, { include_blank: true },
+                          { class: "form-select form-select-sm", data: { controller: "tom-select", placeholder: "Selecione...", habitation_form_target: "developmentSelect", action: "change->habitation-form#developmentChanged" } } %>
+                      <%= link_to new_admin_habitation_path(habitation: { tipo: "Empreendimento" }),
+                          class: "btn btn-outline-secondary",
+                          title: "Cadastrar novo empreendimento",
+                          target: "_blank",
+                          rel: "noopener" do %>
+                        <i class="bi bi-plus"></i>
+                      <% end %>
+                    </div>
+                    <% linked_dev = f.object.empreendimento %>
+                    <% if f.object.codigo_empreendimento.present? %>
+                      <% if linked_dev.present? %>
+                        <div class="form-text text-success extra-small mt-1">
+                          <i class="bi bi-check-circle me-1"></i>
+                          Vínculo ativo: <strong><%= linked_dev.nome_empreendimento.presence || linked_dev.codigo %></strong>
+                        </div>
+                      <% else %>
+                        <div class="form-text text-danger extra-small mt-1">
+                          <i class="bi bi-exclamation-triangle me-1"></i>
+                          Código sem empreendimento válido. Ajuste antes de salvar.
+                        </div>
+                      <% end %>
+                    <% else %>
+                      <div class="form-text text-muted extra-small mt-1">
+                        <i class="bi bi-info-circle me-1"></i>Ao vincular uma unidade, nome do empreendimento e construtora são herdados automaticamente.
+                      </div>
+                    <% end %>
+                  </div>
+                  <div class="col-md-4" data-habitation-form-target="unitOnly">
+                    <%= f.label :nome_empreendimento, "Nome do condomínio:", class: "form-label small fw-bold mb-1" %>
+                    <%= f.text_field :nome_empreendimento, class: "form-control form-control-sm", readonly: f.object.codigo_empreendimento.present?, data: { habitation_form_target: "developmentName" } %>
+                    <div class="form-text text-muted extra-small mt-1">Campo gerenciado automaticamente para unidades vinculadas.</div>
+                  </div>
+                  <div class="col-md-3">
+                    <%= f.label :data_entrega, "Data entrega:", class: "form-label small fw-bold mb-1" %>
+                    <%= f.date_field :data_entrega, class: "form-control form-control-sm" %>
+                  </div>
                 </div>
 
-                <div class="col-md-4">
-                   <%= f.label :bairro, "Bairro", class: "form-label" %>
-                   <%= f.select :bairro, @neighborhoods, { include_blank: true },
-                       data: { controller: "tom-select", tom_select_create_value: true },
-                       class: "form-select", placeholder: "Selecione ou digite..." %>
-                </div>
-                <div class="col-md-4">
-                   <%= f.label :cidade, "Cidade", class: "form-label" %>
-                   <%= f.select :cidade, @cities, { include_blank: true },
-                       data: { controller: "tom-select", tom_select_create_value: true },
-                       class: "form-select", placeholder: "Selecione ou digite..." %>
-                </div>
-                <div class="col-md-4">
-                   <%= f.label :uf, "Estado (UF)", class: "form-label" %>
-                   <%= f.select :uf, ["SC", "PR", "SP", "RS", "RJ"], { include_blank: true }, class: "form-select" %>
-                </div>
-                
-                <!-- Imediacoes as Tags (String split by commas handled by TomSelect w/ create=true) -->
-                <!-- Actually, standard is text. If user wants tags, we treat it as text_field separated by commas visually?
-                     Wait, TomSelect can do text input => tags visual.
-                     However, the backend field 'imediacoes' is likely a TEXT or STRING.
-                     If we use TomSelect with 'create: true' and 'maxItems: null', it submits an array or CSV.
-                     Since DB is text, let's use comma-separated string behavior of TomSelect which is default for input[type=text].
-                -->
-                <div class="col-md-12">
-                   <%= f.label :imediacoes, "Imediações / Pontos de Referência (Tags)", class: "form-label" %>
-                   <%= f.text_field :imediacoes, 
-                       class: "form-control", 
-                       placeholder: "Digite e Enter...",
-                       data: { controller: "tom-select", tom_select_tags_value: true } %>
-                   <small class="text-muted">Adicione pontos de referência próximos.</small>
+                <div class="row g-2">
+                  <div class="col-md-5">
+                    <%= f.label :constructor_id, "Construtora:", class: "form-label small fw-bold mb-1" %>
+                    <%= f.collection_select :constructor_id, @constructors, :id, :name, { include_blank: "Selecione..." }, {
+                        class: "form-select form-select-sm",
+                        data: { habitation_form_target: "constructorSelect", controller: "tom-select", placeholder: "Selecione..." }
+                    } %>
+                    <div class="alert alert-warning py-2 px-3 small mt-2 d-none"
+                         data-habitation-form-target="missingConstructorAlert">
+                      <i class="bi bi-exclamation-triangle me-1"></i>
+                      Este empreendimento não possui construtora/incorporadora vinculada.
+                      <button type="button"
+                              class="btn btn-link btn-sm p-0 ms-1 align-baseline"
+                              data-bs-toggle="modal"
+                              data-bs-target="#quickAddConstructorModal">
+                        Cadastrar agora
+                      </button>
+                      <a href="#"
+                         class="ms-2"
+                         target="_blank"
+                         rel="noopener"
+                         data-habitation-form-target="developmentEditLink">
+                        Ir para empreendimento
+                      </a>
+                    </div>
+                    <div class="d-flex gap-2 mt-2">
+                      <button type="button" class="btn btn-outline-primary btn-sm"
+                              data-bs-toggle="modal" data-bs-target="#quickAddConstructorModal">
+                        <i class="bi bi-plus-lg me-1"></i>Nova construtora
+                      </button>
+                    </div>
+                    <% if f.object.codigo_empreendimento.present? && f.object.empreendimento&.constructor_name.present? %>
+                      <div class="form-text text-muted extra-small mt-1">
+                        Herdada do empreendimento: <strong><%= f.object.empreendimento.constructor_name %></strong>.
+                      </div>
+                    <% else %>
+                      <div class="form-text text-muted extra-small mt-1">
+                        Campo opcional. Pode salvar sem construtora e vincular depois.
+                      </div>
+                    <% end %>
+                  </div>
+                  <div class="col-md-3">
+                    <%= f.label :perfil_construcao, "Perfil de construção:", class: "form-label small fw-bold mb-1" %>
+                    <%= f.select :perfil_construcao, Habitation::CONSTRUCTION_PROFILES, { include_blank: true }, class: "form-select form-select-sm" %>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Descrição -->
-        <div class="col-lg-12">
-          <div class="card border-0 shadow-sm">
-             <div class="card-header bg-white py-3 border-bottom-0">
-                <h6 class="card-title fw-bold text-primary mb-0"><i class="bi bi-file-text me-2"></i>Descrição no Site</h6>
-             </div>
-             <div class="card-body">
-                <%= f.rich_text_area :descricao_web, class: "form-control", style: "min-height: 200px;", placeholder: "Descreva os detalhes do imóvel..." %>
-             </div>
+          <!-- Section: Endereço e Localização -->
+          <div class="form-section">
+            <div class="form-section-header">
+              <i class="bi bi-geo-alt"></i> Endereço e Localização
+            </div>
+          <%= f.fields_for :address do |address_form| %>
+            <div data-controller="cep-search">
+            <div class="row g-2 mb-3">
+              <div class="col-md-2">
+                <%= address_form.label :tipo_endereco, "Endereço:", class: "form-label small fw-bold mb-1" %>
+                <%= address_form.select :tipo_endereco, Habitation::STREET_TYPES, { include_blank: true }, class: "form-select form-select-sm", data: { cep_search_target: "tipo" } %>
+              </div>
+              <div class="col-md-5">
+                <%= address_form.label :logradouro, "Logradouro:", class: "form-label small fw-bold mb-1" %>
+                <%= address_form.text_field :logradouro, class: "form-control form-control-sm", placeholder: "Rua, Av...", data: { cep_search_target: "logradouro" } %>
+              </div>
+              <div class="col-md-1">
+                <%= address_form.label :numero, "Nº:", class: "form-label small fw-bold mb-1" %>
+                <%= address_form.text_field :numero, class: "form-control form-control-sm", data: { cep_search_target: "numero" } %>
+              </div>
+              <div class="col-md-2">
+                <%= address_form.label :complemento, "Compl.:", class: "form-label small fw-bold mb-1" %>
+                <%= address_form.text_field :complemento, class: "form-control form-control-sm", data: { cep_search_target: "complemento" } %>
+              </div>
+              <div class="col-md-1">
+                <%= address_form.label :uf, "UF:", class: "form-label small fw-bold mb-1" %>
+                <%= address_form.select :uf, Habitation::UF_OPTIONS, { include_blank: true }, class: "form-select form-select-sm", data: { cep_search_target: "uf" } %>
+              </div>
+              <div class="col-md-2">
+                <%= address_form.label :cep, "CEP:", class: "form-label small fw-bold mb-1" %>
+                <div class="input-group input-group-sm">
+                  <%= address_form.text_field :cep, class: "form-control form-control-sm",
+                      data: { controller: "mask", mask_type_value: "cep", cep_search_target: "cep", action: "blur->cep-search#search" } %>
+                  <button class="btn btn-primary" type="button" data-action="cep-search#search">
+                    <i class="bi bi-search"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="row g-2 mb-3">
+              <div class="col-md-3">
+                <%= address_form.label :bairro, "Bairro:", class: "form-label small fw-bold mb-1" %>
+                <%= address_form.select :bairro, @neighborhoods, { include_blank: true, selected: address_form.object.bairro },
+                    data: { controller: "tom-select", tom_select_create_value: true, cep_search_target: "bairro" },
+                    class: "form-select form-select-sm" %>
+              </div>
+              <div class="col-md-2">
+                <%= address_form.label :bairro_comercial, "Bairro comercial:", class: "form-label small fw-bold mb-1" %>
+                <%= address_form.text_field :bairro_comercial, class: "form-control form-control-sm" %>
+              </div>
+              <div class="col-md-3">
+                <%= address_form.label :cidade, "Cidade:", class: "form-label small fw-bold mb-1" %>
+                <%= address_form.select :cidade, @cities, { include_blank: true, selected: address_form.object.cidade },
+                    data: { controller: "tom-select", tom_select_create_value: true, cep_search_target: "cidade" },
+                    class: "form-select form-select-sm" %>
+              </div>
+              <div class="col-md-1">
+                <%= f.label :bloco, "Bloco:", class: "form-label small fw-bold mb-1" %>
+                <%= f.text_field :bloco, class: "form-control form-control-sm" %>
+              </div>
+              <div class="col-md-3">
+                <%= address_form.label :imediacoes, "Imediações:", class: "form-label small fw-bold mb-1" %>
+                <% selected_imediacoes = case address_form.object.imediacoes
+                   when String then address_form.object.imediacoes.split(/[,\n;]+/)
+                   else Array(address_form.object.imediacoes)
+                   end.flatten.compact.map(&:to_s).map(&:strip).reject(&:blank?).uniq %>
+                <% imediacoes_options = (@imediacoes_options.to_a + selected_imediacoes).uniq %>
+                <div class="d-flex align-items-stretch gap-1">
+                  <div class="flex-grow-1">
+                    <%= address_form.select :imediacoes, options_for_select(imediacoes_options, selected_imediacoes), {}, {
+                        id: "address-imediacoes-tags",
+                        multiple: true,
+                        class: "form-select form-select-sm",
+                        data: { controller: "tom-select", tom_select_tags_value: true }
+                    } %>
+                  </div>
+                  <button type="button"
+                          class="btn btn-outline-primary btn-sm px-2"
+                          title="Gerenciar Imediações"
+                          aria-label="Gerenciar Imediações"
+                          data-attribute-manager-context-value="habitation"
+                          data-attribute-manager-category-value="imediacoes"
+                          data-attribute-manager-field-name-value="habitation[address_attributes][imediacoes][]"
+                          data-attribute-manager-modal-id-value="attributeManagerModal"
+                          data-action="click->attribute-manager#open"
+                          data-title="Gerenciar Imediações"
+                          data-select-id="address-imediacoes-tags">
+                    <i class="bi bi-gear"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          <% end %>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Tab: Detalhes -->
-    <div class="tab-pane fade" id="details" role="tabpanel" aria-labelledby="details-tab">
-       <div class="row g-4">
-          <!-- Áreas -->
-          <div class="col-lg-6">
-             <div class="card border-0 shadow-sm h-100">
-               <div class="card-header bg-white py-3 border-bottom-0">
-                 <h6 class="card-title fw-bold text-primary mb-0"><i class="bi bi-rulers me-2"></i>Metragens (m²)</h6>
-               </div>
-               <div class="card-body">
-                 <div class="row g-3">
-                   <div class="col-6">
-                     <%= f.label :area_privativa_m2, "Privativa", class: "form-label" %>
-                     <%= f.number_field :area_privativa_m2, step: :any, class: "form-control" %>
-                   </div>
-                   <div class="col-6">
-                     <%= f.label :area_total_m2, "Total", class: "form-label" %>
-                     <%= f.number_field :area_total_m2, step: :any, class: "form-control" %>
-                   </div>
-                   <div class="col-6">
-                     <%= f.label :area_util_m2, "Útil", class: "form-label" %>
-                     <%= f.number_field :area_util_m2, step: :any, class: "form-control" %>
-                   </div>
-                   <div class="col-6">
-                     <%= f.label :area_terreno_m2, "Terreno", class: "form-label" %>
-                     <%= f.number_field :area_terreno_m2, step: :any, class: "form-control" %>
-                   </div>
-                 </div>
-               </div>
-             </div>
           </div>
 
-          <!-- Cômodos -->
-          <div class="col-lg-6">
-             <div class="card border-0 shadow-sm h-100">
-               <div class="card-header bg-white py-3 border-bottom-0">
-                 <h6 class="card-title fw-bold text-primary mb-0"><i class="bi bi-door-open me-2"></i>Cômodos & Estrutura</h6>
-               </div>
-               <div class="card-body">
-                 <div class="row g-3">
-                   <div class="col-4">
-                     <%= f.label :dormitorios_qtd, "Dormitórios", class: "form-label" %>
-                     <%= f.number_field :dormitorios_qtd, class: "form-control" %>
-                   </div>
-                   <div class="col-4">
-                     <%= f.label :suites_qtd, "Suítes", class: "form-label" %>
-                     <%= f.number_field :suites_qtd, class: "form-control" %>
-                   </div>
-                   <div class="col-4">
-                     <%= f.label :vagas_qtd, "Vagas", class: "form-label" %>
-                     <%= f.number_field :vagas_qtd, class: "form-control" %>
-                   </div>
-                   <div class="col-4">
-                     <%= f.label :banheiros_qtd, "Banheiros", class: "form-label" %>
-                     <%= f.number_field :banheiros_qtd, class: "form-control" %>
-                   </div>
-                   <div class="col-4">
-                     <%= f.label :lavabo_flag, "Lavabo?", class: "form-label d-block text-transparent" %>
-                     <div class="form-check form-switch pt-1">
-                        <%= f.check_box :lavabo_flag, class: "form-check-input" %>
-                        <%= f.label :lavabo_flag, "Sim", class: "form-check-label" %>
-                     </div>
-                   </div>
-                 </div>
-               </div>
-             </div>
-          </div>
-
-          <!-- Outros -->
-          <div class="col-lg-12">
-             <div class="card border-0 shadow-sm">
-               <div class="card-header bg-white py-3 border-bottom-0">
-                 <h6 class="card-title fw-bold text-primary mb-0"><i class="bi bi-building me-2"></i>Dados do Edifício</h6>
-               </div>
-               <div class="card-body">
-                 <div class="row g-3">
-                   <div class="col-md-3">
-                     <%= f.label :data_entrega, "Data Entrega/Previsão", class: "form-label" %>
-                     <%= f.date_field :data_entrega, class: "form-control" %>
-                   </div>
-                   <div class="col-md-3">
-                     <%= f.label :aptos_andar, "Aptos/Andar", class: "form-label" %>
-                     <%= f.number_field :aptos_andar, class: "form-control" %>
-                   </div>
-                   <div class="col-md-3">
-                     <%= f.label :andares, "Total Andares", class: "form-label" %>
-                     <%= f.number_field :aptos_edificio, class: "form-control", title: "Usando campo aptos_edificio para Total Andares se aplicável" %>
-                   </div>
-                   <div class="col-md-3">
-                     <%= f.label :elevadores_qtd, "Elevadores", class: "form-label" %>
-                     <%= f.number_field :elevadores_qtd, class: "form-control" %>
-                   </div>
-                 </div>
-               </div>
-             </div>
-          </div>
-       </div>
-    </div>
-
-    <!-- Tab: Financeiro -->
-    <div class="tab-pane fade" id="financial" role="tabpanel" aria-labelledby="financial-tab">
-      <div class="row g-4">
-        <div class="col-lg-6">
-           <div class="card border-0 shadow-sm h-100">
-             <div class="card-header bg-white py-3 border-bottom-0">
-               <h6 class="card-title fw-bold text-primary mb-0"><i class="bi bi-cash-stack me-2"></i>Valores Principais (Em Centavos)</h6>
-             </div>
-             <div class="card-body">
-               <div class="mb-3">
-                 <%= f.label :valor_venda_formatted, "Valor de Venda", class: "form-label fw-bold" %>
-                 <div class="input-group">
-                   <span class="input-group-text">R$</span>
-                   <%= f.text_field :valor_venda_formatted, class: "form-control form-control-lg", 
-                       placeholder: "0,00",
-                       data: { controller: "mask", mask_type_value: "currency" } %>
-                 </div>
-               </div>
-               <div class="mb-3">
-                 <%= f.label :valor_locacao_formatted, "Valor de Locação", class: "form-label" %>
-                 <div class="input-group">
-                   <span class="input-group-text">R$</span>
-                   <%= f.text_field :valor_locacao_formatted, class: "form-control",
-                       placeholder: "0,00",
-                       data: { controller: "mask", mask_type_value: "currency" } %>
-                 </div>
-               </div>
-                <div class="mb-3">
-                 <%= f.label :valor_promocional_formatted, "Valor Promocional", class: "form-label" %>
-                 <div class="input-group">
-                   <span class="input-group-text">R$</span>
-                   <%= f.text_field :valor_promocional_formatted, class: "form-control",
-                       placeholder: "0,00",
-                       data: { controller: "mask", mask_type_value: "currency" } %>
-                 </div>
-                <div class="mb-3">
-                  <%= f.label :valor_por_m2_formatted, "Valor por m²", class: "form-label" %>
-                  <div class="input-group">
-                    <span class="input-group-text">R$</span>
-                    <%= f.text_field :valor_por_m2_formatted, class: "form-control",
-                        placeholder: "0,00",
-                        data: { controller: "mask", mask_type_value: "currency" } %>
+          <!-- Section: Rooms & Features -->
+          <div class="form-section">
+            <div class="form-section-header">
+              <i class="bi bi-grid-1x2"></i> DIMENSÕES & ESTRUTURA FÍSICA
+            </div>
+            
+            <!-- Row 6: Cômodos -->
+          <div class="row g-2 mb-3">
+            <div class="col-md-1">
+              <%= f.label :andar, "Andar:", class: "form-label small fw-bold mb-1" %>
+              <%= f.number_field :andar, class: "form-control form-control-sm" %>
+            </div>
+            <div class="col-md-1">
+              <%= f.label :dormitorios_qtd, "Dorm.:", class: "form-label small fw-bold mb-1" %>
+              <%= f.number_field :dormitorios_qtd, class: "form-control form-control-sm" %>
+            </div>
+            <div class="col-md-1">
+              <%= f.label :suites_qtd, "Suítes:", class: "form-label small fw-bold mb-1" %>
+              <%= f.number_field :suites_qtd, class: "form-control form-control-sm" %>
+            </div>
+            <div class="col-md-1">
+              <%= f.label :demi_suites_qtd, "Demi:", class: "form-label small fw-bold mb-1" %>
+              <%= f.number_field :demi_suites_qtd, class: "form-control form-control-sm" %>
+            </div>
+            <div class="col-md-1">
+              <%= f.label :salas_qtd, "Salas:", class: "form-label small fw-bold mb-1" %>
+              <%= f.number_field :salas_qtd, class: "form-control form-control-sm" %>
+            </div>
+            <div class="col-md-1">
+              <%= f.label :varandas_qtd, "Varanda:", class: "form-label small fw-bold mb-1" %>
+              <%= f.number_field :varandas_qtd, class: "form-control form-control-sm" %>
+            </div>
+            <div class="col-md-1">
+              <%= f.label :banheiros_qtd, "Banh.:", class: "form-label small fw-bold mb-1" %>
+              <%= f.number_field :banheiros_qtd, class: "form-control form-control-sm" %>
+            </div>
+            <div class="col-md-1">
+              <%= f.label :hidromassagem_qtd, "Hidro:", class: "form-label small fw-bold mb-1" %>
+              <%= f.number_field :hidromassagem_qtd, class: "form-control form-control-sm" %>
+            </div>
+            
+            <!-- Parking Group -->
+            <div class="col-md-4">
+              <div class="bg-light border rounded p-2 h-100">
+                <div class="row g-2">
+                  <div class="col-md-6">
+                    <%= f.label :tipo_vaga, "Tipo Vaga:", class: "form-label small fw-bold mb-1" %>
+                    <%= f.select :tipo_vaga, Habitation::VAGA_TYPES, { include_blank: true }, class: "form-select form-select-sm" %>
+                  </div>
+                  <div class="col-md-3">
+                    <%= f.label :vagas_qtd, "Vagas:", class: "form-label small fw-bold mb-1" %>
+                    <%= f.number_field :vagas_qtd, class: "form-control form-control-sm" %>
+                  </div>
+                  <div class="col-md-3">
+                    <%= f.label :numero_box, "Box:", class: "form-label small fw-bold mb-1" %>
+                    <%= f.text_field :numero_box, class: "form-control form-control-sm" %>
                   </div>
                 </div>
-               </div>
-             </div>
-           </div>
-        </div>
-        
-        <div class="col-lg-6">
-           <div class="card border-0 shadow-sm h-100">
-             <div class="card-header bg-white py-3 border-bottom-0">
-               <h6 class="card-title fw-bold text-primary mb-0"><i class="bi bi-wallet2 me-2"></i>Taxas e Condições</h6>
-             </div>
-             <div class="card-body">
-                <div class="row g-3">
-                  <div class="col-6">
-                    <%= f.label :valor_condominio_formatted, "Condomínio", class: "form-label" %>
-                     <div class="input-group">
-                       <span class="input-group-text">R$</span>
-                       <%= f.text_field :valor_condominio_formatted, class: "form-control",
-                           placeholder: "0,00",
-                           data: { controller: "mask", mask_type_value: "currency" } %>
-                     </div>
-                  </div>
-                  <div class="col-6">
-                    <%= f.label :valor_iptu_formatted, "IPTU", class: "form-label" %>
-                     <div class="input-group">
-                       <span class="input-group-text">R$</span>
-                       <%= f.text_field :valor_iptu_formatted, class: "form-control",
-                           placeholder: "0,00",
-                           data: { controller: "mask", mask_type_value: "currency" } %>
-                     </div>
-                  </div>
-                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Row 6b: Áreas & Terreno (Moved from Financial) -->
+          <div class="row g-2 mb-3">
+             <div class="col-md-2">
+              <%= f.label :area_privativa_m2, "Área privativa:", class: "form-label small fw-bold mb-1" %>
+              <div class="input-group input-group-sm">
+                <%= f.number_field :area_privativa_m2, step: :any, class: "form-control form-control-sm" %>
+                 <span class="input-group-text">m²</span>
+              </div>
+            </div>
+            <div class="col-md-2">
+              <%= f.label :area_total_m2, "Área total:", class: "form-label small fw-bold mb-1" %>
+              <div class="input-group input-group-sm">
+                <%= f.number_field :area_total_m2, step: :any, class: "form-control form-control-sm" %>
+                <span class="input-group-text">m²</span>
+              </div>
+            </div>
+            <div class="col-md-2">
+              <%= f.label :area_terreno_m2, "Área terreno:", class: "form-label small fw-bold mb-1" %>
+              <div class="input-group input-group-sm">
+                 <%= f.number_field :area_terreno_m2, step: :any, class: "form-control form-control-sm" %>
+                 <span class="input-group-text">m²</span>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <%= f.label :dimensoes_terreno, "Dimensões Terreno:", class: "form-label small fw-bold mb-1" %>
+              <%= f.text_field :dimensoes_terreno, class: "form-control form-control-sm", placeholder: "Ex: 12x30" %>
+            </div>
+            <div class="col-md-3">
+              <%= f.label :topografia, "Topografia:", class: "form-label small fw-bold mb-1" %>
+              <%= f.select :topografia, Habitation::TOPOGRAFIA_OPTIONS, { include_blank: true }, class: "form-select form-select-sm" %>
+            </div>
+          </div>
+          </div>
 
-                <hr class="my-4">
-                
-                <h6 class="fw-bold fs-7 text-muted mb-3">Condições Aceitas</h6>
-                <div class="d-flex gap-3 flex-wrap">
-                  <div class="custom-checkbox-card">
-                    <%= f.check_box :aceita_financiamento_flag, class: "form-check-input" %>
-                    <%= f.label :aceita_financiamento_flag, "Financiamento", class: "form-check-label" %>
-                  </div>
-                  <div class="custom-checkbox-card">
-                    <%= f.check_box :aceita_permuta_flag, class: "form-check-input" %>
-                    <%= f.label :aceita_permuta_flag, "Permuta", class: "form-check-label" %>
-                  </div>
-                </div>
-             </div>
-           </div>
+          <!-- Section: Financial -->
+          <div class="form-section" data-controller="rent-calculator">
+            <div class="form-section-header">
+              <i class="bi bi-currency-dollar"></i> FINANCEIRO & VALORES
+            </div>
+
+          <!-- Row 7: Financeiro -->
+          <div class="row g-2 mb-3">
+            <div class="col-md-3">
+              <%= f.label :valor_venda_formatted, "Venda:", class: "form-label small fw-bold mb-1" %>
+              <div class="input-group input-group-sm">
+                <span class="input-group-text">R$</span>
+                <%= f.text_field :valor_venda_formatted, class: "form-control form-control-sm", data: { controller: "mask", mask_type_value: "currency" } %>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <%= f.label :valor_locacao_formatted, "Aluguel:", class: "form-label small fw-bold mb-1" %>
+              <div class="input-group input-group-sm">
+                <span class="input-group-text">R$</span>
+                <%= f.text_field :valor_locacao_formatted, class: "form-control form-control-sm", 
+                    data: { controller: "mask", mask_type_value: "currency", rent_calculator_target: "rent", action: "input->rent-calculator#calculate keyup->rent-calculator#calculate" } %>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <%= f.label :valor_condominio_formatted, "Condomínio:", class: "form-label small fw-bold mb-1" %>
+              <div class="input-group input-group-sm">
+                <span class="input-group-text">R$</span>
+                <%= f.text_field :valor_condominio_formatted, class: "form-control form-control-sm", 
+                    data: { controller: "mask", mask_type_value: "currency", rent_calculator_target: "condo", action: "input->rent-calculator#calculate keyup->rent-calculator#calculate" } %>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <%= f.label :valor_iptu_formatted, "IPTU:", class: "form-label small fw-bold mb-1" %>
+              <div class="input-group input-group-sm">
+                <span class="input-group-text">R$</span>
+                <%= f.text_field :valor_iptu_formatted, class: "form-control form-control-sm", 
+                    data: { controller: "mask", mask_type_value: "currency", rent_calculator_target: "iptu", action: "input->rent-calculator#calculate keyup->rent-calculator#calculate" } %>
+              </div>
+            </div>
+          </div>
+
+          <!-- Row 8: Valores M² (Indicadores) -->
+          <div class="row g-2 mb-3">
+            <div class="col-md-4">
+              <label class="form-label small fw-bold mb-1">Venda Anterior:</label>
+              <div class="input-group input-group-sm">
+                <span class="input-group-text">R$</span>
+                <input type="text" class="form-control form-control-sm bg-light" value="<%= number_to_currency(f.object.valor_venda_anterior_cents.to_i / 100.0, unit: '') %>" readonly>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <%= f.label :valor_por_m2_formatted, "Vlr M² - Venda:", class: "form-label small fw-bold mb-1" %>
+              <div class="input-group input-group-sm">
+                <span class="input-group-text">R$</span>
+                <%= f.text_field :valor_por_m2_formatted, class: "form-control form-control-sm bg-light", readonly: true %>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <%= f.label :valor_total_aluguel_cents, "*Vlr total aluguel:", class: "form-label small fw-bold mb-1" %>
+              <div class="input-group input-group-sm">
+                <span class="input-group-text">R$</span>
+                <input type="text" class="form-control form-control-sm bg-light fw-bold text-success" 
+                       value="<%= number_to_currency(f.object.valor_total_aluguel_cents.to_i / 100.0, unit: '', separator: ',', delimiter: '.') %>" 
+                       readonly 
+                       data-rent-calculator-target="total">
+              </div>
+            </div>
+          </div>
+          </div>
+
         </div>
       </div>
     </div>
 
     <!-- Tab: Características -->
     <div class="tab-pane fade" id="features" role="tabpanel" aria-labelledby="features-tab">
-       <div class="card border-0 shadow-sm mb-4">
-         <div class="card-header bg-white py-3 border-bottom-0">
-            <h6 class="card-title fw-bold text-primary mb-0"><i class="bi bi-list-check me-2"></i>Destaques & Facilidades</h6>
-         </div>
-         <div class="card-body">
-            <!-- Boolean Flags Grid -->
-             <div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
-               <% [
-                 [:mobiliado_flag, "Mobiliado"], [:sem_mobilia_flag, "Sem Mobília"], 
-                 [:decorado_flag, "Decorado"], [:piscina_flag, "Piscina Privativa"], 
-                 [:varanda_gourmet_flag, "Varanda Gourmet"], [:garden_flag, "Garden / Diferenciado"],
-                 [:quadra_mar_flag, "Quadra Mar"], [:frente_mar_avenida_atlantica_flag, "Frente Mar"],
-                 [:vista_frente_mar_flag, "Vista Mar"], [:tem_placa_flag, "Com Placa"]
-               ].each do |field, label| %>
-                 <div class="col">
-                   <div class="custom-checkbox-card w-100 h-100">
-                      <%= f.check_box field, class: "form-check-input" %>
-                      <%= f.label field, label, class: "form-check-label" %>
-                   </div>
-                 </div>
-               <% end %>
-             </div>
-             
-             <hr>
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="row g-3">
+            <div class="col-md-12">
+              <div class="bg-light border rounded p-3 mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <%= f.label :caracteristica_unica, "Destaque / Característica Única:", class: "form-label small fw-bold mb-0 bg-success text-white px-2 py-1 rounded" %>
+                  <button type="button" class="btn btn-xs btn-link text-decoration-none"
+                          data-attribute-manager-context-value="habitation"
+                          data-attribute-manager-category-value="unique_feature"
+                          data-attribute-manager-field-name-value="habitation[caracteristica_unica][]"
+                          data-attribute-manager-modal-id-value="attributeManagerModal"
+                          data-action="click->attribute-manager#open"
+                          data-title="Gerenciar Destaques"
+                          data-select-id="habitation_caracteristica_unica">
+                    <i class="bi bi-gear me-1"></i>Gerenciar
+                  </button>
+                </div>
+                <p class="small text-muted mb-2">Selecione destaques principais para exibir nos cards do site.</p>
+                <%= f.select :caracteristica_unica, @badges, { include_blank: false },
+                    multiple: true,
+                    data: { controller: "tom-select", tom_select_create_value: "false" },
+                    class: "form-select form-select-sm", placeholder: "Selecione..." %>
+              </div>
+            </div>
+            <div class="col-md-9">
+              <div class="mb-3">
+                <%= f.label :titulo_anuncio, "Título do anúncio (sites e portais):", class: "form-label small fw-bold mb-1" %>
+                <%= f.text_field :titulo_anuncio, class: "form-control form-control-sm" %>
+              </div>
+              <div class="mb-3">
+                <%= f.label :descricao_web, "Descrição do imóvel para Internet:", class: "form-label small fw-bold mb-1" %>
+                <%= f.rich_text_area :descricao_web, class: "form-control", style: "min-height: 250px;" %>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="mb-3">
+                <%= f.label :face, "Face (Posição Solar):", class: "form-label small fw-bold mb-1" %>
+                <%= f.select :face, Habitation::FACES, { include_blank: true }, class: "form-select form-select-sm" %>
+              </div>
+            </div>
+          </div>
 
-             <!-- JSONB Tag Inputs -->
-             <div class="mb-4">
-                <%= f.label :caracteristicas, "Características Gerais (Tags)", class: "form-label fw-bold" %>
-                <%= f.select :caracteristicas, f.object.caracteristicas.is_a?(Array) ? f.object.caracteristicas : [], {}, 
-                    multiple: true,
-                    data: { controller: "tom-select", tom_select_tags_value: true },
-                    class: "form-select", placeholder: "Digite e pressione Enter para adicionar..." %>
-             </div>
-             
-             <div class="mb-4">
-                <%= f.label :infra_estrutura, "Infraestrutura do Condomínio (Tags)", class: "form-label fw-bold" %>
-                <%= f.select :infra_estrutura, f.object.infra_estrutura.is_a?(Array) ? f.object.infra_estrutura : [], {}, 
-                    multiple: true,
-                    data: { controller: "tom-select", tom_select_tags_value: true },
-                    class: "form-select", placeholder: "Digite e pressione Enter para adicionar..." %>
-             </div>
-         </div>
-       </div>
+          <div class="mt-3">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <%= f.label :caracteristicas, "Mais características (Checklist):", class: "form-label small fw-bold mb-0" %>
+              <button type="button" class="btn btn-xs btn-link text-decoration-none"
+                      data-attribute-manager-context-value="habitation"
+                      data-attribute-manager-category-value="feature"
+                      data-attribute-manager-field-name-value="habitation[caracteristicas][]"
+                      data-attribute-manager-modal-id-value="attributeManagerModal"
+                      data-action="click->attribute-manager#open"
+                      data-title="Gerenciar Características Internas"
+                      data-select-id="features-checkbox-list">
+                <i class="bi bi-gear me-1"></i>Gerenciar
+              </button>
+            </div>
+            <% current_chars = f.object.caracteristicas.is_a?(Hash) ? f.object.caracteristicas.keys : Array(f.object.caracteristicas) %>
+            <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-2" id="features-checkbox-list">
+              <% @internal_features.to_a.each do |feature| %>
+                <div class="col">
+                  <label class="custom-checkbox-card w-100 h-100">
+                    <input type="checkbox" name="habitation[caracteristicas][]" value="<%= feature %>" class="form-check-input mt-0" <%= 'checked' if current_chars.include?(feature) %>>
+                    <span class="extra-small fw-semibold text-truncate ms-2" title="<%= feature %>"><%= feature %></span>
+                  </label>
+                </div>
+              <% end %>
+            </div>
+            <div class="form-text extra-small text-muted mt-1"><i class="bi bi-info-circle me-1"></i>Para ver novas opções criadas, recarregue a página após gerenciar.</div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- Tab: Mídia -->
+    <!-- Tab: Infraestrutura -->
+    <div class="tab-pane fade" id="infra" role="tabpanel" aria-labelledby="infra-tab">
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="row g-2 mb-3">
+            <div class="col-md-12">
+              <%= f.label :agenciador, "Administradora condomínio:", class: "form-label small fw-bold mb-1" %>
+              <%= f.text_field :agenciador, class: "form-control form-control-sm text-truncate", placeholder: "Ex: Administração XYZ" %>
+            </div>
+          </div>
+          <div class="row g-3">
+            <div class="col-md-9">
+              <%= f.label :descricao_empreendimento, "Descrição do empreendimento:", class: "form-label small fw-bold mb-1" %>
+              <%= f.text_area :descricao_empreendimento, class: "form-control form-control-sm", style: "min-height: 150px;" %>
+            </div>
+            <div class="col-md-3">
+              <div class="row g-2">
+                <div class="col-12">
+                  <%= f.label :ano_construcao, "Ano Constr.:", class: "form-label extra-small fw-bold mb-1" %>
+                  <%= f.number_field :ano_construcao, class: "form-control form-control-sm" %>
+                </div>
+                <div class="col-12">
+                  <%= f.label :aptos_andar, "Imóveis / andar:", class: "form-label extra-small fw-bold mb-1" %>
+                  <%= f.number_field :aptos_andar, class: "form-control form-control-sm" %>
+                </div>
+                <div class="col-12">
+                  <%= f.label :aptos_edificio, "Total imóveis:", class: "form-label extra-small fw-bold mb-1" %>
+                  <%= f.number_field :aptos_edificio, class: "form-control form-control-sm" %>
+                </div>
+                <div class="col-12">
+                  <%= f.label :elevadores_qtd, "Elevadores:", class: "form-label extra-small fw-bold mb-1" %>
+                  <%= f.number_field :elevadores_qtd, class: "form-control form-control-sm" %>
+                </div>
+              </div>
+            </div>
+          </div>
+          <hr class="my-3">
+          <div class="mt-4">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <%= f.label :infra_estrutura, "Infraestrutura & Lazer (Checklist):", class: "form-label small fw-bold mb-0" %>
+              <button type="button" class="btn btn-xs btn-link text-decoration-none"
+                      data-attribute-manager-context-value="habitation"
+                      data-attribute-manager-category-value="infrastructure"
+                      data-attribute-manager-field-name-value="habitation[infra_estrutura][]"
+                      data-attribute-manager-modal-id-value="attributeManagerModal"
+                      data-action="click->attribute-manager#open"
+                      data-title="Gerenciar Infraestrutura"
+                      data-select-id="infra-checkbox-list">
+                <i class="bi bi-gear me-1"></i>Gerenciar
+              </button>
+            </div>
+            <% current_infra = f.object.infra_estrutura.is_a?(Array) ? f.object.infra_estrutura : [] %>
+            <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-2" id="infra-checkbox-list">
+              <% @external_features.to_a.each do |feature| %>
+                <div class="col">
+                  <label class="custom-checkbox-card w-100 h-100">
+                    <input type="checkbox" name="habitation[infra_estrutura][]" value="<%= feature %>" class="form-check-input mt-0" <%= 'checked' if current_infra.include?(feature) %>>
+                    <span class="extra-small fw-semibold text-truncate ms-2" title="<%= feature %>"><%= feature %></span>
+                  </label>
+                </div>
+              <% end %>
+            </div>
+            <div class="form-text extra-small text-muted mt-1"><i class="bi bi-info-circle me-1"></i>Para ver novas opções criadas, recarregue a página após gerenciar.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Comercial (Imagem 4) -->
+    <div class="tab-pane fade" id="comercial" role="tabpanel" aria-labelledby="comercial-tab" data-controller="habitation-brokers">
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="row g-4 mb-3">
+            <div class="col-md-8">
+              <h6 class="small fw-bold text-primary border-bottom pb-2 mb-3"><i class="bi bi-person-badge me-2"></i>Proprietário & Contatos</h6>
+              <div class="row g-2">
+                <div class="col-md-9">
+                  <%= f.label :proprietario, "Nome", class: "form-label extra-small fw-bold mb-1" %>
+                  <%= f.text_field :proprietario, class: "form-control form-control-sm" %>
+                </div>
+                <div class="col-md-3">
+                  <%= f.label :proprietario_codigo, "Cód. Vista", class: "form-label extra-small fw-bold mb-1" %>
+                  <%= f.text_field :proprietario_codigo, class: "form-control form-control-sm" %>
+                </div>
+                <div class="col-md-12">
+                  <%= f.label :proprietario_email, "E-mail", class: "form-label extra-small fw-bold mb-1" %>
+                  <%= f.text_field :proprietario_email, class: "form-control form-control-sm" %>
+                </div>
+                <div class="col-md-4">
+                  <%= f.label :proprietario_celular, "Celular", class: "form-label extra-small fw-bold mb-1" %>
+                  <%= f.text_field :proprietario_celular, class: "form-control form-control-sm", data: { controller: "mask", mask_type_value: "phone" } %>
+                </div>
+                <div class="col-md-4">
+                  <%= f.label :proprietario_telefone_comercial, "F. Comercial", class: "form-label extra-small fw-bold mb-1" %>
+                  <%= f.text_field :proprietario_telefone_comercial, class: "form-control form-control-sm", data: { controller: "mask", mask_type_value: "phone" } %>
+                </div>
+                <div class="col-md-4">
+                  <%= f.label :proprietario_telefone_residencial, "F. Residencial", class: "form-label extra-small fw-bold mb-1" %>
+                  <%= f.text_field :proprietario_telefone_residencial, class: "form-control form-control-sm", data: { controller: "mask", mask_type_value: "phone" } %>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <h6 class="small fw-bold text-primary border-bottom pb-2 mb-3"><i class="bi bi-clipboard-check me-2"></i>Valores & Comissão</h6>
+              <div class="row g-2">
+                <div class="col-12">
+                  <%= f.label :valor_venda_anterior_formatted, "Valor de venda anterior", class: "form-label extra-small fw-bold mb-1" %>
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text">R$</span>
+                    <%= f.text_field :valor_venda_anterior_formatted, class: "form-control form-control-sm", data: { controller: "mask", mask_type_value: "currency" } %>
+                  </div>
+                </div>
+                <div class="col-12">
+                  <%= f.label :valor_promocional_formatted, "Valor promocional", class: "form-label extra-small fw-bold mb-1" %>
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text">R$</span>
+                    <%= f.text_field :valor_promocional_formatted, class: "form-control form-control-sm", data: { controller: "mask", mask_type_value: "currency" } %>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <%= f.label :captador_commission_percentage, "Comissão Captador (%)", class: "form-label extra-small fw-bold mb-1" %>
+                  <%= f.number_field :captador_commission_percentage, class: "form-control form-control-sm", min: 0, max: 100, step: 0.01, placeholder: "0,00" %>
+                </div>
+                <div class="col-6">
+                  <%= f.label :broker_commission_percentage, "Comissão Corretor (%)", class: "form-label extra-small fw-bold mb-1" %>
+                  <%= f.number_field :broker_commission_percentage, class: "form-control form-control-sm", min: 0, max: 100, step: 0.01, placeholder: "0,00" %>
+                </div>
+                <div class="col-12">
+                  <label class="custom-checkbox-card w-100 justify-content-between">
+                    <span class="small fw-semibold">Administração de locação feita pela Salute</span>
+                    <%= f.check_box :salute_rental_management_flag, class: "form-check-input mt-0" %>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <%= f.label :observacoes, "Observações internas e restritas:", class: "form-label small fw-bold mb-1" %>
+              <%= f.text_area :observacoes, class: "form-control form-control-sm", rows: 6 %>
+            </div>
+            <div class="col-md-6 border-start ps-4">
+              <div class="row g-2 mb-3">
+                <div class="col-md-6">
+                  <%= f.label :key_location, "Onde estão as chaves", class: "form-label small fw-bold mb-1" %>
+                  <%= f.select :key_location, Habitation::KEY_LOCATION_OPTIONS, { include_blank: "Selecione..." }, class: "form-select form-select-sm" %>
+                </div>
+                <div class="col-md-6">
+                  <%= f.label :key_location_notes, "Detalhe das chaves", class: "form-label small fw-bold mb-1" %>
+                  <%= f.text_field :key_location_notes, class: "form-control form-control-sm", placeholder: "Ex: com zelador João" %>
+                </div>
+                <div class="col-md-12">
+                  <label class="custom-checkbox-card">
+                    <%= f.check_box :aceita_permuta_flag, class: "form-check-input mt-0" %>
+                    <span class="small fw-semibold">Aceita permuta</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="small fw-bold mb-0">Responsáveis & Agenciamento</h6>
+                <button type="button" class="btn btn-xs btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addBrokerModal" data-action="habitation-brokers#resetModal">
+                  <i class="bi bi-person-plus me-1"></i>Adicionar
+                </button>
+              </div>
+
+              <div class="alert alert-light border small mb-2">
+                Os campos fixos acima são o resumo comercial; o quadro abaixo segue para distribuição por corretor.
+              </div>
+
+              <div data-habitation-brokers-target="container">
+                <%= f.fields_for :broker_assignments do |ba_form| %>
+                  <div class="nested-fields card border-dashed p-2 mb-2 bg-light shadow-none" data-new-record="<%= ba_form.object.new_record? %>">
+                    <%= ba_form.hidden_field :_destroy %>
+                    <div class="d-flex justify-content-between align-items-start">
+                      <div>
+                        <div class="fw-bold extra-small text-primary mb-1">
+                          <span class="badge bg-primary extra-small me-1"><%= ba_form.object.role %></span>
+                          <%= ba_form.object.admin_user&.name %>
+                        </div>
+                        <div class="text-muted smaller">
+                          <%= ba_form.object.commission_type == 'fixed' ? '$ - Preço' : '% - Porcentagem' %>: <%= ba_form.object.commission_value %>
+                        </div>
+                      </div>
+                      <button type="button" class="btn btn-sm btn-link text-danger p-0" data-action="habitation-brokers#remove">
+                        <i class="bi bi-x-circle"></i>
+                      </button>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+
+              <!-- Template for NEW records -->
+              <template data-habitation-brokers-target="template">
+                <div class="nested-fields card border-dashed p-2 mb-2 bg-light shadow-none animate__animated animate__fadeIn" data-new-record="true">
+                  <input type="hidden" name="habitation[broker_assignments_attributes][NEW_RECORD][_destroy]" value="0">
+                  <input type="hidden" name="habitation[broker_assignments_attributes][NEW_RECORD][role]" value="ROLE_VALUE">
+                  <input type="hidden" name="habitation[broker_assignments_attributes][NEW_RECORD][admin_user_id]" value="BROKER_ID_VALUE">
+                  <input type="hidden" name="habitation[broker_assignments_attributes][NEW_RECORD][commission_type]" value="COMMISSION_TYPE_VALUE">
+                  <input type="hidden" name="habitation[broker_assignments_attributes][NEW_RECORD][commission_value]" value="COMMISSION_VALUE_VALUE">
+                  
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                      <div class="fw-bold extra-small text-primary mb-1">
+                        <span class="badge bg-primary extra-small me-1">ROLE_LABEL</span>
+                        BROKER_NAME
+                      </div>
+                      <div class="text-muted smaller font-monospace">
+                        COMMISSION_VALUE_DISPLAY
+                      </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-link text-danger p-0" data-action="habitation-brokers#remove">
+                      <i class="bi bi-x-circle"></i>
+                    </button>
+                  </div>
+                </div>
+              </template>
+
+                <!-- Modal for Adding Broker -->
+                <div class="modal fade" id="addBrokerModal" tabindex="-1" aria-hidden="true" data-habitation-brokers-target="modal">
+                  <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-0 shadow-lg">
+                      <div class="modal-header bg-primary text-white py-2">
+                        <h6 class="modal-title fw-bold"><i class="bi bi-person-plus me-2"></i>Adicionar corretor</h6>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                      </div>
+                      <div class="modal-body p-3">
+                        <div class="mb-2">
+                          <label class="form-label fw-bold extra-small mb-1">Tipo:</label>
+                          <%= select_tag "broker_type", 
+                              options_for_select(HabitationBrokerAssignment.roles.map { |k,v| [v, k] }), 
+                              { prompt: "Escolha o tipo", class: "form-select form-select-sm", data: { habitation_brokers_target: "typeSelect" } } %>
+                        </div>
+
+                        <div class="mb-2">
+                          <label class="form-label fw-bold extra-small mb-1">Selecione o corretor:</label>
+                          <%= select_tag :broker_id, options_from_collection_for_select(@brokers, :id, :name), 
+                              { include_blank: true, class: "form-select form-select-sm", 
+                                data: { habitation_brokers_target: "brokerSelect", controller: "tom-select", placeholder: "Selecione..." } } %>
+                        </div>
+
+                        <div class="row g-2 mb-2">
+                          <div class="col-md-6">
+                            <label class="form-label fw-bold extra-small mb-1">Tipo de comissão:</label>
+                            <%= select_tag "commission_type", 
+                                options_for_select([['$ - Preço', 'fixed'], ['% - Porcentagem', 'percentage']]), 
+                                { prompt: "Tipo...", class: "form-select form-select-sm", data: { habitation_brokers_target: "commissionTypeSelect" } } %>
+                          </div>
+                          <div class="col-md-6">
+                            <label class="form-label fw-bold extra-small mb-1">Comissão:</label>
+                            <input type="text" class="form-control form-control-sm" data-habitation-brokers-target="commissionValueInput" placeholder="0,00">
+                          </div>
+                        </div>
+                      </div>
+                      <div class="modal-footer bg-light py-2">
+                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-sm btn-primary" data-action="habitation-brokers#add">Adicionar</button>
+                      </div>
+                    </div>
+                  </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+    <!-- Tab: Mídia (Existing) -->
     <div class="tab-pane fade" id="media" role="tabpanel" aria-labelledby="media-tab">
        <div class="card border-0 shadow-sm mb-4">
          <div class="card-header bg-white py-3 border-bottom-0">
@@ -417,6 +947,12 @@
          </div>
          <div class="card-body" data-controller="photo-upload">
             <div class="mb-4 text-center p-5 border border-dashed rounded bg-light">
+               <div class="row justify-content-center mb-3">
+                 <div class="col-md-4">
+                   <%= f.label :foto_classificacao, "Classificação das Fotos:", class: "form-label small fw-bold mb-1" %>
+                   <%= f.select :foto_classificacao, Habitation::FOTO_CLASSIFICACAO, { include_blank: "Selecione..." }, class: "form-select form-select-sm" %>
+                 </div>
+               </div>
                <div class="mb-3">
                  <i class="bi bi-images display-4 text-muted"></i>
                </div>
@@ -426,16 +962,10 @@
                <%= f.file_field :photos, multiple: true, class: "d-none", 
                    id: "habitation_photos",
                    data: { action: "change->photo-upload#preview", photo_upload_target: "input" } %>
-               <!-- Hidden input for Order -->
                <%= f.hidden_field :ordered_photo_ids, data: { photo_upload_target: "orderInput" }, value: f.object.photo_ids_order.join(',') %>
             </div>
 
-            <!-- Preview Container with Sortable -->
             <div class="row g-3" data-photo-upload-target="previewContainer">
-                 <!-- Existing photos rendered server-side can be here too if we want them sortable mixed with new ones, 
-                      but typically we separate new/existing or have complex logic. 
-                      For now, let's keep existing separate or just show them.
-                 -->
                  <% if habitation.photos.attached? %>
                     <% habitation.ordered_photos.each do |photo| %>
                       <div class="col-6 col-md-3 col-lg-2 draggable-item" data-id="<%= photo.id %>">
@@ -446,15 +976,12 @@
                           </div>
                         </div>
                       </div>
-                       <% end %>
+                    <% end %>
                   <% end %>
                   
-                  <!-- API Pictures (Vista/Integration) -->
                   <% if habitation.pictures.present? && habitation.pictures.is_a?(Array) %>
                      <% habitation.pictures.each do |pic| %>
-                        <% # Handle both direct strings and hash objects with 'url'/'src' %>
                         <% pic_url = pic.is_a?(String) ? pic : (pic.try(:[], 'url') || pic.try(:[], 'src') || pic.try(:[], 'link')) %>
-                        
                         <% if pic_url.present? %>
                            <div class="col-6 col-md-3 col-lg-2">
                               <div class="position-relative ratio ratio-1x1 group-hover">
@@ -467,12 +994,10 @@
                         <% end %>
                      <% end %>
                   <% end %>
-                 <!-- New photos will append here via JS -->
             </div>
          </div>
        </div>
        
-       <!-- Video Links -->
        <div class="card border-0 shadow-sm mb-4" data-controller="dynamic-list" data-dynamic-list-param-name-value="habitation[videos][]">
           <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
              <h6 class="card-title fw-bold text-primary mb-0"><i class="bi bi-youtube me-2"></i>Vídeos (Links)</h6>
@@ -484,53 +1009,51 @@
              <div class="mb-3" data-dynamic-list-target="container">
                 <% (f.object.videos || []).each do |video_url| %>
                   <div class="input-group mb-2">
-                     <input type="text" name="habitation[videos][]" value="<%= video_url %>" class="form-control" placeholder="https://...">
+                     <input type="text" name="habitation[videos][]" value="<%= video_url %>" class="form-control form-control-sm" placeholder="https://...">
                      <button type="button" class="btn btn-outline-danger" data-action="dynamic-list#remove">
                        <i class="bi bi-trash"></i>
                      </button>
                   </div>
                 <% end %>
-                <!-- Empty state if none? No, we just let user add. -->
              </div>
-             <!-- Hidden template for new items if needed complex structure, but simple input handled by controller default -->
-             
              <div class="mt-4">
-               <%= f.label :tour_virtual, "Link Tour Virtual (360)", class: "form-label fw-bold" %>
-               <%= f.text_field :tour_virtual, class: "form-control", placeholder: "https://..." %>
-            </div>
+                <%= f.label :tour_virtual, "Link Tour Virtual (360)", class: "form-label fw-bold" %>
+                <%= f.text_field :tour_virtual, class: "form-control form-control-sm", placeholder: "https://..." %>
+             </div>
+             <div class="mt-2">
+                <%= f.label :podcast_url, "Link do Podcast", class: "form-label fw-bold" %>
+                <%= f.text_field :podcast_url, class: "form-control form-control-sm", placeholder: "https://..." %>
+             </div>
           </div>
        </div>
     </div>
 
     <!-- Tab: SEO & Controle -->
     <div class="tab-pane fade" id="seo" role="tabpanel" aria-labelledby="seo-tab">
-      <div class="row g-4">
-         <!-- SEO -->
+      <div class="row g-3">
          <div class="col-lg-12">
            <div class="card border-0 shadow-sm mb-4">
              <div class="card-header bg-white py-3 border-bottom-0">
-               <h6 class="card-title fw-bold text-primary mb-0"><i class="bi bi-search me-2"></i>Otimização para Busca (SEO)</h6>
+               <h6 class="small fw-bold text-primary mb-0"><i class="bi bi-search me-2"></i>Otimização para Busca (SEO)</h6>
              </div>
-             <div class="card-body">
-               <div class="row g-3">
+             <div class="card-body px-4 pb-4">
+               <div class="row g-2">
                  <div class="col-md-6">
-                    <%= f.label :slug, "URL Amigável (Slug)", class: "form-label" %>
-                    <%= f.text_field :slug, class: "form-control bg-light", readonly: true, help: "Gerado automaticamente" %>
+                    <%= f.label :slug, "URL Amigável (Slug)", class: "form-label small fw-bold mb-1" %>
+                    <%= f.text_field :slug, class: "form-control form-control-sm bg-light", readonly: true %>
                  </div>
                  <div class="col-md-6">
-                    <%= f.label :meta_title, "Meta Title", class: "form-label" %>
-                    <%= f.text_field :meta_title, class: "form-control" %>
+                    <%= f.label :meta_title, "Meta Title", class: "form-label small fw-bold mb-1" %>
+                    <%= f.text_field :meta_title, class: "form-control form-control-sm" %>
                  </div>
-                 <div class="col-12">
-                    <%= f.label :meta_description, "Meta Description", class: "form-label" %>
-                    <%= f.label :meta_description, "Meta Description (SEO)", class: "form-label" %>
-                    <div class="alert alert-warning py-1 px-2 mb-2 small"><i class="bi bi-exclamation-triangle me-1"></i>Atenção: Motores de busca preferem texto puro.</div>
-                    <%= f.rich_text_area :meta_description, class: "form-control" %>
+                 <div class="col-12 mt-2">
+                    <%= f.label :meta_description, "Meta Description (SEO)", class: "form-label small fw-bold mb-1" %>
+                    <%= f.rich_text_area :meta_description, class: "form-control", style: "min-height: 150px;" %>
                  </div>
-                 <div class="col-12">
-                    <%= f.label :meta_keywords, "Palavras-chave (Tags)", class: "form-label" %>
+                 <div class="col-12 mt-2">
+                    <%= f.label :meta_keywords, "Palavras-chave (Tags)", class: "form-label small fw-bold mb-1" %>
                     <%= f.text_field :meta_keywords, 
-                        class: "form-control",
+                        class: "form-control form-control-sm",
                         placeholder: "Digite e Enter...",
                         data: { controller: "tom-select", tom_select_tags_value: true } %>
                  </div>
@@ -539,89 +1062,13 @@
            </div>
          </div>
 
-         <!-- Interno -->
-         <div class="col-lg-6">
-           <div class="card border-0 shadow-sm h-100">
-             <div class="card-header bg-white py-3 border-bottom-0">
-               <h6 class="card-title fw-bold text-primary mb-0"><i class="bi bi-building-lock me-2"></i>Controle Interno</h6>
-             </div>
-             <div class="card-body">
-               <div class="mb-3">
-                 <%= f.label :proprietario, "Nome Proprietário", class: "form-label" %>
-                 <%= f.text_field :proprietario, class: "form-control" %>
-               </div>
-               <div class="mb-3">
-                 <%= f.label :proprietario_codigo, "Cód. Proprietário", class: "form-label" %>
-                 <%= f.text_field :proprietario_codigo, class: "form-control" %>
-               </div>
-               <div class="mb-3">
-                 <%= f.label :observacoes, "Observações Internas", class: "form-label" %>
-                 <%= f.text_area :observacoes, rows: 3, class: "form-control bg-light" %>
-               </div>
-               <div class="mb-3">
-                 <%= f.label :inscricao_imobiliaria, "Inscrição Imobiliária", class: "form-label" %>
-                 <%= f.text_field :inscricao_imobiliaria, class: "form-control" %>
-               </div>
-             </div>
-           </div>
-         </div>
-
-         <!-- Corretor & Configs -->
-         <div class="col-lg-6">
-           <div class="card border-0 shadow-sm h-100">
-             <div class="card-header bg-white py-3 border-bottom-0">
-               <h6 class="card-title fw-bold text-primary mb-0"><i class="bi bi-person-badge me-2"></i>Corretor & Configurações</h6>
-             </div>
-             <div class="card-body">
-               <div class="row g-2 mb-3">
-                 <div class="col-6">
-                   <%= f.label :corretor_nome, "Nome Corretor", class: "form-label" %>
-                   <%= f.text_field :corretor_nome, class: "form-control" %>
-                 </div>
-                 <div class="col-6">
-                    <%= f.label :corretor_telefone, "Telefone Corretor", class: "form-label" %>
-                    <%= f.text_field :corretor_telefone, class: "form-control", data: { controller: "mask", mask_type_value: "phone" } %>
-                 </div>
-                 <div class="col-6">
-                   <%= f.label :codigo_corretor, "Cód. Corretor", class: "form-label" %>
-                   <%= f.text_field :codigo_corretor, class: "form-control" %>
-                 </div>
-                 <div class="col-6">
-                    <%= f.label :corretor_email, "Email Corretor", class: "form-label" %>
-                    <%= f.text_field :corretor_email, class: "form-control" %>
-                 </div>
-               </div>
-
-               <hr>
-               
-               <h6 class="fw-bold fs-7 text-muted mb-3">Visibilidade</h6>
-               <div class="d-flex flex-column gap-2">
-                 <div class="form-check form-switch">
-                    <%= f.check_box :exibir_no_site_flag, class: "form-check-input" %>
-                    <%= f.label :exibir_no_site_flag, "Exibir no Site Principal", class: "form-check-label fw-bold" %>
-                 </div>
-                 <div class="form-check form-switch">
-                    <%= f.check_box :destaque_web_flag, class: "form-check-input" %>
-                    <%= f.label :destaque_web_flag, "Destaque na Home", class: "form-check-label" %>
-                 </div>
-                 <div class="form-check form-switch">
-                    <%= f.check_box :lancamento_flag, class: "form-check-input" %>
-                    <%= f.label :lancamento_flag, "Marcar como Lançamento", class: "form-check-label" %>
-                 </div>
-               </div>
-
-               <div class="mt-3">
-                 <%= f.label :caracteristica_unica, "Badge Personalizado", class: "form-label" %>
-                 <%= f.select :caracteristica_unica, @badges, { include_blank: true },
-                      data: { controller: "tom-select", tom_select_create_value: true },
-                      class: "form-select", placeholder: "Selecione ou crie..." %>
-               </div>
-             </div>
+         <div class="col-lg-12">
+           <div class="alert alert-light border small mb-0">
+             Os controles de exibição estão na seção <strong>Identificação e Sinalizadores</strong> para evitar duplicidade.
            </div>
          </div>
       </div>
     </div>
-  </div>
 
   <!-- Sticky Footer Action Bar -->
   <div class="position-sticky bottom-0 bg-white py-3 border-top mt-4 shadow-lg" style="z-index: 1000; margin: 0 -1.5rem -1.5rem -1.5rem; padding-left: 1.5rem; padding-right: 1.5rem;">
@@ -638,3 +1085,40 @@
     </div>
   </div>
 <% end %>
+<%= render "admin/shared/attribute_manager_modal", modal_id: "attributeManagerModal" %>
+
+<!-- Modals for Quick Add -->
+<div class="modal fade" id="quickAddConstructorModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle me-2"></i>Nova Construtora</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form data-action="submit->habitation-form#createConstructor">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-bold small mb-1">Nome</label>
+            <input type="text" class="form-control form-control-sm" required
+                   placeholder="Ex: FG Empreendimentos"
+                   data-habitation-form-target="constructorName">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold small mb-1">Site (opcional)</label>
+            <input type="text" class="form-control form-control-sm"
+                   placeholder="Ex: fgempreendimentos.com.br"
+                   data-habitation-form-target="constructorWebsite">
+          </div>
+          <div class="alert alert-danger py-2 px-3 small d-none" data-habitation-form-target="constructorFeedback"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary btn-sm" data-habitation-form-target="constructorSubmit">
+            <i class="bi bi-check2 me-1"></i>Salvar construtora
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+</div>

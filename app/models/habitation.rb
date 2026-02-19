@@ -9,6 +9,54 @@ class Habitation < ApplicationRecord
   include Habitation::CacheableMethods
   include Habitation::SeoHelpers
   
+  # Constantes Padronizadas para Enums e Atributos
+  CATEGORIES = [
+    'Apartamento', 'Casa', 'Casa em Condomínio', 'Cobertura', 'Sobrado',
+    'Terreno', 'Terreno em Condomínio', 'Loft', 'Studio', 'Sala Comercial',
+    'Loja', 'Prédio Comercial', 'Galpão', 'Área', 'Rural'
+  ].freeze
+
+  STATUS_OPTIONS = [
+    'Venda', 'Locação', 'Venda e Locação', 'Lançamento', 'Suspenso', 'Vendido', 'Alugado'
+  ].freeze
+
+  SITUATIONS = [
+    'Lançamento', 'Em Obras', 'Pronto para Morar', 'Novo', 'Usado'
+  ].freeze
+
+  # INTERNAL_FEATURES = [ ... ] (Deprecated in favor of AttributeOption)
+  def self.internal_features
+    AttributeOption.where(context: 'habitation', category: 'feature').order(name: :asc).pluck(:name)
+  end
+
+  # EXTERNAL_FEATURES = [ ... ] (Deprecated in favor of AttributeOption)
+  def self.external_features
+    AttributeOption.where(context: 'habitation', category: 'infrastructure').order(name: :asc).pluck(:name)
+  end
+
+  # Endereço e Localização
+  has_one :address, as: :addressable, dependent: :destroy
+  accepts_nested_attributes_for :address, allow_destroy: true, reject_if: :all_blank
+  
+  # Delegations for backward compatibility
+  delegate :logradouro, :numero, :complemento, :bairro, :cidade, :uf, :cep, :latitude, :longitude,
+           :tipo_endereco, :bairro_comercial, :pais, :imediacoes,
+           to: :address, prefix: false, allow_nil: true
+
+  # Constants for Standardization
+  STREET_TYPES = ["Avenida", "Rua", "Alameda", "Travessa", "Rodovia", "Estrada", "Servidão", "Beco", "Praça"].freeze
+  UF_OPTIONS = ["SC", "PR", "SP", "RS", "RJ", "MG", "ES", "DF", "GO", "MS", "MT", "BA"].freeze
+  FACES = ["Norte", "Sul", "Leste", "Oeste", "Nordeste", "Noroeste", "Sudeste", "Sudoeste"].freeze
+  CONSTRUCTION_PROFILES = ["Econômico", "Médio", "Alto", "Luxo", "Super Luxo"].freeze
+  VAGA_TYPES = ["Privativa", "Rotativa", "Coberta", "Descoberta", "Gaveta", "Dupla"].freeze
+  
+  # Novos Enums (Gap Analysis)
+  OCUPACAO_STATUS = ["Vago", "Ocupado", "Inquilino", "Proprietário", "Reservado"].freeze
+  ESTADO_CONSERVACAO = ["Novo", "Seminovo", "Usado", "Reformado", "Original", "Em Obras", "Na Planta", "Depredado"].freeze
+  TOPOGRAFIA_OPTIONS = ["Plano", "Aclive", "Declive", "Irregular"].freeze
+  FOTO_CLASSIFICACAO = ["Profissionais", "Boas", "Aceitáveis", "Amadoras", "Não tem fotos"].freeze
+  KEY_LOCATION_OPTIONS = ["Imobiliária", "Corretor(a)", "Proprietário", "Zelador", "Portaria", "Inquilino", "Outro"].freeze
+
   # FriendlyId para URLs amigáveis (SEO)
   extend FriendlyId
   friendly_id :slug_candidates, use: [:slugged, :finders]
@@ -16,12 +64,13 @@ class Habitation < ApplicationRecord
   # Paginação
   self.per_page = 12
   
-  # Associations
   belongs_to :empreendimento, 
     class_name: 'Habitation',
     primary_key: 'codigo',
     foreign_key: 'codigo_empreendimento',
     optional: true
+  
+  belongs_to :constructor, optional: true
   
   has_many :units, 
     class_name: 'Habitation',
@@ -30,7 +79,12 @@ class Habitation < ApplicationRecord
   
   # Active Storage Photos (For manual upload)
   has_many_attached :photos
+
+  belongs_to :admin_user, optional: true, foreign_key: 'admin_user_id'
   
+  has_many :broker_assignments, class_name: "HabitationBrokerAssignment", dependent: :destroy
+  accepts_nested_attributes_for :broker_assignments, allow_destroy: true, reject_if: :all_blank
+
   # ActionText for Rich Text
   has_rich_text :descricao_web
   has_rich_text :meta_description
@@ -38,32 +92,25 @@ class Habitation < ApplicationRecord
   # Validations
   validates :codigo, presence: true, uniqueness: true
   validates :categoria, presence: true
+  validates :captador_commission_percentage,
+            numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 100 },
+            allow_nil: true
+  validates :broker_commission_percentage,
+            numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 100 },
+            allow_nil: true
+  validates :key_location, inclusion: { in: KEY_LOCATION_OPTIONS }, allow_blank: true
+  validate :codigo_empreendimento_must_exist, if: :validate_codigo_empreendimento?
+  validate :codigo_empreendimento_cannot_reference_self
+  validate :key_location_notes_required_for_other
   
   # Callbacks
+  before_validation :normalize_codigo_empreendimento
+  before_validation :sync_hierarchy_data
+  before_validation :sync_construtora_from_constructor
+  before_validation :sanitize_fields
+  before_save :sync_flags_from_features
   after_save :clear_cache
   after_destroy :clear_cache
-  
-  # Slug candidates para FriendlyId (ordem de prioridade)
-  def slug_candidates
-    [
-      [:tipo_imovel_slug, :cidade_slug, :bairro_slug, :codigo],
-      [:tipo_imovel_slug, :cidade_slug, :codigo],
-      [:categoria, :codigo]
-    ]
-  end
-  
-  # Métodos auxiliares para o slug
-  def tipo_imovel_slug
-    categoria&.parameterize
-  end
-  
-  def cidade_slug
-    cidade&.parameterize
-  end
-  
-  def bairro_slug
-    bairro&.parameterize
-  end
 
   def preco_principal
     if valor_venda_cents.to_i > 0
@@ -157,7 +204,7 @@ class Habitation < ApplicationRecord
   end
 
   # Dynamic Field Setters (Array handling)
-  def imediacoes=(value)
+  def meta_keywords=(value)
     if value.is_a?(Array)
       super(value.reject(&:blank?).join(','))
     else
@@ -165,12 +212,39 @@ class Habitation < ApplicationRecord
     end
   end
 
-  def meta_keywords=(value)
+  def caracteristicas=(value)
     if value.is_a?(Array)
-      super(value.reject(&:blank?).join(','))
+      hash = {}
+      value.reject(&:blank?).each { |v| hash[v.to_s] = v.to_s }
+      super(hash)
     else
       super
     end
+  end
+
+  def infra_estrutura=(value)
+    if value.is_a?(Array)
+      super(value.reject(&:blank?))
+    else
+      super
+    end
+  end
+
+  def endereco
+    address&.logradouro.presence || self[:endereco]
+  end
+
+  def unique_features
+    raw = self[:caracteristica_unica]
+    Array(raw).flatten.compact.map { |feature| feature.to_s.strip }.reject(&:blank?)
+  end
+
+  def effective_constructor
+    constructor || empreendimento&.constructor
+  end
+
+  def constructor_name
+    effective_constructor&.name.presence || construtora.presence
   end
   
   # Verifica se é um empreendimento
@@ -221,17 +295,18 @@ class Habitation < ApplicationRecord
     badges = []
     
     # Priority 1: Caracteristica Unica (Mapped labels from Vista)
-    if caracteristica_unica.present?
-      text = caracteristica_unica.upcase
-      badges << { 
-        text: text, 
+    unique_features.each do |feature|
+      text = feature.upcase
+      badges << {
+        text: text,
         color: badge_color_for(text),
         tailwind_color: tailwind_color_for(text)
       }
     end
     
     # Priority 2: Lançamento Flag (Manual flag)
-    if lancamento_flag && !caracteristica_unica.to_s.downcase.include?('lançamento')
+    has_lancamento_badge = unique_features.any? { |feature| I18n.transliterate(feature.downcase).include?('lancamento') }
+    if lancamento_flag && !has_lancamento_badge
       badges << { 
         text: 'LANÇAMENTO', 
         color: 'success',
@@ -279,6 +354,118 @@ class Habitation < ApplicationRecord
     else
       'secondary'
     end
+  end
+
+  private
+
+  def validate_codigo_empreendimento?
+    codigo_empreendimento.present? && (new_record? || will_save_change_to_codigo_empreendimento?)
+  end
+
+  def codigo_empreendimento_must_exist
+    parent = Habitation.empreendimentos.find_by(codigo: codigo_empreendimento)
+    return if parent.present?
+
+    errors.add(:codigo_empreendimento, "não corresponde a um empreendimento válido")
+  end
+
+  def key_location_notes_required_for_other
+    return unless key_location == "Outro" && key_location_notes.blank?
+
+    errors.add(:key_location_notes, "deve ser informado quando o local da chave for Outro")
+  end
+
+  def codigo_empreendimento_cannot_reference_self
+    return if codigo.blank? || codigo_empreendimento.blank?
+    return unless codigo.to_s == codigo_empreendimento.to_s
+
+    errors.add(:codigo_empreendimento, "não pode referenciar o próprio imóvel")
+  end
+
+  def normalize_codigo_empreendimento
+    self.codigo_empreendimento = codigo_empreendimento.to_s.strip.presence
+  end
+
+  def sync_hierarchy_data
+    if empreendimento?
+      self.codigo_empreendimento = nil
+      return
+    end
+
+    return if codigo_empreendimento.blank?
+
+    parent = Habitation.empreendimentos.find_by(codigo: codigo_empreendimento)
+    return if parent.blank?
+
+    self.nome_empreendimento = parent.nome_empreendimento.presence || parent.titulo_anuncio
+    self.constructor_id = parent.constructor_id if parent.constructor_id.present?
+  end
+
+  def sync_construtora_from_constructor
+    self.construtora = constructor&.name.presence
+  end
+
+  def sync_flags_from_features
+    return unless caracteristicas.is_a?(Array)
+    
+    self.mobiliado_flag = caracteristicas.include?('Mobiliado')
+    self.sem_mobilia_flag = caracteristicas.include?('Sem Mobília')
+    self.decorado_flag = caracteristicas.include?('Decorado')
+    # Piscina can be 'Piscina' or 'Piscina Privativa', let's cover both for the flag if appropriate, or just the specific one.
+    # Assessing based on usual logic:
+    self.piscina_flag = caracteristicas.include?('Piscina Privativa') || caracteristicas.include?('Piscina')
+    self.varanda_gourmet_flag = caracteristicas.include?('Varanda Gourmet')
+    self.garden_flag = caracteristicas.include?('Garden')
+    self.quadra_mar_flag = caracteristicas.include?('Quadra Mar')
+    self.frente_mar_avenida_atlantica_flag = caracteristicas.include?('Frente Mar')
+    # Vista mar usually maps to vista mar
+    self.vista_frente_mar_flag = caracteristicas.include?('Vista Mar') || caracteristicas.include?('Vista para o Mar')
+    self.aceita_financiamento_flag = caracteristicas.include?('Aceita Financiamento')
+    self.aceita_permuta_flag = caracteristicas.include?('Aceita Permuta')
+    self.lavabo_flag = caracteristicas.include?('Lavabo')
+  end
+
+  def sanitize_fields
+    fields_to_sanitize = [
+      :categoria, :status, :situacao,
+      :nome_empreendimento,
+      :proprietario, :proprietario_email,
+      :ocupacao_status, :estado_conservacao, :topografia, :foto_classificacao,
+      :numero_box, :dimensoes_terreno, :podcast_url
+    ]
+    
+    fields_to_sanitize.each do |field|
+      val = send(field)
+      if val.is_a?(String)
+        # Convert to nil if blank, just a dot, or just whitespace
+        if val.blank? || val.strip == '.'
+          send("#{field}=", nil)
+        else
+          send("#{field}=", val.strip)
+        end
+      end
+    end
+  end
+
+  def slug_candidates
+    [
+      [:tipo_imovel_slug, :cidade_slug, :bairro_slug, :codigo],
+      [:tipo_imovel_slug, :cidade_slug, :codigo],
+      [:categoria, :codigo]
+    ]
+  end
+  
+  # Métodos auxiliares para o slug
+  def tipo_imovel_slug
+    categoria&.parameterize
+  end
+  
+  def cidade_slug
+    cidade&.parameterize
+  end
+  
+  def bairro_slug
+    bairro&.parameterize
   end
   
   private

@@ -1,17 +1,20 @@
 class Admin::LeadsController < Admin::BaseController
   before_action :set_lead, only: [:show, :update, :destroy]
+  before_action :load_origin_options, only: [:index, :show, :update]
 
   def index
     @q = params[:q]
     @status = params[:status]
+    @origin = params[:origin]
 
     @leads = Lead.order(created_at: :desc)
     
     if @q.present?
-      @leads = @leads.where("name ILIKE :q OR email ILIKE :q OR phone ILIKE :q", q: "%#{@q}%")
+      @leads = @leads.where("name ILIKE :q OR email ILIKE :q OR phone ILIKE :q OR origin ILIKE :q", q: "%#{@q}%")
     end
     
     @leads = @leads.where(status: @status) if @status.present?
+    @leads = @leads.by_origin(@origin)
 
     @leads = @leads.paginate(page: params[:page], per_page: 20)
     @page_title = "Gerenciar Leads"
@@ -42,6 +45,10 @@ class Admin::LeadsController < Admin::BaseController
   end
 
   def lead_params
-    params.require(:lead).permit(:status, :notes)
+    params.require(:lead).permit(:status, :notes, :origin)
+  end
+
+  def load_origin_options
+    @origin_options = Lead.origin_options
   end
 end

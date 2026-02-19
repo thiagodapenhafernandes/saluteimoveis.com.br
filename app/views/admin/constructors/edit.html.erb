@@ -1,0 +1,13 @@
+<div class="mb-4">
+  <%= link_to admin_constructors_path, class: "btn btn-link text-decoration-none text-muted p-0 small mb-2" do %>
+    <i class="bi bi-arrow-left me-1"></i> Voltar para lista
+  <% end %>
+  <h1 class="h3 mb-1 text-gray-800 fw-bold" style="color: #bfa15f !important; font-family: 'Outfit', sans-serif;">Editar Construtora</h1>
+  <p class="text-muted small">Atualize o nome e o logotipo da construtora.</p>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4" style="max-width: 600px;">
+  <div class="card-body p-4">
+    <%= render "form", constructor: @constructor %>
+  </div>
+</div>

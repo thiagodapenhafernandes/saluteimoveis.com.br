@@ -1,0 +1,90 @@
+<%= form_with(model: [:admin, constructor], id: dom_id(constructor, :form), local: true, class: "needs-validation", data: { controller: "image-preview" }) do |f| %>
+  <% if constructor.errors.any? %>
+    <div class="alert alert-danger shadow-sm border-0 mb-4">
+      <h6 class="fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>Verifique os erros:</h6>
+      <ul class="mb-0 small">
+        <% constructor.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <%= f.label :name, "Nome da Construtora", class: "form-label fw-bold small text-muted text-uppercase" %>
+      <%= f.text_field :name, class: "form-control", placeholder: "Ex: FG Empreendimentos", required: true %>
+    </div>
+    <div class="col-md-6 mb-3">
+      <%= f.label :website_url, "Site Oficial (Domínio)", class: "form-label fw-bold small text-muted text-uppercase" %>
+      <div class="input-group">
+        <span class="input-group-text bg-white text-muted"><i class="bi bi-globe"></i></span>
+        <%= f.text_field :website_url, 
+            class: "form-control", 
+            placeholder: "Ex: fgempreendimentos.com.br", 
+            data: { image_preview_target: "domain" } %>
+        <button type="button" 
+                class="btn btn-outline-primary" 
+                data-action="click->image-preview#fetchLogo"
+                title="Tentar baixar logo automaticamente">
+          <i class="bi bi-magic me-1"></i> Buscar Logo
+        </button>
+      </div>
+      <div class="form-text small">Digite apenas o domínio (ex: embraed.com.br) para buscar o logo.</div>
+    </div>
+  </div>
+
+  <!-- Logo Upload Section -->
+  <div class="mb-4">
+    <%= f.label :logo, "Logomarca", class: "form-label fw-bold small text-muted text-uppercase" %>
+    
+    <div class="card bg-light border-0 p-3">
+      <div class="d-flex align-items-center gap-4">
+        <!-- Preview Area -->
+        <div class="position-relative bg-white rounded shadow-sm d-flex align-items-center justify-content-center p-2" style="width: 100px; height: 100px; min-width: 100px;">
+          <% if constructor.dynamic_logo_url.present? %>
+            <img src="<%= constructor.dynamic_logo_url %>" 
+                 class="img-fluid object-fit-contain" 
+                 style="max-width: 100%; max-height: 100%;" 
+                 data-image-preview-target="preview"
+                 alt="Preview">
+          <% else %>
+            <div data-image-preview-target="placeholder" class="text-center text-muted opacity-50">
+              <i class="bi bi-image display-6"></i>
+            </div>
+            <img src="#" 
+                 class="img-fluid object-fit-contain d-none" 
+                 style="max-width: 100%; max-height: 100%;" 
+                 data-image-preview-target="preview"
+                 alt="Preview">
+          <% end %>
+        </div>
+
+        <!-- Input Area -->
+        <div class="flex-grow-1">
+          <label class="btn btn-white border shadow-sm fw-semibold mb-2 w-100 text-start d-flex align-items-center justify-content-between cursor-pointer">
+            <span class="text-truncate me-2" data-image-preview-target="filename">Escolher nova imagem...</span>
+            <i class="bi bi-upload text-primary"></i>
+            <%= f.file_field :logo, 
+                class: "d-none", 
+                accept: "image/*",
+                data: { action: "change->image-preview#update" } %>
+          </label>
+          <div class="form-text small lh-sm">
+            <i class="bi bi-info-circle me-1"></i> Formatos aceitos: PNG, JPG, JPEG (Max 2MB).
+            A imagem será redimensionada automaticamente.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+    <% if local_assigns[:modal] %>
+      <button type="button" class="btn btn-light" data-bs-dismiss="modal">Fechar</button>
+    <% else %>
+      <%= link_to "Cancelar", admin_constructors_path, class: "btn btn-light" %>
+    <% end %>
+    <%= f.submit (constructor.persisted? ? "Salvar Alterações" : "Cadastrar Construtora"), class: "btn btn-primary px-4 fw-bold" %>
+  </div>
+<% end %>

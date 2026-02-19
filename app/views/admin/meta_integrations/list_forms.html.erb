@@ -1,0 +1,19 @@
+<turbo-frame id="page_forms_<%= @page.id %>">
+  <% if @forms.any? %>
+    <ul class="list-unstyled mb-0 ms-4 mt-2">
+      <% @forms.each do |form| %>
+        <li class="d-flex justify-content-between align-items-center extra-small py-1 border-bottom-dashed">
+          <span>
+             <i class="bi bi-file-earmark-text me-1 text-muted"></i>
+             <%= form.name %>
+          </span>
+          <span class="text-muted">
+            <%= form.facebook_created_at&.to_date&.strftime("%d/%m") %>, <%= form.facebook_created_at&.strftime("%H:%M") %>
+          </span>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <p class="text-muted extra-small ms-4 mt-2 mb-0">Nenhum formulário encontrado para esta página.</p>
+  <% end %>
+</turbo-frame>

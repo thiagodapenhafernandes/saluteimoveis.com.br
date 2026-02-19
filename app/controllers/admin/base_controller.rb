@@ -15,4 +15,16 @@ class Admin::BaseController < ApplicationController
       redirect_to admin_root_path, alert: 'Acesso negado. Apenas administradores.'
     end
   end
+
+  def check_permission!(action, resource)
+    unless current_admin_user&.can?(action, resource)
+      redirect_to admin_root_path, alert: 'Você não tem permissão para acessar esta área.'
+    end
+  end
+
+  helper_method :can?
+
+  def can?(action, resource)
+    current_admin_user&.can?(action, resource)
+  end
 end

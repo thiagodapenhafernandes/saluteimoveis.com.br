@@ -27,3 +27,4 @@ Após reiniciar, o Devise estará carregado e tudo funcionará! O painel admin e
 URL: http://localhost:3000/admin
 Login: admin@saluteimoveis.com.br
 Senha: salute2024
+123456

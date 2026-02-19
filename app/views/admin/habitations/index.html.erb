@@ -1,164 +1,359 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
-  <h1 class="h3 mb-0 text-gray-800">Gerenciar Imóveis</h1>
-  <%= link_to new_admin_habitation_path, class: "btn btn-primary" do %>
-    <i class="bi bi-plus-lg me-1"></i> Novo Imóvel
-  <% end %>
-</div>
-
-<!-- Filters -->
-<div class="card shadow-sm mb-4">
-  <div class="card-body">
-    <%= form_with url: admin_habitations_path, method: :get, class: "row g-3" do |f| %>
-      <div class="col-md-4 col-lg-5">
-        <%= f.text_field :q, value: params[:q], class: "form-control", placeholder: "Buscar por código ou título..." %>
-      </div>
-      <div class="col-md-3 col-lg-2">
-        <%= f.select :status, Habitation.distinct.pluck(:status).compact, { include_blank: "Todos os Status", selected: params[:status] }, class: "form-select" %>
-      </div>
-      <div class="col-md-3 col-lg-3">
-        <%= f.select :categoria, Habitation.distinct.pluck(:categoria).compact, { include_blank: "Todas as Categorias", selected: params[:categoria] }, class: "form-select" %>
-      </div>
-      <div class="col-md-2 col-lg-2">
-        <button type="submit" class="btn btn-secondary w-100">
-          <i class="bi bi-search me-1"></i> Filtrar
-        </button>
-      </div>
+  <div>
+    <h1 class="h3 mb-1 text-gray-800" style="color: #bfa15f !important; font-family: 'Outfit', sans-serif; font-weight: 700;">Catálogo de Imóveis</h1>
+    <p class="text-muted small mb-0">Gerencie seu portfólio de imóveis com filtros avançados.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <%= link_to admin_constructors_path, class: "btn btn-outline-primary d-flex align-items-center bg-white fw-semibold" do %>
+      <i class="bi bi-building me-2"></i> Construtoras
+    <% end %>
+    <div class="vr mx-1"></div>
+    <%= link_to "#", class: "btn btn-white border d-flex align-items-center bg-white" do %>
+      <i class="bi bi-download me-2"></i> Exportar
+    <% end %>
+    <%= link_to new_admin_habitation_path, class: "btn btn-primary d-flex align-items-center fw-bold px-4 shadow-sm" do %>
+      <i class="bi bi-plus-lg me-2"></i> Novo Imóvel
     <% end %>
   </div>
 </div>
 
-<div class="card shadow-sm border-0 bg-transparent">
-  <!-- Desktop Table View -->
-  <div class="d-none d-md-block bg-white rounded-3 shadow-sm overflow-hidden">
-    <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
-        <thead class="bg-light">
-          <tr>
-            <th class="ps-4 py-3 text-uppercase text-secondary small fw-bold" style="font-size: 0.75rem;"><%= sortable "titulo_anuncio", "Imóvel" %></th>
-            <th class="py-3 text-uppercase text-secondary small fw-bold" style="font-size: 0.75rem;"><%= sortable "codigo", "Código" %></th>
-            <th class="py-3 text-uppercase text-secondary small fw-bold" style="font-size: 0.75rem;"><%= sortable "categoria", "Categoria" %></th>
-            <th class="py-3 text-uppercase text-secondary small fw-bold" style="font-size: 0.75rem;"><%= sortable "status", "Status" %></th>
-            <th class="py-3 text-uppercase text-secondary small fw-bold" style="font-size: 0.75rem;"><%= sortable "valor_venda_cents", "Preço" %></th>
-            <th class="py-3 text-uppercase text-secondary small fw-bold" style="font-size: 0.75rem;"><%= sortable "destaque_web_flag", "Destaque" %></th>
-            <th class="text-end pe-4 py-3 text-uppercase text-secondary small fw-bold" style="font-size: 0.75rem;">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% @habitations.each do |habitation| %>
-            <tr>
-              <td class="ps-4">
-                <div class="d-flex align-items-center">
-                  <% if habitation.primary_image.present? %>
-                    <img src="<%= habitation.primary_image['url_pequena'] || habitation.primary_image['url'] %>" class="rounded me-3" style="width: 48px; height: 48px; object-fit: cover;" alt="">
-                  <% else %>
-                    <div class="bg-light rounded me-3 d-flex align-items-center justify-content-center text-muted" style="width: 48px; height: 48px;">
-                      <i class="bi bi-image"></i>
-                    </div>
-                  <% end %>
-                  <div>
-                    <div class="fw-bold text-dark text-truncate" style="max-width: 200px;"><%= habitation.display_title %></div>
-                    <small class="text-muted d-block"><%= habitation.bairro %>, <%= habitation.cidade %></small>
-                  </div>
-                </div>
-              </td>
-              <td class="small text-muted font-monospace"><%= habitation.codigo %></td>
-              <td><span class="badge bg-light text-dark border fw-normal"><%= habitation.categoria %></span></td>
-              <td>
-                <span class="badge bg-light text-dark border fw-normal"><%= habitation.status %></span>
-              </td>
-              <td class="fw-bold text-dark">
-                <% if habitation.valor_venda_cents.to_i > 0 %>
-                  <%= number_to_currency(habitation.valor_venda_cents / 100.0) %>
-                <% elsif habitation.valor_locacao_cents.to_i > 0 %>
-                  <%= number_to_currency(habitation.valor_locacao_cents / 100.0) %><small class="text-muted fw-normal">/mês</small>
-                <% else %>
-                  <span class="text-muted small fw-normal">Sob Consulta</span>
-                <% end %>
-              </td>
-              <td>
-                <% if habitation.destaque_web_flag %>
-                  <i class="bi bi-star-fill text-warning"></i>
-                <% else %>
-                  <span class="text-muted opacity-25"><i class="bi bi-star"></i></span>
-                <% end %>
-              </td>
-              <td class="text-end pe-4">
-                <div class="btn-group">
-                  <%= link_to habitation_path(habitation), target: "_blank", class: "btn btn-sm btn-outline-secondary border-0", title: "Ver no site" do %>
-                    <i class="bi bi-eye"></i>
-                  <% end %>
-                  <%= link_to edit_admin_habitation_path(habitation), class: "btn btn-sm btn-outline-primary border-0", title: "Editar" do %>
-                    <i class="bi bi-pencil"></i>
-                  <% end %>
-                  <%= button_to admin_habitation_path(habitation), method: :delete, data: { confirm: "Tem certeza?" }, class: "btn btn-sm btn-outline-danger border-0", title: "Excluir" do %>
-                    <i class="bi bi-trash"></i>
-                  <% end %>
-                </div>
-              </td>
-            </tr>
-          <% end %>
-        </tbody>
-      </table>
+<!-- Advanced Filters Accordion -->
+<div class="accordion mb-4 shadow-sm border-0 rounded-3 overflow-hidden" id="filtersAccordion" data-controller="collapse">
+  <div class="accordion-item border-0 bg-white">
+    <h2 class="accordion-header" id="headingFilters">
+      <button class="accordion-button <%= (params[:q].present? || params[:cidade].present? || params[:promotion_status].present? || params[:accepts_exchange].present? || params[:key_location].present? || params[:salute_rental_management].present?) ? '' : 'collapsed' %> fw-bold text-primary bg-white py-3" 
+              type="button" 
+              data-action="click->collapse#toggle"
+              data-collapse-target="button"
+              aria-expanded="<%= (params[:q].present? || params[:cidade].present? || params[:promotion_status].present? || params[:accepts_exchange].present? || params[:key_location].present? || params[:salute_rental_management].present?) ? 'true' : 'false' %>" 
+              aria-controls="collapseFilters">
+        <i class="bi bi-sliders me-2"></i> Filtros de Busca Avançada
+      </button>
+    </h2>
+    <div id="collapseFilters" 
+         class="accordion-collapse collapse <%= (params[:q].present? || params[:cidade].present? || params[:promotion_status].present? || params[:accepts_exchange].present? || params[:key_location].present? || params[:salute_rental_management].present?) ? 'show' : '' %>" 
+         data-collapse-target="content"
+         aria-labelledby="headingFilters">
+      <div class="accordion-body bg-white border-top">
+        <%= form_with url: admin_habitations_path, method: :get, local: true do |f| %>
+          <!-- Keyword -->
+          <div class="mb-3">
+             <label class="form-label small fw-bold text-muted text-uppercase">Palavra-chave</label>
+             <div class="input-group">
+                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                <%= f.text_field :q, value: params[:q], class: "form-control border-start-0", placeholder: "Código, Empreendimento, Endereço..." %>
+             </div>
+          </div>
+
+          <div class="row g-3">
+            <!-- Basic Filters -->
+            <div class="col-md-3">
+              <label class="form-label small fw-bold text-muted text-uppercase">Categoria</label>
+              <%= f.select :categoria, @filter_categories, { include_blank: "Todas", selected: params[:categoria] }, class: "form-select" %>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small fw-bold text-muted text-uppercase">Status</label>
+              <%= f.select :status, @filter_statuses, { include_blank: "Todos", selected: params[:status] }, class: "form-select" %>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small fw-bold text-muted text-uppercase">Cidade</label>
+              <%= f.select :cidade, @filter_cities, { include_blank: "Todas", selected: params[:cidade] }, class: "form-select" %>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small fw-bold text-muted text-uppercase">Bairro</label>
+              <%= f.text_field :bairro, value: params[:bairro], class: "form-control", placeholder: "Ex: Centro" %>
+            </div>
+
+            <!-- Features -->
+            <div class="col-md-4">
+              <label class="form-label small fw-bold text-muted text-uppercase">Dormitórios</label>
+              <%= f.select :dorms, [["1+", 1], ["2+", 2], ["3+", 3], ["4+", 4], ["5+", 5]], { include_blank: "Qualquer", selected: params[:dorms] }, class: "form-select" %>
+            </div>
+            <div class="col-md-4">
+               <label class="form-label small fw-bold text-muted text-uppercase">Suítes</label>
+               <%= f.select :suites, [["1+", 1], ["2+", 2], ["3+", 3], ["4+", 4]], { include_blank: "Qualquer", selected: params[:suites] }, class: "form-select" %>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-bold text-muted text-uppercase">Vagas</label>
+              <%= f.select :vagas, [["1+", 1], ["2+", 2], ["3+", 3], ["4+", 4]], { include_blank: "Qualquer", selected: params[:vagas] }, class: "form-select" %>
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label small fw-bold text-muted text-uppercase">Valor Promocional</label>
+              <%= f.select :promotion_status,
+                           [["Com promoção", "with_promo"], ["Sem promoção", "without_promo"]],
+                           { include_blank: "Todos", selected: params[:promotion_status] },
+                           class: "form-select" %>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small fw-bold text-muted text-uppercase">Aceita Permuta</label>
+              <%= f.select :accepts_exchange,
+                           [["Sim", "1"], ["Não", "0"]],
+                           { include_blank: "Todos", selected: params[:accepts_exchange] },
+                           class: "form-select" %>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small fw-bold text-muted text-uppercase">Onde estão as chaves</label>
+              <%= f.select :key_location, @filter_key_locations, { include_blank: "Todos", selected: params[:key_location] }, class: "form-select" %>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small fw-bold text-muted text-uppercase">Adm. Locação Salute</label>
+              <%= f.select :salute_rental_management,
+                           [["Sim", "1"], ["Não", "0"]],
+                           { include_blank: "Todos", selected: params[:salute_rental_management] },
+                           class: "form-select" %>
+            </div>
+
+            <!-- Price Range -->
+            <div class="col-md-6">
+               <label class="form-label small fw-bold text-muted text-uppercase">Preço Mín.</label>
+               <div class="input-group">
+                 <span class="input-group-text bg-white">R$</span>
+                 <%= f.text_field :min_price, value: params[:min_price], class: "form-control money-mask", placeholder: "0,00" %>
+               </div>
+            </div>
+            <div class="col-md-6">
+               <label class="form-label small fw-bold text-muted text-uppercase">Preço Máx.</label>
+               <div class="input-group">
+                 <span class="input-group-text bg-white">R$</span>
+                 <%= f.text_field :max_price, value: params[:max_price], class: "form-control money-mask", placeholder: "S/ Limite" %>
+               </div>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-end gap-2 mt-4">
+            <%= link_to "Limpar Filtros", admin_habitations_path, class: "btn btn-link text-decoration-none text-muted fw-semibold small" %>
+            <%= f.submit "Aplicar Filtros", class: "btn btn-primary px-4 fw-bold" %>
+          </div>
+        <% end %>
+      </div>
     </div>
   </div>
+</div>
 
-  <!-- Mobile Card View -->
-  <div class="d-md-none">
-    <% @habitations.each do |habitation| %>
-      <div class="card shadow-sm mb-3 border-0">
-        <div class="card-body p-3">
-          <div class="d-flex align-items-center mb-3">
-             <% if habitation.primary_image.present? %>
-                <img src="<%= habitation.primary_image['url_pequena'] || habitation.primary_image['url'] %>" class="rounded me-3" style="width: 64px; height: 64px; object-fit: cover;" alt="">
+<!-- Quick Scopes (Pills) -->
+<div class="d-flex flex-wrap gap-2 mb-4">
+  <% 
+    scopes = [
+      { key: 'oportunidade', label: 'Oportunidade', icon: 'lightning-fill' },
+      { key: 'frente_mar', label: 'Frente Mar', icon: 'building' },
+      { key: 'lancamento', label: 'Lançamento', icon: 'stars' },
+      { key: 'na_planta', label: 'Na Planta', icon: 'rulers' },
+      { key: 'mobiliado', label: 'Mobiliado', icon: 'sofa' },
+      { key: 'sacada', label: 'Sacada', icon: 'layout-sidebar' },
+      { key: 'decorado', label: 'Decorado', icon: 'palette' }
+    ]
+  %>
+  <% scopes.each do |scope| %>
+    <%= link_to admin_habitations_path(scope: scope[:key]), class: "btn btn-sm rounded-pill fw-semibold px-3 py-2 #{params[:scope] == scope[:key] ? 'btn-primary shadow-sm' : 'btn-white bg-white border text-muted shadow-sm hover-shadow'}" do %>
+       <i class="bi bi-<%= scope[:icon] %> me-1"></i> <%= scope[:label] %>
+    <% end %>
+  <% end %>
+  <% if params[:scope].present? %>
+    <%= link_to admin_habitations_path, class: "btn btn-sm btn-link text-muted text-decoration-none d-flex align-items-center" do %>
+      <i class="bi bi-x-lg me-1"></i>
+    <% end %>
+  <% end %>
+</div>
+
+<!-- Results Header -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <% if params[:q].present? || params[:cidade].present? || params[:status].present? || params[:scope].present? || params[:promotion_status].present? || params[:accepts_exchange].present? || params[:key_location].present? || params[:salute_rental_management].present? %>
+     <h6 class="text-muted fw-normal mb-0">Filtrando resultados...</h6>
+  <% else %>
+     <h6 class="text-muted fw-normal mb-0"><%= link_to "Selecionar Todos", "#", class: "text-decoration-none fw-bold small" %></h6>
+  <% end %>
+  <div class="d-flex align-items-center gap-3">
+    <span class="small text-muted fw-semibold">Mostrando <span class="text-dark"><%= @habitations.count %></span> de <%= Habitation.count %> registros.</span>
+    
+    <div class="dropdown" data-controller="dropdown">
+      <button class="btn btn-white btn-sm border dropdown-toggle text-muted" 
+              type="button" 
+              data-action="click->dropdown#toggle"
+              aria-expanded="false">
+        <i class="bi bi-sort-down me-1"></i> Ordenar
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" 
+          data-dropdown-target="menu" 
+          style="right: 0; left: auto; min-width: 200px;">
+        <li><%= link_to "Mais Recentes (Criação)", admin_habitations_path(request.params.merge(sort: 'data_cadastro_crm', direction: 'desc')), class: "dropdown-item small #{params[:sort] == 'data_cadastro_crm' && params[:direction] == 'desc' ? 'active' : ''}" %></li>
+        <li><%= link_to "Mais Antigos (Criação)", admin_habitations_path(request.params.merge(sort: 'data_cadastro_crm', direction: 'asc')), class: "dropdown-item small #{params[:sort] == 'data_cadastro_crm' && params[:direction] == 'asc' ? 'active' : ''}" %></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><%= link_to "Atualizados Recentemente", admin_habitations_path(request.params.merge(sort: 'data_atualizacao_crm', direction: 'desc')), class: "dropdown-item small #{params[:sort] == 'data_atualizacao_crm' ? 'active' : ''}" %></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Property Cards List -->
+<div class="row g-3">
+  <% if @habitations.any? %>
+    <% @habitations.each do |imovel| %>
+      <div class="col-12">
+        <div class="card shadow-sm border-0 overflow-hidden property-card-horizontal"
+             style="height: 240px; cursor: pointer;"
+             data-controller="clickable-card"
+             data-clickable-card-url-value="<%= edit_admin_habitation_path(imovel) %>">
+          <div class="row g-0 h-100">
+            <!-- Image Column -->
+            <div class="col-md-4 col-lg-3 position-relative h-100">
+              <% if imovel.primary_image.present? %>
+                <img src="<%= imovel.primary_image['url_pequena'] || imovel.primary_image['url'] %>" class="img-fluid h-100 w-100 object-fit-cover" alt="<%= imovel.display_title %>">
               <% else %>
-                <div class="bg-light rounded me-3 d-flex align-items-center justify-content-center text-muted" style="width: 64px; height: 64px;">
-                  <i class="bi bi-image fs-4"></i>
+                <div class="bg-light h-100 w-100 d-flex align-items-center justify-content-center text-muted">
+                  <i class="bi bi-image display-4 opacity-25"></i>
                 </div>
               <% end %>
-              <div class="flex-grow-1 min-w-0">
-                <div class="d-flex justify-content-between align-items-start">
-                   <h6 class="mb-1 text-truncate fw-bold text-dark"><%= habitation.display_title %></h6>
-                   <% if habitation.destaque_web_flag %>
-                    <i class="bi bi-star-fill text-warning ms-2 flex-shrink-0"></i>
-                   <% end %>
-                </div>
-                <div class="small text-muted mb-1"><%= habitation.bairro %>, <%= habitation.cidade %></div>
-                <div class="d-flex align-items-center gap-2">
-                   <span class="badge bg-light text-secondary border font-monospace"><%= habitation.codigo %></span>
-                   <span class="badge bg-primary bg-opacity-10 text-primary"><%= habitation.status %></span>
-                </div>
+              <!-- Badges -->
+              <div class="position-absolute top-0 start-0 p-3">
+                 <span class="badge bg-white text-dark shadow-sm uppercase-badge fw-bold"><%= imovel.status %></span>
+                 <% if imovel.destaque_web_flag %>
+                    <span class="badge bg-warning text-dark shadow-sm ms-1"><i class="bi bi-star-fill"></i></span>
+                 <% end %>
               </div>
-          </div>
-          
-          <div class="d-flex justify-content-between align-items-center pt-2 border-top">
-            <div class="fw-bold text-dark">
-                <% if habitation.valor_venda_cents.to_i > 0 %>
-                  <%= number_to_currency(habitation.valor_venda_cents / 100.0) %>
-                <% elsif habitation.valor_locacao_cents.to_i > 0 %>
-                  <%= number_to_currency(habitation.valor_locacao_cents / 100.0) %><small class="text-muted fw-normal">/mês</small>
-                <% else %>
-                  <span class="text-muted small fw-normal">Sob Consulta</span>
-                <% end %>
+              
+              <!-- Update Badge -->
+              <% 
+                 data_referencia = imovel.data_atualizacao_crm || imovel.updated_at
+                 days_since_update = ((Time.current - data_referencia) / 1.day).to_i
+                 badge_class = if days_since_update <= 30
+                                 'bg-success text-white'
+                               elsif days_since_update <= 60
+                                 'bg-warning text-dark'
+                               else
+                                 'bg-danger text-white'
+                               end
+              %>
+              <div class="position-absolute bottom-0 start-0 w-100 p-2 d-flex justify-content-center" style="background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);">
+                 <span class="badge <%= badge_class %> shadow-sm fw-normal d-flex align-items-center gap-1 rounded-pill px-3" style="font-size: 0.75rem; backdrop-filter: blur(4px);">
+                    <i class="bi bi-clock-history"></i> Atualizado há <%= time_ago_in_words(data_referencia) %>
+                 </span>
+              </div>
             </div>
-            <div class="btn-group">
-                <%= link_to habitation_path(habitation), target: "_blank", class: "btn btn-sm btn-light text-secondary", title: "Ver" do %>
-                  <i class="bi bi-eye"></i>
-                <% end %>
-                <%= link_to edit_admin_habitation_path(habitation), class: "btn btn-sm btn-light text-primary", title: "Editar" do %>
-                  <i class="bi bi-pencil"></i>
-                <% end %>
+            
+            <!-- Content Column -->
+            <div class="col-md-8 col-lg-9">
+              <div class="card-body p-4 d-flex flex-column h-100">
+                 <!-- Header -->
+                 <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                       <h5 class="card-title fw-bold text-dark mb-1" style="font-family: 'Outfit', sans-serif;"><%= imovel.bairro %> <span class="text-muted fw-light mx-1">•</span> <%= imovel.nome_empreendimento.presence || imovel.titulo_anuncio %></h5>
+                       <div class="small font-monospace text-muted mt-1">
+                          REF: <span class="fw-bold text-dark"><%= imovel.codigo %></span>
+                          <span class="badge bg-primary-subtle text-primary border-0 ms-2 text-uppercase" style="font-size: 0.65rem;"><%= imovel.status || 'VENDA' %></span>
+                          <span class="text-muted ms-1">• <%= imovel.categoria %></span>
+                       </div>
+                    </div>
+                    <div class="dropdown" data-controller="dropdown">
+                        <button class="btn btn-light btn-sm rounded-circle dropdown-toggle no-caret" 
+                                type="button" 
+                                data-action="click->dropdown#toggle">
+                          <i class="bi bi-three-dots-vertical"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" 
+                            data-dropdown-target="menu"
+                            style="right: 0; left: auto;">
+                          <li><%= link_to "Ver no Site", habitation_path(imovel), target: "_blank", class: "dropdown-item small" %></li>
+                          <li><%= link_to "Editar", edit_admin_habitation_path(imovel), class: "dropdown-item small" %></li>
+                          <li><hr class="dropdown-divider"></li>
+                          <li>
+                            <%= button_to admin_habitation_path(imovel), method: :delete, class: "dropdown-item small text-danger", data: { confirm: "Tem certeza?" } do %>
+                               Excluir
+                            <% end %>
+                          </li>
+                        </ul>
+                    </div>
+                 </div>
+
+                 <!-- Address -->
+                 <div class="d-flex align-items-center text-muted small mb-3">
+                    <i class="bi bi-geo-alt me-1"></i>
+                    <%= imovel.endereco %>, <%= imovel.numero %> - <%= imovel.cidade %>/<%= imovel.uf %>
+                 </div>
+
+                 <!-- Features -->
+                 <div class="d-flex gap-3 mb-4">
+                    <div class="d-flex align-items-center text-dark small fw-semibold" title="Dormitórios">
+                       <i class="bi bi-door-closed me-1 text-secondary"></i> <%= imovel.dormitorios_qtd %> <span class="text-muted fw-normal ms-1">Dorm.</span>
+                    </div>
+                    <div class="d-flex align-items-center text-dark small fw-semibold" title="Suítes">
+                       <i class="bi bi-key me-1 text-secondary"></i> <%= imovel.suites_qtd %> <span class="text-muted fw-normal ms-1">Suítes</span>
+                    </div>
+                    <div class="d-flex align-items-center text-dark small fw-semibold" title="Vagas">
+                       <i class="bi bi-car-front me-1 text-secondary"></i> <%= imovel.vagas_qtd %> <span class="text-muted fw-normal ms-1">Vagas</span>
+                    </div>
+                    <div class="d-flex align-items-center text-dark small fw-semibold" title="Área Privativa">
+                       <i class="bi bi-arrows-angle-expand me-1 text-secondary"></i> <%= imovel.area_privativa_m2 %> <span class="text-muted fw-normal ms-1">m²</span>
+                    </div>
+                 </div>
+
+                 <!-- Footer / Price -->
+                 <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
+                    <div>
+                       <div class="extra-small text-muted text-uppercase fw-bold">VALOR DO IMÓVEL</div>
+                       <div class="h4 mb-0 fw-bold" style="color: #bfa15f;">
+                          <% if imovel.valor_venda_cents.to_i > 0 %>
+                             <%= number_to_currency(imovel.valor_venda_cents / 100.0) %>
+                          <% elsif imovel.valor_locacao_cents.to_i > 0 %>
+                             <%= number_to_currency(imovel.valor_locacao_cents / 100.0) %><small>/mês</small>
+                          <% else %>
+                             Sob Consulta
+                          <% end %>
+                       </div>
+                    </div>
+                    <div class="d-flex gap-3 text-end">
+                       <div>
+                          <div class="extra-small text-muted">Cond.</div>
+                          <div class="small fw-bold"><%= imovel.valor_condominio_cents.to_i > 0 ? number_to_currency(imovel.valor_condominio_cents / 100.0) : 'R$ 0' %></div>
+                       </div>
+                       <div>
+                          <div class="extra-small text-muted">IPTU</div>
+                          <div class="small fw-bold"><%= imovel.valor_iptu_cents.to_i > 0 ? number_to_currency(imovel.valor_iptu_cents / 100.0) : 'R$ 0' %></div>
+                       </div>
+                    </div>
+                 </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
     <% end %>
-  </div>
-  
-  <% if @habitations.total_pages > 1 %>
-    <div class="card-footer bg-white border-0 py-3 mt-2 rounded-3 shadow-sm">
-      <div class="d-flex justify-content-center">
-        <%= will_paginate @habitations, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
+  <% else %>
+    <div class="col-12">
+      <div class="alert alert-light border-0 shadow-sm text-center py-5">
+        <div class="display-1 text-muted opacity-25 mb-3"><i class="bi bi-search"></i></div>
+        <h5 class="fw-bold text-muted">Nenhum imóvel encontrado</h5>
+        <p class="text-muted small">Tente ajustar seus filtros ou buscar por outro termo.</p>
+        <%= link_to "Limpar Filtros", admin_habitations_path, class: "btn btn-outline-primary mt-2" %>
       </div>
     </div>
   <% end %>
 </div>
+
+<div class="d-flex justify-content-center mt-5 mb-4">
+  <%= will_paginate @habitations, renderer: WillPaginate::ActionView::BootstrapLinkRenderer, class: "shadow-sm" %>
+</div>
+
+<style>
+  .uppercase-badge {
+    text-transform: uppercase;
+    font-size: 0.65rem;
+    letter-spacing: 0.05em;
+  }
+  .hover-shadow:hover {
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+    transform: translateY(-1px);
+    transition: all 0.2s;
+  }
+  .property-card-horizontal:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05) !important;
+    transform: translateY(-2px);
+    transition: all 0.3s ease;
+  }
+  .money-mask {
+    /* Add javascript mask library later if needed */
+  }
+  .dropdown-toggle.no-caret::after {
+    display: none !important;
+  }
+</style>

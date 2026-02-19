@@ -5,7 +5,8 @@ class Admin::DashboardController < Admin::BaseController
     @featured_count = Habitation.featured.count
     @for_sale_count = Habitation.active.where("status IN (?)", ['Venda', 'Venda e Aluguel']).count
     @for_rent_count = Habitation.active.where("status IN (?)", ['Aluguel', 'Venda e Aluguel']).count
-    @developments_count = Habitation.where(tipo: 'Empreendimento').count
+    @developments_count = Habitation.empreendimentos.count
+    @constructors_count = Constructor.count
     
     # Recent Properties
     @recent_properties = Habitation.newest_first.limit(8)

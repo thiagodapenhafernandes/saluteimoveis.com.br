@@ -65,7 +65,7 @@ salute-imoveis-v3/
 │   └── initializers/
 │       ├── redis.rb                 # Redis setup
 │       ├── cache.rb                 # Cache config
-│       └── sidekiq.rb               # Sidekiq config
+│       # removed sidekiq.rb
 │
 ├── .env                             # Environment variables
 ├── .env.example                     # Template
@@ -103,11 +103,11 @@ rails s -p 3000
 
 Acesse: http://localhost:3000
 
-### 3️⃣ Sidekiq (Background Jobs)
+### 3️⃣ Solid Queue (Background Jobs)
 
 ```bash
 # Em outro terminal
-bundle exec sidekiq
+bin/jobs start --mode=async
 ```
 
 ### 4️⃣ Console Rails
@@ -233,7 +233,8 @@ rails performance:memory
 - **redis** (cache/jobs)
 
 ### Performance
-- **sidekiq** - Background jobs
+- **solid_queue** - Background jobs
+- **mission_control-jobs** - Dashboard
 - **rack-attack** - Rate limiting
 - **dalli** - Memcached
 - **bootsnap** - Boot optimization

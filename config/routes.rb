@@ -1,10 +1,25 @@
 Rails.application.routes.draw do
   devise_for :admin_users, path: 'admin', controllers: {
-    sessions: 'admin/sessions'
+    sessions: 'admin/sessions',
+    omniauth_callbacks: 'admin/omniauth_callbacks'
   }
   
   # Admin Panel
   namespace :admin do
+    get 'admin_users/index'
+    get 'admin_users/new'
+    get 'admin_users/edit'
+    get 'admin_users/show'
+    resources :profiles
+    resources :habitations do
+      member do
+        post :sync
+      end
+    end
+    
+    resources :attribute_options, only: [:index, :create, :update, :destroy]
+    resources :constructors
+
     root to: 'dashboard#index'
     
     resource :home_setting, only: [:edit, :update]
@@ -30,6 +45,17 @@ Rails.application.routes.draw do
       post :sync, on: :member
     end
     resources :leads, only: [:index, :show, :update, :destroy]
+    resources :distribution_rules do
+      patch :toggle_active, on: :member
+    end
+    resources :meta_integrations, only: [:index] do
+      collection do
+        post :sync_pages
+        post :sync_forms
+        delete :disconnect
+        get :list_forms
+      end
+    end
     resources :landing_pages do
       get :preview, on: :collection
     end
@@ -57,6 +83,7 @@ Rails.application.routes.draw do
     end
   end
   get 'empreendimento/:id', to: 'habitations#show', as: :empreendimento_details
+  get 'empreendimetos', to: redirect('/empreendimentos')
   get 'links-uteis', to: 'pages#links_uteis', as: :links_uteis
   get 'corporativos', to: 'pages#corporativos', as: :corporativos
   
@@ -76,6 +103,8 @@ Rails.application.routes.draw do
       post :search_by_code
     end
   end
+
+  get 'imoveis-com-oportunidade', to: redirect('/imoveis?characteristics[]=opportunity')
   
   # Form submissions
   resources :contacts, only: [:create]
@@ -99,15 +128,19 @@ Rails.application.routes.draw do
   # Health check
   get "up" => "rails/health#show", as: :rails_health_check
   
-  # Sidekiq Web UI (apenas em development)
-  if Rails.env.development?
-    require 'sidekiq/web'
-    mount Sidekiq::Web => '/sidekiq'
-  end
-  # Dynamic Property Pages
+  # Public Leads creation
   resources :leads, only: [:create]
-  
-  # Catch-all route for public landing pages (formerly SEO and Property Pages)
+
+  # Mission Control for Jobs
+  mount MissionControl::Jobs::Engine => "/jobs"
+
+  # Webhooks
+  namespace :webhooks do
+    post "meta", to: "meta#receive_leads"
+    get "meta", to: "meta#receive_leads"
+  end
+
+  # Catch-all route for public landing pages
   get '/:slug', to: 'landing_pages#show', constraints: lambda { |req|
     LandingPage.exists?(slug: req.params[:slug])
   }, as: :public_landing_page

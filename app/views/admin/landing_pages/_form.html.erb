@@ -55,11 +55,11 @@
             </div>
             <div class="col-md-6">
               <%= fp.label :city, "Cidade(s)", class: "form-label fw-bold" %>
-              <%= fp.select :city, Habitation.active.distinct.pluck(:cidade).compact.sort, { }, { multiple: true, class: "form-select", data: { controller: "tom-select", action: "change->property-page-preview#refresh", tom_select_options_value: { placeholder: "Selecione cidades" } } } %>
+              <%= fp.select :city, Habitation.active.left_outer_joins(:address).distinct.pluck(Arel.sql("COALESCE(addresses.cidade, habitations.cidade)")).compact.sort, { }, { multiple: true, class: "form-select", data: { controller: "tom-select", action: "change->property-page-preview#refresh", tom_select_options_value: { placeholder: "Selecione cidades" } } } %>
             </div>
             <div class="col-md-6">
               <%= fp.label :neighborhood, "Bairro(s)", class: "form-label fw-bold" %>
-              <%= fp.select :neighborhood, Habitation.active.distinct.order(:bairro).pluck(:bairro).compact.uniq, { }, { multiple: true, class: "form-select", data: { controller: "tom-select", action: "change->property-page-preview#refresh", tom_select_options_value: { placeholder: "Selecione bairros" } } } %>
+              <%= fp.select :neighborhood, Habitation.active.left_outer_joins(:address).distinct.pluck(Arel.sql("COALESCE(addresses.bairro, habitations.bairro)")).compact.uniq.sort, { }, { multiple: true, class: "form-select", data: { controller: "tom-select", action: "change->property-page-preview#refresh", tom_select_options_value: { placeholder: "Selecione bairros" } } } %>
             </div>
             <div class="col-md-6">
               <%= fp.label :transaction_type, "Transação", class: "form-label fw-bold" %>

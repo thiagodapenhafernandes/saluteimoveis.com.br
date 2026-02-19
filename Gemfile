@@ -23,8 +23,8 @@ gem "rails-i18n"
 
 # Database & Background Jobs
 gem "redis", "~> 5.0"
-gem "sidekiq", "~> 7.0"
-gem "connection_pool"
+gem "solid_queue"
+gem "mission_control-jobs"
 
 # Pagination
 gem "will_paginate", "~> 4.0"
@@ -33,6 +33,9 @@ gem "will_paginate-bootstrap-style"
 # API & External Services
 gem "rest-client"
 gem "httparty"
+gem "koala", "~> 3.0"
+gem "omniauth-facebook"
+gem "omniauth-rails_csrf_protection"
 
 # Performance & Caching
 gem "rack-cors"

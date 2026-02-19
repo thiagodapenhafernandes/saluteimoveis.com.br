@@ -34,6 +34,7 @@ module SaluteImoveisV3
     config.hosts << "www.saluteimoveis.com.br"
     config.hosts << "localhost"
     config.hosts << "127.0.0.1"
+    config.hosts << "dev.unitymob.com.br"
 
     # Configuration for the application, engines, and railties goes here.
     #

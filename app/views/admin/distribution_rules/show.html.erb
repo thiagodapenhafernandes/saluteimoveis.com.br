@@ -1,0 +1,106 @@
+<div class="mb-4">
+  <%= link_to admin_distribution_rules_path, class: "text-decoration-none text-muted small" do %>
+    <i class="bi bi-arrow-left"></i> Voltar para a lista
+  <% end %>
+  <div class="d-flex justify-content-between align-items-center mt-2">
+    <h1 class="h3 mb-0 text-gray-800"><%= @rule.name %></h1>
+    <div class="btn-group">
+      <%= link_to edit_admin_distribution_rule_path(@rule), class: "btn btn-outline-primary" do %>
+        <i class="bi bi-pencil me-1"></i> Editar
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card shadow-sm border-0 mb-4 h-100">
+      <div class="card-header bg-white py-3">
+        <h5 class="card-title mb-0 fw-bold">Configuração</h5>
+      </div>
+      <div class="card-body">
+        <ul class="list-group list-group-flush small">
+          <li class="list-group-item d-flex justify-content-between px-0">
+            <span class="text-muted">Status:</span>
+            <% if @rule.active? %>
+              <span class="text-success fw-bold">Ativa</span>
+            <% else %>
+              <span class="text-secondary fw-bold">Inativa</span>
+            <% end %>
+          </li>
+          <li class="list-group-item d-flex justify-content-between px-0">
+            <span class="text-muted">Tipo:</span>
+            <span class="fw-bold"><%= @rule.business_type.humanize %></span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between px-0">
+            <span class="text-muted">Modo:</span>
+            <span class="badge bg-light text-primary border-0"><%= @rule.distribution_mode.humanize %></span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between px-0">
+            <span class="text-muted">Faixa de Preço:</span>
+            <span class="fw-bold"><%= @rule.min_price.to_f > 0 ? number_to_currency(@rule.min_price) : "R$ 0" %> - <%= @rule.max_price.to_f > 0 ? number_to_currency(@rule.max_price) : "Ilimitado" %></span>
+          </li>
+        </ul>
+        
+        <div class="mt-4">
+          <label class="small fw-bold text-muted text-uppercase d-block mb-2">Fontes Habilitadas</label>
+          <div class="d-flex flex-wrap gap-2">
+            <% if @rule.source_meta? %><span class="badge bg-primary-subtle text-primary border-0 px-2">Meta Ads</span><% end %>
+            <% if @rule.source_site? %><span class="badge bg-info-subtle text-info border-0 px-2">Site/WhatsApp</span><% end %>
+            <% if @rule.source_portal? %><span class="badge bg-success-subtle text-success border-0 px-2">Portais</span><% end %>
+            <% if @rule.source_webhook? %><span class="badge bg-dark-subtle text-dark border-0 px-2">Webhook</span><% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-header bg-white py-3">
+        <h5 class="card-title mb-0 fw-bold"><i class="bi bi-list-ol me-2 text-primary"></i>Fila de Distribuição</h5>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+              <tr>
+                <th class="ps-4 py-2 small fw-bold text-muted">Posição</th>
+                <th class="py-2 small fw-bold text-muted">Corretor</th>
+                <th class="py-2 small fw-bold text-muted">Último recebido</th>
+                <% if @rule.performance? %><th class="py-2 small fw-bold text-muted">Peso</th><% end %>
+              </tr>
+            </thead>
+            <tbody>
+              <% if @agents_queue.any? %>
+                <% @agents_queue.each do |dra| %>
+                  <tr>
+                    <td class="ps-4">
+                      <span class="badge bg-light text-dark rounded-circle" style="width: 24px; height: 24px;"><%= dra.position %></span>
+                    </td>
+                    <td>
+                      <div class="fw-bold"><%= dra.admin_user&.name %></div>
+                      <div class="extra-small text-muted"><%= dra.admin_user&.email %></div>
+                    </td>
+                    <td class="small">
+                      <%= dra.last_lead_received_at.present? ? l(dra.last_lead_received_at, format: :short) : "--" %>
+                    </td>
+                    <% if @rule.performance? %>
+                      <td>
+                        <span class="badge bg-primary"><%= dra.weight %></span>
+                      </td>
+                    <% end %>
+                  </tr>
+                <% end %>
+              <% else %>
+                <tr>
+                  <td colspan="4" class="text-center py-4 text-muted small">Nenhum corretor selecionado para esta regra.</td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

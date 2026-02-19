@@ -2,7 +2,7 @@ module Habitation::PriceFormatting
   extend ActiveSupport::Concern
 
   included do
-    %w[valor_venda valor_locacao valor_condominio valor_iptu valor_promocional valor_por_m2].each do |field|
+    %w[valor_venda valor_locacao valor_condominio valor_iptu valor_promocional valor_por_m2 valor_venda_anterior].each do |field|
       # Defines setter: "R$ 1.234,56" -> 123456 (cents)
       define_method("#{field}_formatted=") do |value|
         return if value.blank?

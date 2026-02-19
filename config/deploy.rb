@@ -13,7 +13,7 @@ require 'mina/rvm'    # for rvm support. (https://rvm.io)
 
 set :application_name, 'salute_imoveis_v3'
 set :domain, '143.110.138.67'
-set :deploy_to, '/home/salute/salute-imoveis-v3'
+set :deploy_to, '/home/salute/deploy'
 set :repository, 'https://github.com/thiagodapenhafernandes/saluteimoveis.com.br.git'
 set :branch, 'master'
 
@@ -49,9 +49,9 @@ task :remote_environment do
     fi
     
     # Load .env if it exists in shared path
-    if [ -f "/home/salute/salute-imoveis-v3/shared/.env" ]; then
+    if [ -f "#{fetch(:deploy_to)}/shared/.env" ]; then
       set -a
-      source "/home/salute/salute-imoveis-v3/shared/.env"
+      source "#{fetch(:deploy_to)}/shared/.env"
       set +a
     fi
     # Silence RVM path mismatch warnings
@@ -105,9 +105,8 @@ end
 
 desc "Reinicia o Puma e Sidekiq"
 task :restart => :remote_environment do
-  comment 'Restarting Puma and Sidekiq...'
+  comment 'Restarting Puma...'
   command %(sudo systemctl restart puma_salute_imoveis_v3_production)
-  command %(sudo systemctl restart sidekiq_salute_imoveis_v3_production)
   command %(cd #{fetch(:current_path)} && bundle exec rails runner "Rails.cache.clear")
 end
 
@@ -117,10 +116,6 @@ task :logs do
   command "journalctl -u puma_salute_imoveis_v3_production -f -n 100"
 end
 
-desc "Mostra os logs do Sidekiq em tempo real"
-task :sidekiq_logs do
-  command "journalctl -u sidekiq_salute_imoveis_v3_production -f -n 100"
-end
 
 # For help in making your deploy script, see the Mina documentation:
 #

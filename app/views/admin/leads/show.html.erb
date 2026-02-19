@@ -1,3 +1,4 @@
+<div data-controller="attribute-manager" data-attribute-manager-modal-id-value="attributeManagerModalLead">
 <div class="mb-4">
   <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
@@ -54,9 +55,21 @@
             <%= f.text_area :notes, rows: 6, class: "form-control", placeholder: "Histórico de conversas, preferências do cliente..." %>
           </div>
           <div class="d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center gap-2">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
               <%= f.label :status, "Status:", class: "mb-0" %>
               <%= f.select :status, Lead.statuses.keys.map { |s| [I18n.t("activerecord.attributes.lead.statuses.#{s}"), s] }, {}, class: "form-select form-select-sm", style: "width: auto;" %>
+              <%= f.label :origin, "Origem:", class: "mb-0 ms-2" %>
+              <%= f.select :origin, @origin_options, { include_blank: "Selecione..." }, class: "form-select form-select-sm", style: "width: auto; min-width: 180px;", data: { controller: "tom-select", tom_select_create_value: true }, id: "lead_origin" %>
+              <button type="button" class="btn btn-sm btn-outline-primary"
+                      data-attribute-manager-context-value="lead"
+                      data-attribute-manager-category-value="source"
+                      data-attribute-manager-field-name-value="lead[origin]"
+                      data-attribute-manager-modal-id-value="attributeManagerModalLead"
+                      data-action="click->attribute-manager#open"
+                      data-title="Gerenciar Origens de Lead"
+                      data-select-id="lead_origin">
+                <i class="bi bi-gear me-1"></i>Gerenciar
+              </button>
             </div>
             <%= f.submit "Salvar Alterações", class: "btn btn-primary" %>
           </div>
@@ -94,4 +107,6 @@
       </div>
     <% end %>
   </div>
+</div>
+<%= render "admin/shared/attribute_manager_modal", modal_id: "attributeManagerModalLead" %>
 </div>

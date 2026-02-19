@@ -14,11 +14,19 @@
       <% end %>
     </div>
 
-    <!-- Code Badge (Top Right) -->
-    <div class="absolute top-3 right-3 z-20">
+    <!-- Code & Constructor Badge (Top Right) -->
+    <div class="absolute top-3 right-3 z-20 flex flex-col items-end gap-2">
       <span class="px-2 py-1 bg-white/90 backdrop-blur-sm text-gray-600 text-[10px] font-bold rounded shadow-sm border border-gray-100">
         <%= property.id %>
       </span>
+      
+    <% if property.effective_constructor&.favicon_url.present? %>
+      <div class="w-8 h-8 p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-sm border border-gray-100 flex items-center justify-center transition-transform hover:scale-110" title="<%= property.effective_constructor.name %>">
+        <img src="<%= property.effective_constructor.favicon_url %>" 
+             alt="<%= property.effective_constructor.name %>" 
+             class="w-full h-full object-contain filter grayscale hover:grayscale-0 transition-all">
+      </div>
+    <% end %>
     </div>
 
     <!-- Development Units Badge (Bottom Left) -->

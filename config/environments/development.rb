@@ -42,8 +42,8 @@ Rails.application.configure do
   config.action_mailer.perform_caching = false
   config.action_mailer.default_url_options = { host: 'localhost', port: 3000 }
   
-  # Use Sidekiq for background jobs
-  config.active_job.queue_adapter = :sidekiq
+  # Use Solid Queue for background jobs
+  config.active_job.queue_adapter = :solid_queue
 
   # Print deprecation notices to the Rails logger.
   config.active_support.deprecation = :log

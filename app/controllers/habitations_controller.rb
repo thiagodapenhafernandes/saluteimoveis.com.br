@@ -24,7 +24,7 @@ class HabitationsController < ApplicationController
     @habitations = Habitation
       .active
       .advanced_search(search_params)
-      .includes(:empreendimento)
+      .includes(:constructor, empreendimento: :constructor)
       .paginate(page: params[:page], per_page: 12)
     
     # SEO page name
@@ -88,19 +88,21 @@ class HabitationsController < ApplicationController
     if term.present?
       # 1. Cidades
       cidades = Habitation.active
-                         .where("unaccent(cidade) ILIKE unaccent(?)", "%#{term}%")
+                         .left_outer_joins(:address)
+                         .where("unaccent(COALESCE(addresses.cidade, habitations.cidade)) ILIKE unaccent(?)", "%#{term}%")
                          .distinct
                          .limit(5)
-                         .pluck(:cidade)
+                         .pluck(Arel.sql("COALESCE(addresses.cidade, habitations.cidade)"))
       
       results += cidades.map { |c| { label: "#{c} (Cidade)", value: c, type: 'cidade' } }
 
       # 2. Bairros
       bairros = Habitation.active
-                          .where("unaccent(bairro) ILIKE unaccent(?)", "%#{term}%")
+                          .left_outer_joins(:address)
+                          .where("unaccent(COALESCE(addresses.bairro, habitations.bairro)) ILIKE unaccent(?)", "%#{term}%")
                           .distinct
                           .limit(5)
-                          .pluck(:bairro)
+                          .pluck(Arel.sql("COALESCE(addresses.bairro, habitations.bairro)"))
       
       results += bairros.map { |b| { label: "#{b} (Bairro)", value: b, type: 'bairro' } }
 
@@ -120,7 +122,13 @@ class HabitationsController < ApplicationController
       end
     else
       # Sugestões padrão quando vazio (opcional)
-      cidades_populares = Habitation.active.group(:cidade).order('count_all DESC').limit(5).count.keys
+      cidades_populares = Habitation.active
+                                  .left_outer_joins(:address)
+                                  .group(Arel.sql("COALESCE(addresses.cidade, habitations.cidade)"))
+                                  .order('count_all DESC')
+                                  .limit(5)
+                                  .count
+                                  .keys
       results += cidades_populares.map { |c| { label: c, value: c, type: 'cidade' } }
     end
 
@@ -168,7 +176,8 @@ class HabitationsController < ApplicationController
         @related_properties = Habitation
           .active
           .with_photos  # Apenas com fotos
-          .where(cidade: @habitation.cidade)  # Mesma cidade
+          .left_outer_joins(:address)
+          .where("COALESCE(addresses.cidade, habitations.cidade) = ?", @habitation.cidade) # Mesma cidade
           .where(dormitorios_qtd: @habitation.dormitorios_qtd)  # Mesmos quartos
           .where.not(id: @habitation.id)  # Excluir o imóvel atual
           .where(
@@ -243,8 +252,8 @@ class HabitationsController < ApplicationController
   # SEO OPTIMIZATION - Dynamic & Varied Meta Tags (Style: Conexão Imobiliária)
   def build_index_title
     count = @habitations.total_entries rescue @habitations.count
-    city = params[:city].presence || params[:bairro].presence || "Balneário Camboriú"
-    category = params[:category].presence || "Imóveis"
+    city = (params[:city].presence || params[:bairro].presence || "Balneário Camboriú").to_s.force_encoding('UTF-8').scrub
+    category = (params[:category].presence || "Imóveis").to_s.force_encoding('UTF-8').scrub
     
     # Determine Transaction Context
     transaction_term = case params[:transaction_type]
@@ -255,7 +264,7 @@ class HabitationsController < ApplicationController
 
     # Check for specific scenarios
     is_reduced = params[:characteristics]&.include?('opportunity') || 
-                 @habitations.any? { |h| h.valor_venda_anterior_cents.to_i > h.valor_venda_cents && h.valor_venda_anterior_cents > 0 }
+                 @habitations.any? { |h| h.valor_venda_anterior_cents.to_i > h.valor_venda_cents.to_i && h.valor_venda_anterior_cents.to_i > 0 }
     
     is_luxury = params[:min_price].to_i > 2_000_000 || params[:quadra_mar] == '1' || params[:frente_mar] == '1'
     
@@ -294,8 +303,8 @@ class HabitationsController < ApplicationController
   end
   
   def build_index_description
-    city = params[:city].presence || "Balneário Camboriú"
-    category = params[:category].presence || "imóveis"
+    city = (params[:city].presence || "Balneário Camboriú").to_s.force_encoding('UTF-8').scrub
+    category = (params[:category].presence || "imóveis").to_s.force_encoding('UTF-8').scrub
     
     # Varied Hooks/Intros
     intros = [
@@ -324,7 +333,7 @@ class HabitationsController < ApplicationController
     features = []
     features << "frente mar" if params[:vista_frente_mar_flag] == '1'
     features << "mobiliado" if params[:mobiliado_flag] == '1'
-    features << "com valor reduzido" if @habitations.any? { |h| h.valor_venda_anterior_cents.to_i > h.valor_venda_cents }
+    features << "com valor reduzido" if @habitations.any? { |h| h.valor_venda_anterior_cents.to_i > h.valor_venda_cents.to_i && h.valor_venda_anterior_cents.to_i > 0 }
     
     feature_text = features.any? ? " Opções com #{features.join(', ')}." : ""
     
@@ -354,7 +363,7 @@ class HabitationsController < ApplicationController
     keywords << 'apartamento alto padrão' if params[:min_price].to_i > 1_000_000
     
     # Valor reduzido/Oportunidade
-    if @habitations.any? { |h| h.valor_venda_anterior_cents.to_i > h.valor_venda_cents }
+    if @habitations.any? { |h| h.valor_venda_anterior_cents.to_i > h.valor_venda_cents.to_i && h.valor_venda_anterior_cents.to_i > 0 }
       keywords << 'valor reduzido' << 'promoção' << 'oportunidade' << 'desconto'
     end
     

@@ -325,10 +325,10 @@
               <span class="font-semibold text-gray-900"><%= @habitation.categoria %></span>
             </div>
 
-            <% if @habitation.caracteristica_unica.present? %>
+            <% if @habitation.unique_features.present? %>
               <div class="flex justify-between py-2 border-b border-gray-100">
-                <span class="text-gray-500">Caracteristica Unica:</span>
-                <span class="font-semibold text-gray-900"><%= @habitation.caracteristica_unica %></span>
+                <span class="text-gray-500">Característica Única:</span>
+                <span class="font-semibold text-gray-900"><%= @habitation.unique_features.join(', ') %></span>
               </div>
             <% end %>
             
@@ -364,7 +364,7 @@
                class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-lg transition-colors flex items-center justify-center">
               <i class="fab fa-x-twitter"></i>
             </a>
-            <a href="mailto:?subject=<%= url_encode(@habitation.display_title) %>&body=Confira este imóvel na Salute Imóveis: <%= request.original_url %>"
+            <a href="mailto:?subject=<%= url_encode(@habitation.display_title) %>&body=Confira este imóvel na Salute Imóveis: <%= request.original_url.to_s.force_encoding('UTF-8').scrub %>"
                class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-lg transition-colors flex items-center justify-center">
               <i class="fas fa-envelope"></i>
             </a>

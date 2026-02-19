@@ -7,25 +7,38 @@ export default class extends Controller {
   connect() {
     this.isDragging = false
     this.dragStartTime = null
+    this.boundMouseDown = this.handleMouseDown.bind(this)
+    this.boundTouchStart = this.handleTouchStart.bind(this)
+    this.boundMouseUp = this.handleMouseUp.bind(this)
+    this.boundTouchEnd = this.handleTouchEnd.bind(this)
+    this.boundMouseMove = this.handleMouseMove.bind(this)
+    this.boundTouchMove = this.handleTouchMove.bind(this)
+    this.boundClick = this.handleClick.bind(this)
 
     // Detecta início de drag/swipe
-    this.element.addEventListener('mousedown', this.handleMouseDown.bind(this))
-    this.element.addEventListener('touchstart', this.handleTouchStart.bind(this))
+    this.element.addEventListener('mousedown', this.boundMouseDown)
+    this.element.addEventListener('touchstart', this.boundTouchStart)
 
     // Detecta fim de drag
-    this.element.addEventListener('mouseup', this.handleMouseUp.bind(this))
-    this.element.addEventListener('touchend', this.handleTouchEnd.bind(this))
+    this.element.addEventListener('mouseup', this.boundMouseUp)
+    this.element.addEventListener('touchend', this.boundTouchEnd)
 
     // Detecta movimento (indica drag)
-    this.element.addEventListener('mousemove', this.handleMouseMove.bind(this))
-    this.element.addEventListener('touchmove', this.handleTouchMove.bind(this))
+    this.element.addEventListener('mousemove', this.boundMouseMove)
+    this.element.addEventListener('touchmove', this.boundTouchMove)
 
     // Adiciona evento de clique no card
-    this.element.addEventListener('click', this.handleClick.bind(this))
+    this.element.addEventListener('click', this.boundClick)
   }
 
   disconnect() {
-    this.element.removeEventListener('click', this.handleClick.bind(this))
+    this.element.removeEventListener('mousedown', this.boundMouseDown)
+    this.element.removeEventListener('touchstart', this.boundTouchStart)
+    this.element.removeEventListener('mouseup', this.boundMouseUp)
+    this.element.removeEventListener('touchend', this.boundTouchEnd)
+    this.element.removeEventListener('mousemove', this.boundMouseMove)
+    this.element.removeEventListener('touchmove', this.boundTouchMove)
+    this.element.removeEventListener('click', this.boundClick)
   }
 
   handleMouseDown(event) {
@@ -83,8 +96,13 @@ export default class extends Controller {
       return
     }
 
-    // Se clicou em botões do Swiper, não navega
+    // Não intercepta elementos interativos internos
     const target = event.target
+    if (target.closest('a, button, input, select, textarea, label, .dropdown, .dropdown-menu, [data-action]')) {
+      return
+    }
+
+    // Se clicou em botões do Swiper, não navega
     if (target.closest('.swiper-button-next') ||
       target.closest('.swiper-button-prev') ||
       target.closest('.swiper-pagination')) {

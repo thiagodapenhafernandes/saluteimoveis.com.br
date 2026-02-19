@@ -1,0 +1,81 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-1 text-gray-800" style="color: #bfa15f !important; font-family: 'Outfit', sans-serif; font-weight: 700;">Construtoras</h1>
+    <p class="text-muted small mb-0">Gerencie as parceiras e incorporadoras.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <%= link_to admin_root_path, class: "btn btn-white border d-flex align-items-center shadow-sm" do %>
+      <i class="bi bi-arrow-left me-2"></i> Voltar
+    <% end %>
+    <%= link_to new_admin_constructor_path, class: "btn btn-primary d-flex align-items-center fw-bold px-4 shadow-sm" do %>
+      <i class="bi bi-plus-lg me-2"></i> Nova Construtora
+    <% end %>
+  </div>
+</div>
+<!-- Filters -->
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body p-3">
+    <%= form_with url: admin_constructors_path, method: :get, local: true, class: "row g-2 align-items-end" do |f| %>
+      <div class="col-md-10">
+        <label class="form-label small fw-bold text-muted text-uppercase mb-1">Buscar Construtora</label>
+        <%= f.text_field :q, value: params[:q], class: "form-control", placeholder: "Digite o nome da construtora..." %>
+      </div>
+      <div class="col-md-2 d-flex gap-2">
+        <%= f.submit "Filtrar", class: "btn btn-primary fw-bold flex-grow-1" %>
+        <% if params[:q].present? %>
+          <%= link_to admin_constructors_path, class: "btn btn-light", title: "Limpar" do %>
+            <i class="bi bi-x-lg"></i>
+          <% end %>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div class="row g-3">
+  <% @constructors.each do |constructor| %>
+    <div class="col-md-4 col-lg-3">
+      <div class="card border-0 shadow-sm h-100 hover-shadow transition-all text-center p-3">
+        <div class="d-flex justify-content-center align-items-center mb-3 p-2 bg-white rounded" style="height: 100px;">
+          <% if constructor.dynamic_logo_url.present? %>
+            <img src="<%= constructor.dynamic_logo_url %>" 
+                 class="img-fluid max-h-100 object-fit-contain" 
+                 style="max-height: 80px; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.5));" 
+                 alt="<%= constructor.name %>" 
+                 loading="lazy">
+          <% else %>
+            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+              <i class="bi bi-building text-muted opacity-50 display-6"></i>
+            </div>
+          <% end %>
+        </div>
+        <h6 class="fw-bold mb-1 text-truncate px-2"><%= constructor.name %></h6>
+        <p class="text-muted small mb-3"><%= constructor.habitations.count %> Imóveis</p>
+        
+        <div class="d-flex justify-content-center gap-2">
+          <%= link_to edit_admin_constructor_path(constructor), class: "btn btn-sm btn-light rounded-pill px-3" do %>
+            <i class="bi bi-pencil me-1"></i> Editar
+          <% end %>
+          <%= button_to admin_constructor_path(constructor), method: :delete, class: "btn btn-sm btn-outline-danger rounded-pill px-3", data: { confirm: "Tem certeza?" } do %>
+             <i class="bi bi-trash"></i>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<div class="d-flex justify-content-center mt-5 mb-4">
+  <%= will_paginate @constructors, renderer: WillPaginate::ActionView::BootstrapLinkRenderer, class: "shadow-sm" %>
+</div>
+
+<style>
+  .hover-shadow:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0.5rem 1.5rem rgba(0,0,0,.1)!important;
+  }
+  .transition-all {
+    transition: all 0.2s ease;
+  }
+  .max-h-100 { max-height: 100%; }
+</style>

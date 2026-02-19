@@ -74,10 +74,8 @@
             </div>
           </div>
         </div>
-        <div class="card-footer bg-transparent border-0 pt-0">
-          <small class="text-muted">
-            <i class="bi bi-building"></i> <%= @developments_count %> empreendimentos
-          </small>
+        <div class="card-footer bg-transparent border-0 pt-0 text-muted small">
+          <i class="bi bi-link-45deg"></i> <%= @developments_count %> <%= @developments_count == 1 ? 'projeto' : 'projetos' %> vinculados
         </div>
       </div>
     </div>
@@ -102,6 +100,54 @@
           <small class="text-muted">
             Média: <%= number_to_currency(@avg_sale_value, precision: 0) %>
           </small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inventory Stats -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">
+      <div class="card shadow-sm border-0 h-100 bg-white">
+        <div class="card-body py-3">
+          <div class="d-flex align-items-center text-dark">
+            <div class="flex-shrink-0">
+              <div class="bg-info bg-opacity-10 rounded-3 p-3 text-info border border-info border-opacity-10">
+                <i class="bi bi-buildings" style="font-size: 1.5rem;"></i>
+              </div>
+            </div>
+            <div class="ms-3">
+              <h3 class="mb-0 fw-bold"><%= number_with_delimiter(@developments_count) %></h3>
+              <p class="text-muted mb-0 small fw-bold text-uppercase ls-wide" style="font-size: 0.65rem;">Empreendimentos Ativos</p>
+            </div>
+            <div class="ms-auto">
+              <%= link_to admin_habitations_path(tipo: 'Empreendimento'), class: "btn btn-sm btn-outline-info rounded-pill" do %>
+                <i class="bi bi-list-ul me-1"></i> Ver Lista
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card shadow-sm border-0 h-100 bg-white shadow-hover transition-all">
+        <div class="card-body py-3">
+          <div class="d-flex align-items-center text-dark">
+            <div class="flex-shrink-0">
+              <div class="bg-primary bg-opacity-10 rounded-3 p-3 text-primary border border-primary border-opacity-10">
+                <i class="bi bi-hammer" style="font-size: 1.5rem;"></i>
+              </div>
+            </div>
+            <div class="ms-3">
+              <h3 class="mb-0 fw-bold"><%= number_with_delimiter(@constructors_count) %></h3>
+              <p class="text-muted mb-0 small fw-bold text-uppercase ls-wide" style="font-size: 0.65rem;">Parceiros / Construtoras</p>
+            </div>
+            <div class="ms-auto">
+              <%= link_to admin_constructors_path, class: "btn btn-sm btn-outline-primary rounded-pill" do %>
+                <i class="bi bi-list-ul me-1"></i> Ver Lista
+              <% end %>
+            </div>
+          </div>
         </div>
       </div>
     </div>

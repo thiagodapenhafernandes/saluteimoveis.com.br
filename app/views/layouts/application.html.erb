@@ -28,8 +28,8 @@
     
     <%# Open Graph / Facebook %>
     <meta property="og:type" content="website">
-    <meta property="og:url" content="<%= request.original_url %>">
-    <meta property="og:title" content="<%= @page_title || seo.meta_title %>">
+    <meta property="og:url" content="<%= request.original_url.to_s.force_encoding('UTF-8').scrub %>">
+    <meta property="og:title" content="<%= (@page_title || seo.meta_title).to_s.force_encoding('UTF-8').scrub %>">
     <meta property="og:description" content="<%= strip_tags(@page_description || seo.meta_description) %>">
     <meta property="og:site_name" content="<%= @layout_setting&.site_name.presence || 'Salute Imóveis' %>">
     <meta property="og:locale" content="pt_BR">
@@ -40,7 +40,7 @@
     <meta name="twitter:title" content="<%= @page_title || seo.meta_title %>">
     <meta name="twitter:image" content="<%= final_image %>">
     
-    <link rel="canonical" href="<%= request.original_url %>">
+    <link rel="canonical" href="<%= request.original_url.to_s.force_encoding('UTF-8').scrub %>">
     <% if @layout_setting&.favicon&.attached? %>
       <link rel="icon" href="<%= rails_blob_path(@layout_setting.favicon) %>">
     <% else %>

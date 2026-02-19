@@ -10,14 +10,51 @@ export default class extends Controller {
   }
 
   connect() {
+    if (this.shouldDeferInitialization()) {
+      this.bindDeferredInitialization()
+      return
+    }
+
+    this.initializeTomSelect()
+  }
+
+  shouldDeferInitialization() {
+    const isHidden = this.element.offsetParent === null
+    const inHiddenTabPane = this.element.closest(".tab-pane")?.classList.contains("active") === false
+    return isHidden || inHiddenTabPane
+  }
+
+  bindDeferredInitialization() {
+    this.deferredInitHandler = () => this.initializeTomSelect()
+    this.element.addEventListener("focus", this.deferredInitHandler, { once: true })
+    this.element.addEventListener("mousedown", this.deferredInitHandler, { once: true })
+    this.element.addEventListener("touchstart", this.deferredInitHandler, { once: true })
+
+    this.tabShownHandler = () => {
+      if (this.element.offsetParent !== null) this.initializeTomSelect()
+    }
+    document.addEventListener("shown.bs.tab", this.tabShownHandler)
+  }
+
+  initializeTomSelect() {
+    if (this.tomSelect) return
+
     // Default configuration suitable for Bootstrap 5
+    const isMultiple = this.element.hasAttribute("multiple") || this.tagsValue;
+
+    // Only add remove_button plugin if it's a multiple select
+    const plugins = {};
+    if (isMultiple) {
+      plugins.remove_button = { title: '' };
+    }
+
     const config = {
-      plugins: ['remove_button'],
+      plugins: plugins,
       create: this.createValue || this.tagsValue,
       persist: false,
-      allowEmptyOption: true,
-      maxItems: (this.element.hasAttribute("multiple") || this.tagsValue) ? null : 1,
-      wrapperClass: 'ts-wrapper form-control p-0 border-1',
+      allowEmptyOption: false,
+      maxItems: isMultiple ? null : 1,
+      wrapperClass: 'ts-wrapper p-0',
       onDropdownOpen: () => {
         this.element.closest('.ts-wrapper')?.classList.remove('is-invalid')
       },
@@ -32,9 +69,30 @@ export default class extends Controller {
     }
 
     this.tomSelect = new TomSelect(this.element, config)
+
+    // Inherit sizing classes from the original element
+    if (this.element.classList.contains('form-select-sm') || this.element.classList.contains('form-control-sm')) {
+      this.tomSelect.wrapper.classList.add('form-control-sm')
+    }
+
+    this.unbindDeferredInitialization()
+  }
+
+  unbindDeferredInitialization() {
+    if (this.deferredInitHandler) {
+      this.element.removeEventListener("focus", this.deferredInitHandler)
+      this.element.removeEventListener("mousedown", this.deferredInitHandler)
+      this.element.removeEventListener("touchstart", this.deferredInitHandler)
+      this.deferredInitHandler = null
+    }
+    if (this.tabShownHandler) {
+      document.removeEventListener("shown.bs.tab", this.tabShownHandler)
+      this.tabShownHandler = null
+    }
   }
 
   disconnect() {
+    this.unbindDeferredInitialization()
     if (this.tomSelect) {
       this.tomSelect.destroy()
     }

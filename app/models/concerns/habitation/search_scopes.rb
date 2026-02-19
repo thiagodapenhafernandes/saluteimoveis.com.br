@@ -1,5 +1,11 @@
 module Habitation::SearchScopes
   extend ActiveSupport::Concern
+
+  UNIQUE_FEATURES_ARRAY_SQL = "CASE " \
+                              "WHEN pg_typeof(habitations.caracteristica_unica)::text = 'text[]' " \
+                              "THEN COALESCE(habitations.caracteristica_unica::text[], ARRAY[]::text[]) " \
+                              "ELSE string_to_array(COALESCE(habitations.caracteristica_unica::text, ''), ',') " \
+                              "END".freeze
   
   included do
     # Scopes básicos de visibilidade
@@ -11,10 +17,38 @@ module Habitation::SearchScopes
         .with_price 
     }
     scope :featured, -> { where(destaque_web_flag: true) }
-    scope :lancamento, -> { where("lancamento_flag = true OR unaccent(caracteristica_unica) ILIKE unaccent('%lançamento%')") }
-    scope :na_planta, -> { where("unaccent(caracteristica_unica) ILIKE unaccent('%planta%')") }
-    scope :pronto, -> { where("unaccent(caracteristica_unica) ILIKE unaccent('%pronto%')") }
-    scope :em_construcao, -> { where("unaccent(caracteristica_unica) ILIKE unaccent('%construção%')") }
+    scope :lancamento, -> {
+      where(
+        "lancamento_flag = true OR EXISTS (" \
+        "SELECT 1 FROM unnest((#{UNIQUE_FEATURES_ARRAY_SQL})) AS feature " \
+        "WHERE unaccent(feature) ILIKE unaccent('%lançamento%')" \
+        ")"
+      )
+    }
+    scope :na_planta, -> {
+      where(
+        "EXISTS (" \
+        "SELECT 1 FROM unnest((#{UNIQUE_FEATURES_ARRAY_SQL})) AS feature " \
+        "WHERE unaccent(feature) ILIKE unaccent('%planta%')" \
+        ")"
+      )
+    }
+    scope :pronto, -> {
+      where(
+        "EXISTS (" \
+        "SELECT 1 FROM unnest((#{UNIQUE_FEATURES_ARRAY_SQL})) AS feature " \
+        "WHERE unaccent(feature) ILIKE unaccent('%pronto%')" \
+        ")"
+      )
+    }
+    scope :em_construcao, -> {
+      where(
+        "EXISTS (" \
+        "SELECT 1 FROM unnest((#{UNIQUE_FEATURES_ARRAY_SQL})) AS feature " \
+        "WHERE unaccent(feature) ILIKE unaccent('%construção%')" \
+        ")"
+      )
+    }
     
     # Scope para imóveis com fotos (verifica se é array e tem elementos OU se tem fotos anexadas)
     scope :with_photos, -> { 
@@ -53,12 +87,12 @@ module Habitation::SearchScopes
       if city.is_a?(Array)
         clean = city.reject(&:blank?)
         if clean.any?
-          where("unaccent(cidade) IN (SELECT unaccent(n) FROM unnest(ARRAY[?]) AS n)", clean)
+          left_outer_joins(:address).where("unaccent(COALESCE(addresses.cidade, habitations.cidade)) IN (SELECT unaccent(n) FROM unnest(ARRAY[?]) AS n)", clean)
         else
           all
         end
       elsif city.present?
-        where("unaccent(cidade) ILIKE unaccent(?)", "%#{city}%")
+        left_outer_joins(:address).where("unaccent(COALESCE(addresses.cidade, habitations.cidade)) ILIKE unaccent(?)", "%#{city}%")
       else
         all
       end
@@ -67,17 +101,17 @@ module Habitation::SearchScopes
       if neighborhood.is_a?(Array)
         neighborhood_clean = neighborhood.reject(&:blank?)
         if neighborhood_clean.any?
-          where("unaccent(bairro) IN (SELECT unaccent(n) FROM unnest(ARRAY[?]) AS n)", neighborhood_clean)
+          left_outer_joins(:address).where("unaccent(COALESCE(addresses.bairro, habitations.bairro)) IN (SELECT unaccent(n) FROM unnest(ARRAY[?]) AS n)", neighborhood_clean)
         else
           all
         end
       elsif neighborhood.present?
-        where("unaccent(bairro) ILIKE unaccent(?)", "%#{neighborhood}%")
+        left_outer_joins(:address).where("unaccent(COALESCE(addresses.bairro, habitations.bairro)) ILIKE unaccent(?)", "%#{neighborhood}%")
       else
         all
       end
     }
-    scope :by_state, ->(state) { where(uf: state) if state.present? }
+    scope :by_state, ->(state) { left_outer_joins(:address).where("COALESCE(addresses.uf, habitations.uf) = ?", state) if state.present? }
     
     # Scopes por características
     scope :with_min_bedrooms, ->(count) { where("dormitorios_qtd >= ?", count) if count.present? }
@@ -132,14 +166,17 @@ module Habitation::SearchScopes
     scope :search_text, ->(query) {
       if query.present?
         sanitized = query.strip
-        where(
+        left_outer_joins(:address).where(
           "unaccent(titulo_anuncio) ILIKE unaccent(:q) OR " \
           "unaccent(descricao_web) ILIKE unaccent(:q) OR " \
-          "unaccent(endereco) ILIKE unaccent(:q) OR " \
-          "unaccent(bairro) ILIKE unaccent(:q) OR " \
-          "unaccent(cidade) ILIKE unaccent(:q) OR " \
+          "unaccent(COALESCE(addresses.logradouro, habitations.endereco)) ILIKE unaccent(:q) OR " \
+          "unaccent(COALESCE(addresses.bairro, habitations.bairro)) ILIKE unaccent(:q) OR " \
+          "unaccent(COALESCE(addresses.cidade, habitations.cidade)) ILIKE unaccent(:q) OR " \
           "unaccent(nome_empreendimento) ILIKE unaccent(:q) OR " \
-          "unaccent(caracteristica_unica) ILIKE unaccent(:q) OR " \
+          "EXISTS (" \
+          "SELECT 1 FROM unnest((#{UNIQUE_FEATURES_ARRAY_SQL})) AS feature " \
+          "WHERE unaccent(feature) ILIKE unaccent(:q)" \
+          ") OR " \
           "codigo ILIKE :q",
           q: "%#{sanitized}%"
         )
@@ -317,7 +354,7 @@ module Habitation::SearchScopes
         "SELECT 1 FROM habitations units " \
         "WHERE units.codigo_empreendimento = habitations.codigo " \
         "AND units.exibir_no_site_flag = TRUE " \
-        "AND units.status IN ('Venda', 'Aluguel', 'Venda e Aluguel') " \
+        "AND units.status IN ('Venda', 'Locação', 'Venda e Locação', 'Aluguel', 'Venda e Aluguel') " \
         "AND (units.valor_venda_cents > 0 OR units.valor_locacao_cents > 0) " \
         "AND jsonb_typeof(units.pictures) = 'array' " \
         "AND jsonb_array_length(units.pictures) > 0" \
@@ -347,8 +384,10 @@ module Habitation::SearchScopes
           query = query.by_city(params[:city])
         else
           city_term = params[:city].to_s.strip
-          query = query.where(
-            "unaccent(cidade) ILIKE unaccent(:term) OR unaccent(bairro) ILIKE unaccent(:term) OR unaccent(nome_empreendimento) ILIKE unaccent(:term)",
+          query = query.left_outer_joins(:address).where(
+            "unaccent(COALESCE(addresses.cidade, habitations.cidade)) ILIKE unaccent(:term) OR " \
+            "unaccent(COALESCE(addresses.bairro, habitations.bairro)) ILIKE unaccent(:term) OR " \
+            "unaccent(nome_empreendimento) ILIKE unaccent(:term)",
             term: "%#{city_term}%"
           )
         end
@@ -370,7 +409,16 @@ module Habitation::SearchScopes
       
       # Característica Única (Badge Match)
       if params[:caracteristica_unica].present?
-        query = query.where("unaccent(caracteristica_unica) ILIKE unaccent(?)", "%#{params[:caracteristica_unica]}%")
+        feature_terms = Array(params[:caracteristica_unica]).reject(&:blank?)
+        query = query.where(
+          feature_terms.map {
+            "EXISTS (" \
+            "SELECT 1 FROM unnest((#{UNIQUE_FEATURES_ARRAY_SQL})) AS feature " \
+            "WHERE unaccent(feature) ILIKE unaccent(?)" \
+            ")"
+          }.join(" OR "),
+          *feature_terms.map { |term| "%#{term}%" }
+        )
       end
 
       # Preço Target (Range +/- 20%)
@@ -472,14 +520,15 @@ module Habitation::SearchScopes
         search_term = params[:search].strip
         
         # Busca em campos principais
-        query = query.where(
+        query = query.left_outer_joins(:address).where(
           "unaccent(titulo_anuncio) ILIKE unaccent(:q) OR " \
           "unaccent(descricao_web) ILIKE unaccent(:q) OR " \
-          "unaccent(endereco) ILIKE unaccent(:q) OR " \
-          "unaccent(bairro) ILIKE unaccent(:q) OR " \
-          "unaccent(cidade) ILIKE unaccent(:q) OR " \
+          "unaccent(COALESCE(addresses.logradouro, habitations.endereco)) ILIKE unaccent(:q) OR " \
+          "unaccent(COALESCE(addresses.bairro, habitations.bairro)) ILIKE unaccent(:q) OR " \
+          "unaccent(COALESCE(addresses.cidade, habitations.cidade)) ILIKE unaccent(:q) OR " \
           "unaccent(nome_empreendimento) ILIKE unaccent(:q) OR " \
           "codigo ILIKE :q OR " \
+          "EXISTS (SELECT 1 FROM unnest((#{UNIQUE_FEATURES_ARRAY_SQL})) AS feature WHERE unaccent(feature) ILIKE unaccent(:q)) OR " \
           "EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) WHERE unaccent(lower(value)) ILIKE unaccent(:q)) OR " \
           "(jsonb_typeof(infra_estrutura) = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(infra_estrutura) WHERE unaccent(lower(value)) ILIKE unaccent(:q)))",
           q: "%#{search_term}%"

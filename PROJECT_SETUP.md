@@ -44,8 +44,8 @@ gem "meta-tags"
 
 # Database & Background Jobs
 gem "redis", "~> 5.0"
-gem "sidekiq", "~> 7.0"
-gem "connection_pool"
+gem "solid_queue"
+gem "mission_control-jobs"
 
 # Pagination
 gem "will_paginate", "~> 4.0"
@@ -240,17 +240,6 @@ Rails.application.configure do
       Rails.logger.error("Redis cache error: #{exception.class} - #{exception.message}")
     }
   }
-end
-```
-
-**config/initializers/sidekiq.rb:**
-```ruby
-Sidekiq.configure_server do |config|
-  config.redis = { url: ENV.fetch("REDIS_URL", "redis://localhost:6379/0") }
-end
-
-Sidekiq.configure_client do |config|
-  config.redis = { url: ENV.fetch("REDIS_URL", "redis://localhost:6379/0") }
 end
 ```
 
@@ -599,9 +588,8 @@ Rails.application.routes.draw do
   # Health check
   get '/health', to: 'health#index'
   
-  # Sidekiq Web UI
-  require 'sidekiq/web'
-  mount Sidekiq::Web => '/sidekiq'
+  # Mission Control for Jobs
+  mount MissionControl::Jobs::Engine => "/jobs"
 end
 ```
 

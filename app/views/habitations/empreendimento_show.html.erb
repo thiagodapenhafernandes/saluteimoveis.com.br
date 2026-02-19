@@ -269,13 +269,14 @@
             </div>
 
             <!-- Nearby -->
-            <% if @habitation.imediacoes.present? %>
+            <% surroundings = Array(@habitation.imediacoes).flatten.compact.map(&:to_s).map(&:strip).reject(&:blank?) %>
+            <% if surroundings.present? %>
               <div>
                 <h3 class="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                   <i class="bi bi-pin-map text-golden-one"></i>
                   Imediações
                 </h3>
-                <p class="text-gray-600"><%= @habitation.imediacoes %></p>
+                <p class="text-gray-600"><%= surroundings.join(", ") %></p>
               </div>
             <% end %>
           </div>
@@ -355,10 +356,10 @@
                 <span class="font-semibold text-gray-900"><%= @habitation.codigo %></span>
               </div>
               
-              <% if @habitation.construtora.present? %>
+              <% if @habitation.constructor_name.present? %>
                 <div class="flex justify-between py-2 border-b border-gray-100">
                   <span class="text-gray-500">Construtora:</span>
-                  <span class="font-semibold text-gray-900"><%= @habitation.construtora %></span>
+                  <span class="font-semibold text-gray-900"><%= @habitation.constructor_name %></span>
                 </div>
               <% end %>
               

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_01_12_012254) do
+ActiveRecord::Schema[7.1].define(version: 2026_02_19_110000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -53,6 +53,27 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_12_012254) do
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
 
+  create_table "addresses", force: :cascade do |t|
+    t.string "addressable_type", null: false
+    t.bigint "addressable_id", null: false
+    t.string "tipo_endereco"
+    t.string "logradouro"
+    t.string "numero"
+    t.string "complemento"
+    t.string "bairro"
+    t.string "bairro_comercial"
+    t.string "cidade"
+    t.string "uf", limit: 2
+    t.string "cep", limit: 10
+    t.string "pais", default: "Brasil"
+    t.decimal "latitude", precision: 10, scale: 7
+    t.decimal "longitude", precision: 10, scale: 7
+    t.text "imediacoes", default: [], null: false, array: true
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["addressable_type", "addressable_id"], name: "index_addresses_on_addressable"
+  end
+
   create_table "admin_users", force: :cascade do |t|
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
@@ -63,8 +84,29 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_12_012254) do
     t.datetime "remember_created_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "profile_id"
+    t.bigint "manager_id"
+    t.string "vista_id"
+    t.string "creci"
+    t.string "phone"
+    t.text "biography"
+    t.date "birth_date"
+    t.string "city"
+    t.integer "acting_type"
     t.index ["email"], name: "index_admin_users_on_email", unique: true
+    t.index ["manager_id"], name: "index_admin_users_on_manager_id"
+    t.index ["profile_id"], name: "index_admin_users_on_profile_id"
     t.index ["reset_password_token"], name: "index_admin_users_on_reset_password_token", unique: true
+    t.index ["vista_id"], name: "index_admin_users_on_vista_id"
+  end
+
+  create_table "attribute_options", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "category", null: false
+    t.string "context", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index "lower((name)::text), category, context", name: "index_attribute_options_on_context_category_lower_name", unique: true
   end
 
   create_table "banners", force: :cascade do |t|
@@ -78,6 +120,13 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_12_012254) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "positions", default: [], array: true
+  end
+
+  create_table "constructors", force: :cascade do |t|
+    t.string "name"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "website_url"
   end
 
   create_table "contact_settings", force: :cascade do |t|
@@ -94,6 +143,48 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_12_012254) do
     t.string "linkedin_url"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "distribution_rule_agents", force: :cascade do |t|
+    t.bigint "distribution_rule_id", null: false
+    t.bigint "admin_user_id", null: false
+    t.integer "weight", default: 1
+    t.datetime "last_lead_received_at"
+    t.integer "position"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["admin_user_id"], name: "index_distribution_rule_agents_on_admin_user_id"
+    t.index ["distribution_rule_id", "admin_user_id"], name: "idx_dist_rule_agents_on_rule_and_admin", unique: true
+    t.index ["distribution_rule_id"], name: "index_distribution_rule_agents_on_distribution_rule_id"
+  end
+
+  create_table "distribution_rules", force: :cascade do |t|
+    t.string "name", null: false
+    t.integer "business_type", default: 0
+    t.boolean "source_meta", default: false
+    t.boolean "source_webhook", default: false
+    t.boolean "source_portal", default: false
+    t.jsonb "meta_forms", default: []
+    t.jsonb "webhook_tags", default: []
+    t.jsonb "custom_filters", default: []
+    t.integer "distribution_mode", default: 0
+    t.boolean "pocket_active", default: false
+    t.integer "pocket_time", default: 30
+    t.boolean "represamento_active", default: false
+    t.jsonb "represamento_schedule", default: {}
+    t.boolean "active", default: true
+    t.decimal "min_price", precision: 15, scale: 2
+    t.decimal "max_price", precision: 15, scale: 2
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.boolean "source_site", default: false
+    t.boolean "auto_add_forms", default: false
+    t.boolean "notify_whatsapp", default: false
+    t.boolean "notify_email", default: false
+    t.boolean "notify_webhook", default: false
+    t.jsonb "meta_page_ids", default: []
+    t.jsonb "neighborhoods", default: []
+    t.string "webhook_url"
   end
 
   create_table "featured_properties_views", force: :cascade do |t|
@@ -158,6 +249,19 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_12_012254) do
     t.index ["slug", "sluggable_type", "scope"], name: "index_friendly_id_slugs_on_slug_and_sluggable_type_and_scope", unique: true
     t.index ["slug", "sluggable_type"], name: "index_friendly_id_slugs_on_slug_and_sluggable_type"
     t.index ["sluggable_type", "sluggable_id"], name: "index_friendly_id_slugs_on_sluggable_type_and_sluggable_id"
+  end
+
+  create_table "habitation_broker_assignments", force: :cascade do |t|
+    t.bigint "habitation_id", null: false
+    t.bigint "admin_user_id", null: false
+    t.string "role"
+    t.string "commission_type"
+    t.decimal "commission_value", precision: 10, scale: 2
+    t.text "observations"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["admin_user_id"], name: "index_habitation_broker_assignments_on_admin_user_id"
+    t.index ["habitation_id"], name: "index_habitation_broker_assignments_on_habitation_id"
   end
 
   create_table "habitations", force: :cascade do |t|
@@ -280,6 +384,34 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_12_012254) do
     t.datetime "last_sync_at"
     t.string "last_sync_status"
     t.text "last_sync_message"
+    t.bigint "admin_user_id"
+    t.bigint "constructor_id"
+    t.string "proprietario_celular"
+    t.string "proprietario_telefone_comercial"
+    t.string "proprietario_telefone_residencial"
+    t.string "proprietario_email"
+    t.string "face"
+    t.string "perfil_construcao"
+    t.string "tipo_vaga"
+    t.integer "hidromassagem_qtd"
+    t.boolean "exclusivo_flag"
+    t.string "ocupacao_status"
+    t.string "estado_conservacao"
+    t.integer "andar"
+    t.integer "ano_construcao"
+    t.integer "demi_suites_qtd"
+    t.string "numero_box"
+    t.string "dimensoes_terreno"
+    t.string "topografia"
+    t.string "foto_classificacao"
+    t.string "podcast_url"
+    t.decimal "captador_commission_percentage", precision: 5, scale: 2
+    t.decimal "broker_commission_percentage", precision: 5, scale: 2
+    t.boolean "salute_rental_management_flag", default: false, null: false
+    t.string "key_location"
+    t.string "key_location_notes"
+    t.index ["aceita_permuta_flag"], name: "index_habitations_on_aceita_permuta_flag"
+    t.index ["admin_user_id"], name: "index_habitations_on_admin_user_id"
     t.index ["area_total_m2"], name: "index_habitations_on_area_total_m2"
     t.index ["caracteristicas"], name: "index_habitations_on_caracteristicas", using: :gin
     t.index ["categoria", "status"], name: "idx_habitations_categoria_status"
@@ -287,6 +419,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_12_012254) do
     t.index ["cidade", "bairro", "status"], name: "idx_habitations_localizacao_status"
     t.index ["codigo"], name: "index_habitations_on_codigo", unique: true
     t.index ["codigo_empreendimento"], name: "index_habitations_on_codigo_empreendimento"
+    t.index ["constructor_id"], name: "index_habitations_on_constructor_id"
     t.index ["created_at"], name: "index_habitations_on_created_at"
     t.index ["data_atualizacao_crm"], name: "index_habitations_on_data_atualizacao_crm"
     t.index ["destaque_localizacao"], name: "index_habitations_on_destaque_localizacao", using: :gin
@@ -295,6 +428,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_12_012254) do
     t.index ["exibir_no_site_flag", "status"], name: "idx_habitations_exibir_status"
     t.index ["frente_mar_avenida_atlantica_flag"], name: "index_habitations_on_frente_mar_avenida_atlantica_flag"
     t.index ["infra_estrutura"], name: "index_habitations_on_infra_estrutura", using: :gin
+    t.index ["key_location"], name: "index_habitations_on_key_location"
     t.index ["lancamento_flag"], name: "index_habitations_on_lancamento_flag"
     t.index ["latitude", "longitude"], name: "idx_habitations_geolocation"
     t.index ["lavabo_flag"], name: "index_habitations_on_lavabo_flag"
@@ -302,6 +436,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_12_012254) do
     t.index ["piscina_flag"], name: "index_habitations_on_piscina_flag"
     t.index ["praia_brava_flag"], name: "index_habitations_on_praia_brava_flag"
     t.index ["quadra_mar_flag"], name: "index_habitations_on_quadra_mar_flag"
+    t.index ["salute_rental_management_flag"], name: "index_habitations_on_salute_rental_management_flag"
     t.index ["slug"], name: "index_habitations_on_slug", unique: true
     t.index ["status", "categoria", "cidade"], name: "idx_habitations_status_categoria_cidade"
     t.index ["updated_at"], name: "index_habitations_on_updated_at"
@@ -373,6 +508,15 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_12_012254) do
     t.string "accent_color"
   end
 
+  create_table "lead_activities", force: :cascade do |t|
+    t.bigint "lead_id", null: false
+    t.string "kind"
+    t.jsonb "metadata", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["lead_id"], name: "index_lead_activities_on_lead_id"
+  end
+
   create_table "leads", force: :cascade do |t|
     t.string "name"
     t.string "email"
@@ -384,6 +528,58 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_12_012254) do
     t.datetime "updated_at", null: false
     t.string "status"
     t.text "notes"
+    t.string "client_name"
+    t.string "client_email"
+    t.string "client_phone"
+    t.string "client_c2s_id"
+    t.string "agent_name"
+    t.string "agent_email"
+    t.string "agent_phone"
+    t.string "agent_c2s_id"
+    t.string "event_name"
+    t.string "origin"
+    t.string "product"
+    t.jsonb "other_information", default: {}
+    t.jsonb "custom_answers", default: []
+    t.bigint "distribution_rule_id"
+    t.bigint "admin_user_id"
+    t.index ["admin_user_id"], name: "index_leads_on_admin_user_id"
+    t.index ["client_c2s_id"], name: "index_leads_on_client_c2s_id"
+    t.index ["distribution_rule_id"], name: "index_leads_on_distribution_rule_id"
+    t.index ["origin"], name: "index_leads_on_origin"
+  end
+
+  create_table "meta_facebook_pages", force: :cascade do |t|
+    t.bigint "user_meta_integration_id", null: false
+    t.string "page_id"
+    t.string "name"
+    t.string "access_token"
+    t.boolean "active", default: true
+    t.string "category"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["page_id"], name: "index_meta_facebook_pages_on_page_id", unique: true
+    t.index ["user_meta_integration_id"], name: "index_meta_facebook_pages_on_user_meta_integration_id"
+  end
+
+  create_table "meta_lead_forms", force: :cascade do |t|
+    t.bigint "meta_facebook_page_id", null: false
+    t.string "form_id"
+    t.string "name"
+    t.boolean "active", default: true
+    t.datetime "facebook_created_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["form_id"], name: "index_meta_lead_forms_on_form_id", unique: true
+    t.index ["meta_facebook_page_id"], name: "index_meta_lead_forms_on_meta_facebook_page_id"
+  end
+
+  create_table "profiles", force: :cascade do |t|
+    t.string "name"
+    t.jsonb "permissions"
+    t.boolean "active"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "property_pages", force: :cascade do |t|
@@ -409,6 +605,151 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_12_012254) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "settings", force: :cascade do |t|
+    t.string "key"
+    t.text "value"
+    t.string "description"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "solid_queue_blocked_executions", force: :cascade do |t|
+    t.bigint "job_id", null: false
+    t.string "queue_name", null: false
+    t.integer "priority", default: 0, null: false
+    t.string "concurrency_key", null: false
+    t.datetime "expires_at", null: false
+    t.datetime "created_at", null: false
+    t.index ["concurrency_key", "priority", "job_id"], name: "index_solid_queue_blocked_executions_for_release"
+    t.index ["expires_at", "concurrency_key"], name: "index_solid_queue_blocked_executions_for_maintenance"
+    t.index ["job_id"], name: "index_solid_queue_blocked_executions_on_job_id", unique: true
+  end
+
+  create_table "solid_queue_claimed_executions", force: :cascade do |t|
+    t.bigint "job_id", null: false
+    t.bigint "process_id"
+    t.datetime "created_at", null: false
+    t.index ["job_id"], name: "index_solid_queue_claimed_executions_on_job_id", unique: true
+    t.index ["process_id", "job_id"], name: "index_solid_queue_claimed_executions_on_process_id_and_job_id"
+  end
+
+  create_table "solid_queue_failed_executions", force: :cascade do |t|
+    t.bigint "job_id", null: false
+    t.text "error"
+    t.datetime "created_at", null: false
+    t.index ["job_id"], name: "index_solid_queue_failed_executions_on_job_id", unique: true
+  end
+
+  create_table "solid_queue_jobs", force: :cascade do |t|
+    t.string "queue_name", null: false
+    t.string "class_name", null: false
+    t.text "arguments"
+    t.integer "priority", default: 0, null: false
+    t.string "active_job_id"
+    t.datetime "scheduled_at"
+    t.datetime "finished_at"
+    t.string "concurrency_key"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["active_job_id"], name: "index_solid_queue_jobs_on_active_job_id"
+    t.index ["class_name"], name: "index_solid_queue_jobs_on_class_name"
+    t.index ["finished_at"], name: "index_solid_queue_jobs_on_finished_at"
+    t.index ["queue_name", "finished_at"], name: "index_solid_queue_jobs_for_filtering"
+    t.index ["scheduled_at", "finished_at"], name: "index_solid_queue_jobs_for_alerting"
+  end
+
+  create_table "solid_queue_pauses", force: :cascade do |t|
+    t.string "queue_name", null: false
+    t.datetime "created_at", null: false
+    t.index ["queue_name"], name: "index_solid_queue_pauses_on_queue_name", unique: true
+  end
+
+  create_table "solid_queue_processes", force: :cascade do |t|
+    t.string "kind", null: false
+    t.datetime "last_heartbeat_at", null: false
+    t.bigint "supervisor_id"
+    t.integer "pid", null: false
+    t.string "hostname"
+    t.text "metadata"
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.index ["last_heartbeat_at"], name: "index_solid_queue_processes_on_last_heartbeat_at"
+    t.index ["name", "supervisor_id"], name: "index_solid_queue_processes_on_name_and_supervisor_id", unique: true
+    t.index ["supervisor_id"], name: "index_solid_queue_processes_on_supervisor_id"
+  end
+
+  create_table "solid_queue_ready_executions", force: :cascade do |t|
+    t.bigint "job_id", null: false
+    t.string "queue_name", null: false
+    t.integer "priority", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.index ["job_id"], name: "index_solid_queue_ready_executions_on_job_id", unique: true
+    t.index ["priority", "job_id"], name: "index_solid_queue_poll_all"
+    t.index ["queue_name", "priority", "job_id"], name: "index_solid_queue_poll_by_queue"
+  end
+
+  create_table "solid_queue_recurring_executions", force: :cascade do |t|
+    t.bigint "job_id", null: false
+    t.string "task_key", null: false
+    t.datetime "run_at", null: false
+    t.datetime "created_at", null: false
+    t.index ["job_id"], name: "index_solid_queue_recurring_executions_on_job_id", unique: true
+    t.index ["task_key", "run_at"], name: "index_solid_queue_recurring_executions_on_task_key_and_run_at", unique: true
+  end
+
+  create_table "solid_queue_recurring_tasks", force: :cascade do |t|
+    t.string "key", null: false
+    t.string "schedule", null: false
+    t.string "command", limit: 2048
+    t.string "class_name"
+    t.text "arguments"
+    t.string "queue_name"
+    t.integer "priority", default: 0
+    t.boolean "static", default: true, null: false
+    t.text "description"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["key"], name: "index_solid_queue_recurring_tasks_on_key", unique: true
+    t.index ["static"], name: "index_solid_queue_recurring_tasks_on_static"
+  end
+
+  create_table "solid_queue_scheduled_executions", force: :cascade do |t|
+    t.bigint "job_id", null: false
+    t.string "queue_name", null: false
+    t.integer "priority", default: 0, null: false
+    t.datetime "scheduled_at", null: false
+    t.datetime "created_at", null: false
+    t.index ["job_id"], name: "index_solid_queue_scheduled_executions_on_job_id", unique: true
+    t.index ["scheduled_at", "priority", "job_id"], name: "index_solid_queue_dispatch_all"
+  end
+
+  create_table "solid_queue_semaphores", force: :cascade do |t|
+    t.string "key", null: false
+    t.integer "value", default: 1, null: false
+    t.datetime "expires_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["expires_at"], name: "index_solid_queue_semaphores_on_expires_at"
+    t.index ["key", "value"], name: "index_solid_queue_semaphores_on_key_and_value"
+    t.index ["key"], name: "index_solid_queue_semaphores_on_key", unique: true
+  end
+
+  create_table "user_meta_integrations", force: :cascade do |t|
+    t.bigint "admin_user_id", null: false
+    t.string "access_token"
+    t.string "facebook_user_id"
+    t.string "name"
+    t.string "email"
+    t.datetime "token_expires_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "sync_status"
+    t.integer "sync_progress"
+    t.datetime "last_synced_at"
+    t.string "sync_message"
+    t.index ["admin_user_id"], name: "index_user_meta_integrations_on_admin_user_id"
+  end
+
   create_table "webhook_settings", force: :cascade do |t|
     t.string "webhook_url"
     t.boolean "enabled"
@@ -421,8 +762,28 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_12_012254) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "admin_users", "admin_users", column: "manager_id"
+  add_foreign_key "admin_users", "profiles"
+  add_foreign_key "distribution_rule_agents", "admin_users"
+  add_foreign_key "distribution_rule_agents", "distribution_rules"
   add_foreign_key "footer_links", "footer_settings"
   add_foreign_key "footer_social_links", "footer_settings"
   add_foreign_key "footer_stores", "footer_settings"
+  add_foreign_key "habitation_broker_assignments", "admin_users"
+  add_foreign_key "habitation_broker_assignments", "habitations"
+  add_foreign_key "habitations", "admin_users"
+  add_foreign_key "habitations", "constructors"
   add_foreign_key "home_section_items", "home_sections"
+  add_foreign_key "lead_activities", "leads"
+  add_foreign_key "leads", "admin_users"
+  add_foreign_key "leads", "distribution_rules"
+  add_foreign_key "meta_facebook_pages", "user_meta_integrations"
+  add_foreign_key "meta_lead_forms", "meta_facebook_pages"
+  add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "solid_queue_claimed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "solid_queue_failed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "solid_queue_ready_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "solid_queue_recurring_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "solid_queue_scheduled_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "user_meta_integrations", "admin_users"
 end

@@ -13,31 +13,33 @@ class AutocompleteController < ApplicationController
     
     # Cidades (usando unaccent para ignorar acentos)
     cities = Habitation.active
-      .where("unaccent(cidade) ILIKE unaccent(?)", "%#{query}%")
-      .select(:cidade)
+      .left_outer_joins(:address)
+      .where("unaccent(COALESCE(addresses.cidade, habitations.cidade)) ILIKE unaccent(?)", "%#{query}%")
       .distinct
       .limit(5)
-      .pluck(:cidade)
+      .pluck(Arel.sql("COALESCE(addresses.cidade, habitations.cidade)"))
       .compact
       .map { |city| { type: 'Cidade', value: city, label: city } }
     
     # Bairros com cidade (usando unaccent)
     neighborhoods = Habitation.active
-      .where("unaccent(bairro) ILIKE unaccent(?) OR unaccent(cidade) ILIKE unaccent(?)", "%#{query}%", "%#{query}%")
-      .select(:bairro, :cidade)
+      .left_outer_joins(:address)
+      .where("unaccent(COALESCE(addresses.bairro, habitations.bairro)) ILIKE unaccent(?) OR unaccent(COALESCE(addresses.cidade, habitations.cidade)) ILIKE unaccent(?)", "%#{query}%", "%#{query}%")
+      .select("COALESCE(addresses.bairro, habitations.bairro) AS bairro_nome, COALESCE(addresses.cidade, habitations.cidade) AS cidade_nome")
       .distinct
       .limit(5)
-      .map { |h| { type: 'Bairro', value: h.bairro, label: "#{h.bairro} - #{h.cidade}" } }
+      .map { |h| { type: 'Bairro', value: h.bairro_nome, label: "#{h.bairro_nome} - #{h.cidade_nome}" } }
       .compact
     
     # Empreendimentos (usando unaccent)
     developments = Habitation.empreendimentos_publicos
       .where("unaccent(nome_empreendimento) ILIKE unaccent(?)", "%#{query}%")
       .where.not(nome_empreendimento: nil)
-      .select(:nome_empreendimento, :cidade)
+      .left_outer_joins(:address)
+      .select("nome_empreendimento, COALESCE(addresses.cidade, habitations.cidade) AS cidade_nome")
       .distinct
       .limit(5)
-      .map { |h| { type: 'Empreendimento', value: h.nome_empreendimento, label: "#{h.nome_empreendimento} - #{h.cidade}" } }
+      .map { |h| { type: 'Empreendimento', value: h.nome_empreendimento, label: "#{h.nome_empreendimento} - #{h.cidade_nome}" } }
     
     results = cities + neighborhoods + developments
     
@@ -49,7 +51,8 @@ class AutocompleteController < ApplicationController
   def popular_locations
     # Retornar as cidades/bairros com mais imóveis
     popular_cities = Habitation.active
-      .group(:cidade)
+      .left_outer_joins(:address)
+      .group(Arel.sql("COALESCE(addresses.cidade, habitations.cidade)"))
       .order('count_all DESC')
       .limit(5)
       .count
@@ -57,8 +60,10 @@ class AutocompleteController < ApplicationController
       .map { |city| { type: 'Cidade', value: city, label: city } }
     
     popular_neighborhoods = Habitation.active
-      .where.not(bairro: nil)
-      .group(:bairro, :cidade)
+      .left_outer_joins(:address)
+      .where("COALESCE(addresses.bairro, habitations.bairro) IS NOT NULL")
+      .group(Arel.sql("COALESCE(addresses.bairro, habitations.bairro)"))
+      .group(Arel.sql("COALESCE(addresses.cidade, habitations.cidade)"))
       .order('count_all DESC')
       .limit(5)
       .count

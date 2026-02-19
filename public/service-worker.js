@@ -1,10 +1,9 @@
-// This is the "Offline page" service worker
-
-const CACHE = "salute-admin-cache-v1";
+const CACHE = "salute-admin-cache-v2";
 const offlineFallbackPage = "/admin";
 
 self.addEventListener("install", function (event) {
   console.log("[ServiceWorker] Install");
+  self.skipWaiting(); // Force activation of new serviceworker
 
   event.waitUntil(
     caches.open(CACHE).then(function (cache) {
@@ -14,22 +13,19 @@ self.addEventListener("install", function (event) {
   );
 });
 
-self.addEventListener("fetch", function (event) {
-  if (event.request.method !== "GET") return;
+self.addEventListener("activate", function (event) {
+  console.log("[ServiceWorker] Activate");
+  event.waitUntil(clients.claim()); // Take control of clients immediately
+});
 
-  event.respondWith(
-    fetch(event.request)
-      .then(function (response) {
-        // If request was success, return it
-        return response;
+self.addEventListener("fetch", function (event) {
+  // Only intercept navigation requests (for offline support)
+  // Let everything else (images, css, js) go direct to network
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(function () {
+        return caches.match(offlineFallbackPage);
       })
-      .catch(function (error) {
-        // If request failed within cache, return offline fallback (if accessing page)
-        // Here we just use a simplified logic: if generic fetch fails, try cache.
-        if (event.request.mode === 'navigate') {
-          return caches.match(offlineFallbackPage);
-        }
-        return null;
-      })
-  );
+    );
+  }
 });

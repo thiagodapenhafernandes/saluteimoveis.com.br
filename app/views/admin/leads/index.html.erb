@@ -5,13 +5,16 @@
 <div class="card shadow-sm mb-4">
   <div class="card-body">
     <%= form_with url: admin_leads_path, method: :get, class: "row g-3" do |f| %>
-      <div class="col-md-5">
+      <div class="col-md-4">
         <%= f.text_field :q, value: params[:q], class: "form-control", placeholder: "Buscar por nome, email ou telefone..." %>
       </div>
-      <div class="col-md-4">
-        <%= f.select :status, ["Novo", "Em Atendimento", "Convertido", "Perdido"], { include_blank: "Todos os Status", selected: params[:status] }, class: "form-select" %>
+      <div class="col-md-3">
+        <%= f.select :status, Lead.statuses.values, { include_blank: "Todos os Status", selected: params[:status] }, class: "form-select" %>
       </div>
       <div class="col-md-3">
+        <%= f.select :origin, @origin_options, { include_blank: "Todas as Origens", selected: params[:origin] }, class: "form-select" %>
+      </div>
+      <div class="col-md-2">
         <button type="submit" class="btn btn-secondary w-100">
           <i class="bi bi-search me-1"></i> Filtrar
         </button>
@@ -40,6 +43,9 @@
               <small class="text-muted"><%= lead.email %> | <%= lead.phone %></small>
             </td>
             <td>
+              <% if lead.origin.present? %>
+                <div><span class="badge bg-light text-dark"><%= lead.origin %></span></div>
+              <% end %>
               <% if lead.property_id.present? %>
                 <% property = Habitation.find_by(id: lead.property_id) %>
                 <% if property %>
@@ -56,11 +62,13 @@
               <% end %>
             </td>
             <td>
-              <% status_color = case lead.status 
+              <% status_color = case lead.status
                  when 'Novo' then 'info'
                  when 'Em Atendimento' then 'primary'
-                 when 'Convertido' then 'success'
-                 when 'Perdido' then 'danger'
+                 when 'Aguardando Aceite' then 'warning'
+                 when 'Represado' then 'secondary'
+                 when 'Descartado' then 'danger'
+                 when 'Concluido' then 'success'
                  else 'secondary'
                  end %>
               <span class="badge bg-<%= status_color %>"><%= lead.status.presence || 'Novo' %></span>

@@ -21,7 +21,7 @@ end
 
 HomeSection.find_or_create_by!(section_type: 'developments') do |section|
   section.title = 'Empreendimentos'
-  section.subtitle = 'Conheça nossos empreendimentos exclusivos'
+  section.subtitle = 'Conheça nossos melhores projetos imobiliários'
   section.active = true
   section.order_position = 3
   puts "  ✓ Created: Developments"

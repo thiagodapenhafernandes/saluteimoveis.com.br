@@ -74,3 +74,16 @@ pt-BR:
       admin_user: "Administrador"
       lead: "Lead"
       habitation: "Imóvel"
+      
+  enums:
+    admin_user:
+      acting_type:
+        sales: "Venda"
+        rentals: "Locação"
+        both: "Ambos"
+
+  devise:
+    sessions:
+      signed_in: "Login efetuado com sucesso."
+      admin_user:
+        signed_in: "Login de administrador efetuado com sucesso."
