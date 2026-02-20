@@ -2,127 +2,127 @@
 // Run that command whenever you add a new controller or create them with
 // ./bin/rails generate stimulus controllerName
 
-import { application } from "./application"
+import { application } from "controllers/application"
 
-import AdvancedFiltersController from "./advanced_filters_controller"
+import AdvancedFiltersController from "controllers/advanced_filters_controller"
 application.register("advanced-filters", AdvancedFiltersController)
 
-import AttributeManagerController from "./attribute_manager_controller"
+import AttributeManagerController from "controllers/attribute_manager_controller"
 application.register("attribute-manager", AttributeManagerController)
 
-import AutocompleteController from "./autocomplete_controller"
+import AutocompleteController from "controllers/autocomplete_controller"
 application.register("autocomplete", AutocompleteController)
 
-import CardSwiperController from "./card_swiper_controller"
+import CardSwiperController from "controllers/card_swiper_controller"
 application.register("card-swiper", CardSwiperController)
 
-import CepLookupController from "./cep_lookup_controller"
+import CepLookupController from "controllers/cep_lookup_controller"
 application.register("cep-lookup", CepLookupController)
 
-import CepSearchController from "./cep_search_controller"
+import CepSearchController from "controllers/cep_search_controller"
 application.register("cep-search", CepSearchController)
 
-import ClickableCardController from "./clickable_card_controller"
+import ClickableCardController from "controllers/clickable_card_controller"
 application.register("clickable-card", ClickableCardController)
 
-import CodeSearchController from "./code_search_controller"
+import CodeSearchController from "controllers/code_search_controller"
 application.register("code-search", CodeSearchController)
 
-import CollapseController from "./collapse_controller"
+import CollapseController from "controllers/collapse_controller"
 application.register("collapse", CollapseController)
 
-import CurrencyMaskController from "./currency_mask_controller"
+import CurrencyMaskController from "controllers/currency_mask_controller"
 application.register("currency-mask", CurrencyMaskController)
 
-import DistributionRuleController from "./distribution_rule_controller"
+import DistributionRuleController from "controllers/distribution_rule_controller"
 application.register("distribution-rule", DistributionRuleController)
 
-import DropdownController from "./dropdown_controller"
+import DropdownController from "controllers/dropdown_controller"
 application.register("dropdown", DropdownController)
 
-import DynamicListController from "./dynamic_list_controller"
+import DynamicListController from "controllers/dynamic_list_controller"
 application.register("dynamic-list", DynamicListController)
 
-import FavoritesController from "./favorites_controller"
+import FavoritesController from "controllers/favorites_controller"
 application.register("favorites", FavoritesController)
 
-import FiltersController from "./filters_controller"
+import FiltersController from "controllers/filters_controller"
 application.register("filters", FiltersController)
 
-import HabitationBrokersController from "./habitation_brokers_controller"
+import HabitationBrokersController from "controllers/habitation_brokers_controller"
 application.register("habitation-brokers", HabitationBrokersController)
 
-import HabitationFormController from "./habitation_form_controller"
+import HabitationFormController from "controllers/habitation_form_controller"
 application.register("habitation-form", HabitationFormController)
 
-import HelloController from "./hello_controller"
+import HelloController from "controllers/hello_controller"
 application.register("hello", HelloController)
 
-import HeroSliderController from "./hero_slider_controller"
+import HeroSliderController from "controllers/hero_slider_controller"
 application.register("hero-slider", HeroSliderController)
 
-import ImagePreviewController from "./image_preview_controller"
+import ImagePreviewController from "controllers/image_preview_controller"
 application.register("image-preview", ImagePreviewController)
 
-import LeadCaptureController from "./lead_capture_controller"
+import LeadCaptureController from "controllers/lead_capture_controller"
 application.register("lead-capture", LeadCaptureController)
 
-import MaskController from "./mask_controller"
+import MaskController from "controllers/mask_controller"
 application.register("mask", MaskController)
 
-import MetaRulesController from "./meta_rules_controller"
+import MetaRulesController from "controllers/meta_rules_controller"
 application.register("meta-rules", MetaRulesController)
 
-import NavbarController from "./navbar_controller"
+import NavbarController from "controllers/navbar_controller"
 application.register("navbar", NavbarController)
 
-import NestedFormController from "./nested_form_controller"
+import NestedFormController from "controllers/nested_form_controller"
 application.register("nested-form", NestedFormController)
 
-import PhotoCarouselController from "./photo_carousel_controller"
+import PhotoCarouselController from "controllers/photo_carousel_controller"
 application.register("photo-carousel", PhotoCarouselController)
 
-import PhotoGalleryController from "./photo_gallery_controller"
+import PhotoGalleryController from "controllers/photo_gallery_controller"
 application.register("photo-gallery", PhotoGalleryController)
 
-import PhotoUploadController from "./photo_upload_controller"
+import PhotoUploadController from "controllers/photo_upload_controller"
 application.register("photo-upload", PhotoUploadController)
 
-import PropertyCarouselController from "./property_carousel_controller"
+import PropertyCarouselController from "controllers/property_carousel_controller"
 application.register("property-carousel", PropertyCarouselController)
 
-import PropertyPagePreviewController from "./property_page_preview_controller"
+import PropertyPagePreviewController from "controllers/property_page_preview_controller"
 application.register("property-page-preview", PropertyPagePreviewController)
 
-import RentCalculatorController from "./rent_calculator_controller"
+import RentCalculatorController from "controllers/rent_calculator_controller"
 application.register("rent-calculator", RentCalculatorController)
 
-import ScrollVisibilityController from "./scroll_visibility_controller"
+import ScrollVisibilityController from "controllers/scroll_visibility_controller"
 application.register("scroll-visibility", ScrollVisibilityController)
 
-import SearchFormController from "./search_form_controller"
+import SearchFormController from "controllers/search_form_controller"
 application.register("search-form", SearchFormController)
 
-import SearchTabsController from "./search_tabs_controller"
+import SearchTabsController from "controllers/search_tabs_controller"
 application.register("search-tabs", SearchTabsController)
 
-import ShareController from "./share_controller"
+import ShareController from "controllers/share_controller"
 application.register("share", ShareController)
 
-import SidebarController from "./sidebar_controller"
+import SidebarController from "controllers/sidebar_controller"
 application.register("sidebar", SidebarController)
 
-import SortableController from "./sortable_controller"
+import SortableController from "controllers/sortable_controller"
 application.register("sortable", SortableController)
 
-import TagInputController from "./tag_input_controller"
+import TagInputController from "controllers/tag_input_controller"
 application.register("tag-input", TagInputController)
 
-import TeamRulesController from "./team_rules_controller"
+import TeamRulesController from "controllers/team_rules_controller"
 application.register("team-rules", TeamRulesController)
 
-import TomSelectController from "./tom_select_controller"
+import TomSelectController from "controllers/tom_select_controller"
 application.register("tom-select", TomSelectController)
 
-import TransactionToggleController from "./transaction_toggle_controller"
+import TransactionToggleController from "controllers/transaction_toggle_controller"
 application.register("transaction-toggle", TransactionToggleController)
