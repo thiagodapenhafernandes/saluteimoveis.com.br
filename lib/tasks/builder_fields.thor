@@ -136,7 +136,8 @@ class BuilderFields < Thor::Group
         end
       elsif batch_attrs.any?
         existing = Habitation.where(codigo: batch_codes).pluck(:codigo).to_set
-        Habitation.upsert_all(batch_attrs, unique_by: :index_habitations_on_codigo, record_timestamps: true)
+        normalized_batch_attrs = batch_attrs.map { |attrs| normalize_array_aware_attrs(attrs) }
+        Habitation.upsert_all(normalized_batch_attrs, unique_by: :index_habitations_on_codigo, record_timestamps: true)
         sync_addresses_for_codes(batch_address_by_code)
 
         created = batch_codes.size - existing.size
@@ -229,6 +230,59 @@ class BuilderFields < Thor::Group
       s = v&.to_s&.gsub(/\D/, '')
       return nil if s.blank?
       s.length == 8 ? "#{s[0..4]}-#{s[5..7]}" : nil
+    end
+
+    def normalize_array_aware_attrs(attrs)
+      normalized = attrs.dup
+
+      normalized[:caracteristicas] = normalize_array_column_value(
+        normalized[:caracteristicas],
+        column: Habitation.columns_hash["caracteristicas"]
+      )
+      normalized[:infra_estrutura] = normalize_array_column_value(
+        normalized[:infra_estrutura],
+        column: Habitation.columns_hash["infra_estrutura"]
+      )
+      normalized[:caracteristica_unica] = normalize_array_column_value(
+        normalized[:caracteristica_unica],
+        column: Habitation.columns_hash["caracteristica_unica"]
+      )
+
+      normalized
+    end
+
+    def normalize_array_column_value(value, column:)
+      return value unless column&.array
+
+      parsed = parse_as_array(value)
+      return parsed if parsed.is_a?(Array)
+
+      value
+    end
+
+    def parse_as_array(value)
+      return nil if value.nil?
+      return value if value.is_a?(Array)
+      return value.keys if value.is_a?(Hash)
+
+      raw = value.to_s.strip
+      return [] if raw.blank?
+
+      if raw.start_with?('[') && raw.end_with?(']')
+        begin
+          parsed = JSON.parse(raw)
+          return parsed if parsed.is_a?(Array)
+        rescue JSON::ParserError
+          # keep raw split behavior below
+        end
+      end
+
+      raw
+        .to_s
+        .strip
+        .split(/[,;|]/)
+        .map!(&:strip)
+        .reject(&:blank?)
     end
 
     def upsert_habitation(attrs)
