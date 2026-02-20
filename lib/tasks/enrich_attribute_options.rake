@@ -20,24 +20,36 @@ namespace :enrich_attribute_options do
     end
 
     # 1. Feature Categories (Internal)
+    created_internal = 0
+    skipped_internal = 0
     internal_features.each do |feature|
-      AttributeOption.find_or_create_by!(
-        name: feature, 
-        category: 'feature', 
+      if sync_attribute_option!(
+        name: feature,
+        category: 'feature',
         context: 'habitation'
       )
+        created_internal += 1
+      else
+        skipped_internal += 1
+      end
     end
-    puts "--> Migrated #{internal_features.size} Internal Features."
+    puts "--> Migrated #{created_internal} new Internal Features, skipped #{skipped_internal}."
 
     # 2. Infra/External Categories
+    created_external = 0
+    skipped_external = 0
     external_features.each do |infra|
-      AttributeOption.find_or_create_by!(
-        name: infra, 
-        category: 'infrastructure', 
+      if sync_attribute_option!(
+        name: infra,
+        category: 'infrastructure',
         context: 'habitation'
       )
+        created_external += 1
+      else
+        skipped_external += 1
+      end
     end
-    puts "--> Migrated #{external_features.size} Infrastructure items."
+    puts "--> Migrated #{created_external} new Infrastructure items, skipped #{skipped_external}."
 
     # 3. Unique Features (Badges) - Migrate from existing data
     # Since we just migrated to array, values might be empty or strings.
@@ -49,15 +61,54 @@ namespace :enrich_attribute_options do
     defaults = ["Frente Mar", "Quadra Mar", "Decorado", "Mobiliado", "Vista Mar", "Lançamento", "Oportunidade", "Exclusividade"]
     all_badges = (existing_badges + defaults).uniq
 
+    created_badges = 0
+    skipped_badges = 0
     all_badges.each do |badge|
-      AttributeOption.find_or_create_by!(
-        name: badge, 
-        category: 'unique_feature', 
+      if sync_attribute_option!(
+        name: badge,
+        category: 'unique_feature',
         context: 'habitation'
       )
+        created_badges += 1
+      else
+        skipped_badges += 1
+      end
     end
-    puts "--> Migrated #{all_badges.size} Unique Features (Badges)."
+    puts "--> Migrated #{created_badges} new Unique Features (Badges), skipped #{skipped_badges}."
 
     puts "AttributeOption enrichment completed successfully!"
+  end
+
+  def sync_attribute_option!(name:, category:, context:)
+    normalized_name = name.to_s.strip
+    return false if normalized_name.blank?
+
+    existing = AttributeOption.where(
+      "LOWER(name) = ? AND category = ? AND context = ?",
+      normalized_name.downcase,
+      category,
+      context
+    ).exists?
+    return false if existing
+
+    option = AttributeOption.new(
+      name: normalized_name,
+      category: category,
+      context: context
+    )
+
+    option.save
+    option.persisted?
+  rescue ActiveRecord::RecordInvalid => e
+    if duplicate_record_error?(e)
+      false
+    else
+      raise
+    end
+  end
+
+  def duplicate_record_error?(exception)
+    message = exception.message.to_s
+    message.include?("já existe") || message.include?("already exists")
   end
 end
