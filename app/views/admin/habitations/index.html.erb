@@ -17,116 +17,329 @@
   </div>
 </div>
 
-<!-- Advanced Filters Accordion -->
-<div class="accordion mb-4 shadow-sm border-0 rounded-3 overflow-hidden" id="filtersAccordion" data-controller="collapse">
-  <div class="accordion-item border-0 bg-white">
-    <h2 class="accordion-header" id="headingFilters">
-      <button class="accordion-button <%= (params[:q].present? || params[:cidade].present? || params[:promotion_status].present? || params[:accepts_exchange].present? || params[:key_location].present? || params[:salute_rental_management].present?) ? '' : 'collapsed' %> fw-bold text-primary bg-white py-3" 
-              type="button" 
-              data-action="click->collapse#toggle"
-              data-collapse-target="button"
-              aria-expanded="<%= (params[:q].present? || params[:cidade].present? || params[:promotion_status].present? || params[:accepts_exchange].present? || params[:key_location].present? || params[:salute_rental_management].present?) ? 'true' : 'false' %>" 
-              aria-controls="collapseFilters">
-        <i class="bi bi-sliders me-2"></i> Filtros de Busca Avançada
-      </button>
-    </h2>
-    <div id="collapseFilters" 
-         class="accordion-collapse collapse <%= (params[:q].present? || params[:cidade].present? || params[:promotion_status].present? || params[:accepts_exchange].present? || params[:key_location].present? || params[:salute_rental_management].present?) ? 'show' : '' %>" 
-         data-collapse-target="content"
-         aria-labelledby="headingFilters">
-      <div class="accordion-body bg-white border-top">
-        <%= form_with url: admin_habitations_path, method: :get, local: true do |f| %>
-          <!-- Keyword -->
-          <div class="mb-3">
-             <label class="form-label small fw-bold text-muted text-uppercase">Palavra-chave</label>
-             <div class="input-group">
-                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-                <%= f.text_field :q, value: params[:q], class: "form-control border-start-0", placeholder: "Código, Empreendimento, Endereço..." %>
-             </div>
+<%
+  array_filter_keys = %w[dorms suites vagas banheiros]
+  extra_filter_keys = %w[
+    cidade bairro promotion_status accepts_exchange key_location salute_rental_management min_price max_price
+    situacao face ocupacao_status estado_conservacao area_total_min area_total_max area_privativa_min area_privativa_max
+    festival_salute exibir_no_site_salute tem_placa exclusivo empreendimento_codigo constructor_id
+  ] + array_filter_keys
+  active_extra_filters_count = extra_filter_keys.count do |key|
+    value = params[key]
+    value.is_a?(Array) ? value.reject(&:blank?).any? : value.present?
+  end
+  extras_open = active_extra_filters_count.positive?
+  vista_advanced_keys = %w[
+    situacao face ocupacao_status estado_conservacao area_total_min area_total_max area_privativa_min area_privativa_max
+    festival_salute exibir_no_site_salute tem_placa exclusivo banheiros dorms suites vagas
+    empreendimento_codigo constructor_id
+  ]
+  vista_advanced_open = vista_advanced_keys.any? do |key|
+    value = params[key]
+    value.is_a?(Array) ? value.reject(&:blank?).any? : value.present?
+  end
+  clear_extras_params = request.query_parameters.except(*extra_filter_keys, "page")
+%>
+
+<div class="card shadow-sm mb-4 border-0" data-controller="collapse">
+  <div class="card-body">
+    <%= form_with url: admin_habitations_path, method: :get, local: true do |f| %>
+      <%= hidden_field_tag :sort, params[:sort] if params[:sort].present? %>
+      <%= hidden_field_tag :direction, params[:direction] if params[:direction].present? %>
+      <%= hidden_field_tag :scope, params[:scope] if params[:scope].present? %>
+
+      <div class="row g-3 align-items-end">
+        <div class="col-lg-5 col-md-12">
+          <label class="form-label small fw-bold text-muted text-uppercase">Palavra-chave</label>
+          <div class="input-group">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <%= f.text_field :q, value: params[:q], class: "form-control border-start-0", placeholder: "Código, Empreendimento, Endereço..." %>
           </div>
-
-          <div class="row g-3">
-            <!-- Basic Filters -->
-            <div class="col-md-3">
-              <label class="form-label small fw-bold text-muted text-uppercase">Categoria</label>
-              <%= f.select :categoria, @filter_categories, { include_blank: "Todas", selected: params[:categoria] }, class: "form-select" %>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label small fw-bold text-muted text-uppercase">Status</label>
-              <%= f.select :status, @filter_statuses, { include_blank: "Todos", selected: params[:status] }, class: "form-select" %>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label small fw-bold text-muted text-uppercase">Cidade</label>
-              <%= f.select :cidade, @filter_cities, { include_blank: "Todas", selected: params[:cidade] }, class: "form-select" %>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label small fw-bold text-muted text-uppercase">Bairro</label>
-              <%= f.text_field :bairro, value: params[:bairro], class: "form-control", placeholder: "Ex: Centro" %>
-            </div>
-
-            <!-- Features -->
-            <div class="col-md-4">
-              <label class="form-label small fw-bold text-muted text-uppercase">Dormitórios</label>
-              <%= f.select :dorms, [["1+", 1], ["2+", 2], ["3+", 3], ["4+", 4], ["5+", 5]], { include_blank: "Qualquer", selected: params[:dorms] }, class: "form-select" %>
-            </div>
-            <div class="col-md-4">
-               <label class="form-label small fw-bold text-muted text-uppercase">Suítes</label>
-               <%= f.select :suites, [["1+", 1], ["2+", 2], ["3+", 3], ["4+", 4]], { include_blank: "Qualquer", selected: params[:suites] }, class: "form-select" %>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label small fw-bold text-muted text-uppercase">Vagas</label>
-              <%= f.select :vagas, [["1+", 1], ["2+", 2], ["3+", 3], ["4+", 4]], { include_blank: "Qualquer", selected: params[:vagas] }, class: "form-select" %>
-            </div>
-
-            <div class="col-md-3">
-              <label class="form-label small fw-bold text-muted text-uppercase">Valor Promocional</label>
-              <%= f.select :promotion_status,
-                           [["Com promoção", "with_promo"], ["Sem promoção", "without_promo"]],
-                           { include_blank: "Todos", selected: params[:promotion_status] },
-                           class: "form-select" %>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label small fw-bold text-muted text-uppercase">Aceita Permuta</label>
-              <%= f.select :accepts_exchange,
-                           [["Sim", "1"], ["Não", "0"]],
-                           { include_blank: "Todos", selected: params[:accepts_exchange] },
-                           class: "form-select" %>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label small fw-bold text-muted text-uppercase">Onde estão as chaves</label>
-              <%= f.select :key_location, @filter_key_locations, { include_blank: "Todos", selected: params[:key_location] }, class: "form-select" %>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label small fw-bold text-muted text-uppercase">Adm. Locação Salute</label>
-              <%= f.select :salute_rental_management,
-                           [["Sim", "1"], ["Não", "0"]],
-                           { include_blank: "Todos", selected: params[:salute_rental_management] },
-                           class: "form-select" %>
-            </div>
-
-            <!-- Price Range -->
-            <div class="col-md-6">
-               <label class="form-label small fw-bold text-muted text-uppercase">Preço Mín.</label>
-               <div class="input-group">
-                 <span class="input-group-text bg-white">R$</span>
-                 <%= f.text_field :min_price, value: params[:min_price], class: "form-control money-mask", placeholder: "0,00" %>
-               </div>
-            </div>
-            <div class="col-md-6">
-               <label class="form-label small fw-bold text-muted text-uppercase">Preço Máx.</label>
-               <div class="input-group">
-                 <span class="input-group-text bg-white">R$</span>
-                 <%= f.text_field :max_price, value: params[:max_price], class: "form-control money-mask", placeholder: "S/ Limite" %>
-               </div>
-            </div>
-          </div>
-
-          <div class="d-flex justify-content-end gap-2 mt-4">
-            <%= link_to "Limpar Filtros", admin_habitations_path, class: "btn btn-link text-decoration-none text-muted fw-semibold small" %>
-            <%= f.submit "Aplicar Filtros", class: "btn btn-primary px-4 fw-bold" %>
-          </div>
-        <% end %>
+        </div>
+        <div class="col-lg-2 col-md-4">
+          <label class="form-label small fw-bold text-muted text-uppercase">Status</label>
+          <%= f.select :status, @filter_statuses, { include_blank: "Todos", selected: params[:status] }, class: "form-select" %>
+        </div>
+        <div class="col-lg-2 col-md-4">
+          <label class="form-label small fw-bold text-muted text-uppercase">Categoria</label>
+          <%= f.select :categoria, @filter_categories, { include_blank: "Todas", selected: params[:categoria] }, class: "form-select" %>
+        </div>
+        <div class="col-lg-3 col-md-4 d-flex gap-2">
+          <button class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center <%= extras_open ? '' : 'collapsed' %>"
+                  type="button"
+                  data-action="click->collapse#toggle"
+                  data-collapse-target="button"
+                  aria-expanded="<%= extras_open %>">
+            <i class="bi bi-sliders me-2"></i>
+            Mais filtros
+            <% if active_extra_filters_count.positive? %>
+              <span class="badge rounded-pill bg-primary ms-2"><%= active_extra_filters_count %></span>
+            <% end %>
+          </button>
+          <%= f.submit "Aplicar", class: "btn btn-primary px-4 fw-bold" %>
+        </div>
       </div>
+
+      <% request.query_parameters.except("q", "status", "categoria", "sort", "direction", "scope", "page").each do |key, value| %>
+        <% if value.is_a?(Array) %>
+          <% value.reject(&:blank?).each do |entry| %>
+            <%= hidden_field_tag "#{key}[]", entry %>
+          <% end %>
+        <% elsif value.present? %>
+          <%= hidden_field_tag key, value %>
+        <% end %>
+      <% end %>
+    <% end %>
+  </div>
+
+  <div class="collapse <%= extras_open ? 'show' : '' %> border-top" data-collapse-target="content">
+    <div class="card-body bg-white">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="mb-0 fw-bold text-primary">
+          <i class="bi bi-funnel me-2"></i>Filtros de busca
+        </h6>
+        <%= link_to "Limpar extras", admin_habitations_path(clear_extras_params), class: "btn btn-link text-decoration-none text-muted fw-semibold small p-0" %>
+      </div>
+
+      <%= form_with url: admin_habitations_path, method: :get, local: true do |f| %>
+        <%= hidden_field_tag :q, params[:q] if params[:q].present? %>
+        <%= hidden_field_tag :status, params[:status] if params[:status].present? %>
+        <%= hidden_field_tag :categoria, params[:categoria] if params[:categoria].present? %>
+        <%= hidden_field_tag :sort, params[:sort] if params[:sort].present? %>
+        <%= hidden_field_tag :direction, params[:direction] if params[:direction].present? %>
+        <%= hidden_field_tag :scope, params[:scope] if params[:scope].present? %>
+
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label small fw-bold text-muted text-uppercase">Cidade</label>
+            <%= f.select :cidade, @filter_cities, { include_blank: "Todas", selected: params[:cidade] }, class: "form-select" %>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-bold text-muted text-uppercase">Bairro</label>
+            <%= f.text_field :bairro, value: params[:bairro], class: "form-control", placeholder: "Ex: Centro" %>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-bold text-muted text-uppercase">Situação</label>
+            <%= f.select :situacao, @filter_situacoes, { include_blank: "Todas", selected: params[:situacao] }, class: "form-select" %>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label small fw-bold text-muted text-uppercase">Valor Promocional</label>
+            <%= f.select :promotion_status,
+                         [["Com promoção", "with_promo"], ["Sem promoção", "without_promo"]],
+                         { include_blank: "Todos", selected: params[:promotion_status] },
+                         class: "form-select" %>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-bold text-muted text-uppercase">Aceita Permuta</label>
+            <%= f.select :accepts_exchange,
+                         [["Sim", "1"], ["Não", "0"]],
+                         { include_blank: "Todos", selected: params[:accepts_exchange] },
+                         class: "form-select" %>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-bold text-muted text-uppercase">Onde estão as chaves</label>
+            <%= f.select :key_location, @filter_key_locations, { include_blank: "Todos", selected: params[:key_location] }, class: "form-select" %>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-bold text-muted text-uppercase">Adm. Locação Salute</label>
+            <%= f.select :salute_rental_management,
+                         [["Sim", "1"], ["Não", "0"]],
+                         { include_blank: "Todos", selected: params[:salute_rental_management] },
+                         class: "form-select" %>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label small fw-bold text-muted text-uppercase">Preço Mín.</label>
+            <div class="input-group">
+              <span class="input-group-text bg-white">R$</span>
+              <%= f.text_field :min_price, value: params[:min_price], class: "form-control money-mask", placeholder: "0,00" %>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-bold text-muted text-uppercase">Preço Máx.</label>
+            <div class="input-group">
+              <span class="input-group-text bg-white">R$</span>
+              <%= f.text_field :max_price, value: params[:max_price], class: "form-control money-mask", placeholder: "S/ Limite" %>
+            </div>
+          </div>
+        </div>
+
+        <details class="mt-4 border rounded-3 bg-light-subtle" <%= "open" if vista_advanced_open %>>
+          <summary class="px-3 py-2 fw-bold text-primary" style="cursor: pointer;">
+            <i class="bi bi-grid-3x3-gap me-2"></i>Filtro avançado
+          </summary>
+          <div class="p-3 border-top bg-white rounded-bottom-3">
+            <div class="border rounded-3 p-3 mb-3">
+              <h6 class="fw-bold text-secondary mb-3">Características</h6>
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Face</label>
+                  <%= f.select :face, @filter_faces, { include_blank: "Todas", selected: params[:face] }, class: "form-select" %>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Ocupação</label>
+                  <%= f.select :ocupacao_status, @filter_ocupacao_statuses, { include_blank: "Todas", selected: params[:ocupacao_status] }, class: "form-select" %>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Conservação</label>
+                  <%= f.select :estado_conservacao, @filter_estado_conservacoes, { include_blank: "Todas", selected: params[:estado_conservacao] }, class: "form-select" %>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Banheiros (exato)</label>
+                  <%= f.select :banheiros,
+                               options_for_select((1..8).map { |n| [n.to_s, n] }, @banheiros),
+                               {},
+                               {
+                                 multiple: true,
+                                 class: "form-select",
+                                 data: {
+                                   controller: "tom-select",
+                                   tom_select_create_value: false,
+                                   tom_select_options_value: { placeholder: "Selecione banheiros" }
+                                 }
+                               } %>
+                </div>
+
+                <div class="col-md-3">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Dormitórios (exato)</label>
+                  <%= f.select :dorms,
+                               options_for_select((1..8).map { |n| [n.to_s, n] }, @dorms),
+                               {},
+                               {
+                                 multiple: true,
+                                 class: "form-select",
+                                 data: {
+                                   controller: "tom-select",
+                                   tom_select_create_value: false,
+                                   tom_select_options_value: { placeholder: "Selecione dormitórios" }
+                                 }
+                               } %>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Suítes (exato)</label>
+                  <%= f.select :suites,
+                               options_for_select((1..8).map { |n| [n.to_s, n] }, @suites),
+                               {},
+                               {
+                                 multiple: true,
+                                 class: "form-select",
+                                 data: {
+                                   controller: "tom-select",
+                                   tom_select_create_value: false,
+                                   tom_select_options_value: { placeholder: "Selecione suítes" }
+                                 }
+                               } %>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Vagas (exato)</label>
+                  <%= f.select :vagas,
+                               options_for_select((1..8).map { |n| [n.to_s, n] }, @vagas),
+                               {},
+                               {
+                                 multiple: true,
+                                 class: "form-select",
+                                 data: {
+                                   controller: "tom-select",
+                                   tom_select_create_value: false,
+                                   tom_select_options_value: { placeholder: "Selecione vagas" }
+                                 }
+                               } %>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Área Total mín. (m²)</label>
+                  <%= f.number_field :area_total_min, value: params[:area_total_min], class: "form-control", step: "0.01", min: "0" %>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Área Total máx. (m²)</label>
+                  <%= f.number_field :area_total_max, value: params[:area_total_max], class: "form-control", step: "0.01", min: "0" %>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Área Privativa mín. (m²)</label>
+                  <%= f.number_field :area_privativa_min, value: params[:area_privativa_min], class: "form-control", step: "0.01", min: "0" %>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Área Privativa máx. (m²)</label>
+                  <%= f.number_field :area_privativa_max, value: params[:area_privativa_max], class: "form-control", step: "0.01", min: "0" %>
+                </div>
+              </div>
+            </div>
+
+            <div class="border rounded-3 p-3 mb-3">
+              <h6 class="fw-bold text-secondary mb-3">Destaques</h6>
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Festival Salute</label>
+                  <%= f.select :festival_salute,
+                               [["Sim", "1"], ["Não", "0"]],
+                               { include_blank: "Todos", selected: params[:festival_salute] },
+                               class: "form-select" %>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Exibir no site Salute</label>
+                  <%= f.select :exibir_no_site_salute,
+                               [["Sim", "1"], ["Não", "0"]],
+                               { include_blank: "Todos", selected: params[:exibir_no_site_salute] },
+                               class: "form-select" %>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Tem Placa</label>
+                  <%= f.select :tem_placa,
+                               [["Sim", "1"], ["Não", "0"]],
+                               { include_blank: "Todos", selected: params[:tem_placa] },
+                               class: "form-select" %>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Exclusivo</label>
+                  <%= f.select :exclusivo,
+                               [["Sim", "1"], ["Não", "0"]],
+                               { include_blank: "Todos", selected: params[:exclusivo] },
+                               class: "form-select" %>
+                </div>
+              </div>
+            </div>
+
+            <div class="border rounded-3 p-3">
+              <h6 class="fw-bold text-secondary mb-3">Localização</h6>
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Empreendimento</label>
+                  <%= f.select :empreendimento_codigo,
+                               @filter_empreendimentos,
+                               { include_blank: "Todos", selected: params[:empreendimento_codigo] },
+                               {
+                                 class: "form-select",
+                                 data: {
+                                   controller: "tom-select",
+                                   tom_select_create_value: false,
+                                   tom_select_options_value: { placeholder: "Selecione empreendimento" }
+                                 }
+                               } %>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Construtora</label>
+                  <%= f.select :constructor_id,
+                               @filter_constructors,
+                               { include_blank: "Todas", selected: params[:constructor_id] },
+                               {
+                                 class: "form-select",
+                                 data: {
+                                   controller: "tom-select",
+                                   tom_select_create_value: false,
+                                   tom_select_options_value: { placeholder: "Selecione construtora" }
+                                 }
+                               } %>
+                </div>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <div class="d-flex justify-content-end gap-2 mt-4">
+          <%= link_to "Limpar Filtros", admin_habitations_path, class: "btn btn-link text-decoration-none text-muted fw-semibold small" %>
+          <%= f.submit "Aplicar extras", class: "btn btn-primary px-4 fw-bold" %>
+        </div>
+      <% end %>
     </div>
   </div>
 </div>
@@ -158,7 +371,7 @@
 
 <!-- Results Header -->
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <% if params[:q].present? || params[:cidade].present? || params[:status].present? || params[:scope].present? || params[:promotion_status].present? || params[:accepts_exchange].present? || params[:key_location].present? || params[:salute_rental_management].present? %>
+  <% if params[:q].present? || params[:status].present? || params[:categoria].present? || params[:scope].present? || active_extra_filters_count.positive? %>
      <h6 class="text-muted fw-normal mb-0">Filtrando resultados...</h6>
   <% else %>
      <h6 class="text-muted fw-normal mb-0"><%= link_to "Selecionar Todos", "#", class: "text-decoration-none fw-bold small" %></h6>

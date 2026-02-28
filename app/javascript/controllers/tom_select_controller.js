@@ -25,7 +25,14 @@ export default class extends Controller {
   }
 
   bindDeferredInitialization() {
-    this.deferredInitHandler = () => this.initializeTomSelect()
+    this.deferredInitHandler = (event) => {
+      this.initializeTomSelect()
+
+      // When initialized from click/touch, open immediately so first interaction works.
+      if (event && event.type !== "focus") {
+        requestAnimationFrame(() => this.tomSelect?.open())
+      }
+    }
     this.element.addEventListener("focus", this.deferredInitHandler, { once: true })
     this.element.addEventListener("mousedown", this.deferredInitHandler, { once: true })
     this.element.addEventListener("touchstart", this.deferredInitHandler, { once: true })

@@ -11,13 +11,28 @@ class Admin::HabitationsController < Admin::BaseController
     # Advanced Filters
     @cidade = params[:cidade]
     @bairro = params[:bairro]
-    @dorms = params[:dorms]
-    @suites = params[:suites]
-    @vagas = params[:vagas]
+    @dorms = extract_multi_select_integers(:dorms)
+    @suites = extract_multi_select_integers(:suites)
+    @vagas = extract_multi_select_integers(:vagas)
+    @banheiros = extract_multi_select_integers(:banheiros)
+    @situacao = params[:situacao]
+    @face = params[:face]
+    @ocupacao_status = params[:ocupacao_status]
+    @estado_conservacao = params[:estado_conservacao]
     @promotion_status = params[:promotion_status]
     @accepts_exchange = params[:accepts_exchange]
     @key_location = params[:key_location]
     @salute_rental_management = params[:salute_rental_management]
+    @empreendimento_codigo = params[:empreendimento_codigo]
+    @constructor_id = params[:constructor_id]
+    @festival_salute = params[:festival_salute]
+    @exibir_no_site_salute = params[:exibir_no_site_salute]
+    @tem_placa = params[:tem_placa]
+    @exclusivo = params[:exclusivo]
+    @area_total_min = params[:area_total_min]
+    @area_total_max = params[:area_total_max]
+    @area_privativa_min = params[:area_privativa_min]
+    @area_privativa_max = params[:area_privativa_max]
     @min_price = params[:min_price].to_s.gsub(/[^\d]/, '').to_i
     @max_price = params[:max_price].to_s.gsub(/[^\d]/, '').to_i
 
@@ -47,9 +62,15 @@ class Admin::HabitationsController < Admin::BaseController
     @habitations = @habitations.where("COALESCE(addresses.cidade, habitations.cidade) = ?", @cidade) if @cidade.present?
     @habitations = @habitations.where("COALESCE(addresses.bairro, habitations.bairro) ILIKE ?", "%#{@bairro}%") if @bairro.present?
     
-    @habitations = @habitations.where("dormitorios_qtd >= ?", @dorms) if @dorms.present? && @dorms.to_i > 0
-    @habitations = @habitations.where("suites_qtd >= ?", @suites) if @suites.present? && @suites.to_i > 0
-    @habitations = @habitations.where("vagas_qtd >= ?", @vagas) if @vagas.present? && @vagas.to_i > 0
+    @habitations = @habitations.where(dormitorios_qtd: @dorms) if @dorms.any?
+    @habitations = @habitations.where(suites_qtd: @suites) if @suites.any?
+    @habitations = @habitations.where(vagas_qtd: @vagas) if @vagas.any?
+    @habitations = @habitations.where(banheiros_qtd: @banheiros) if @banheiros.any?
+
+    @habitations = @habitations.where(situacao: @situacao) if @situacao.present?
+    @habitations = @habitations.where(face: @face) if @face.present?
+    @habitations = @habitations.where(ocupacao_status: @ocupacao_status) if @ocupacao_status.present?
+    @habitations = @habitations.where(estado_conservacao: @estado_conservacao) if @estado_conservacao.present?
 
     if @promotion_status == 'with_promo'
       @habitations = @habitations.where(
@@ -68,6 +89,10 @@ class Admin::HabitationsController < Admin::BaseController
     end
 
     @habitations = @habitations.where(key_location: @key_location) if @key_location.present?
+    if @empreendimento_codigo.present?
+      @habitations = @habitations.where("codigo_empreendimento = :codigo OR codigo = :codigo", codigo: @empreendimento_codigo)
+    end
+    @habitations = @habitations.where(constructor_id: @constructor_id) if @constructor_id.present?
 
     if @salute_rental_management == '1'
       @habitations = @habitations.where(salute_rental_management_flag: true)
@@ -82,6 +107,21 @@ class Admin::HabitationsController < Admin::BaseController
     if @max_price > 0
       @habitations = @habitations.where("valor_venda_cents <= ? OR valor_locacao_cents <= ?", @max_price * 100, @max_price * 100)
     end
+
+    area_total_min = parse_decimal_param(@area_total_min)
+    area_total_max = parse_decimal_param(@area_total_max)
+    area_privativa_min = parse_decimal_param(@area_privativa_min)
+    area_privativa_max = parse_decimal_param(@area_privativa_max)
+
+    @habitations = @habitations.where("area_total_m2 >= ?", area_total_min) if area_total_min
+    @habitations = @habitations.where("area_total_m2 <= ?", area_total_max) if area_total_max
+    @habitations = @habitations.where("area_privativa_m2 >= ?", area_privativa_min) if area_privativa_min
+    @habitations = @habitations.where("area_privativa_m2 <= ?", area_privativa_max) if area_privativa_max
+
+    @habitations = apply_boolean_filter(@habitations, @festival_salute, :festival_salute_flag)
+    @habitations = apply_boolean_filter(@habitations, @exibir_no_site_salute, :exibir_no_site_salute_flag)
+    @habitations = apply_boolean_filter(@habitations, @tem_placa, :tem_placa_flag)
+    @habitations = apply_boolean_filter(@habitations, @exclusivo, :exclusivo_flag)
     
     # Scopes/Pills
     @scope = params[:scope]
@@ -221,6 +261,51 @@ class Admin::HabitationsController < Admin::BaseController
                                        .pluck(:key_location)
                                        .sort
     @filter_key_locations = (Habitation::KEY_LOCATION_OPTIONS + existing_key_locations).uniq
+    @filter_empreendimentos = Habitation.empreendimentos
+                                        .where("NULLIF(TRIM(codigo), '') IS NOT NULL")
+                                        .where("NULLIF(TRIM(nome_empreendimento), '') IS NOT NULL AND nome_empreendimento != '.'")
+                                        .order(nome_empreendimento: :asc)
+                                        .pluck(:nome_empreendimento, :codigo)
+    @filter_constructors = Constructor.order(name: :asc).pluck(:name, :id)
+    @filter_situacoes = (Habitation::SITUATIONS + Habitation.where("NULLIF(TRIM(situacao), '') IS NOT NULL AND situacao != '.'")
+                                                          .distinct
+                                                          .pluck(:situacao)).uniq.sort
+    @filter_faces = (Habitation::FACES + Habitation.where("NULLIF(TRIM(face), '') IS NOT NULL AND face != '.'")
+                                               .distinct
+                                               .pluck(:face)).uniq.sort
+    @filter_ocupacao_statuses = (Habitation::OCUPACAO_STATUS + Habitation.where("NULLIF(TRIM(ocupacao_status), '') IS NOT NULL AND ocupacao_status != '.'")
+                                                                           .distinct
+                                                                           .pluck(:ocupacao_status)).uniq.sort
+    @filter_estado_conservacoes = (Habitation::ESTADO_CONSERVACAO + Habitation.where("NULLIF(TRIM(estado_conservacao), '') IS NOT NULL AND estado_conservacao != '.'")
+                                                                                 .distinct
+                                                                                 .pluck(:estado_conservacao)).uniq.sort
+  end
+
+  def extract_multi_select_integers(param_key)
+    Array(params[param_key])
+      .flatten
+      .map { |value| value.to_s.strip }
+      .reject(&:blank?)
+      .map(&:to_i)
+      .reject(&:zero?)
+      .uniq
+  end
+
+  def parse_decimal_param(raw_value)
+    value = raw_value.to_s.strip
+    return nil if value.blank?
+
+    normalized = value.gsub(/[^\d,.\-]/, '').tr(',', '.')
+    decimal_value = normalized.to_f
+    decimal_value.positive? ? decimal_value : nil
+  end
+
+  def apply_boolean_filter(scope, raw_param, column_name)
+    case raw_param
+    when '1' then scope.where(column_name => true)
+    when '0' then scope.where(column_name => false)
+    else scope
+    end
   end
 
   def habitation_params
