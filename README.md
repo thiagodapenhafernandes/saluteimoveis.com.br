@@ -28,3 +28,11 @@ URL: http://localhost:3000/admin
 Login: admin@saluteimoveis.com.br
 Senha: salute2024
 123456
+
+AUTOSSH_GATETIME=0 autossh -4 -M 0 -NT \
+  -o ServerAliveInterval=30 \
+  -o ServerAliveCountMax=3 \
+  -o TCPKeepAlive=yes \
+  -o ExitOnForwardFailure=yes \
+  -R 3001:127.0.0.1:3001 \
+  root@72.61.221.253

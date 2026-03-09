@@ -87,3 +87,7 @@ pt-BR:
       signed_in: "Login efetuado com sucesso."
       admin_user:
         signed_in: "Login de administrador efetuado com sucesso."
+    failure:
+      invalid: "E-mail ou senha inválidos."
+      admin_user:
+        invalid: "E-mail ou senha inválidos."
