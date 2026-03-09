@@ -14,7 +14,7 @@ class HomeController < ApplicationController
     # Carrossel de Oportunidades - 12 imóveis com desconto (only if section is active)
     if @sections_map['opportunities']&.active?
       @opportunity_properties = Habitation.active
-        .where('valor_venda_anterior_cents > valor_venda_cents OR valor_promocional_cents > 0')
+        .where('valor_venda_anterior_cents > valor_venda_cents AND valor_venda_cents > 0')
         .newest_first
         .limit(12)
     end
