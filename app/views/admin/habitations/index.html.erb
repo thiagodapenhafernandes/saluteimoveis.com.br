@@ -124,9 +124,9 @@
           </div>
 
           <div class="col-md-3">
-            <label class="form-label small fw-bold text-muted text-uppercase">Valor Promocional</label>
+            <label class="form-label small fw-bold text-muted text-uppercase">Preço Reduzido</label>
             <%= f.select :promotion_status,
-                         [["Com promoção", "with_promo"], ["Sem promoção", "without_promo"]],
+                         [["Com preço reduzido", "with_promo"], ["Sem preço reduzido", "without_promo"]],
                          { include_blank: "Todos", selected: params[:promotion_status] },
                          class: "form-select" %>
           </div>

@@ -253,8 +253,7 @@ module Habitation::SearchScopes
     # Oportunidade (Preço Reduzido)
     scope :opportunity, lambda {
       where(
-        "(valor_venda_anterior_cents > valor_venda_cents AND valor_venda_cents > 0) OR " \
-        "(valor_promocional_cents > 0)"
+        "valor_venda_anterior_cents > valor_venda_cents AND valor_venda_cents > 0"
       )
     }
     
