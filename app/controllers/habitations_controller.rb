@@ -142,6 +142,11 @@ class HabitationsController < ApplicationController
   
   # GET /imovel/:id
   def show
+    unless @habitation
+      redirect_to habitations_path, alert: 'Imóvel não encontrado ou indisponível no momento.'
+      return
+    end
+
     load_share_context
 
     # Incrementar contador de visualizações (em background)
@@ -275,6 +280,8 @@ class HabitationsController < ApplicationController
   end
 
   def load_share_context
+    return unless @habitation
+
     @lead_share_token = nil
     return if params[:share_token].blank?
 
