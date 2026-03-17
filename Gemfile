@@ -48,6 +48,7 @@ gem "friendly_id"
 gem "mini_magick"
 gem "carrierwave", "~> 3.0"
 gem "fog-aws"
+gem "aws-sdk-s3", require: false
 
 # Authentication
 gem "bcrypt", "~> 3.1.7"

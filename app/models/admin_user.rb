@@ -10,6 +10,7 @@ class AdminUser < ApplicationRecord
   belongs_to :manager, class_name: "AdminUser", optional: true
   has_many :subordinates, class_name: "AdminUser", foreign_key: "manager_id"
   has_many :habitations
+  has_many :habitation_share_links, dependent: :destroy
 
   enum role: { editor: 0, admin: 1 }
   enum acting_type: { sales: 0, rentals: 1, both: 2 }

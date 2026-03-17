@@ -4,13 +4,15 @@
     <p class="text-muted small mb-0">Gerencie seu portfólio de imóveis com filtros avançados.</p>
   </div>
   <div class="d-flex gap-2">
-    <%= link_to admin_constructors_path, class: "btn btn-outline-primary d-flex align-items-center bg-white fw-semibold" do %>
-      <i class="bi bi-building me-2"></i> Construtoras
+    <% if current_admin_user&.admin? %>
+      <%= link_to admin_proprietors_path, class: "btn btn-outline-primary d-flex align-items-center bg-white fw-semibold" do %>
+        <i class="bi bi-person-vcard me-2"></i> Proprietários
+      <% end %>
+      <div class="vr mx-1"></div>
     <% end %>
-    <div class="vr mx-1"></div>
-    <%= link_to "#", class: "btn btn-white border d-flex align-items-center bg-white" do %>
+    <button type="button" class="btn btn-white border d-flex align-items-center bg-white" data-bs-toggle="modal" data-bs-target="#habitationsExportModal">
       <i class="bi bi-download me-2"></i> Exportar
-    <% end %>
+    </button>
     <%= link_to new_admin_habitation_path, class: "btn btn-primary d-flex align-items-center fw-bold px-4 shadow-sm" do %>
       <i class="bi bi-plus-lg me-2"></i> Novo Imóvel
     <% end %>
@@ -21,8 +23,10 @@
   array_filter_keys = %w[dorms suites vagas banheiros]
   extra_filter_keys = %w[
     cidade bairro promotion_status accepts_exchange key_location salute_rental_management min_price max_price
+    permuta_vehicle permuta_property permuta_others permuta_min_value permuta_location
+    permuta_min_dorms permuta_min_suites permuta_min_garagens
     situacao face ocupacao_status estado_conservacao area_total_min area_total_max area_privativa_min area_privativa_max
-    festival_salute exibir_no_site_salute tem_placa exclusivo empreendimento_codigo constructor_id
+    festival_salute exibir_no_site_salute tem_placa exclusivo empreendimento_codigo proprietor_id
   ] + array_filter_keys
   active_extra_filters_count = extra_filter_keys.count do |key|
     value = params[key]
@@ -32,7 +36,8 @@
   vista_advanced_keys = %w[
     situacao face ocupacao_status estado_conservacao area_total_min area_total_max area_privativa_min area_privativa_max
     festival_salute exibir_no_site_salute tem_placa exclusivo banheiros dorms suites vagas
-    empreendimento_codigo constructor_id
+    empreendimento_codigo proprietor_id permuta_vehicle permuta_property permuta_others permuta_min_value
+    permuta_location permuta_min_dorms permuta_min_suites permuta_min_garagens
   ]
   vista_advanced_open = vista_advanced_keys.any? do |key|
     value = params[key]
@@ -299,6 +304,57 @@
               </div>
             </div>
 
+            <div class="border rounded-3 p-3 mb-3">
+              <h6 class="fw-bold text-secondary mb-3">Permuta</h6>
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Permuta Veículo</label>
+                  <%= f.select :permuta_vehicle,
+                               [["Sim", "1"], ["Não", "0"]],
+                               { include_blank: "Todos", selected: params[:permuta_vehicle] },
+                               class: "form-select" %>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Permuta Imóvel</label>
+                  <%= f.select :permuta_property,
+                               [["Sim", "1"], ["Não", "0"]],
+                               { include_blank: "Todos", selected: params[:permuta_property] },
+                               class: "form-select" %>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Permuta Outros</label>
+                  <%= f.select :permuta_others,
+                               [["Sim", "1"], ["Não", "0"]],
+                               { include_blank: "Todos", selected: params[:permuta_others] },
+                               class: "form-select" %>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Valor mín. permuta</label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-white">R$</span>
+                    <%= f.text_field :permuta_min_value, value: params[:permuta_min_value], class: "form-control money-mask", placeholder: "0,00" %>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Localização permuta</label>
+                  <%= f.text_field :permuta_location, value: params[:permuta_location], class: "form-control", placeholder: "Cidade, bairro ou região" %>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Dormit. mín.</label>
+                  <%= f.number_field :permuta_min_dorms, value: params[:permuta_min_dorms], class: "form-control", min: 0 %>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Suítes mín.</label>
+                  <%= f.number_field :permuta_min_suites, value: params[:permuta_min_suites], class: "form-control", min: 0 %>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Garagens mín.</label>
+                  <%= f.number_field :permuta_min_garagens, value: params[:permuta_min_garagens], class: "form-control", min: 0 %>
+                </div>
+              </div>
+            </div>
+
             <div class="border rounded-3 p-3">
               <h6 class="fw-bold text-secondary mb-3">Localização</h6>
               <div class="row g-3">
@@ -316,20 +372,22 @@
                                  }
                                } %>
                 </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-bold text-muted text-uppercase">Construtora</label>
-                  <%= f.select :constructor_id,
-                               @filter_constructors,
-                               { include_blank: "Todas", selected: params[:constructor_id] },
-                               {
-                                 class: "form-select",
-                                 data: {
-                                   controller: "tom-select",
-                                   tom_select_create_value: false,
-                                   tom_select_options_value: { placeholder: "Selecione construtora" }
-                                 }
-                               } %>
-                </div>
+                <% if current_admin_user&.admin? %>
+                  <div class="col-md-3">
+                    <label class="form-label small fw-bold text-muted text-uppercase">Proprietário</label>
+                    <%= f.select :proprietor_id,
+                                 @filter_proprietors,
+                                 { include_blank: "Todas", selected: params[:proprietor_id] },
+                                 {
+                                   class: "form-select",
+                                   data: {
+                                     controller: "tom-select",
+                                     tom_select_create_value: false,
+                                     tom_select_options_value: { placeholder: "Selecione proprietário" }
+                                   }
+                                 } %>
+                  </div>
+                <% end %>
               </div>
             </div>
           </div>
@@ -369,6 +427,56 @@
   <% end %>
 </div>
 
+<div class="modal fade" id="habitationsExportModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header">
+        <h5 class="modal-title fw-semibold">
+          <i class="bi bi-download me-2"></i>Exportação de <%= @filtered_count %> imóveis
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <%= form_with url: export_admin_habitations_path, method: :get, local: true do %>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Formatação dos dados</label>
+            <%= select_tag :data_format,
+                           options_for_select([["CSV (;)", "csv_semicolon"], ["CSV (,)", "csv_comma"]], "csv_semicolon"),
+                           class: "form-select" %>
+          </div>
+
+          <% request.query_parameters.except("fields", "data_format").each do |key, value| %>
+            <% if value.is_a?(Array) %>
+              <% value.each do |entry| %>
+                <%= hidden_field_tag "#{key}[]", entry %>
+              <% end %>
+            <% else %>
+              <%= hidden_field_tag key, value %>
+            <% end %>
+          <% end %>
+
+          <div class="border rounded-3 overflow-hidden">
+            <div class="px-3 py-2 bg-light fw-semibold">Selecione os campos para exportação</div>
+            <div style="max-height: 340px; overflow-y: auto;">
+              <% @export_fields.each do |field_key, field_label| %>
+                <% next if !current_admin_user&.admin? && field_key == "proprietario" %>
+                <label class="d-flex align-items-center gap-2 px-3 py-2 border-bottom small">
+                  <%= check_box_tag "fields[]", field_key, @default_export_fields.include?(field_key), class: "form-check-input mt-0" %>
+                  <span><%= field_label %></span>
+                </label>
+              <% end %>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary px-4">Exportar</button>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
 <!-- Results Header -->
 <div class="d-flex justify-content-between align-items-center mb-3">
   <% if params[:q].present? || params[:status].present? || params[:categoria].present? || params[:scope].present? || active_extra_filters_count.positive? %>
@@ -378,6 +486,38 @@
   <% end %>
   <div class="d-flex align-items-center gap-3">
     <span class="small text-muted fw-semibold">Mostrando <span class="text-dark"><%= @habitations.count %></span> de <%= Habitation.count %> registros.</span>
+
+    <div class="dropdown" data-controller="dropdown">
+      <button class="btn btn-white btn-sm border dropdown-toggle text-muted"
+              type="button"
+              data-action="click->dropdown#toggle"
+              aria-expanded="false">
+        <i class="bi bi-printer me-1"></i> Impressão
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0"
+          data-dropdown-target="menu"
+          style="right: 0; left: auto; min-width: 320px;">
+        <% printable_params = request.query_parameters.except("report_type", "page") %>
+        <% @report_types.to_h.each do |report_key, report_label| %>
+          <li>
+            <%= form_with url: print_admin_habitations_path, method: :get, local: true, html: { target: "_blank", class: "m-0" } do %>
+              <%= hidden_field_tag :report_type, report_key %>
+              <%= hidden_field_tag :full_print, "1" %>
+              <% printable_params.each do |key, value| %>
+                <% if value.is_a?(Array) %>
+                  <% value.each do |entry| %>
+                    <%= hidden_field_tag "#{key}[]", entry %>
+                  <% end %>
+                <% else %>
+                  <%= hidden_field_tag key, value %>
+                <% end %>
+              <% end %>
+              <button type="submit" class="dropdown-item small"><%= report_label %></button>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    </div>
     
     <div class="dropdown" data-controller="dropdown">
       <button class="btn btn-white btn-sm border dropdown-toggle text-muted" 
@@ -397,6 +537,36 @@
     </div>
   </div>
 </div>
+
+<%
+  active_filter_chips = []
+  active_filter_chips << "Busca: #{params[:q]}" if params[:q].present?
+  active_filter_chips << "Status: #{params[:status]}" if params[:status].present?
+  active_filter_chips << "Categoria: #{params[:categoria]}" if params[:categoria].present?
+  active_filter_chips << "Cidade: #{params[:cidade]}" if params[:cidade].present?
+  active_filter_chips << "Bairro: #{params[:bairro]}" if params[:bairro].present?
+  active_filter_chips << "Permuta: Sim" if params[:accepts_exchange] == "1"
+  active_filter_chips << "Permuta: Não" if params[:accepts_exchange] == "0"
+  active_filter_chips << "Permuta veículo: Sim" if params[:permuta_vehicle] == "1"
+  active_filter_chips << "Permuta imóvel: Sim" if params[:permuta_property] == "1"
+  active_filter_chips << "Permuta outros: Sim" if params[:permuta_others] == "1"
+  active_filter_chips << "Valor mín. permuta: R$ #{params[:permuta_min_value]}" if params[:permuta_min_value].present?
+  active_filter_chips << "Localização permuta: #{params[:permuta_location]}" if params[:permuta_location].present?
+  active_filter_chips << "Dorms permuta ≥ #{params[:permuta_min_dorms]}" if params[:permuta_min_dorms].present?
+  active_filter_chips << "Suítes permuta ≥ #{params[:permuta_min_suites]}" if params[:permuta_min_suites].present?
+  active_filter_chips << "Garagens permuta ≥ #{params[:permuta_min_garagens]}" if params[:permuta_min_garagens].present?
+  active_filter_chips << "Empreendimento: #{params[:empreendimento_codigo]}" if params[:empreendimento_codigo].present?
+  active_filter_chips << "Proprietário: #{params[:proprietor_id]}" if current_admin_user&.admin? && params[:proprietor_id].present?
+  active_filter_chips << "Escopo: #{params[:scope]}" if params[:scope].present?
+%>
+
+<% if active_filter_chips.any? %>
+  <div class="mb-3 d-flex flex-wrap gap-2">
+    <% active_filter_chips.each do |chip| %>
+      <span class="badge rounded-pill text-bg-light border px-3 py-2 fw-semibold"><%= chip %></span>
+    <% end %>
+  </div>
+<% end %>
 
 <!-- Property Cards List -->
 <div class="row g-3">
@@ -457,24 +627,30 @@
                           <span class="text-muted ms-1">• <%= imovel.categoria %></span>
                        </div>
                     </div>
-                    <div class="dropdown" data-controller="dropdown">
-                        <button class="btn btn-light btn-sm rounded-circle dropdown-toggle no-caret" 
-                                type="button" 
-                                data-action="click->dropdown#toggle">
-                          <i class="bi bi-three-dots-vertical"></i>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" 
-                            data-dropdown-target="menu"
-                            style="right: 0; left: auto;">
-                          <li><%= link_to "Ver no Site", habitation_path(imovel), target: "_blank", class: "dropdown-item small" %></li>
-                          <li><%= link_to "Editar", edit_admin_habitation_path(imovel), class: "dropdown-item small" %></li>
-                          <li><hr class="dropdown-divider"></li>
-                          <li>
-                            <%= button_to admin_habitation_path(imovel), method: :delete, class: "dropdown-item small text-danger", data: { confirm: "Tem certeza?" } do %>
-                               Excluir
+                    <div class="d-flex align-items-start gap-2">
+                      <%= render "shared/broker_share_menu", property: imovel %>
+
+                      <div class="dropdown" data-controller="dropdown">
+                          <button class="btn btn-light btn-sm rounded-circle dropdown-toggle no-caret" 
+                                  type="button" 
+                                  data-action="click->dropdown#toggle">
+                            <i class="bi bi-three-dots-vertical"></i>
+                          </button>
+                          <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" 
+                              data-dropdown-target="menu"
+                              style="right: 0; left: auto;">
+                            <li><%= link_to "Ver no Site", habitation_path(imovel), target: "_blank", class: "dropdown-item small" %></li>
+                            <li><%= link_to "Editar", edit_admin_habitation_path(imovel), class: "dropdown-item small" %></li>
+                            <% if current_admin_user&.admin? %>
+                              <li><hr class="dropdown-divider"></li>
+                              <li>
+                                <%= button_to admin_habitation_path(imovel), method: :delete, class: "dropdown-item small text-danger", data: { confirm: "Tem certeza?" } do %>
+                                   Excluir
+                                <% end %>
+                              </li>
                             <% end %>
-                          </li>
-                        </ul>
+                          </ul>
+                      </div>
                     </div>
                  </div>
 

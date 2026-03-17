@@ -1,0 +1,210 @@
+require "open-uri"
+require "yaml"
+require "fileutils"
+require "set"
+
+module SpacesImageSync
+  module_function
+
+  def truthy_env?(value)
+    value.to_s.strip.downcase.in?(["1", "true", "yes", "y", "on"])
+  end
+
+  def cursor_data(path)
+    return { "last_id" => 0 } unless File.exist?(path)
+
+    YAML.safe_load(File.read(path), permitted_classes: [Time], aliases: true) || { "last_id" => 0 }
+  rescue
+    { "last_id" => 0 }
+  end
+
+  def write_cursor(path, last_id:, cycle:, synced:, skipped:, failed:)
+    FileUtils.mkdir_p(File.dirname(path))
+    File.write(path, {
+      "last_id" => last_id,
+      "cycle" => cycle,
+      "last_run_at" => Time.current,
+      "synced" => synced,
+      "skipped" => skipped,
+      "failed" => failed
+    }.to_yaml)
+  end
+
+  def append_failure(path, habitation_id)
+    FileUtils.mkdir_p(File.dirname(path))
+    File.open(path, "a") { |f| f.puts(habitation_id) }
+  end
+
+  def extract_picture_url(pic)
+    return pic if pic.is_a?(String)
+    return unless pic.is_a?(Hash)
+
+    pic["url"] || pic[:url] || pic["Foto"] || pic[:Foto]
+  end
+
+  def picture_filename(url, fallback)
+    uri = URI.parse(url)
+    base = File.basename(uri.path.presence || fallback)
+    base.present? ? base : fallback
+  rescue
+    fallback
+  end
+
+  def process_habitation(habitation, dry_run:)
+    pictures = habitation.pictures.is_a?(Array) ? habitation.pictures : []
+    return { synced: 0, skipped: 1, failed: 0, habitation_failed: false } if pictures.blank?
+
+    existing_filenames = habitation.photos.attachments.map { |att| att.filename.to_s }.to_set
+    synced = 0
+    skipped = 0
+    failed = 0
+    habitation_failed = false
+
+    pictures.each_with_index do |pic, idx|
+      url = extract_picture_url(pic)
+      next if url.blank?
+
+      fallback = "picture_#{habitation.id}_#{idx + 1}.jpg"
+      filename = picture_filename(url, fallback)
+
+      if existing_filenames.include?(filename)
+        skipped += 1
+        next
+      end
+
+      if dry_run
+        puts "[DRY_RUN] habitation=#{habitation.id} codigo=#{habitation.codigo} file=#{filename}"
+        synced += 1
+        existing_filenames << filename
+        next
+      end
+
+      begin
+        io = URI.open(url, read_timeout: 20, open_timeout: 10)
+        habitation.photos.attach(io: io, filename: filename)
+        synced += 1
+        existing_filenames << filename
+      rescue => e
+        habitation_failed = true
+        failed += 1
+        Rails.logger.error("[images:sync_habitations_to_spaces] habitation=#{habitation.id} file=#{filename} erro=#{e.message}")
+      end
+    end
+
+    { synced: synced, skipped: skipped, failed: failed, habitation_failed: habitation_failed }
+  end
+end
+
+namespace :images do
+  desc "Sincroniza fotos (JSON pictures) de imóveis para ActiveStorage/Spaces com cursor e cadência"
+  task sync_habitations_to_spaces: :environment do
+    batch_size = ENV.fetch("BATCH_SIZE", ENV.fetch("LIMIT", "100")).to_i
+    batch_size = 100 if batch_size <= 0
+
+    dry_run = SpacesImageSync.truthy_env?(ENV["DRY_RUN"])
+    loop_mode = SpacesImageSync.truthy_env?(ENV.fetch("LOOP", "false"))
+    stop_when_done = SpacesImageSync.truthy_env?(ENV.fetch("STOP_WHEN_DONE", "true"))
+    reset_cursor = SpacesImageSync.truthy_env?(ENV.fetch("RESET_CURSOR", "false"))
+    only_without_attachments = SpacesImageSync.truthy_env?(ENV.fetch("ONLY_WITHOUT_ATTACHMENTS", "false"))
+
+    sleep_seconds = ENV.fetch("SLEEP_SECONDS", "3").to_f
+    max_cycles = ENV.fetch("MAX_CYCLES", "0").to_i
+    start_id = ENV.fetch("START_ID", "0").to_i
+
+    cursor_file = ENV.fetch("CURSOR_FILE", Rails.root.join("tmp/spaces_habitation_images_cursor.yml").to_s)
+    failed_file = ENV.fetch("FAILED_FILE", Rails.root.join("tmp/spaces_habitation_images_failed_ids.log").to_s)
+
+    cursor = SpacesImageSync.cursor_data(cursor_file)
+    cursor["last_id"] = 0 if reset_cursor
+    cursor["last_id"] = start_id - 1 if start_id.positive?
+
+    total_synced = 0
+    total_skipped = 0
+    total_failed = 0
+    cycle = 0
+
+    puts "[images:sync_habitations_to_spaces] service=#{Rails.application.config.active_storage.service} dry_run=#{dry_run}"
+    puts "[images:sync_habitations_to_spaces] batch_size=#{batch_size} loop=#{loop_mode} sleep=#{sleep_seconds}s cursor=#{cursor_file}"
+
+    loop do
+      cycle += 1
+      last_id = cursor["last_id"].to_i
+
+      scope = Habitation.where("id > ?", last_id).order(:id)
+      scope = scope.where.missing(:photos_attachments) if only_without_attachments
+      batch = scope.limit(batch_size).to_a
+
+      if batch.empty?
+        puts "[images:sync_habitations_to_spaces] ciclo=#{cycle} sem registros pendentes apos id=#{last_id}"
+        break if !loop_mode || stop_when_done
+
+        sleep(sleep_seconds)
+        next
+      end
+
+      cycle_synced = 0
+      cycle_skipped = 0
+      cycle_failed = 0
+
+      batch.each do |habitation|
+        result = SpacesImageSync.process_habitation(habitation, dry_run: dry_run)
+        cycle_synced += result[:synced]
+        cycle_skipped += result[:skipped]
+        cycle_failed += result[:failed]
+        SpacesImageSync.append_failure(failed_file, habitation.id) if result[:habitation_failed]
+
+        cursor["last_id"] = habitation.id
+        SpacesImageSync.write_cursor(cursor_file, last_id: cursor["last_id"], cycle: cycle, synced: total_synced + cycle_synced, skipped: total_skipped + cycle_skipped, failed: total_failed + cycle_failed)
+      end
+
+      total_synced += cycle_synced
+      total_skipped += cycle_skipped
+      total_failed += cycle_failed
+
+      puts "[images:sync_habitations_to_spaces] ciclo=#{cycle} last_id=#{cursor['last_id']} synced=#{cycle_synced} skipped=#{cycle_skipped} failed=#{cycle_failed}"
+
+      if max_cycles.positive? && cycle >= max_cycles
+        puts "[images:sync_habitations_to_spaces] encerrando por MAX_CYCLES=#{max_cycles}"
+        break
+      end
+
+      break unless loop_mode
+
+      sleep(sleep_seconds)
+    end
+
+    puts "[images:sync_habitations_to_spaces] total_synced=#{total_synced} total_skipped=#{total_skipped} total_failed=#{total_failed}"
+    puts "[images:sync_habitations_to_spaces] failed_log=#{failed_file}" if total_failed.positive?
+  end
+
+  desc "Reprocessa IDs de imóveis que falharam em execuções anteriores"
+  task retry_failed_habitations_to_spaces: :environment do
+    failed_file = ENV.fetch("FAILED_FILE", Rails.root.join("tmp/spaces_habitation_images_failed_ids.log").to_s)
+    unless File.exist?(failed_file)
+      puts "[images:retry_failed_habitations_to_spaces] nenhum arquivo de falhas em #{failed_file}"
+      next
+    end
+
+    ids = File.readlines(failed_file, chomp: true).map(&:to_i).select(&:positive?).uniq
+    if ids.empty?
+      puts "[images:retry_failed_habitations_to_spaces] nenhum id valido no arquivo"
+      next
+    end
+
+    dry_run = SpacesImageSync.truthy_env?(ENV["DRY_RUN"])
+    synced = 0
+    skipped = 0
+    failed = 0
+
+    puts "[images:retry_failed_habitations_to_spaces] reprocessando #{ids.size} imóveis dry_run=#{dry_run}"
+
+    Habitation.where(id: ids).order(:id).find_each do |habitation|
+      result = SpacesImageSync.process_habitation(habitation, dry_run: dry_run)
+      synced += result[:synced]
+      skipped += result[:skipped]
+      failed += result[:failed]
+    end
+
+    puts "[images:retry_failed_habitations_to_spaces] synced=#{synced} skipped=#{skipped} failed=#{failed}"
+  end
+end

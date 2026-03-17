@@ -59,6 +59,7 @@ class SyncPropertyService
         'AreaPrivativa', 'AreaTotal', 'Status', 'Situacao', 'ValorVenda', 'ValorLocacao',
         'ValorCondominio', 'ValorIptu', 'Empreendimento', 'CodigoEmpreendimento', 'Lancamento',
         'DescricaoWeb', 'CaracteristicaUnica', 'Caracteristicas', 'InfraEstrutura', 'ExibirNoSite', 'DestaqueWeb', 'Categoria', 'Construtora',
+        'Proprietario', 'NomeProprietario', 'CodigoProprietario', 'EmailProprietario', 'CelularProprietario',
         'DataAtualizacao', 'DataEntrega', { 'Foto' => ['Foto', 'FotoPequena', 'Destaque', 'Ordem'] }
       ]
     }
@@ -80,6 +81,7 @@ class SyncPropertyService
     categoria = hb['Categoria'].to_s.strip
     tipo = categoria.casecmp("Empreendimento").zero? ? "Empreendimento" : "Unitário"
     constructor_id = resolve_constructor(hb['Construtora'])
+    proprietor = resolve_proprietor(hb)
     raw_imediacoes = hb['Imediacoes']
 
     habitation_attrs = {
@@ -111,6 +113,11 @@ class SyncPropertyService
       nome_empreendimento: hb['Empreendimento'].to_s.strip.presence,
       construtora: hb['Construtora'].to_s.strip.presence,
       constructor_id: constructor_id,
+      proprietor_id: proprietor&.id,
+      proprietario: proprietor&.name,
+      proprietario_codigo: proprietor&.vista_code,
+      proprietario_email: proprietor&.email,
+      proprietario_celular: proprietor&.mobile_phone,
       exibir_no_site_flag: hb['ExibirNoSite'] == 'Sim',
       destaque_web_flag: hb['DestaqueWeb'] == 'Sim',
       lancamento_flag: hb['Lancamento'] == 'Sim',
@@ -176,6 +183,32 @@ class SyncPropertyService
     constructor = Constructor.where("lower(name) = lower(?)", normalized_name).first
     constructor ||= Constructor.create!(name: normalized_name)
     constructor.id
+  rescue
+    nil
+  end
+
+  def resolve_proprietor(hb)
+    proprietor_name = hb['NomeProprietario'].presence || hb['Proprietario'].presence || hb['Construtora'].presence
+    proprietor_code = hb['CodigoProprietario'].to_s.strip.presence
+    proprietor_email = hb['EmailProprietario'].to_s.strip.presence
+    proprietor_phone = hb['CelularProprietario'].to_s.strip.presence
+    return nil if proprietor_name.to_s.strip.blank?
+
+    role = hb['NomeProprietario'].present? || hb['Proprietario'].present? ? :owner : :developer
+
+    proprietor = nil
+    proprietor = Proprietor.find_by(vista_code: proprietor_code) if proprietor_code.present?
+    proprietor ||= Proprietor.find_by(email: proprietor_email) if proprietor_email.present?
+    proprietor ||= Proprietor.where("lower(name) = lower(?)", proprietor_name.to_s.strip).first
+    proprietor ||= Proprietor.new
+
+    proprietor.name = proprietor_name.to_s.strip
+    proprietor.role = role
+    proprietor.vista_code = proprietor_code if proprietor_code.present?
+    proprietor.email = proprietor_email if proprietor_email.present?
+    proprietor.mobile_phone = proprietor_phone if proprietor_phone.present?
+    proprietor.save!
+    proprietor
   rescue
     nil
   end

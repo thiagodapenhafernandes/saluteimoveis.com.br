@@ -36,8 +36,15 @@ Rails.application.configure do
   # config.action_dispatch.x_sendfile_header = "X-Sendfile" # for Apache
   # config.action_dispatch.x_sendfile_header = "X-Accel-Redirect" # for NGINX
 
-  # Store uploaded files on the local file system (see config/storage.yml for options).
-  config.active_storage.service = :local
+  # Store uploaded files on local disk or DigitalOcean Spaces.
+  storage_service = if ENV["ACTIVE_STORAGE_SERVICE"].present?
+    ENV["ACTIVE_STORAGE_SERVICE"]
+  elsif ENV["VISTASOFT_SPACES_MIRROR_ENABLED"] == "true"
+    "do_spaces"
+  else
+    "local"
+  end
+  config.active_storage.service = storage_service.to_sym
 
   # Mount Action Cable outside main process or domain.
   # config.action_cable.mount_path = nil

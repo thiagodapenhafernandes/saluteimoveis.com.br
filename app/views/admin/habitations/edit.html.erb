@@ -11,6 +11,16 @@
       <%= link_to habitation_path(@habitation), target: "_blank", class: "btn btn-primary btn-sm" do %>
         <i class="bi bi-eye me-1"></i> Visualizar no Site
       <% end %>
+      <% if current_admin_user&.admin? %>
+        <%= button_to admin_habitation_path(@habitation),
+            method: :delete,
+            class: "btn btn-outline-danger btn-sm",
+            form: { class: "d-inline" },
+            data: { turbo_confirm: "Tem certeza que deseja excluir este imóvel? Esta ação não pode ser desfeita." },
+            title: "Excluir imóvel" do %>
+          <i class="bi bi-trash me-1"></i> Excluir imóvel
+        <% end %>
+      <% end %>
     </div>
   </div>
 

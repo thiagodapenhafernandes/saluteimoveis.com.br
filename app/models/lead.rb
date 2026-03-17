@@ -1,5 +1,6 @@
 class Lead < ApplicationRecord
   belongs_to :admin_user, optional: true
+  belongs_to :shared_by_admin_user, class_name: "AdminUser", optional: true
   belongs_to :distribution_rule, optional: true
   has_many :activities, class_name: "LeadActivity", dependent: :destroy
   

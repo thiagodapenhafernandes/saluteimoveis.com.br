@@ -17,6 +17,10 @@ module Habitation::SearchScopes
         .with_price 
     }
     scope :featured, -> { where(destaque_web_flag: true) }
+    scope :home_corporate, -> {
+      where(home_corporate_flag: true)
+        .order(Arel.sql("COALESCE(home_corporate_position, 9999) ASC"), updated_at: :desc)
+    }
     scope :lancamento, -> {
       where(
         "lancamento_flag = true OR EXISTS (" \
@@ -380,7 +384,15 @@ module Habitation::SearchScopes
       # Localização (busca flexível - cidade OU bairro)
       if params[:city].present?
         if params[:city].is_a?(Array)
-          query = query.by_city(params[:city])
+          locations = params[:city].reject(&:blank?).map(&:strip)
+          if locations.any?
+            query = query.left_outer_joins(:address).where(
+              "unaccent(COALESCE(addresses.cidade, habitations.cidade)) IN (SELECT unaccent(n) FROM unnest(ARRAY[?]) AS n) OR " \
+              "unaccent(COALESCE(addresses.bairro, habitations.bairro)) IN (SELECT unaccent(n) FROM unnest(ARRAY[?]) AS n) OR " \
+              "unaccent((COALESCE(addresses.bairro, habitations.bairro) || ' - ' || COALESCE(addresses.cidade, habitations.cidade))) IN (SELECT unaccent(n) FROM unnest(ARRAY[?]) AS n)",
+              locations, locations, locations
+            )
+          end
         else
           city_term = params[:city].to_s.strip
           query = query.left_outer_joins(:address).where(

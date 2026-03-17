@@ -166,14 +166,20 @@
       <div class="lg:col-span-2 space-y-12">
         
         <!-- About Section -->
-        <% if @habitation.descricao_empreendimento.present? || @habitation.descricao_web.present? %>
-          <section class="bg-white rounded-xl shadow-sm p-8">
+        <% description_content = @habitation.display_description %>
+        <% if description_content.present? %>
+          <section class="bg-white rounded-xl shadow-sm p-8 border border-blue-100">
             <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
               <div class="w-1 h-8 bg-golden-one rounded"></div>
+              <i class="bi bi-info-circle-fill text-blue-three"></i>
               Sobre o Empreendimento
             </h2>
-            <div class="prose prose-lg max-w-none text-gray-700 leading-relaxed">
-              <%= simple_format(@habitation.descricao_empreendimento || @habitation.descricao_web) %>
+            <div class="rounded-lg bg-gradient-to-br from-blue-50 to-white border border-blue-100 p-5 prose prose-lg max-w-none text-gray-700 leading-relaxed">
+              <% if description_content.match?(/<[^>]+>/) %>
+                <%= sanitize(description_content, tags: %w[p br strong em b i ul ol li h3 h4 h5 blockquote a], attributes: %w[href target rel]) %>
+              <% else %>
+                <%= simple_format(description_content) %>
+              <% end %>
             </div>
           </section>
         <% end %>
@@ -205,42 +211,50 @@
         <% end %>
 
         <!-- Features & Infrastructure -->
-        <% 
-          # Características (hash)
-          caracteristicas = @habitation.caracteristicas.is_a?(Hash) ? @habitation.caracteristicas.select { |k, v| v == true || v == "true" || v == 1 } : {}
-          
-          # Infraestrutura (pode ser array ou hash)
-          infra_features = if @habitation.infra_estrutura.is_a?(Array)
-                             @habitation.infra_estrutura.compact
-                           elsif @habitation.infra_estrutura.is_a?(Hash)
-                             @habitation.infra_estrutura.select { |k, v| v == true || v == "true" || v == 1 }.keys
-                           else
-                             []
-                           end
-        %>
+        <% property_features = @habitation.property_features_for_display %>
+        <% leisure_features = @habitation.leisure_features_for_display %>
         
-        <% if caracteristicas.any? || infra_features.any? %>
-          <section class="bg-white rounded-xl shadow-sm p-8">
-            <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+        <% if property_features.any? || leisure_features.any? %>
+          <section class="bg-white rounded-xl shadow-sm p-8 border border-gray-100">
+            <h2 class="text-2xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
               <div class="w-1 h-8 bg-golden-one rounded"></div>
+              <i class="bi bi-patch-check-fill text-golden-one"></i>
               Características e Infraestrutura
             </h2>
-            
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <% caracteristicas.keys.each do |feature| %>
-                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <i class="bi bi-check-circle-fill text-green-500 text-xl"></i>
-                  <span class="text-sm text-gray-700 font-medium"><%= feature.to_s.humanize %></span>
+
+            <% if property_features.any? %>
+              <div class="mb-6">
+                <h3 class="text-lg font-semibold text-blue-three mb-3 flex items-center gap-2">
+                  <span class="inline-block w-8 h-px bg-blue-200"></span>
+                  Destaque deste empreendimento
+                </h3>
+                <div class="flex flex-wrap gap-2">
+                  <% property_features.each do |feature| %>
+                    <div class="inline-flex items-center gap-2 text-gray-700 bg-white border border-gray-200 rounded-full px-3 py-1.5">
+                      <i class="bi bi-building-check text-golden-one text-sm"></i>
+                      <span class="text-sm leading-tight"><%= feature.to_s.tr('_', ' ').squish.titleize %></span>
+                    </div>
+                  <% end %>
                 </div>
-              <% end %>
-              
-              <% infra_features.each do |feature| %>
-                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <i class="bi bi-check-circle-fill text-green-500 text-xl"></i>
-                  <span class="text-sm text-gray-700 font-medium"><%= feature.to_s.humanize %></span>
+              </div>
+            <% end %>
+
+            <% if leisure_features.any? %>
+              <div>
+                <h3 class="text-lg font-semibold text-blue-three mb-3 flex items-center gap-2">
+                  <span class="inline-block w-8 h-px bg-blue-200"></span>
+                  Destaque lazer
+                </h3>
+                <div class="flex flex-wrap gap-2">
+                  <% leisure_features.each do |feature| %>
+                    <div class="inline-flex items-center gap-2 text-gray-700 bg-[#f8fafc] border border-gray-200 rounded-full px-3 py-1.5">
+                      <i class="bi bi-stars text-blue-three text-sm"></i>
+                      <span class="text-sm leading-tight"><%= feature.to_s.tr('_', ' ').squish.titleize %></span>
+                    </div>
+                  <% end %>
                 </div>
-              <% end %>
-            </div>
+              </div>
+            <% end %>
           </section>
         <% end %>
 
@@ -311,6 +325,12 @@
       <!-- Sidebar (1/3) -->
       <aside class="lg:col-span-1">
         <div class="sticky top-24 space-y-6">
+          <% if @shared_broker.present? %>
+            <%= render "habitations/shared_broker_card",
+                shared_broker: @shared_broker,
+                habitation: @habitation,
+                share_token: @lead_share_token %>
+          <% end %>
           
           <!-- Contact Card -->
           <div class="bg-gradient-to-br from-blue-three to-blue-one rounded-xl shadow-lg p-6 text-white">
@@ -391,9 +411,16 @@
             </div>
           </div>
 
+          <div class="bg-white rounded-xl shadow-sm p-6">
+            <h3 class="font-bold text-gray-900 mb-4">Compartilhar</h3>
+            <%= render "shared/broker_share_menu", property: @habitation %>
+          </div>
+
         </div>
       </aside>
 
     </div>
   </div>
 </div>
+
+<%= render "shared/broker_public_panel", property: @habitation %>

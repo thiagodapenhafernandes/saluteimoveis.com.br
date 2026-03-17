@@ -22,25 +22,30 @@
     
     <%# Image Metadata Logic %>
     <% 
-      image_source = @page_image || (seo.og_image_file.attached? ? rails_blob_url(seo.og_image_file) : asset_path('salute.icon.svg'))
+      sanitize_utf8 = ->(value) { value.to_s.encode("UTF-8", invalid: :replace, undef: :replace, replace: "").scrub }
+      image_source = @page_image || (seo.og_image_file.attached? ? rails_blob_path(seo.og_image_file, only_path: true) : asset_path('salute.icon.svg'))
       final_image = image_source.start_with?('http') ? image_source : "#{request.base_url}#{image_source}"
+      canonical_url = sanitize_utf8.call(request.original_url)
+      og_title = sanitize_utf8.call(@page_title || seo.meta_title)
     %>
     
     <%# Open Graph / Facebook %>
     <meta property="og:type" content="website">
-    <meta property="og:url" content="<%= request.original_url.to_s.force_encoding('UTF-8').scrub %>">
-    <meta property="og:title" content="<%= (@page_title || seo.meta_title).to_s.force_encoding('UTF-8').scrub %>">
+    <meta property="og:url" content="<%= canonical_url %>">
+    <meta property="og:title" content="<%= og_title %>">
     <meta property="og:description" content="<%= strip_tags(@page_description || seo.meta_description) %>">
     <meta property="og:site_name" content="<%= @layout_setting&.site_name.presence || 'Salute Imóveis' %>">
     <meta property="og:locale" content="pt_BR">
     <meta property="og:image" content="<%= final_image %>">
+    <meta property="og:image:secure_url" content="<%= final_image.to_s.sub('http://', 'https://') %>">
     
     <%# Twitter %>
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="<%= @page_title || seo.meta_title %>">
+    <meta name="twitter:description" content="<%= strip_tags(@page_description || seo.meta_description) %>">
     <meta name="twitter:image" content="<%= final_image %>">
     
-    <link rel="canonical" href="<%= request.original_url.to_s.force_encoding('UTF-8').scrub %>">
+    <link rel="canonical" href="<%= canonical_url %>">
     <% if @layout_setting&.favicon&.attached? %>
       <link rel="icon" href="<%= rails_blob_path(@layout_setting.favicon) %>">
     <% else %>
@@ -83,7 +88,8 @@
 
   <body class="antialiased"
         data-controller="lead-capture"
-        data-lead-capture-enabled-value="<%= WebhookSetting.active.where(lead_capture_enabled: true).exists? %>">
+        data-lead-capture-enabled-value="<%= WebhookSetting.active.where(lead_capture_enabled: true).exists? %>"
+        data-lead-capture-share-token-value="<%= @lead_share_token %>">
     <%= render 'layouts/header' %>
     
     <main role="main">

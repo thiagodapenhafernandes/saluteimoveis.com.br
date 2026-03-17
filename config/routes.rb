@@ -15,10 +15,19 @@ Rails.application.routes.draw do
       member do
         post :sync
       end
+      collection do
+        get :print
+        get :export
+      end
     end
     
     resources :attribute_options, only: [:index, :create, :update, :destroy]
-    resources :constructors
+    resources :proprietors do
+      collection do
+        get :print
+        get :export
+      end
+    end
 
     root to: 'dashboard#index'
     
@@ -73,6 +82,7 @@ Rails.application.routes.draw do
   
   # Static pages
   get 'trabalhe-conosco', to: 'pages#trabalhe_conosco', as: :trabalhe_conosco
+  get 'salute-parcerias', to: 'pages#parcerias', as: :parcerias
   get 'simulador-financiamento', to: 'pages#simulador', as: :simulador
   get 'politica-de-privacidade', to: 'pages#privacy_policy', as: :privacy_policy
   get 'termos-de-uso', to: 'pages#terms_of_use', as: :terms_of_use
@@ -97,6 +107,7 @@ Rails.application.routes.draw do
   resources :habitations, only: [:index, :show], path: 'imoveis' do
     member do
       post :schedule_visit
+      post :share_link
     end
     collection do
       get :autocomplete
@@ -109,6 +120,7 @@ Rails.application.routes.draw do
   # Form submissions
   resources :contacts, only: [:create]
   post 'trabalhe-conosco/submit', to: 'pages#submit_trabalhe_conosco', as: :submit_trabalhe_conosco
+  post 'salute-parcerias/submit', to: 'pages#submit_parcerias', as: :submit_parcerias
   # Alternative routes for SEO
   get 'imovel/:id', to: 'habitations#show', as: :property
   get 'venda', to: 'habitations#index', defaults: { transaction_type: 'venda' }, as: :venda
