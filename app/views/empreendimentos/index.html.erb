@@ -145,7 +145,12 @@
 
         <!-- Pagination -->
         <div class="mt-12 flex justify-center">
-          <%= will_paginate @empreendimentos, renderer: WillPaginate::ActionView::BootstrapLinkRenderer, class: 'pagination-custom' %>
+          <%= will_paginate @empreendimentos,
+                            class: "pagination",
+                            previous_label: "←",
+                            next_label: "→",
+                            inner_window: 2,
+                            outer_window: 1 %>
         </div>
 
       <% else %>
@@ -171,51 +176,6 @@
 
   </div>
 </div>
-
-<style>
-  .pagination-custom .pagination {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 0.5rem !important;
-    list-style: none !important;
-    padding: 0 !important;
-    margin: 2rem 0 !important;
-  }
-  
-  .pagination-custom .pagination li {
-    display: inline-block !important;
-  }
-  
-  .pagination-custom .pagination li a,
-  .pagination-custom .pagination li span {
-    display: block !important;
-    padding: 0.5rem 1rem !important;
-    border-radius: 0.5rem !important;
-    border: 1px solid #e5e7eb !important;
-    color: #374151 !important;
-    text-decoration: none !important;
-    transition: all 0.3s !important;
-  }
-  
-  .pagination-custom .pagination li a:hover {
-    background-color: #002B3C !important;
-    color: white !important;
-    border-color: #002B3C !important;
-  }
-  
-  .pagination-custom .pagination li.active span {
-    background: linear-gradient(to right, #B8904D, #ca8a04) !important;
-    color: white !important;
-    border-color: transparent !important;
-  }
-  
-  .pagination-custom .pagination li.disabled span {
-    opacity: 0.5 !important;
-    cursor: not-allowed !important;
-  }
-</style>
 
 <script>
   // Enhanced Autocomplete Logic

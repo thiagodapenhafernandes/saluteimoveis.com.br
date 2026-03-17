@@ -85,22 +85,13 @@ export default class extends Controller {
     // 4. Logradouro & Tipo
     // Try to split Street Type from Name
     let streetName = data.street
-    let matchedType = false
 
     if (this.hasTipoTarget) {
-      const streetLower = data.street.toLowerCase()
-      // Sort options by length desc to match "Avenida" before "Av" if present
-      const options = Array.from(this.tipoTarget.options)
-
-      for (const opt of options) {
-        const typeText = opt.text
-        if (typeText && streetLower.startsWith(typeText.toLowerCase() + " ")) {
-          this.tipoTarget.value = opt.value
-          streetName = data.street.substring(typeText.length).trim()
-          matchedType = true
-          this.triggerChange(this.tipoTarget)
-          break
-        }
+      const matched = this.matchStreetType(data.street)
+      if (matched) {
+        this.setTomSelectValue(this.tipoTarget, matched.value)
+        this.triggerChange(this.tipoTarget)
+        streetName = matched.streetName
       }
     }
 
@@ -153,5 +144,74 @@ export default class extends Controller {
   triggerChange(element) {
     const event = new Event('change', { bubbles: true })
     element.dispatchEvent(event)
+  }
+
+  matchStreetType(fullStreet) {
+    const raw = (fullStreet || "").trim()
+    if (!raw) return null
+
+    const normalizedRaw = this.normalize(raw)
+    const options = Array.from(this.tipoTarget.options)
+      .filter((opt) => opt.value && opt.text)
+      .map((opt) => ({
+        value: opt.value,
+        text: opt.text,
+        normalized: this.normalize(opt.text)
+      }))
+
+    // Primeiro tenta bater com o nome completo da opção.
+    const direct = options.find((opt) => normalizedRaw.startsWith(`${opt.normalized} `))
+    if (direct) {
+      return {
+        value: direct.value,
+        streetName: raw.substring(direct.text.length).trim()
+      }
+    }
+
+    // Depois tenta aliases comuns vindos de CEP (Av., Rod., Trav., etc).
+    const aliasMap = {
+      "av": "avenida",
+      "av.": "avenida",
+      "aven": "avenida",
+      "r": "rua",
+      "r.": "rua",
+      "rod": "rodovia",
+      "rod.": "rodovia",
+      "trav": "travessa",
+      "trav.": "travessa",
+      "al": "alameda",
+      "al.": "alameda",
+      "estr": "estrada",
+      "estr.": "estrada",
+      "vl": "viela",
+      "vl.": "viela"
+    }
+
+    const firstTokenRaw = raw.split(/\s+/)[0] || ""
+    const firstToken = this.normalize(firstTokenRaw)
+    const canonical = aliasMap[firstToken] || firstToken
+    const byAlias = options.find((opt) => opt.normalized === canonical)
+
+    if (!byAlias) return null
+
+    const rest = raw.replace(new RegExp(`^${this.escapeRegex(firstTokenRaw)}\\s*`, "i"), "").trim()
+    return {
+      value: byAlias.value,
+      streetName: rest
+    }
+  }
+
+  normalize(value) {
+    return value
+      .toString()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^\w\s./-]/g, "")
+      .trim()
+      .toLowerCase()
+  }
+
+  escapeRegex(value) {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
   }
 }

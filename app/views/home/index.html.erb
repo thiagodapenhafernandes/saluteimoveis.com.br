@@ -117,6 +117,10 @@
           </div>
         </div>
       </section>
+
+      <% if @corporate_properties.present? %>
+        <%= render 'shared/corporate_showcase', properties: @corporate_properties %>
+      <% end %>
     <% end %>
     
   <% when 'services' %>

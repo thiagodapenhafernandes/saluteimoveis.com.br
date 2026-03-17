@@ -4,6 +4,7 @@ class LeadsController < ApplicationController
   def create
     @lead = Lead.new(lead_params)
     @lead.source_url = request.referer
+    apply_share_attribution(@lead)
     
     if @lead.save
       # Disparar Webhook
@@ -31,6 +32,18 @@ class LeadsController < ApplicationController
   private
 
   def lead_params
-    params.require(:lead).permit(:name, :email, :phone, :property_id, :lead_type, :origin)
+    params.require(:lead).permit(:name, :email, :phone, :property_id, :lead_type, :origin, :share_token)
+  end
+
+  def apply_share_attribution(lead)
+    token = lead.share_token.to_s.strip
+    return if token.blank? || lead.property_id.blank?
+
+    share_link = HabitationShareLink.active.find_by(token: token, habitation_id: lead.property_id)
+    return unless share_link
+
+    lead.admin_user_id = share_link.admin_user_id
+    lead.shared_by_admin_user_id = share_link.admin_user_id
+    lead.origin = "Compartilhamento Corretor" if lead.origin.blank?
   end
 end

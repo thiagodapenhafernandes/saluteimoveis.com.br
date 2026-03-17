@@ -46,11 +46,37 @@ class HomeController < ApplicationController
     # Imóveis para Locação (only if section is active)
     if @sections_map['rentals']&.active?
       @rental_properties = Habitation.active.for_rent.newest_first.limit(6)
+      @corporate_properties = Habitation.active.home_corporate.limit(3)
     end
     
     # Tipos de imóveis disponíveis (para o formulário de busca) - CACHED
     @property_types = Rails.cache.fetch("home_property_types_v5", expires_in: 12.hours) do
       Habitation.where(exibir_no_site_flag: true).distinct.pluck(:categoria).compact.sort
+    end
+
+    # Localizações disponíveis (cidade e bairro/cidade) para multiseleção na home
+    @location_options = Rails.cache.fetch("home_location_options_v1", expires_in: 6.hours) do
+      cities = Habitation.active
+        .left_outer_joins(:address)
+        .where("COALESCE(addresses.cidade, habitations.cidade) IS NOT NULL")
+        .distinct
+        .order(Arel.sql("COALESCE(addresses.cidade, habitations.cidade) ASC"))
+        .pluck(Arel.sql("COALESCE(addresses.cidade, habitations.cidade)"))
+        .map { |city| { type: "city", label: city, value: city } }
+
+      neighborhoods = Habitation.active
+        .left_outer_joins(:address)
+        .where("COALESCE(addresses.bairro, habitations.bairro) IS NOT NULL")
+        .where("COALESCE(addresses.cidade, habitations.cidade) IS NOT NULL")
+        .select("COALESCE(addresses.bairro, habitations.bairro) AS bairro_nome, COALESCE(addresses.cidade, habitations.cidade) AS cidade_nome")
+        .distinct
+        .order("bairro_nome ASC, cidade_nome ASC")
+        .map do |h|
+          label = "#{h.bairro_nome} - #{h.cidade_nome}"
+          { type: "neighborhood", label: label, value: label }
+        end
+
+      (cities + neighborhoods).uniq { |item| item[:value] }
     end
     
     # Home settings

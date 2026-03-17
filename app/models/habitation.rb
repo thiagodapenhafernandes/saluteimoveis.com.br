@@ -56,6 +56,7 @@ class Habitation < ApplicationRecord
   TOPOGRAFIA_OPTIONS = ["Plano", "Aclive", "Declive", "Irregular"].freeze
   FOTO_CLASSIFICACAO = ["Profissionais", "Boas", "Aceitáveis", "Amadoras", "Não tem fotos"].freeze
   KEY_LOCATION_OPTIONS = ["Imobiliária", "Corretor(a)", "Proprietário", "Zelador", "Portaria", "Inquilino", "Outro"].freeze
+  REGIAO_FOCO_OPTIONS = ["Centro", "Norte", "Sul", "Leste", "Oeste", "Praia", "Interior", "Sem preferência"].freeze
 
   # FriendlyId para URLs amigáveis (SEO)
   extend FriendlyId
@@ -71,6 +72,7 @@ class Habitation < ApplicationRecord
     optional: true
   
   belongs_to :constructor, optional: true
+  belongs_to :proprietor, optional: true
   
   has_many :units, 
     class_name: 'Habitation',
@@ -83,6 +85,7 @@ class Habitation < ApplicationRecord
   belongs_to :admin_user, optional: true, foreign_key: 'admin_user_id'
   
   has_many :broker_assignments, class_name: "HabitationBrokerAssignment", dependent: :destroy
+  has_many :habitation_share_links, dependent: :destroy
   accepts_nested_attributes_for :broker_assignments, allow_destroy: true, reject_if: :all_blank
 
   # ActionText for Rich Text
@@ -148,7 +151,8 @@ class Habitation < ApplicationRecord
   def primary_image
     # Priority: Active Storage Photos -> API Pictures
     if photos.attached?
-      return { 'url' => Rails.application.routes.url_helpers.url_for(ordered_photos.first) }
+      path = blob_path_for(ordered_photos.first)
+      return { 'url' => path } if path.present?
     end
 
     images = if empreendimento?
@@ -165,7 +169,7 @@ class Habitation < ApplicationRecord
   
   # Retorna todas as imagens (Hash format)
   def all_images
-    attached_images = ordered_photos.map { |p| { 'url' => Rails.application.routes.url_helpers.url_for(p) } }
+    attached_images = ordered_photos.map { |p| blob_path_for(p) }.compact.map { |path| { 'url' => path } }
     
     images = if empreendimento?
                fotos_empreendimento.present? ? fotos_empreendimento : pictures
@@ -180,6 +184,12 @@ class Habitation < ApplicationRecord
                  end
     
     attached_images + api_images
+  end
+
+  def blob_path_for(attachment)
+    Rails.application.routes.url_helpers.rails_blob_path(attachment, only_path: true)
+  rescue StandardError
+    nil
   end
 
   # Photo Sorting Logic
@@ -278,6 +288,24 @@ class Habitation < ApplicationRecord
   # Retorna o título para exibição
   def display_title
     titulo_anuncio.presence || default_title
+  end
+
+  # Description fallback for legacy/plain-text and rich text sources.
+  def display_description
+    rich_html = rich_text_descricao_web&.body&.to_s.presence
+    legacy_html = read_attribute(:descricao_web).to_s.presence
+    internal_text = descricao_interna.to_s.presence
+    development_text = descricao_empreendimento.to_s.presence
+
+    rich_html || legacy_html || internal_text || development_text
+  end
+
+  def property_features_for_display
+    normalize_feature_values(caracteristicas)
+  end
+
+  def leisure_features_for_display
+    normalize_feature_values(infra_estrutura)
   end
   
   # Título padrão baseado nas características
@@ -402,7 +430,7 @@ class Habitation < ApplicationRecord
   end
 
   def sync_construtora_from_constructor
-    self.construtora = constructor&.name.presence
+    self.construtora = constructor.name if constructor.present?
   end
 
   def sync_flags_from_features
@@ -431,7 +459,10 @@ class Habitation < ApplicationRecord
       :nome_empreendimento,
       :proprietario, :proprietario_email,
       :ocupacao_status, :estado_conservacao, :topografia, :foto_classificacao,
-      :numero_box, :dimensoes_terreno, :podcast_url
+      :numero_box, :dimensoes_terreno, :podcast_url,
+      :matricula_imovel, :zona, :responsavel_reserva, :zelador_nome, :zelador_telefone, :regiao_foco,
+      :construtora, :tipo_fachada,
+      :tipo_veiculo_aceito_permuta, :permuta_localizacao
     ]
     
     fields_to_sanitize.each do |field|
@@ -484,5 +515,38 @@ class Habitation < ApplicationRecord
   def refresh_materialized_view
     # Atualizar a materialized view em background
     RefreshFeaturedPropertiesJob.perform_later if defined?(RefreshFeaturedPropertiesJob)
+  end
+
+  def normalize_feature_values(source)
+    case source
+    when Array
+      source
+    when Hash
+      normalize_hash_features(source)
+    else
+      []
+    end
+      .map { |item| item.to_s.strip }
+      .reject { |item| item.blank? || item == "." }
+      .uniq
+  end
+
+  def normalize_hash_features(source)
+    values = source.values
+    boolean_like_hash = values.all? { |value| boolean_like_value?(value) }
+
+    if boolean_like_hash
+      source.select { |_key, value| truthy_value?(value) }.keys
+    else
+      source.map { |key, value| value.to_s.strip.presence || key.to_s.strip }
+    end
+  end
+
+  def boolean_like_value?(value)
+    [true, false, nil, 0, 1, "0", "1", "true", "false", "t", "f"].include?(value)
+  end
+
+  def truthy_value?(value)
+    [true, 1, "1", "true", "t"].include?(value)
   end
 end

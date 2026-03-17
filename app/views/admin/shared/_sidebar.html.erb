@@ -1,4 +1,5 @@
 <aside class="admin-sidebar">
+  <% vista_soft_context = controller_name == 'habitations' && params[:sort] == 'last_sync_at' %>
   <ul class="sidebar-menu">
     <li class="sidebar-menu-item">
       <%= link_to admin_root_path, class: request.path == admin_root_path ? 'active' : '' do %>
@@ -13,11 +14,20 @@
         <span>Imóveis</span>
       <% end %>
     </li>
-    
+
+    <% if current_admin_user&.admin? %>
+      <li class="sidebar-menu-item">
+        <%= link_to admin_proprietors_path, class: controller_name == 'proprietors' ? 'active' : '' do %>
+          <i class="bi bi-person-vcard"></i>
+          <span>Proprietários</span>
+        <% end %>
+      </li>
+    <% end %>
+
     <li class="sidebar-menu-item">
-      <%= link_to admin_constructors_path, class: controller_name == 'constructors' ? 'active' : '' do %>
-        <i class="bi bi-building"></i>
-        <span>Construtoras</span>
+      <%= link_to admin_attribute_options_path, class: controller_name == 'attribute_options' ? 'active' : '' do %>
+        <i class="bi bi-tags"></i>
+        <span>Catálogos Dinâmicos</span>
       <% end %>
     </li>
 
@@ -31,56 +41,31 @@
     <li class="sidebar-menu-item">
       <%= link_to admin_distribution_rules_path, class: controller_name == 'distribution_rules' ? 'active' : '' do %>
         <i class="bi bi-diagram-3"></i>
-        <span>Regras</span>
+        <span>Distribuição de Leads</span>
       <% end %>
     </li>
 
+    <!-- Marketing e Conteúdo Collapse -->
     <li class="sidebar-menu-item">
-      <%= link_to admin_landing_pages_path, class: controller_name == 'landing_pages' ? 'active' : '' do %>
-        <i class="bi bi-file-earmark-post"></i>
-        <span>Páginas SEO</span>
-      <% end %>
-    </li>
-
-    <!-- Configurações Collapse -->
-    <li class="sidebar-menu-item">
-      <a href="#submenu-config" data-bs-toggle="collapse" class="d-flex justify-content-between align-items-center <%= ['home_settings', 'layout_settings', 'footer_settings', 'contact_settings', 'seo_settings', 'banners', 'home_sections', 'webhook_settings', 'meta_integrations'].include?(controller_name) ? '' : 'collapsed' %>">
+      <a href="#submenu-marketing" data-bs-toggle="collapse" class="d-flex justify-content-between align-items-center <%= ['landing_pages', 'seo_settings', 'banners', 'home_sections', 'contact_settings', 'layout_settings', 'footer_settings', 'home_settings'].include?(controller_name) ? '' : 'collapsed' %>">
         <span>
-          <i class="bi bi-gear"></i>
-          <span>Configurações</span>
+          <i class="bi bi-megaphone"></i>
+          <span>Marketing e Conteúdo</span>
         </span>
         <i class="bi bi-chevron-down small"></i>
       </a>
-      <div class="collapse <%= ['home_settings', 'layout_settings', 'footer_settings', 'contact_settings', 'seo_settings', 'banners', 'home_sections', 'webhook_settings', 'meta_integrations'].include?(controller_name) ? 'show' : '' %>" id="submenu-config">
+      <div class="collapse <%= ['landing_pages', 'seo_settings', 'banners', 'home_sections', 'contact_settings', 'layout_settings', 'footer_settings', 'home_settings'].include?(controller_name) ? 'show' : '' %>" id="submenu-marketing">
         <ul class="sidebar-menu ps-3 mt-1 bg-light rounded">
-           <li class="sidebar-menu-item">
-            <%= link_to edit_admin_home_setting_path, class: controller_name == 'home_settings' ? 'active' : '' do %>
-              <i class="bi bi-house-door"></i>
-              <span>Home Page</span>
-            <% end %>
-          </li>
           <li class="sidebar-menu-item">
-            <%= link_to edit_admin_layout_setting_path, class: controller_name == 'layout_settings' ? 'active' : '' do %>
-              <i class="bi bi-palette"></i>
-              <span>Layout</span>
-            <% end %>
-          </li>
-          <li class="sidebar-menu-item">
-            <%= link_to edit_admin_footer_setting_path, class: controller_name == 'footer_settings' ? 'active' : '' do %>
-              <i class="bi bi-layout-sidebar"></i>
-              <span>Rodapé</span>
-            <% end %>
-          </li>
-          <li class="sidebar-menu-item">
-            <%= link_to edit_admin_contact_setting_path, class: controller_name == 'contact_settings' ? 'active' : '' do %>
-              <i class="bi bi-telephone"></i>
-              <span>Contatos</span>
+            <%= link_to admin_landing_pages_path, class: controller_name == 'landing_pages' ? 'active' : '' do %>
+              <i class="bi bi-file-earmark-post"></i>
+              <span>Landing Pages</span>
             <% end %>
           </li>
           <li class="sidebar-menu-item">
             <%= link_to admin_seo_settings_path, class: controller_name == 'seo_settings' ? 'active' : '' do %>
               <i class="bi bi-search"></i>
-              <span>SEO</span>
+              <span>SEO Técnico</span>
             <% end %>
           </li>
           <li class="sidebar-menu-item">
@@ -92,7 +77,52 @@
           <li class="sidebar-menu-item">
             <%= link_to admin_home_sections_path, class: controller_name == 'home_sections' ? 'active' : '' do %>
               <i class="bi bi-layout-text-sidebar"></i>
-              <span>Seções Home</span>
+              <span>Seções da Home</span>
+            <% end %>
+          </li>
+          <li class="sidebar-menu-item">
+            <%= link_to edit_admin_contact_setting_path, class: controller_name == 'contact_settings' ? 'active' : '' do %>
+              <i class="bi bi-telephone"></i>
+              <span>Contato do Site</span>
+            <% end %>
+          </li>
+          <li class="sidebar-menu-item">
+            <%= link_to edit_admin_layout_setting_path, class: controller_name == 'layout_settings' ? 'active' : '' do %>
+              <i class="bi bi-palette"></i>
+              <span>Aparência - Layout</span>
+            <% end %>
+          </li>
+          <li class="sidebar-menu-item">
+            <%= link_to edit_admin_footer_setting_path, class: controller_name == 'footer_settings' ? 'active' : '' do %>
+              <i class="bi bi-layout-sidebar"></i>
+              <span>Aparência - Rodapé</span>
+            <% end %>
+          </li>
+          <li class="sidebar-menu-item">
+            <%= link_to edit_admin_home_setting_path, class: controller_name == 'home_settings' ? 'active' : '' do %>
+              <i class="bi bi-house-door"></i>
+              <span>Home</span>
+            <% end %>
+          </li>
+        </ul>
+      </div>
+    </li>
+
+    <!-- Integrações Collapse -->
+    <li class="sidebar-menu-item">
+      <a href="#submenu-integracoes" data-bs-toggle="collapse" class="d-flex justify-content-between align-items-center <%= (['meta_integrations', 'webhook_settings'].include?(controller_name) || vista_soft_context) ? '' : 'collapsed' %>">
+        <span>
+          <i class="bi bi-plug"></i>
+          <span>Integrações</span>
+        </span>
+        <i class="bi bi-chevron-down small"></i>
+      </a>
+      <div class="collapse <%= (['meta_integrations', 'webhook_settings'].include?(controller_name) || vista_soft_context) ? 'show' : '' %>" id="submenu-integracoes">
+        <ul class="sidebar-menu ps-3 mt-1 bg-light rounded">
+          <li class="sidebar-menu-item">
+            <%= link_to admin_meta_integrations_path, class: controller_name == 'meta_integrations' ? 'active' : '' do %>
+              <i class="bi bi-meta"></i>
+              <span>Meta Leads</span>
             <% end %>
           </li>
           <li class="sidebar-menu-item">
@@ -102,9 +132,9 @@
             <% end %>
           </li>
           <li class="sidebar-menu-item">
-            <%= link_to admin_meta_integrations_path, class: controller_name == 'meta_integrations' ? 'active' : '' do %>
-              <i class="bi bi-meta"></i>
-              <span>Meta API</span>
+            <%= link_to admin_habitations_path(sort: "last_sync_at", direction: "desc"), class: vista_soft_context ? 'active' : '' do %>
+              <i class="bi bi-arrow-repeat"></i>
+              <span>Vista Soft</span>
             <% end %>
           </li>
         </ul>
@@ -133,12 +163,6 @@
               <%= link_to admin_profiles_path, class: controller_name == 'profiles' ? 'active' : '' do %>
                 <i class="bi bi-shield-lock"></i>
                 <span>Perfis</span>
-              <% end %>
-            </li>
-            <li class="sidebar-menu-item">
-              <%= link_to admin_attribute_options_path, class: controller_name == 'attribute_options' ? 'active' : '' do %>
-                <i class="bi bi-tags"></i>
-                <span>Atributos Dinâmicos</span>
               <% end %>
             </li>
           </ul>

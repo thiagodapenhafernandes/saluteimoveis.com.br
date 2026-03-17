@@ -3,7 +3,7 @@
 <% overlay_opacity = @home_setting.overlay_opacity || 0.7 %>
 
 <!-- Hero Section - Cinematic Master Edition -->
-<section id="hero" class="relative h-[90vh] lg:h-screen flex items-center justify-center bg-gray-900 overflow-hidden" 
+<section id="hero" class="relative h-[90svh] md:h-[90vh] lg:h-screen pt-[env(safe-area-inset-top)] flex items-center justify-center bg-gray-900 overflow-x-hidden overflow-y-visible" 
          data-controller="hero-slider" 
          data-hero-slider-interval-value="10000"
          style="--hero-overlay-start: <%= overlay_color %><%= format('%02x', (overlay_opacity * 255).to_i) %>; 

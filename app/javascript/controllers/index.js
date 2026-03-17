@@ -16,6 +16,12 @@ application.register("autocomplete", AutocompleteController)
 import CardSwiperController from "controllers/card_swiper_controller"
 application.register("card-swiper", CardSwiperController)
 
+import BrokerShareController from "controllers/broker_share_controller"
+application.register("broker-share", BrokerShareController)
+
+import CategoryFilterController from "controllers/category_filter_controller"
+application.register("category-filter", CategoryFilterController)
+
 import CepLookupController from "controllers/cep_lookup_controller"
 application.register("cep-lookup", CepLookupController)
 
@@ -67,6 +73,9 @@ application.register("image-preview", ImagePreviewController)
 import LeadCaptureController from "controllers/lead_capture_controller"
 application.register("lead-capture", LeadCaptureController)
 
+import LocationFilterController from "controllers/location_filter_controller"
+application.register("location-filter", LocationFilterController)
+
 import MaskController from "controllers/mask_controller"
 application.register("mask", MaskController)
 
@@ -94,6 +103,9 @@ application.register("property-carousel", PropertyCarouselController)
 import PropertyPagePreviewController from "controllers/property_page_preview_controller"
 application.register("property-page-preview", PropertyPagePreviewController)
 
+import ProprietorTableController from "controllers/proprietor_table_controller"
+application.register("proprietor-table", ProprietorTableController)
+
 import RentCalculatorController from "controllers/rent_calculator_controller"
 application.register("rent-calculator", RentCalculatorController)
 
@@ -111,6 +123,9 @@ application.register("share", ShareController)
 
 import SidebarController from "controllers/sidebar_controller"
 application.register("sidebar", SidebarController)
+
+import SaveStateController from "controllers/save_state_controller"
+application.register("save-state", SaveStateController)
 
 import SortableController from "controllers/sortable_controller"
 application.register("sortable", SortableController)

@@ -1,9 +1,10 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["modal", "propertyId", "leadType", "name", "phone", "email", "submitButton"]
+  static targets = ["modal", "propertyId", "leadType", "origin", "shareToken", "name", "phone", "email", "submitButton"]
   static values = {
-    enabled: Boolean
+    enabled: Boolean,
+    shareToken: String
   }
 
   connect() {
@@ -32,6 +33,8 @@ export default class extends Controller {
     const propertyTitle = trigger.dataset.propertyTitle || ""
     const propertyCode = trigger.dataset.propertyCode || ""
     const message = trigger.dataset.whatsappMessage || `Olá, gostaria de mais informações sobre o imóvel ${propertyTitle} (Cód: ${propertyCode})`
+    const leadOrigin = trigger.dataset.leadOrigin || ""
+    const shareToken = trigger.dataset.shareToken || this.shareTokenValue || ""
 
     // Store message for redirect
     this.whatsappMessage = message
@@ -39,6 +42,8 @@ export default class extends Controller {
     // Set hidden fields
     if (this.hasPropertyIdTarget) this.propertyIdTarget.value = propertyId
     if (this.hasLeadTypeTarget) this.leadTypeTarget.value = 'whatsapp_click' // Default
+    if (this.hasOriginTarget) this.originTarget.value = leadOrigin
+    if (this.hasShareTokenTarget) this.shareTokenTarget.value = shareToken
 
     // Show modal
     this.modalTarget.classList.remove('hidden')
@@ -81,7 +86,14 @@ export default class extends Controller {
     // But to respect the flow, we will first capture on backend then redirect.
     // If backend fails, we redirect anyway to not block the user.
 
-    this.sendLeadData({ name, phone: phoneWithMask, email, property_id: this.propertyIdTarget.value })
+    this.sendLeadData({
+      name,
+      phone: phoneWithMask,
+      email,
+      property_id: this.propertyIdTarget.value,
+      origin: this.hasOriginTarget ? this.originTarget.value : "",
+      share_token: this.hasShareTokenTarget ? this.shareTokenTarget.value : ""
+    })
 
     // Construct WhatsApp URL
     // Default number if not configured elsewhere - using the one from the views

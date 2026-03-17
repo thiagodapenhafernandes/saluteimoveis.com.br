@@ -2,6 +2,8 @@ class HabitationsController < ApplicationController
   include HabitationCaching
   include ActionView::Helpers::NumberHelper
   before_action :set_habitation, only: [:show]
+  before_action :set_habitation, only: [:share_link]
+  before_action :authenticate_admin_user!, only: [:share_link]
   
   # GET /habitations
   # GET /imoveis
@@ -140,19 +142,18 @@ class HabitationsController < ApplicationController
   
   # GET /imovel/:id
   def show
+    load_share_context
+
     # Incrementar contador de visualizações (em background)
     # increment_view_count(@habitation.id)
     
     # Meta tags dinâmicas
     @page_title = @habitation.seo_title
-    @page_description = @habitation.seo_description
+    @page_description = @habitation.seo_description.presence || default_property_description(@habitation)
     @page_keywords = @habitation.seo_keywords
     
     # Image for social sharing (Open Graph)
-    if @habitation.all_images.any?
-      first_photo = @habitation.all_images.first
-      @page_image = first_photo['url'] || first_photo[:url]
-    end
+    @page_image = share_image_url_for(@habitation)
     
     # Detectar se é empreendimento e carregar unidades
     if @habitation.empreendimento?
@@ -197,6 +198,22 @@ class HabitationsController < ApplicationController
       format.json { render json: @habitation.card_data }
     end
   end
+
+  def share_link
+    link = HabitationShareLink.create_or_reuse_for(
+      habitation: @habitation,
+      admin_user: current_admin_user
+    )
+
+    render json: {
+      success: true,
+      url: habitation_url(@habitation, share_token: link.token),
+      expires_at: link.expires_at.iso8601
+    }
+  rescue StandardError => e
+    Rails.logger.error "[HabitationShare] erro ao gerar link: #{e.message}"
+    render json: { success: false, error: "Não foi possível gerar o link de compartilhamento." }, status: :unprocessable_entity
+  end
   
   private
   
@@ -221,7 +238,7 @@ class HabitationsController < ApplicationController
   end
   
   def search_params
-    params.permit(
+    permitted = params.permit(
       :transaction_type,
       :category,
       :city,
@@ -241,8 +258,35 @@ class HabitationsController < ApplicationController
       :accepts_financing,
       :search,
       :sort,
+      category: [],
+      city: [],
       characteristics: []
     )
+
+    category_values = Array(permitted[:category]).reject(&:blank?)
+    category_values = [permitted[:category]].reject(&:blank?) if category_values.empty? && permitted[:category].is_a?(String)
+    permitted[:category] = category_values if category_values.any?
+
+    city_values = Array(permitted[:city]).reject(&:blank?)
+    city_values = [permitted[:city]].reject(&:blank?) if city_values.empty? && permitted[:city].is_a?(String)
+    permitted[:city] = city_values if city_values.any?
+
+    permitted
+  end
+
+  def load_share_context
+    @lead_share_token = nil
+    return if params[:share_token].blank?
+
+    link = HabitationShareLink.active
+                              .includes(:admin_user)
+                              .find_by(token: params[:share_token], habitation_id: @habitation.id)
+    return unless link
+
+    @share_link = link
+    @shared_broker = link.admin_user
+    @lead_share_token = link.token
+    link.register_click!
   end
   
   def visit_params
@@ -252,8 +296,8 @@ class HabitationsController < ApplicationController
   # SEO OPTIMIZATION - Dynamic & Varied Meta Tags (Style: Conexão Imobiliária)
   def build_index_title
     count = @habitations.total_entries rescue @habitations.count
-    city = (params[:city].presence || params[:bairro].presence || "Balneário Camboriú").to_s.force_encoding('UTF-8').scrub
-    category = (params[:category].presence || "Imóveis").to_s.force_encoding('UTF-8').scrub
+    city = location_label
+    category = category_label
     
     # Determine Transaction Context
     transaction_term = case params[:transaction_type]
@@ -303,8 +347,8 @@ class HabitationsController < ApplicationController
   end
   
   def build_index_description
-    city = (params[:city].presence || "Balneário Camboriú").to_s.force_encoding('UTF-8').scrub
-    category = (params[:category].presence || "imóveis").to_s.force_encoding('UTF-8').scrub
+    city = location_label(default: "Balneário Camboriú")
+    category = category_label(default: "imóveis")
     
     # Varied Hooks/Intros
     intros = [
@@ -348,10 +392,10 @@ class HabitationsController < ApplicationController
     keywords << 'aluguel' << 'locação' if params[:transaction_type] =~ /aluguel|locacao/
     
     # Category
-    keywords << params[:category].downcase if params[:category].present?
+    selected_categories.each { |category| keywords << category.downcase }
     
     # Location (critical keywords)
-    keywords << params[:city].downcase if params[:city].present?
+    selected_locations.each { |location| keywords << location.downcase }
     keywords << params[:bairro].downcase if params[:bairro].present?
     keywords << 'praia brava' << 'centro' << 'barra sul' # Common searches
     
@@ -359,7 +403,7 @@ class HabitationsController < ApplicationController
     keywords << 'frente mar' << 'vista mar' if params[:vista_frente_mar_flag] == '1'
     keywords << 'piscina' if params[:piscina_flag] == '1'
     keywords << 'mobiliado' if params[:mobiliado_flag] == '1'
-    keywords << 'cobertura' if params[:category] == 'Cobertura'
+    keywords << 'cobertura' if selected_categories.include?('Cobertura')
     keywords << 'apartamento alto padrão' if params[:min_price].to_i > 1_000_000
     
     # Valor reduzido/Oportunidade
@@ -368,5 +412,56 @@ class HabitationsController < ApplicationController
     end
     
     keywords.to_a.join(', ')
+  end
+
+  def selected_categories
+    Array(params[:category]).reject(&:blank?)
+  end
+
+  def selected_locations
+    Array(params[:city]).reject(&:blank?).map { |value| value.to_s.force_encoding('UTF-8').scrub }
+  end
+
+  def category_label(default: "Imóveis")
+    categories = selected_categories
+    return default if categories.blank?
+    return categories.first.to_s.force_encoding('UTF-8').scrub if categories.size == 1
+
+    "#{categories.first.to_s.force_encoding('UTF-8').scrub} +#{categories.size - 1}"
+  end
+
+  def location_label(default: "Balneário Camboriú")
+    locations = selected_locations
+    return default if locations.blank?
+    return locations.first if locations.size == 1
+
+    "#{locations.first} +#{locations.size - 1}"
+  end
+
+  def default_property_description(habitation)
+    base = [
+      habitation.display_title,
+      habitation.categoria,
+      habitation.bairro,
+      habitation.cidade
+    ].compact.join(" • ")
+    description = habitation.display_description.to_s.gsub(/<[^>]*>/, " ").squish
+    [base, description].reject(&:blank?).join(" - ").truncate(220)
+  end
+
+  def share_image_url_for(habitation)
+    first_photo = habitation.all_images.first
+    image = first_photo.is_a?(Hash) ? (first_photo["url"] || first_photo[:url]) : first_photo
+    image = habitation.primary_image_url if image.blank?
+    return nil if image.blank?
+
+    image = image.to_s
+    if image.start_with?("http://")
+      image.sub("http://", "https://")
+    elsif image.start_with?("https://")
+      image
+    else
+      "#{request.base_url}#{image.start_with?('/') ? image : "/#{image}"}"
+    end
   end
 end

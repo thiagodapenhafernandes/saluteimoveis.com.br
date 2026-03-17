@@ -135,15 +135,15 @@
           <div class="d-flex align-items-center text-dark">
             <div class="flex-shrink-0">
               <div class="bg-primary bg-opacity-10 rounded-3 p-3 text-primary border border-primary border-opacity-10">
-                <i class="bi bi-hammer" style="font-size: 1.5rem;"></i>
+                <i class="bi bi-person-vcard" style="font-size: 1.5rem;"></i>
               </div>
             </div>
             <div class="ms-3">
-              <h3 class="mb-0 fw-bold"><%= number_with_delimiter(@constructors_count) %></h3>
-              <p class="text-muted mb-0 small fw-bold text-uppercase ls-wide" style="font-size: 0.65rem;">Parceiros / Construtoras</p>
+              <h3 class="mb-0 fw-bold"><%= number_with_delimiter(@proprietors_count) %></h3>
+              <p class="text-muted mb-0 small fw-bold text-uppercase ls-wide" style="font-size: 0.65rem;">Proprietários / Parceiros</p>
             </div>
             <div class="ms-auto">
-              <%= link_to admin_constructors_path, class: "btn btn-sm btn-outline-primary rounded-pill" do %>
+              <%= link_to admin_proprietors_path, class: "btn btn-sm btn-outline-primary rounded-pill" do %>
                 <i class="bi bi-list-ul me-1"></i> Ver Lista
               <% end %>
             </div>

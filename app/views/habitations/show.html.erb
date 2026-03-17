@@ -160,33 +160,33 @@
         </div>
 
         <!-- Características Principais -->
-        <div class="bg-white rounded-xl shadow-sm p-6">
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-blue-100">
           <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
             <i class="fas fa-home text-golden-one"></i>
             Características
           </h2>
           
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div class="text-center p-4 bg-gray-50 rounded-lg">
-              <i class="fas fa-ruler-combined text-3xl text-golden-one mb-2"></i>
+            <div class="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-100">
+              <i class="fas fa-ruler-combined text-3xl text-blue-three mb-2"></i>
               <p class="text-2xl font-bold text-gray-900"><%= number_with_precision(@habitation.area_total_m2 || @habitation.area_privativa_m2, precision: 0) %></p>
               <p class="text-xs text-gray-500">m² Total</p>
             </div>
             
-            <div class="text-center p-4 bg-gray-50 rounded-lg">
+            <div class="text-center p-4 bg-gradient-to-br from-amber-50 to-yellow-100 rounded-lg border border-yellow-100">
               <i class="fas fa-door-open text-3xl text-golden-one mb-2"></i>
               <p class="text-2xl font-bold text-gray-900"><%= @habitation.dormitorios_qtd || 0 %></p>
               <p class="text-xs text-gray-500">Quartos</p>
             </div>
             
-            <div class="text-center p-4 bg-gray-50 rounded-lg">
-              <i class="fas fa-bath text-3xl text-golden-one mb-2"></i>
+            <div class="text-center p-4 bg-gradient-to-br from-cyan-50 to-sky-100 rounded-lg border border-sky-100">
+              <i class="fas fa-bath text-3xl text-blue-three mb-2"></i>
               <p class="text-2xl font-bold text-gray-900"><%= @habitation.banheiros_qtd || 0 %></p>
               <p class="text-xs text-gray-500">Banheiros</p>
             </div>
             
-            <div class="text-center p-4 bg-gray-50 rounded-lg">
-              <i class="fas fa-car text-3xl text-golden-one mb-2"></i>
+            <div class="text-center p-4 bg-gradient-to-br from-emerald-50 to-green-100 rounded-lg border border-emerald-100">
+              <i class="fas fa-car text-3xl text-emerald-700 mb-2"></i>
               <p class="text-2xl font-bold text-gray-900"><%= @habitation.vagas_qtd || 0 %></p>
               <p class="text-xs text-gray-500">Vagas</p>
             </div>
@@ -218,14 +218,19 @@
         </div>
 
         <!-- Descrição -->
-        <div class="bg-white rounded-xl shadow-sm p-6">
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-blue-100">
           <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
             <i class="fas fa-align-left text-golden-one"></i>
             Descrição
           </h2>
-          <div class="prose prose-sm max-w-none text-gray-700 leading-relaxed">
-            <% if @habitation.descricao_web.present? %>
-              <%= @habitation.descricao_web %>
+          <div class="rounded-lg bg-gradient-to-br from-blue-50 to-white border border-blue-100 p-5 prose prose-sm max-w-none text-gray-700 leading-relaxed">
+            <% description_content = @habitation.display_description %>
+            <% if description_content.present? %>
+              <% if description_content.match?(/<[^>]+>/) %>
+                <%= sanitize(description_content, tags: %w[p br strong em b i ul ol li h3 h4 h5 blockquote a], attributes: %w[href target rel]) %>
+              <% else %>
+                <%= simple_format(description_content) %>
+              <% end %>
             <% else %>
               <%= simple_format("Sem descrição disponível.") %>
             <% end %>
@@ -236,32 +241,48 @@
         <%= display_banner('property_detail', container_class: 'w-full my-6') %>
 
         <!-- Características e Infraestrutura -->
-        <% if @habitation.caracteristicas.present? || @habitation.infra_estrutura.present? %>
-          <div class="bg-white rounded-xl shadow-sm p-6">
-            <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+        <% property_features = @habitation.property_features_for_display %>
+        <% leisure_features = @habitation.leisure_features_for_display %>
+        <% if property_features.any? || leisure_features.any? %>
+          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <h2 class="text-xl font-semibold text-gray-900 mb-5 flex items-center gap-2">
               <i class="fas fa-check-circle text-golden-one"></i>
               Características e Infraestrutura
             </h2>
-            
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <% if @habitation.caracteristicas.is_a?(Hash) %>
-                <% @habitation.caracteristicas.each do |key, value| %>
-                  <div class="flex items-center gap-2 text-sm">
-                    <i class="fas fa-check text-green-500 text-xs"></i>
-                    <span class="text-gray-700"><%= key.to_s.humanize %></span>
-                  </div>
-                <% end %>
-              <% end %>
-              
-              <% if @habitation.infra_estrutura.is_a?(Array) %>
-                <% @habitation.infra_estrutura.each do |item| %>
-                  <div class="flex items-center gap-2 text-sm">
-                    <i class="fas fa-check text-green-500 text-xs"></i>
-                    <span class="text-gray-700"><%= item %></span>
-                  </div>
-                <% end %>
-              <% end %>
-            </div>
+
+            <% if property_features.any? %>
+              <div class="mb-6">
+                <h3 class="text-lg font-semibold text-blue-three mb-3 flex items-center gap-2">
+                  <span class="inline-block w-8 h-px bg-blue-200"></span>
+                  Destaque deste imóvel
+                </h3>
+                <div class="flex flex-wrap gap-2">
+                  <% property_features.each do |feature| %>
+                    <div class="inline-flex items-center gap-2 text-gray-700 bg-white border border-gray-200 rounded-full px-3 py-1.5">
+                      <i class="bi bi-house-check text-golden-one text-sm"></i>
+                      <span class="text-sm leading-tight"><%= feature.to_s.tr('_', ' ').squish.titleize %></span>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+
+            <% if leisure_features.any? %>
+              <div>
+                <h3 class="text-lg font-semibold text-blue-three mb-3 flex items-center gap-2">
+                  <span class="inline-block w-8 h-px bg-blue-200"></span>
+                  Destaque lazer
+                </h3>
+                <div class="flex flex-wrap gap-2">
+                  <% leisure_features.each do |feature| %>
+                    <div class="inline-flex items-center gap-2 text-gray-700 bg-[#f8fafc] border border-gray-200 rounded-full px-3 py-1.5">
+                      <i class="bi bi-stars text-blue-three text-sm"></i>
+                      <span class="text-sm leading-tight"><%= feature.to_s.tr('_', ' ').squish.titleize %></span>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
           </div>
         <% end %>
 
@@ -269,6 +290,12 @@
 
       <!-- Coluna Lateral (1/3) -->
       <aside class="lg:col-span-1 space-y-6">
+        <% if @shared_broker.present? %>
+          <%= render "habitations/shared_broker_card",
+              shared_broker: @shared_broker,
+              habitation: @habitation,
+              share_token: @lead_share_token %>
+        <% end %>
         
         <!-- Card de Contato -->
         <div class="bg-gradient-to-br from-blue-three to-blue-one rounded-xl shadow-lg p-6 text-white sticky top-[96px]">
@@ -352,27 +379,9 @@
         <%= display_banner('sidebar', container_class: 'mt-6', force_mobile: true) %>
 
         <!-- Compartilhar -->
-        <div class="bg-white rounded-xl shadow-sm p-6" data-controller="share">
+        <div class="bg-white rounded-xl shadow-sm p-6">
           <h3 class="text-lg font-bold text-gray-900 mb-4">Compartilhar</h3>
-          
-          <div class="flex gap-2">
-            <a href="#" data-action="click->share#facebook" 
-               class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-lg transition-colors flex items-center justify-center">
-              <i class="fab fa-facebook-f"></i>
-            </a>
-            <a href="#" data-action="click->share#twitter"
-               class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-lg transition-colors flex items-center justify-center">
-              <i class="fab fa-x-twitter"></i>
-            </a>
-            <a href="mailto:?subject=<%= url_encode(@habitation.display_title) %>&body=Confira este imóvel na Salute Imóveis: <%= request.original_url.to_s.force_encoding('UTF-8').scrub %>"
-               class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-lg transition-colors flex items-center justify-center">
-              <i class="fas fa-envelope"></i>
-            </a>
-            <button data-action="click->share#copy" data-share-target="link"
-                    class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-lg transition-colors flex items-center justify-center">
-              <i class="fas fa-link"></i>
-            </button>
-          </div>
+          <%= render "shared/broker_share_menu", property: @habitation %>
         </div>
 
       </aside>
@@ -393,3 +402,5 @@
 
   </div>
 </div>
+
+<%= render "shared/broker_public_panel", property: @habitation %>

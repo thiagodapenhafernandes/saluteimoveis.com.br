@@ -11,7 +11,14 @@ module Leads
     def route!
       @lead.activities.create(kind: "received", metadata: { origin: @lead.origin })
 
-      rule_applied = Leads::DistributorService.find_and_distribute(@lead)
+      if @lead.admin_user_id.present?
+        @lead.activities.create(kind: "assigned_directly", metadata: {
+          admin_user_id: @lead.admin_user_id,
+          reason: @lead.share_token.present? ? "share_link" : "manual_assignment"
+        })
+      else
+        Leads::DistributorService.find_and_distribute(@lead)
+      end
 
       # 2. Roteamento por E-mail (Sempre enviar se configurado)
       if email_enabled?

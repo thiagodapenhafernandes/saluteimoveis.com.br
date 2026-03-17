@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_02_19_110000) do
+ActiveRecord::Schema[7.1].define(version: 2026_03_17_103100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -264,6 +264,21 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_19_110000) do
     t.index ["habitation_id"], name: "index_habitation_broker_assignments_on_habitation_id"
   end
 
+  create_table "habitation_share_links", force: :cascade do |t|
+    t.bigint "habitation_id", null: false
+    t.bigint "admin_user_id", null: false
+    t.string "token", null: false
+    t.datetime "expires_at", null: false
+    t.datetime "last_clicked_at"
+    t.integer "clicks_count", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["admin_user_id"], name: "index_habitation_share_links_on_admin_user_id"
+    t.index ["habitation_id", "admin_user_id", "expires_at"], name: "idx_hab_share_links_hab_admin_exp"
+    t.index ["habitation_id"], name: "index_habitation_share_links_on_habitation_id"
+    t.index ["token"], name: "index_habitation_share_links_on_token", unique: true
+  end
+
   create_table "habitations", force: :cascade do |t|
     t.string "codigo", null: false
     t.string "slug"
@@ -410,6 +425,34 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_19_110000) do
     t.boolean "salute_rental_management_flag", default: false, null: false
     t.string "key_location"
     t.string "key_location_notes"
+    t.bigint "proprietor_id"
+    t.boolean "home_corporate_flag", default: false, null: false
+    t.integer "home_corporate_position"
+    t.integer "valor_aceito_permuta_cents"
+    t.boolean "aceita_permuta_veiculo_flag", default: false, null: false
+    t.boolean "aceita_permuta_imovel_flag", default: false, null: false
+    t.boolean "aceita_permuta_outros_flag", default: false, null: false
+    t.string "tipo_veiculo_aceito_permuta"
+    t.integer "ano_minimo_veiculo_aceito_permuta"
+    t.integer "permuta_valor_cents"
+    t.string "permuta_localizacao"
+    t.integer "permuta_dormitorios_qtd"
+    t.integer "permuta_suites_qtd"
+    t.integer "permuta_garagens_qtd"
+    t.string "matricula_imovel"
+    t.string "zona"
+    t.boolean "aceita_doacao_flag", default: false, null: false
+    t.text "condicoes_negociacao"
+    t.integer "valor_locacao_anterior_cents"
+    t.integer "saldo_devedor_cents"
+    t.integer "numero_prestacoes"
+    t.string "responsavel_reserva"
+    t.string "zelador_nome"
+    t.string "zelador_telefone"
+    t.text "observacoes_visitas"
+    t.string "regiao_foco"
+    t.string "tipo_fachada"
+    t.integer "andares_qtd"
     t.index ["aceita_permuta_flag"], name: "index_habitations_on_aceita_permuta_flag"
     t.index ["admin_user_id"], name: "index_habitations_on_admin_user_id"
     t.index ["area_total_m2"], name: "index_habitations_on_area_total_m2"
@@ -427,6 +470,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_19_110000) do
     t.index ["dormitorios_qtd"], name: "index_habitations_on_dormitorios_qtd"
     t.index ["exibir_no_site_flag", "status"], name: "idx_habitations_exibir_status"
     t.index ["frente_mar_avenida_atlantica_flag"], name: "index_habitations_on_frente_mar_avenida_atlantica_flag"
+    t.index ["home_corporate_flag", "home_corporate_position"], name: "idx_habitations_home_corporate_order"
+    t.index ["home_corporate_flag"], name: "index_habitations_on_home_corporate_flag"
     t.index ["infra_estrutura"], name: "index_habitations_on_infra_estrutura", using: :gin
     t.index ["key_location"], name: "index_habitations_on_key_location"
     t.index ["lancamento_flag"], name: "index_habitations_on_lancamento_flag"
@@ -435,6 +480,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_19_110000) do
     t.index ["pictures"], name: "index_habitations_on_pictures", using: :gin
     t.index ["piscina_flag"], name: "index_habitations_on_piscina_flag"
     t.index ["praia_brava_flag"], name: "index_habitations_on_praia_brava_flag"
+    t.index ["proprietor_id"], name: "index_habitations_on_proprietor_id"
     t.index ["quadra_mar_flag"], name: "index_habitations_on_quadra_mar_flag"
     t.index ["salute_rental_management_flag"], name: "index_habitations_on_salute_rental_management_flag"
     t.index ["slug"], name: "index_habitations_on_slug", unique: true
@@ -543,10 +589,14 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_19_110000) do
     t.jsonb "custom_answers", default: []
     t.bigint "distribution_rule_id"
     t.bigint "admin_user_id"
+    t.string "share_token"
+    t.bigint "shared_by_admin_user_id"
     t.index ["admin_user_id"], name: "index_leads_on_admin_user_id"
     t.index ["client_c2s_id"], name: "index_leads_on_client_c2s_id"
     t.index ["distribution_rule_id"], name: "index_leads_on_distribution_rule_id"
     t.index ["origin"], name: "index_leads_on_origin"
+    t.index ["share_token"], name: "index_leads_on_share_token"
+    t.index ["shared_by_admin_user_id"], name: "index_leads_on_shared_by_admin_user_id"
   end
 
   create_table "meta_facebook_pages", force: :cascade do |t|
@@ -592,6 +642,52 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_19_110000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["slug"], name: "index_property_pages_on_slug", unique: true
+  end
+
+  create_table "proprietors", force: :cascade do |t|
+    t.string "name", null: false
+    t.integer "role", default: 0, null: false
+    t.string "vista_code"
+    t.string "cpf_cnpj"
+    t.string "rg_ie"
+    t.string "issuing_authority"
+    t.date "birth_date"
+    t.string "email"
+    t.string "phone_primary"
+    t.string "mobile_phone"
+    t.string "residential_phone"
+    t.string "business_phone"
+    t.string "phone_extension"
+    t.string "profession"
+    t.string "marital_status"
+    t.string "marriage_regime"
+    t.string "nationality"
+    t.string "capture_vehicle"
+    t.date "registered_at"
+    t.text "notes"
+    t.boolean "is_client", default: false, null: false
+    t.string "address_type"
+    t.string "street"
+    t.string "number"
+    t.string "complement"
+    t.string "block"
+    t.string "uf", limit: 2
+    t.string "cep", limit: 10
+    t.string "neighborhood"
+    t.string "city"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "spouse_name"
+    t.string "spouse_email"
+    t.string "spouse_phone"
+    t.string "spouse_cpf_cnpj"
+    t.index ["cpf_cnpj"], name: "index_proprietors_on_cpf_cnpj"
+    t.index ["email"], name: "index_proprietors_on_email"
+    t.index ["name"], name: "index_proprietors_on_name"
+    t.index ["spouse_cpf_cnpj"], name: "index_proprietors_on_spouse_cpf_cnpj"
+    t.index ["spouse_email"], name: "index_proprietors_on_spouse_email"
+    t.index ["spouse_name"], name: "index_proprietors_on_spouse_name"
+    t.index ["vista_code"], name: "index_proprietors_on_vista_code"
   end
 
   create_table "seo_settings", force: :cascade do |t|
@@ -771,11 +867,15 @@ ActiveRecord::Schema[7.1].define(version: 2026_02_19_110000) do
   add_foreign_key "footer_stores", "footer_settings"
   add_foreign_key "habitation_broker_assignments", "admin_users"
   add_foreign_key "habitation_broker_assignments", "habitations"
+  add_foreign_key "habitation_share_links", "admin_users"
+  add_foreign_key "habitation_share_links", "habitations"
   add_foreign_key "habitations", "admin_users"
   add_foreign_key "habitations", "constructors"
+  add_foreign_key "habitations", "proprietors"
   add_foreign_key "home_section_items", "home_sections"
   add_foreign_key "lead_activities", "leads"
   add_foreign_key "leads", "admin_users"
+  add_foreign_key "leads", "admin_users", column: "shared_by_admin_user_id"
   add_foreign_key "leads", "distribution_rules"
   add_foreign_key "meta_facebook_pages", "user_meta_integrations"
   add_foreign_key "meta_lead_forms", "meta_facebook_pages"
