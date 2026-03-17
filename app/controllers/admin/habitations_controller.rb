@@ -14,9 +14,9 @@ class Admin::HabitationsController < Admin::BaseController
     "property_count_by_broker" => "Ficha Numero de imoveis por corretor"
   }.freeze
   REPORT_PAGE_SIZE = {
-    "property_list" => 27,
-    "property_list_with_m2" => 27,
-    "property_list_by_broker" => 27
+    "property_list" => 24,
+    "property_list_with_m2" => 24,
+    "property_list_by_broker" => 14
   }.freeze
   REPORT_MAX_PAGES = 100
   EXPORT_FIELDS = {
@@ -75,6 +75,7 @@ class Admin::HabitationsController < Admin::BaseController
     @report_type = normalized_report_type
     @report_title = REPORT_TYPES[@report_type]
     @report_generated_at = Time.current
+    @full_print_mode = full_print_mode?
 
     scope = filtered_habitations_scope.order(Arel.sql("habitations.#{@sort_column} #{@sort_direction} NULLS LAST"))
     ids = sanitized_selected_ids
@@ -112,7 +113,7 @@ class Admin::HabitationsController < Admin::BaseController
         rent_total: @summary_rows.sum { |row| row[:rent_total] }
       }
     else
-      if full_print_mode?
+      if @full_print_mode
         setup_full_report(scope)
       else
         setup_paginated_report(scope)
@@ -541,7 +542,7 @@ class Admin::HabitationsController < Admin::BaseController
   end
 
   def full_print_mode?
-    params[:full_print].to_s == "1"
+    params[:full_print].to_s != "0"
   end
 
   def habitation_params

@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title><%= @report_title %></title>
   <style>
+    @page { size: A4 portrait; margin: 10mm; }
     body { margin: 0; background: #e5e7eb; font-family: Arial, Helvetica, sans-serif; color: #111; }
     .toolbar { display: flex; justify-content: space-between; align-items: center; padding: 14px 24px; background: #f5f5f5; border-bottom: 1px solid #d3d3d3; }
     .toolbar h1 { margin: 0; font-size: 34px; font-weight: 700; }
@@ -25,9 +26,9 @@
     .report-header .brand { font-size: 16px; font-weight: 700; text-transform: uppercase; margin-top: 2px; }
     .report-header .sub { font-size: 12px; color: #555; }
 
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    thead th { text-align: left; font-weight: 700; border-bottom: 1px solid #444; padding: 5px 4px; }
-    tbody td { border-bottom: 1px solid #ddd; padding: 4px; vertical-align: top; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+    thead th { text-align: left; font-weight: 700; border-bottom: 1px solid #444; padding: 4px 3px; line-height: 1.2; }
+    tbody td { border-bottom: 1px solid #ddd; padding: 3px; vertical-align: top; line-height: 1.2; }
     tfoot td { border-top: 1px solid #444; padding: 6px 4px; font-weight: 700; background: #f6f6f6; }
 
     .right { text-align: right; }
@@ -41,12 +42,15 @@
       .toolbar, .notice { display: none; }
       .paper-wrap { max-width: 100%; margin: 0; }
       .paper { border: none; padding: 0; }
+      .paper, .broker-group, table, tr, td, th { break-inside: avoid; page-break-inside: avoid; }
+      .page-break { display: block; height: 0; page-break-after: always; break-after: page; }
+      .footer-url { display: none; }
     }
   </style>
 </head>
 <body>
   <% paginated_report = %w[property_list property_list_with_m2 property_list_by_broker].include?(@report_type) %>
-  <% full_print_mode = params[:full_print].to_s == "1" %>
+  <% full_print_mode = @full_print_mode != false %>
 
   <div class="toolbar">
     <div>
