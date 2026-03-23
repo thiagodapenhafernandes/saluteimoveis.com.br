@@ -103,10 +103,12 @@ task :deploy do
   end
 end
 
-desc "Reinicia o Puma e Sidekiq"
+desc "Reinicia o Puma e o Solid Queue"
 task :restart => :remote_environment do
   comment 'Restarting Puma...'
   command %(sudo systemctl restart puma_salute_imoveis_v3_production)
+  comment 'Restarting Solid Queue...'
+  command %(sudo systemctl restart solid_queue_salute_imoveis_v3_production)
   command %(cd #{fetch(:current_path)} && bundle exec rails runner "Rails.cache.clear")
 end
 
