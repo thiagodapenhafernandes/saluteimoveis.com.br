@@ -16,3 +16,9 @@ production:
   habitations_hierarchy_audit:
     command: "result = Habitations::HierarchyAuditService.new(strict: false).call; Rails.logger.info(\"[HierarchyAudit] #{result.to_json}\")"
     schedule: every day at 3:40am
+  dwv_daily_sync:
+    class: DwvSyncJob
+    queue: dwv
+    args:
+      - mode: "full"
+    schedule: every day at 4:20am

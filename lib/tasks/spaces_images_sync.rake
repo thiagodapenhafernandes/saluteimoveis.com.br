@@ -130,7 +130,7 @@ namespace :images do
       cycle += 1
       last_id = cursor["last_id"].to_i
 
-      scope = Habitation.where("id > ?", last_id).order(:id)
+      scope = Habitation.where("id > ?", last_id).where.not(imovel_dwv: "Sim").order(:id)
       scope = scope.where.missing(:photos_attachments) if only_without_attachments
       batch = scope.limit(batch_size).to_a
 
@@ -198,7 +198,7 @@ namespace :images do
 
     puts "[images:retry_failed_habitations_to_spaces] reprocessando #{ids.size} imóveis dry_run=#{dry_run}"
 
-    Habitation.where(id: ids).order(:id).find_each do |habitation|
+    Habitation.where(id: ids).where.not(imovel_dwv: "Sim").order(:id).find_each do |habitation|
       result = SpacesImageSync.process_habitation(habitation, dry_run: dry_run)
       synced += result[:synced]
       skipped += result[:skipped]

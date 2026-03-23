@@ -46,6 +46,9 @@ application.register("distribution-rule", DistributionRuleController)
 import DropdownController from "controllers/dropdown_controller"
 application.register("dropdown", DropdownController)
 
+import DwvSyncStatusController from "controllers/dwv_sync_status_controller"
+application.register("dwv-sync-status", DwvSyncStatusController)
+
 import DynamicListController from "controllers/dynamic_list_controller"
 application.register("dynamic-list", DynamicListController)
 

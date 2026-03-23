@@ -110,15 +110,21 @@
 
     <!-- Integrações Collapse -->
     <li class="sidebar-menu-item">
-      <a href="#submenu-integracoes" data-bs-toggle="collapse" class="d-flex justify-content-between align-items-center <%= (['meta_integrations', 'webhook_settings'].include?(controller_name) || vista_soft_context) ? '' : 'collapsed' %>">
+      <a href="#submenu-integracoes" data-bs-toggle="collapse" class="d-flex justify-content-between align-items-center <%= (['meta_integrations', 'webhook_settings', 'dwv_integrations'].include?(controller_name) || vista_soft_context) ? '' : 'collapsed' %>">
         <span>
           <i class="bi bi-plug"></i>
           <span>Integrações</span>
         </span>
         <i class="bi bi-chevron-down small"></i>
       </a>
-      <div class="collapse <%= (['meta_integrations', 'webhook_settings'].include?(controller_name) || vista_soft_context) ? 'show' : '' %>" id="submenu-integracoes">
+      <div class="collapse <%= (['meta_integrations', 'webhook_settings', 'dwv_integrations'].include?(controller_name) || vista_soft_context) ? 'show' : '' %>" id="submenu-integracoes">
         <ul class="sidebar-menu ps-3 mt-1 bg-light rounded">
+          <li class="sidebar-menu-item">
+            <%= link_to admin_dwv_integrations_path, class: controller_name == 'dwv_integrations' ? 'active' : '' do %>
+              <i class="bi bi-hdd-network"></i>
+              <span>DWV</span>
+            <% end %>
+          </li>
           <li class="sidebar-menu-item">
             <%= link_to admin_meta_integrations_path, class: controller_name == 'meta_integrations' ? 'active' : '' do %>
               <i class="bi bi-meta"></i>
