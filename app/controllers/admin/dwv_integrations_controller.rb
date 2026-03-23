@@ -205,7 +205,9 @@ class Admin::DwvIntegrationsController < Admin::BaseController
   def fetch_worker_health
     return fallback_worker_health("Solid Queue não está disponível nesta instalação.") unless defined?(SolidQueue::Process)
 
-    heartbeat_threshold = 45.seconds.ago
+    # Solid Queue updates heartbeat roughly every ~60s in this setup.
+    # Using 45s creates false "offline" flapping on the dashboard.
+    heartbeat_threshold = 2.minutes.ago
     worker_scope = SolidQueue::Process.where(kind: "Worker")
     scheduler_scope = SolidQueue::Process.where(kind: "Scheduler")
     online_workers = worker_scope.where("last_heartbeat_at >= ?", heartbeat_threshold)
