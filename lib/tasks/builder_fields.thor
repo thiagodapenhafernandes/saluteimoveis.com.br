@@ -136,7 +136,8 @@ class BuilderFields < Thor::Group
         end
       elsif batch_attrs.any?
         existing = Habitation.where(codigo: batch_codes).pluck(:codigo).to_set
-        normalized_batch_attrs = batch_attrs.map { |attrs| normalize_array_aware_attrs(attrs) }
+        sanitized_batch_attrs = sanitize_dwv_link_conflicts(batch_attrs)
+        normalized_batch_attrs = sanitized_batch_attrs.map { |attrs| normalize_array_aware_attrs(attrs) }
         Habitation.upsert_all(normalized_batch_attrs, unique_by: :index_habitations_on_codigo, record_timestamps: true)
         sync_addresses_for_codes(batch_address_by_code)
 
@@ -258,6 +259,53 @@ class BuilderFields < Thor::Group
       return parsed if parsed.is_a?(Array)
 
       value
+    end
+
+    def sanitize_dwv_link_conflicts(attrs_list)
+      return attrs_list if attrs_list.blank?
+
+      sanitized = attrs_list.map(&:dup)
+      dwv_candidates = sanitized.filter_map do |attrs|
+        dwv_code = attrs[:codigo_dwv].to_s.strip
+        next if dwv_code.blank?
+        next unless attrs[:imovel_dwv].to_s.strip.casecmp("Sim").zero?
+
+        [attrs[:codigo].to_s, dwv_code]
+      end
+      return sanitized if dwv_candidates.blank?
+
+      links_by_dwv = Hash.new { |hash, key| hash[key] = [] }
+      dwv_candidates.each { |codigo, dwv_code| links_by_dwv[dwv_code] << codigo }
+
+      existing_map = Habitation
+        .where(imovel_dwv: "Sim", codigo_dwv: links_by_dwv.keys)
+        .where.not(codigo_dwv: [nil, ""])
+        .pluck(:codigo_dwv, :codigo)
+        .to_h
+
+      sanitized.each do |attrs|
+        codigo = attrs[:codigo].to_s
+        dwv_code = attrs[:codigo_dwv].to_s.strip
+        next if dwv_code.blank?
+        next unless attrs[:imovel_dwv].to_s.strip.casecmp("Sim").zero?
+
+        # Evita colisão com vínculo já existente em outro imóvel.
+        existing_codigo = existing_map[dwv_code].to_s
+        if existing_codigo.present? && existing_codigo != codigo
+          attrs[:codigo_dwv] = nil
+          attrs[:imovel_dwv] = "Não"
+          next
+        end
+
+        # Evita múltiplos imóveis do mesmo batch com o mesmo vínculo DWV.
+        duplicated_in_batch = links_by_dwv[dwv_code].uniq
+        if duplicated_in_batch.size > 1 && duplicated_in_batch.first != codigo
+          attrs[:codigo_dwv] = nil
+          attrs[:imovel_dwv] = "Não"
+        end
+      end
+
+      sanitized
     end
 
     def parse_as_array(value)
