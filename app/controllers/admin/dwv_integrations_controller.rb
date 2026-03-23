@@ -139,9 +139,11 @@ class Admin::DwvIntegrationsController < Admin::BaseController
     @dwv_last_sync_message = Setting.get("dwv_last_sync_message")
     @dwv_last_error_summary = parse_error_summary(Setting.get("dwv_last_error_summary", "{}"))
     @dwv_last_sync_time = Time.zone.parse(@dwv_last_sync_at.to_s)
+    @dwv_worker_health = fetch_worker_health
   rescue ArgumentError, TypeError
     @dwv_last_sync_time = nil
     @dwv_last_error_summary = {}
+    @dwv_worker_health = fallback_worker_health
   end
 
   def dwv_params
@@ -198,5 +200,47 @@ class Admin::DwvIntegrationsController < Admin::BaseController
     parsed.transform_keys(&:to_s).sort_by { |_, count| -count.to_i }.to_h
   rescue JSON::ParserError
     {}
+  end
+
+  def fetch_worker_health
+    return fallback_worker_health("Solid Queue não está disponível nesta instalação.") unless defined?(SolidQueue::Process)
+
+    heartbeat_threshold = 45.seconds.ago
+    worker_scope = SolidQueue::Process.where(kind: "Worker")
+    scheduler_scope = SolidQueue::Process.where(kind: "Scheduler")
+    online_workers = worker_scope.where("last_heartbeat_at >= ?", heartbeat_threshold)
+    online = online_workers.exists?
+    queue_ready = defined?(SolidQueue::ReadyExecution) ? SolidQueue::ReadyExecution.count : 0
+    last_worker_heartbeat = worker_scope.maximum(:last_heartbeat_at)
+    scheduler_online = scheduler_scope.where("last_heartbeat_at >= ?", heartbeat_threshold).exists?
+
+    {
+      online: online,
+      scheduler_online: scheduler_online,
+      queue_ready: queue_ready,
+      worker_count: online_workers.count,
+      last_heartbeat_at: last_worker_heartbeat,
+      message: worker_health_message(online:, queue_ready:)
+    }
+  rescue => e
+    fallback_worker_health("Falha ao ler saúde da fila: #{e.message}")
+  end
+
+  def worker_health_message(online:, queue_ready:)
+    return "Worker processando normalmente." if online
+    return "Worker offline com #{queue_ready} job(s) pendente(s) na fila." if queue_ready.positive?
+
+    "Worker offline no momento."
+  end
+
+  def fallback_worker_health(message = "Saúde da fila indisponível.")
+    {
+      online: false,
+      scheduler_online: false,
+      queue_ready: 0,
+      worker_count: 0,
+      last_heartbeat_at: nil,
+      message: message
+    }
   end
 end

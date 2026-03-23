@@ -6,12 +6,26 @@
     <ul class="small mb-0 ps-3">
       <li class="mb-2">Integração ativa: <strong><%= @dwv_enabled ? "Sim" : "Não" %></strong></li>
       <li class="mb-2">Conexão: <strong><%= @dwv_connected ? "Conectado" : "Desconectado" %></strong></li>
+      <li class="mb-2">
+        Worker da fila:
+        <strong class="<%= @dwv_worker_health[:online] ? "text-success" : "text-danger" %>">
+          <%= @dwv_worker_health[:online] ? "Online" : "Offline" %>
+        </strong>
+      </li>
+      <li class="mb-2">Scheduler: <strong><%= @dwv_worker_health[:scheduler_online] ? "Online" : "Offline" %></strong></li>
+      <li class="mb-2">Jobs pendentes na fila: <strong><%= @dwv_worker_health[:queue_ready] %></strong></li>
       <li class="mb-2">Token configurado: <strong><%= @dwv_api_token.present? ? "Sim" : "Não" %></strong></li>
       <li class="mb-2">Status atual: <strong><%= @dwv_sync_status.present? ? @dwv_sync_status : "idle" %></strong></li>
       <li class="mb-2">Progresso atual: <strong><%= @dwv_sync_progress %>%</strong></li>
       <li class="mb-2">Última execução: <strong><%= @dwv_last_sync_time.present? ? l(@dwv_last_sync_time, format: :short) : "N/D" %></strong></li>
       <li>Resumo: <%= @dwv_last_sync_message.presence || "Sem execuções registradas." %></li>
     </ul>
+
+    <% unless @dwv_worker_health[:online] %>
+      <div class="alert alert-danger py-2 px-3 small mt-3 mb-0" role="alert">
+        <strong>Fila DWV indisponível:</strong> <%= @dwv_worker_health[:message] %>
+      </div>
+    <% end %>
 
     <div class="mt-3">
       <div class="d-flex justify-content-between small mb-1">
