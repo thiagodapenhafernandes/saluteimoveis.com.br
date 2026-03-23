@@ -65,6 +65,14 @@ Rails.application.routes.draw do
         get :list_forms
       end
     end
+    resource :dwv_integrations, only: [:show, :update] do
+      get :status
+      post :test_connection
+      post :sync_property
+      post :sync_now
+      post :sync_recent
+      post :deactivate_removed
+    end
     resources :landing_pages do
       get :preview, on: :collection
     end

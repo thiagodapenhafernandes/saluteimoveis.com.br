@@ -149,8 +149,8 @@ class Habitation < ApplicationRecord
   
   # Retorna a primeira imagem do imóvel (Hash format)
   def primary_image
-    # Priority: Active Storage Photos -> API Pictures
-    if photos.attached?
+    # DWV must prefer JSON URLs; Vista/manual can prefer ActiveStorage.
+    if !dwv_property? && photos.attached?
       path = blob_path_for(ordered_photos.first)
       return { 'url' => path } if path.present?
     end
@@ -183,6 +183,8 @@ class Habitation < ApplicationRecord
                    []
                  end
     
+    return api_images.presence || attached_images if dwv_property?
+
     attached_images + api_images
   end
 
@@ -260,6 +262,10 @@ class Habitation < ApplicationRecord
   # Verifica se é um empreendimento
   def empreendimento?
     tipo == 'Empreendimento'
+  end
+
+  def dwv_property?
+    imovel_dwv.to_s.strip.casecmp("sim").zero?
   end
   
   # Verifica se é uma unidade de empreendimento

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_03_17_103100) do
+ActiveRecord::Schema[7.1].define(version: 2026_03_23_195000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -461,6 +461,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_03_17_103100) do
     t.index ["centro_flag"], name: "index_habitations_on_centro_flag"
     t.index ["cidade", "bairro", "status"], name: "idx_habitations_localizacao_status"
     t.index ["codigo"], name: "index_habitations_on_codigo", unique: true
+    t.index ["codigo_dwv"], name: "index_habitations_on_codigo_dwv_unique_when_dwv", unique: true, where: "(((imovel_dwv)::text = 'Sim'::text) AND (codigo_dwv IS NOT NULL) AND ((codigo_dwv)::text <> ''::text))"
     t.index ["codigo_empreendimento"], name: "index_habitations_on_codigo_empreendimento"
     t.index ["constructor_id"], name: "index_habitations_on_constructor_id"
     t.index ["created_at"], name: "index_habitations_on_created_at"
@@ -707,6 +708,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_03_17_103100) do
     t.string "description"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["key"], name: "index_settings_on_key_unique", unique: true
   end
 
   create_table "solid_queue_blocked_executions", force: :cascade do |t|
