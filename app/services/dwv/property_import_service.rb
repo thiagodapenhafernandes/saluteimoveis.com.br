@@ -34,6 +34,10 @@ module Dwv
       habitation ||= Habitation.new
       existing_record = habitation.persisted?
 
+      if !existing_record && insufficient_payload_for_new_record?
+        raise "Payload DWV incompleto para novo cadastro (id=#{dwv_id})."
+      end
+
       habitation.assign_attributes(
         codigo_dwv: dwv_id,
         imovel_dwv: "Sim",
@@ -297,6 +301,22 @@ module Dwv
       return nil if number <= 0
 
       number
+    end
+
+    def insufficient_payload_for_new_record?
+      return false if active_on_site?
+
+      # Some inactive/deleted DWV entries come with only metadata and no usable fields.
+      # Skip creating new local records in this scenario to avoid "empty" properties.
+      title_present = value(["title"], ["advertisement_title"], ["name"], ["titulo"]).to_s.strip.present?
+      category_present = value(["type", "name"], ["type"], ["category"], ["categoria"]).to_s.strip.present?
+      has_any_price = to_cents(value(["price"], ["sale_price"], ["valor_venda"], ["unit", "price"])).present? ||
+                      to_cents(value(["rent_price"], ["valor_locacao"], ["unit", "rent"])).present?
+      has_location = extract_address.present? ||
+                     value(["city"], ["neighborhood"], ["bairro"], ["address", "city"], ["address", "district"]).to_s.strip.present?
+      has_pictures = extract_pictures.present?
+
+      !title_present && !category_present && !has_any_price && !has_location && !has_pictures
     end
   end
 end
