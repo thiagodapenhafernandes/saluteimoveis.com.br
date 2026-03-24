@@ -107,6 +107,7 @@ class Habitation < ApplicationRecord
   validate :key_location_notes_required_for_other
   
   # Callbacks
+  before_validation :assign_codigo_automaticamente, on: :create
   before_validation :normalize_codigo_empreendimento
   before_validation :sync_hierarchy_data
   before_validation :sync_construtora_from_constructor
@@ -482,6 +483,17 @@ class Habitation < ApplicationRecord
         end
       end
     end
+  end
+
+  def assign_codigo_automaticamente
+    return if codigo.present?
+
+    # Gera sequência numérica para cadastro manual sem colidir com códigos DWV (prefixados).
+    last_numeric = Habitation.where("codigo ~ '^[0-9]+$'").maximum("codigo::bigint").to_i
+    next_code = last_numeric + 1
+    next_code += 1 while Habitation.exists?(codigo: next_code.to_s)
+
+    self.codigo = next_code.to_s
   end
 
   def slug_candidates
