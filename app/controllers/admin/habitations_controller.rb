@@ -160,7 +160,7 @@ class Admin::HabitationsController < Admin::BaseController
       redirect_to admin_habitations_path, notice: "Imóvel criado com sucesso."
     else
       load_autocomplete_data
-      render :new
+      render :new, status: :unprocessable_entity
     end
   end
 
@@ -547,9 +547,9 @@ class Admin::HabitationsController < Admin::BaseController
 
   def habitation_params
     permitted = params.require(:habitation).permit(
-      :codigo, :slug, :categoria, :status, :situacao, :tipo, :codigo_empreendimento, 
+      :slug, :categoria, :status, :situacao, :tipo, :codigo_empreendimento, 
       :nome_empreendimento,
-      :dormitorios_qtd, :suites_qtd, :banheiros_qtd, :vagas_qtd, :elevadores_qtd, 
+      :dormitorios_qtd, :suites_qtd, :salas_qtd, :varandas_qtd, :banheiros_qtd, :hidromassagem_qtd, :vagas_qtd, :elevadores_qtd, 
       :area_privativa_m2, :area_total_m2, :area_terreno_m2, :area_util_m2, 
       :valor_venda_formatted, :valor_locacao_formatted, :valor_condominio_formatted, :valor_iptu_formatted, :valor_por_m2_formatted, 
       :valor_locacao_anterior_formatted, :valor_aceito_permuta_formatted, :permuta_valor_formatted, :saldo_devedor_formatted,
@@ -575,19 +575,19 @@ class Admin::HabitationsController < Admin::BaseController
       :cabecudas_flag, :camboriu_flag, :centro_flag, :estaleirinho_flag, 
       :frente_mar_avenida_atlantica_flag, :itajai_flag, :itapema_flag, :nacoes_flag, 
       :pioneiros_flag, :praia_brava_flag, :praia_dos_amores_flag, :vista_frente_mar_flag, 
-      :festival_salute_flag, :exibir_no_site_salute_flag, :tem_placa_flag,
+      :festival_salute_flag, :exibir_no_site_salute_flag, :tem_placa_flag, :imovel_dwv,
       :exclusivo_flag, :ocupacao_status, :estado_conservacao,
-      :andar, :ano_construcao, :demi_suites_qtd, :numero_box, 
+      :andar, :ano_construcao, :demi_suites_qtd, :numero_box, :tipo_vaga,
       :dimensoes_terreno, :topografia, :foto_classificacao, :podcast_url,
       :matricula_imovel, :zona, :numero_prestacoes, :responsavel_reserva, :zelador_nome, :zelador_telefone, :regiao_foco,
-      :construtora, :tipo_fachada, :andares_qtd,
+      :construtora, :tipo_fachada, :andares_qtd, :perfil_construcao, :face,
       :tipo_veiculo_aceito_permuta, :ano_minimo_veiculo_aceito_permuta,
       :permuta_localizacao, :permuta_dormitorios_qtd, :permuta_suites_qtd, :permuta_garagens_qtd,
       :agenciador, :captador_commission_percentage, :broker_commission_percentage,
       :salute_rental_management_flag, :home_corporate_flag, :home_corporate_position,
-      :key_location, :key_location_notes,
+      :key_location, :key_location_notes, :ordered_photo_ids,
       videos: [], plantas: [], fotos_empreendimento: [], photos: [],
-      ordered_photo_ids: [], meta_keywords: [],
+      meta_keywords: [],
       caracteristicas: [], infra_estrutura: [], caracteristica_unica: [],
       broker_assignments_attributes: [:id, :admin_user_id, :role, :commission_type, :commission_value, :observations, :_destroy],
       address_attributes: [:id, :tipo_endereco, :logradouro, :numero, :complemento, :bairro, :bairro_comercial, :cidade, :uf, :cep, :pais, :latitude, :longitude, :_destroy, { imediacoes: [] }]
@@ -598,8 +598,13 @@ class Admin::HabitationsController < Admin::BaseController
         proprietario proprietario_codigo proprietario_email proprietario_celular
         proprietario_telefone_comercial proprietario_telefone_residencial proprietor_id
       ]
-      permitted.except!(*proprietor_locked_fields)
+      proprietor_locked_fields.each { |field| permitted.delete(field) }
     end
+
+    # Campos presentes no formulário, mas ainda sem coluna no schema atual.
+    # São descartados para evitar UnknownAttributeError ao inicializar o model.
+    permitted.delete(:salas_qtd)
+    permitted.delete(:varandas_qtd)
 
     permitted
   end

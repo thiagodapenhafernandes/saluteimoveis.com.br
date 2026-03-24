@@ -56,6 +56,19 @@ pt-BR:
   
   activerecord:
     attributes:
+      habitation:
+        codigo: "Código"
+        categoria: "Categoria"
+      habitation/address:
+        logradouro: "Logradouro"
+        bairro: "Bairro"
+        cidade: "Cidade"
+        uf: "UF"
+      address:
+        logradouro: "Logradouro"
+        bairro: "Bairro"
+        cidade: "Cidade"
+        uf: "UF"
       lead:
         statuses:
           novo: "Novo"
@@ -74,6 +87,8 @@ pt-BR:
       admin_user: "Administrador"
       lead: "Lead"
       habitation: "Imóvel"
+      address: "Endereço"
+      habitation/address: "Endereço"
       
   enums:
     admin_user:

@@ -612,6 +612,16 @@ body.admin-layout {
   box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
 }
 
+.ts-wrapper.is-invalid .ts-control {
+  border-color: #dc3545 !important;
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.15) !important;
+}
+
+.ts-wrapper.is-invalid.focus .ts-control {
+  border-color: #dc3545 !important;
+  box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25) !important;
+}
+
 /* Small Tom Select - Exact Bootstrap 5 -sm Match */
 .ts-wrapper.form-control-sm .ts-control {
   padding: 0.25rem 0.5rem !important;

@@ -20,12 +20,130 @@ export default class extends Controller {
   static values = {
     categoriesByType: Object,
     tipoByType: Object,
-    developments: Object
+    developments: Object,
+    errorFields: Array
   }
 
   connect() {
     this.applyCadastroType()
     this.syncFromDevelopmentSelection()
+    this.applyServerValidationErrors()
+  }
+
+  applyServerValidationErrors() {
+    this.clearServerValidationErrors()
+    if (!this.hasErrorFieldsValue || !Array.isArray(this.errorFieldsValue)) return
+
+    const uniqueAttributes = [...new Set(this.errorFieldsValue.map((field) => String(field)))]
+    uniqueAttributes.forEach((attribute) => this.highlightAttributeFields(attribute))
+    this.focusFirstInvalidField()
+  }
+
+  clearServerValidationErrors() {
+    this.element.querySelectorAll(".server-invalid").forEach((node) => {
+      node.classList.remove("server-invalid", "is-invalid")
+      node.removeAttribute("aria-invalid")
+    })
+  }
+
+  highlightAttributeFields(attribute) {
+    this.paramNamesForAttribute(attribute).forEach((paramName) => {
+      this.findInputsByName(paramName).forEach((field) => this.markFieldInvalid(field))
+    })
+  }
+
+  paramNamesForAttribute(attribute) {
+    const attr = String(attribute).trim()
+    if (!attr) return []
+
+    if (attr.startsWith("address.")) {
+      const addressField = attr.split(".").slice(1).join(".")
+      return [`habitation[address_attributes][${addressField}]`]
+    }
+
+    return [`habitation[${attr}]`]
+  }
+
+  findInputsByName(paramName) {
+    const escapedName = this.escapeAttributeValue(paramName)
+    const escapedArrayName = this.escapeAttributeValue(`${paramName}[]`)
+    const selector = `[name="${escapedName}"], [name="${escapedArrayName}"]`
+    return Array.from(this.element.querySelectorAll(selector))
+  }
+
+  markFieldInvalid(field) {
+    field.classList.add("is-invalid", "server-invalid")
+    field.setAttribute("aria-invalid", "true")
+
+    if (field.tagName === "SELECT") {
+      const wrapper = field.tomselect?.wrapper || field.closest(".ts-wrapper")
+      if (wrapper) {
+        wrapper.classList.add("is-invalid", "server-invalid")
+        wrapper.setAttribute("aria-invalid", "true")
+      }
+    }
+  }
+
+  focusFirstInvalidField() {
+    const firstField =
+      this.element.querySelector("input.server-invalid, select.server-invalid, textarea.server-invalid") ||
+      this.element.querySelector(".ts-wrapper.server-invalid select")
+
+    if (!firstField) return
+
+    const tabPane = firstField.closest(".tab-pane")
+    if (tabPane && !tabPane.classList.contains("active")) {
+      this.openTabForPane(tabPane, () => this.scrollAndFocusField(firstField))
+      return
+    }
+
+    this.scrollAndFocusField(firstField)
+  }
+
+  openTabForPane(tabPane, callback) {
+    if (!tabPane?.id) {
+      callback()
+      return
+    }
+
+    const tabButton = this.element.querySelector(`[data-bs-target="#${tabPane.id}"]`)
+    if (!tabButton) {
+      callback()
+      return
+    }
+
+    const onShown = () => {
+      tabButton.removeEventListener("shown.bs.tab", onShown)
+      requestAnimationFrame(callback)
+    }
+
+    tabButton.addEventListener("shown.bs.tab", onShown)
+
+    if (window.bootstrap?.Tab?.getOrCreateInstance) {
+      window.bootstrap.Tab.getOrCreateInstance(tabButton).show()
+      return
+    }
+
+    tabButton.click()
+    requestAnimationFrame(callback)
+  }
+
+  scrollAndFocusField(field) {
+    const focusTarget = field.tomselect?.wrapper || field.closest(".ts-wrapper") || field
+    focusTarget.scrollIntoView({ behavior: "smooth", block: "center" })
+
+    if (field.tomselect) {
+      field.tomselect.focus()
+      return
+    }
+
+    if (typeof field.focus === "function") {
+      field.focus({ preventScroll: true })
+    }
+  }
+
+  escapeAttributeValue(value) {
+    return String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"')
   }
 
   cadastroTypeChanged() {
