@@ -37,17 +37,29 @@
 
             <div class="col-12">
               <label class="form-label mb-1 small">Nome</label>
-              <%= f.text_field :name, value: @filters[:name], class: "form-control" %>
+              <%= f.select :name,
+                           options_for_select(@name_options, @filters[:name]),
+                           { include_blank: "Selecione ou digite..." },
+                           class: "form-select",
+                           data: { controller: "tom-select", tom_select_create_value: true, tom_select_options_value: { placeholder: "Selecione ou digite..." } } %>
             </div>
 
             <div class="col-12">
               <label class="form-label mb-1 small">Email</label>
-              <%= f.text_field :email, value: @filters[:email], class: "form-control" %>
+              <%= f.select :email,
+                           options_for_select(@email_options, @filters[:email]),
+                           { include_blank: "Selecione ou digite..." },
+                           class: "form-select",
+                           data: { controller: "tom-select", tom_select_create_value: true, tom_select_options_value: { placeholder: "Selecione ou digite..." } } %>
             </div>
 
             <div class="col-md-4">
               <label class="form-label mb-1 small">Telefone</label>
-              <%= f.text_field :phone, value: @filters[:phone], class: "form-control" %>
+              <%= f.select :phone,
+                           options_for_select(@phone_options, @filters[:phone]),
+                           { include_blank: "Selecione ou digite..." },
+                           class: "form-select",
+                           data: { controller: "tom-select", tom_select_create_value: true, tom_select_options_value: { placeholder: "Selecione ou digite..." } } %>
             </div>
             <div class="col-md-3">
               <label class="form-label mb-1 small">CPF</label>
@@ -63,28 +75,54 @@
 
             <div class="col-md-4">
               <label class="form-label mb-1 small">Cidade</label>
-              <%= f.text_field :city, value: @filters[:city], class: "form-control" %>
+              <%= f.select :city,
+                           options_for_select(@city_options, @filters[:city]),
+                           { include_blank: "Selecione ou digite..." },
+                           class: "form-select",
+                           data: { controller: "tom-select", tom_select_create_value: true, tom_select_options_value: { placeholder: "Selecione ou digite..." } } %>
             </div>
           </div>
 
           <div class="border-top mt-3 pt-3">
-            <h6 class="small text-muted text-uppercase mb-2">Cônjuge</h6>
-            <div class="row g-2">
-              <div class="col-12">
-                <label class="form-label mb-1 small">Nome</label>
-                <%= f.text_field :spouse_name, value: @filters[:spouse_name], class: "form-control" %>
-              </div>
-              <div class="col-12">
-                <label class="form-label mb-1 small">Email</label>
-                <%= f.text_field :spouse_email, value: @filters[:spouse_email], class: "form-control" %>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label mb-1 small">Telefone</label>
-                <%= f.text_field :spouse_phone, value: @filters[:spouse_phone], class: "form-control" %>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label mb-1 small">CPF</label>
-                <%= f.text_field :spouse_cpf_cnpj, value: @filters[:spouse_cpf_cnpj], class: "form-control" %>
+            <button class="btn btn-link text-decoration-none p-0 small text-muted text-uppercase d-flex align-items-center gap-2 spouse-collapse-toggle"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#spouseFiltersCollapse"
+                    aria-expanded="false"
+                    aria-controls="spouseFiltersCollapse">
+              <i class="bi bi-chevron-down spouse-collapse-icon"></i>
+              Cônjuge
+            </button>
+            <div class="collapse mt-2" id="spouseFiltersCollapse">
+              <div class="row g-2">
+                <div class="col-12">
+                  <label class="form-label mb-1 small">Nome</label>
+                  <%= f.select :spouse_name,
+                               options_for_select(@spouse_name_options, @filters[:spouse_name]),
+                               { include_blank: "Selecione ou digite..." },
+                               class: "form-select",
+                               data: { controller: "tom-select", tom_select_create_value: true, tom_select_options_value: { placeholder: "Selecione ou digite..." } } %>
+                </div>
+                <div class="col-12">
+                  <label class="form-label mb-1 small">Email</label>
+                  <%= f.select :spouse_email,
+                               options_for_select(@spouse_email_options, @filters[:spouse_email]),
+                               { include_blank: "Selecione ou digite..." },
+                               class: "form-select",
+                               data: { controller: "tom-select", tom_select_create_value: true, tom_select_options_value: { placeholder: "Selecione ou digite..." } } %>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label mb-1 small">Telefone</label>
+                  <%= f.select :spouse_phone,
+                               options_for_select(@spouse_phone_options, @filters[:spouse_phone]),
+                               { include_blank: "Selecione ou digite..." },
+                               class: "form-select",
+                               data: { controller: "tom-select", tom_select_create_value: true, tom_select_options_value: { placeholder: "Selecione ou digite..." } } %>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label mb-1 small">CPF</label>
+                  <%= f.text_field :spouse_cpf_cnpj, value: @filters[:spouse_cpf_cnpj], class: "form-control" %>
+                </div>
               </div>
             </div>
           </div>
@@ -94,7 +132,11 @@
             <div class="row g-2">
               <div class="col-md-4">
                 <label class="form-label mb-1 small">Referência</label>
-                <%= f.text_field :habitation_reference, value: @filters[:habitation_reference], class: "form-control" %>
+                <%= f.select :habitation_reference,
+                             options_for_select(@habitation_reference_options, @filters[:habitation_reference]),
+                             { include_blank: "Selecione ou digite..." },
+                             class: "form-select",
+                             data: { controller: "tom-select", tom_select_create_value: true, tom_select_options_value: { placeholder: "Selecione ou digite..." } } %>
               </div>
               <div class="col-md-4">
                 <label class="form-label mb-1 small">Data Cadastro</label>
@@ -107,11 +149,19 @@
 
               <div class="col-md-9">
                 <label class="form-label mb-1 small">Endereço</label>
-                <%= f.text_field :habitation_address, value: @filters[:habitation_address], class: "form-control" %>
+                <%= f.select :habitation_address,
+                             options_for_select(@habitation_address_options, @filters[:habitation_address]),
+                             { include_blank: "Selecione ou digite..." },
+                             class: "form-select",
+                             data: { controller: "tom-select", tom_select_create_value: true, tom_select_options_value: { placeholder: "Selecione ou digite..." } } %>
               </div>
               <div class="col-md-3">
                 <label class="form-label mb-1 small">Número</label>
-                <%= f.text_field :habitation_number, value: @filters[:habitation_number], class: "form-control" %>
+                <%= f.select :habitation_number,
+                             options_for_select(@habitation_number_options, @filters[:habitation_number]),
+                             { include_blank: "Selecione ou digite..." },
+                             class: "form-select",
+                             data: { controller: "tom-select", tom_select_create_value: true, tom_select_options_value: { placeholder: "Selecione ou digite..." } } %>
               </div>
 
               <div class="col-md-6">
@@ -119,14 +169,16 @@
                 <%= f.select :habitation_category,
                             options_for_select(@habitation_category_options, @filters[:habitation_category]),
                             { include_blank: "Selecione uma opção" },
-                            class: "form-select" %>
+                            class: "form-select",
+                            data: { controller: "tom-select", tom_select_create_value: true, tom_select_options_value: { placeholder: "Selecione ou digite..." } } %>
               </div>
               <div class="col-md-6">
                 <label class="form-label mb-1 small">Status</label>
                 <%= f.select :habitation_status,
                             options_for_select(@habitation_status_options, @filters[:habitation_status]),
                             { include_blank: "Selecione uma opção" },
-                            class: "form-select" %>
+                            class: "form-select",
+                            data: { controller: "tom-select", tom_select_create_value: true, tom_select_options_value: { placeholder: "Selecione ou digite..." } } %>
               </div>
             </div>
           </div>

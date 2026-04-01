@@ -2,18 +2,16 @@
 
 <div class="card shadow-sm border-0 mb-4 bg-light">
   <div class="card-body p-4">
-    <h6 class="fw-bold mb-3"><i class="bi bi-info-circle me-2 text-primary"></i>Diagnóstico Atual</h6>
+    <h6 class="fw-bold mb-3"><i class="bi bi-info-circle me-2 text-primary"></i>Status Atual</h6>
     <ul class="small mb-0 ps-3">
       <li class="mb-2">Integração ativa: <strong><%= @dwv_enabled ? "Sim" : "Não" %></strong></li>
       <li class="mb-2">Conexão: <strong><%= @dwv_connected ? "Conectado" : "Desconectado" %></strong></li>
       <li class="mb-2">
-        Worker da fila:
+        Processamento automático:
         <strong class="<%= @dwv_worker_health[:online] ? "text-success" : "text-danger" %>">
-          <%= @dwv_worker_health[:online] ? "Online" : "Offline" %>
+          <%= @dwv_worker_health[:online] ? "Disponível" : "Indisponível" %>
         </strong>
       </li>
-      <li class="mb-2">Scheduler: <strong><%= @dwv_worker_health[:scheduler_online] ? "Online" : "Offline" %></strong></li>
-      <li class="mb-2">Jobs pendentes na fila: <strong><%= @dwv_worker_health[:queue_ready] %></strong></li>
       <li class="mb-2">Token configurado: <strong><%= @dwv_api_token.present? ? "Sim" : "Não" %></strong></li>
       <li class="mb-2">Status atual: <strong><%= @dwv_sync_status.present? ? @dwv_sync_status : "idle" %></strong></li>
       <li class="mb-2">Progresso atual: <strong><%= @dwv_sync_progress %>%</strong></li>
@@ -23,7 +21,7 @@
 
     <% unless @dwv_worker_health[:online] %>
       <div class="alert alert-danger py-2 px-3 small mt-3 mb-0" role="alert">
-        <strong>Fila DWV indisponível:</strong> <%= @dwv_worker_health[:message] %>
+        <strong>Serviço de sincronização indisponível:</strong> <%= @dwv_worker_health[:message] %>
       </div>
     <% end %>
 
@@ -135,9 +133,9 @@
 
 <div class="card shadow-sm border-0">
   <div class="card-body p-4">
-    <h6 class="fw-bold mb-3"><i class="bi bi-shield-check me-2 text-success"></i>Observações Técnicas</h6>
-    <p class="small text-muted mb-2">A API pública da DWV usa autenticação por header <code>token</code> e limite de 100 requisições/minuto.</p>
-    <p class="small text-muted mb-2">Neste painel, “inserir/atualizar/remover” significa refletir dados da DWV no seu banco local (não altera dados dentro da DWV).</p>
-    <p class="small text-muted mb-0">Rotina automática diária ativa via <code>DwvSyncJob</code> no agendador recorrente do Solid Queue.</p>
+    <h6 class="fw-bold mb-3"><i class="bi bi-shield-check me-2 text-success"></i>Observações Importantes</h6>
+    <p class="small text-muted mb-2">Esta integração busca os dados na DWV e atualiza o cadastro de imóveis neste sistema.</p>
+    <p class="small text-muted mb-2">Os dados do imóvel dentro da DWV não são alterados por esta tela.</p>
+    <p class="small text-muted mb-0">A remoção de imóveis continua sendo uma ação manual.</p>
   </div>
 </div>

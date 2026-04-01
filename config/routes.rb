@@ -73,6 +73,17 @@ Rails.application.routes.draw do
       post :sync_recent
       post :deactivate_removed
     end
+    resource :loft_integrations, only: [:show, :update] do
+      get :status
+      post :test_connection
+      post :sync_property
+      post :sync_now
+      post :sync_batch
+      post :sync_images_now
+    end
+    resources :portal_integrations, only: [:index, :update], param: :portal do
+      post :test_feed, on: :member
+    end
     resources :landing_pages do
       get :preview, on: :collection
     end
@@ -158,6 +169,14 @@ Rails.application.routes.draw do
   namespace :webhooks do
     post "meta", to: "meta#receive_leads"
     get "meta", to: "meta#receive_leads"
+    post "portals/:portal/events", to: "portals#events", as: :portal_events
+  end
+
+  namespace :integrations do
+    namespace :portals do
+      get ":portal/:token", to: "feeds#show", as: :feed_token
+      get ":portal/feed", to: "feeds#show", as: :feed
+    end
   end
 
   # Catch-all route for public landing pages

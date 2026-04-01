@@ -239,6 +239,14 @@ body.admin-layout {
   background-color: #f8fafc;
 }
 
+.spouse-collapse-toggle .spouse-collapse-icon {
+  transition: transform 0.2s ease;
+}
+
+.spouse-collapse-toggle[aria-expanded="true"] .spouse-collapse-icon {
+  transform: rotate(180deg);
+}
+
 /* Actions Group */
 .btn-action-group {
   display: flex;

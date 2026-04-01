@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_03_23_195000) do
+ActiveRecord::Schema[7.1].define(version: 2026_04_01_141200) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -625,6 +625,60 @@ ActiveRecord::Schema[7.1].define(version: 2026_03_23_195000) do
     t.index ["meta_facebook_page_id"], name: "index_meta_lead_forms_on_meta_facebook_page_id"
   end
 
+  create_table "portal_integration_events", force: :cascade do |t|
+    t.string "portal", null: false
+    t.bigint "habitation_id"
+    t.string "habitation_code"
+    t.string "external_listing_id"
+    t.string "event_type", null: false
+    t.string "normalized_status"
+    t.datetime "received_at", null: false
+    t.string "source_ip"
+    t.jsonb "raw_payload", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["habitation_id"], name: "index_portal_integration_events_on_habitation_id"
+    t.index ["portal", "external_listing_id"], name: "idx_on_portal_external_listing_id_a9202d155f"
+    t.index ["portal", "habitation_code"], name: "index_portal_integration_events_on_portal_and_habitation_code"
+    t.index ["portal", "received_at"], name: "index_portal_integration_events_on_portal_and_received_at"
+  end
+
+  create_table "portal_integrations", force: :cascade do |t|
+    t.string "portal", null: false
+    t.boolean "enabled", default: false, null: false
+    t.string "allowed_statuses", default: [], null: false, array: true
+    t.string "allowed_business_types", default: ["venda", "aluguel"], null: false, array: true
+    t.boolean "require_exibir_no_site", default: true, null: false
+    t.string "feed_token"
+    t.string "account_id"
+    t.string "publisher_id"
+    t.string "webhook_secret"
+    t.string "operational_status", default: "idle", null: false
+    t.jsonb "settings", default: {}, null: false
+    t.datetime "last_feed_at"
+    t.datetime "last_webhook_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["enabled"], name: "index_portal_integrations_on_enabled"
+    t.index ["portal"], name: "index_portal_integrations_on_portal", unique: true
+  end
+
+  create_table "portal_listing_states", force: :cascade do |t|
+    t.string "portal", null: false
+    t.bigint "habitation_id"
+    t.string "habitation_code"
+    t.string "external_listing_id"
+    t.string "last_event_type", null: false
+    t.string "last_status"
+    t.datetime "last_received_at", null: false
+    t.jsonb "last_payload", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["habitation_id"], name: "index_portal_listing_states_on_habitation_id"
+    t.index ["portal", "external_listing_id"], name: "idx_portal_listing_states_portal_external", unique: true, where: "(external_listing_id IS NOT NULL)"
+    t.index ["portal", "habitation_code"], name: "idx_portal_listing_states_portal_code", unique: true
+  end
+
   create_table "profiles", force: :cascade do |t|
     t.string "name"
     t.jsonb "permissions"
@@ -881,6 +935,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_03_23_195000) do
   add_foreign_key "leads", "distribution_rules"
   add_foreign_key "meta_facebook_pages", "user_meta_integrations"
   add_foreign_key "meta_lead_forms", "meta_facebook_pages"
+  add_foreign_key "portal_integration_events", "habitations"
+  add_foreign_key "portal_listing_states", "habitations"
   add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_claimed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_failed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade

@@ -22,3 +22,7 @@ production:
     args:
       - mode: "full"
     schedule: every day at 4:20am
+  loft_schedule_tick:
+    class: LoftScheduleTickJob
+    queue: default
+    schedule: every minute

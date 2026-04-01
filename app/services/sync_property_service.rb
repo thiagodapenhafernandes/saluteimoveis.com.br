@@ -3,12 +3,15 @@ class SyncPropertyService
   VISTA_HOST = ENV.fetch('VISTA_HOST') { 'http://saluteim20174-rest.vistahost.com.br' }
   DETALHES_PATH = '/imoveis/detalhes'
 
-  def initialize(codigo)
+  def initialize(codigo, host: nil, token: nil)
     @codigo = codigo
+    @vista_host = host.presence || VISTA_HOST
+    @vista_key = token.presence || VISTA_KEY
   end
 
   def perform
     habitation = Habitation.find_or_initialize_by(codigo: @codigo)
+    existing_record = habitation.persisted?
     hb = fetch_details(@codigo)
     
     unless hb
@@ -39,7 +42,7 @@ class SyncPropertyService
       imediacoes_values: address_attrs[:imediacoes]
     )
 
-    { success: true, habitation: habitation }
+    { success: true, habitation: habitation, created: !existing_record, updated: existing_record }
   rescue ActiveRecord::RecordInvalid => e
     error_msg = e.record.errors.full_messages.join(", ")
     habitation.update(last_sync_at: Time.current, last_sync_status: 'error', last_sync_message: error_msg) if habitation&.persisted?
@@ -64,9 +67,9 @@ class SyncPropertyService
       ]
     }
 
-    url = "#{VISTA_HOST}#{DETALHES_PATH}"
+    url = "#{@vista_host}#{DETALHES_PATH}"
     params = {
-      key: VISTA_KEY,
+      key: @vista_key,
       imovel: codigo,
       pesquisa: payload.to_json
     }
