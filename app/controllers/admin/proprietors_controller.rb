@@ -37,6 +37,27 @@ module Admin
       @habitations_count_by_proprietor = Habitation.where(proprietor_id: @proprietors.map(&:id)).group(:proprietor_id).count
 
       @capture_vehicle_options = Proprietor::CAPTURE_VEHICLES
+      @name_options = Proprietor.where.not(name: [nil, ""]).distinct.order(:name).pluck(:name)
+      @city_options = Proprietor.where.not(city: [nil, ""]).distinct.order(:city).pluck(:city)
+      @email_options = Proprietor.where.not(email: [nil, ""]).distinct.order(:email).pluck(:email)
+      @phone_options = Proprietor
+        .pluck(:phone_primary, :mobile_phone, :residential_phone, :business_phone)
+        .flatten
+        .map { |value| value.to_s.strip }
+        .reject(&:blank?)
+        .uniq
+        .sort
+      @spouse_name_options = Proprietor.where.not(spouse_name: [nil, ""]).distinct.order(:spouse_name).pluck(:spouse_name)
+      @spouse_email_options = Proprietor.where.not(spouse_email: [nil, ""]).distinct.order(:spouse_email).pluck(:spouse_email)
+      @spouse_phone_options = Proprietor.where.not(spouse_phone: [nil, ""]).distinct.order(:spouse_phone).pluck(:spouse_phone)
+
+      reference_codes = Habitation.where.not(codigo: [nil, ""]).distinct.order(:codigo).limit(200).pluck(:codigo)
+      reference_titles = Habitation.where.not(titulo_anuncio: [nil, ""]).distinct.order(:titulo_anuncio).limit(200).pluck(:titulo_anuncio)
+      reference_developments = Habitation.where.not(nome_empreendimento: [nil, ""]).distinct.order(:nome_empreendimento).limit(200).pluck(:nome_empreendimento)
+      @habitation_reference_options = (reference_codes + reference_titles + reference_developments).map(&:to_s).map(&:strip).reject(&:blank?).uniq.sort
+      @habitation_address_options = Habitation.where.not(endereco: [nil, ""]).distinct.order(:endereco).limit(400).pluck(:endereco)
+      @habitation_number_options = Habitation.where.not(numero: [nil, ""]).distinct.order(:numero).limit(300).pluck(:numero)
+
       @habitation_category_options = Habitation.where.not(categoria: [nil, ""]).distinct.order(:categoria).pluck(:categoria)
       @habitation_status_options = Habitation.where.not(status: [nil, ""]).distinct.order(:status).pluck(:status)
       @export_fields = EXPORT_FIELDS

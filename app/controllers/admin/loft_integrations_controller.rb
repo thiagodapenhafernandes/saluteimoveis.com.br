@@ -1,0 +1,173 @@
+require "fugit"
+
+class Admin::LoftIntegrationsController < Admin::BaseController
+  before_action :require_admin!
+  before_action :load_state
+
+  def show
+  end
+
+  def update
+    enabled = ActiveModel::Type::Boolean.new.cast(loft_params[:enabled])
+    host = loft_params[:host].to_s.strip
+    token = loft_params[:token].to_s.strip
+    schedule_enabled = ActiveModel::Type::Boolean.new.cast(loft_params[:schedule_enabled])
+
+    Setting.set("loft_enabled", enabled.to_s, "Habilita integração Loft Soft")
+    Setting.set("loft_host", normalize_host(host), "Host da API Loft Soft") if host.present?
+    Setting.set("loft_token", token, "Token da API Loft Soft") if token.present?
+    Setting.set("loft_schedule_enabled", schedule_enabled.to_s, "Ativa agendamento Loft")
+    Setting.set("loft_schedule_cron", normalize_cron(loft_params[:schedule_cron]), "Cron da sincronização Loft")
+    Setting.set("loft_schedule_mode", normalize_mode(loft_params[:schedule_mode]), "Modo de sync agendada Loft")
+    Setting.set("loft_sync_batch_size", loft_params[:sync_batch_size].to_i.clamp(1, 1000).to_s, "Batch size da sync Loft")
+    Setting.set("loft_images_sync_limit", loft_params[:images_sync_limit].to_i.clamp(1, 500).to_s, "Limite por sync de imagens Loft")
+    Setting.set("loft_poll_processing_interval_ms", loft_params[:poll_processing_interval_ms].to_i.clamp(1000, 30000).to_s, "Polling processing Loft")
+    Setting.set("loft_poll_idle_interval_ms", loft_params[:poll_idle_interval_ms].to_i.clamp(2000, 60000).to_s, "Polling idle Loft")
+    Setting.set("loft_poll_slow_interval_ms", loft_params[:poll_slow_interval_ms].to_i.clamp(5000, 120000).to_s, "Polling slow Loft")
+
+    redirect_to admin_loft_integrations_path, notice: "Configuração Loft Soft salva com sucesso."
+  rescue => e
+    redirect_to admin_loft_integrations_path, alert: "Erro ao salvar configuração Loft Soft: #{e.message}"
+  end
+
+  def test_connection
+    host = current_host
+    token = current_token
+
+    raise "Host não configurado." if host.blank?
+    raise "Token não configurado." if token.blank?
+
+    response = RestClient.get(
+      "#{host}/imoveis/detalhes",
+      params: {
+        key: token,
+        imovel: "0",
+        pesquisa: { fields: ["Codigo"] }.to_json
+      },
+      accept: :json
+    )
+
+    parsed = JSON.parse(response.body) rescue {}
+    if parsed.is_a?(Hash)
+      redirect_to admin_loft_integrations_path, notice: "Conexão com Loft Soft validada (host e token aceitos)."
+    else
+      redirect_to admin_loft_integrations_path, alert: "Resposta inesperada ao testar Loft Soft."
+    end
+  rescue => e
+    redirect_to admin_loft_integrations_path, alert: "Falha ao testar conexão Loft Soft: #{e.message}"
+  end
+
+  def sync_property
+    ensure_enabled_and_credentials!
+    code = params[:property_code].to_s.strip
+    return redirect_to(admin_loft_integrations_path, alert: "Informe o código do imóvel.") if code.blank?
+
+    result = SyncPropertyService.new(code, host: current_host, token: current_token).perform
+    if result[:success]
+      Loft::SyncStatusService.new.mark_completed!(
+        mode: "property",
+        message: "Imóvel #{code} sincronizado.",
+        stats: { processed: 1, created: (result[:created] ? 1 : 0), updated: (result[:updated] ? 1 : 0), errors_count: 0 }
+      )
+      redirect_to admin_loft_integrations_path, notice: "Imóvel #{code} sincronizado com sucesso."
+    else
+      Loft::SyncStatusService.new.mark_failed!(mode: "property", message: "Falha no imóvel #{code}: #{result[:error]}")
+      redirect_to admin_loft_integrations_path, alert: "Falha ao sincronizar imóvel #{code}: #{result[:error]}"
+    end
+  rescue => e
+    Loft::SyncStatusService.new.mark_failed!(mode: "property", message: "Falha no imóvel #{code}: #{e.message}")
+    redirect_to admin_loft_integrations_path, alert: "Erro ao sincronizar imóvel: #{e.message}"
+  end
+
+  def sync_now
+    ensure_enabled_and_credentials!
+    LoftSyncJob.perform_later(mode: "full", batch_size: Setting.get("loft_sync_batch_size", "100").to_i, triggered_by_id: current_admin_user.id)
+    redirect_to admin_loft_integrations_path, notice: "Sincronização de imóveis Loft iniciada em segundo plano."
+  rescue => e
+    redirect_to admin_loft_integrations_path, alert: "Falha ao iniciar sync Loft: #{e.message}"
+  end
+
+  def sync_batch
+    ensure_enabled_and_credentials!
+    LoftSyncJob.perform_later(mode: "batch", batch_size: Setting.get("loft_sync_batch_size", "100").to_i, triggered_by_id: current_admin_user.id)
+    redirect_to admin_loft_integrations_path, notice: "Sincronização em lote Loft iniciada."
+  rescue => e
+    redirect_to admin_loft_integrations_path, alert: "Falha ao iniciar lote Loft: #{e.message}"
+  end
+
+  def sync_images_now
+    ensure_enabled_and_credentials!
+    LoftImagesSyncJob.perform_later(limit: Setting.get("loft_images_sync_limit", "100").to_i, triggered_by_id: current_admin_user.id)
+    redirect_to admin_loft_integrations_path, notice: "Sincronização de imagens para Spaces iniciada."
+  rescue => e
+    redirect_to admin_loft_integrations_path, alert: "Falha ao iniciar sync de imagens: #{e.message}"
+  end
+
+  def status
+    load_state
+    render :status, layout: false
+  end
+
+  private
+
+  def load_state
+    @loft_enabled = Setting.get("loft_enabled", "false") == "true"
+    @loft_host = current_host
+    @loft_token = current_token
+    @loft_sync_status = Setting.get("loft_sync_status", "idle")
+    @loft_sync_progress = Setting.get("loft_sync_progress", "0").to_i.clamp(0, 100)
+    @loft_last_sync_message = Setting.get("loft_last_sync_message")
+    @loft_last_sync_at = Setting.get("loft_last_sync_at")
+    @loft_last_sync_time = Time.zone.parse(@loft_last_sync_at.to_s) rescue nil
+    @loft_sync_history = Loft::SyncStatusService.new.history(limit: 5)
+    @loft_schedule_enabled = Setting.get("loft_schedule_enabled", "false") == "true"
+    @loft_schedule_cron = Setting.get("loft_schedule_cron", "20 4 * * *")
+    @loft_schedule_mode = Setting.get("loft_schedule_mode", "full")
+    @loft_schedule_last_slot = Setting.get("loft_schedule_last_slot")
+    @loft_sync_batch_size = Setting.get("loft_sync_batch_size", "100").to_i.clamp(1, 1000)
+    @loft_images_sync_limit = Setting.get("loft_images_sync_limit", "100").to_i.clamp(1, 500)
+    @loft_poll_processing_interval_ms = Setting.get("loft_poll_processing_interval_ms", "2000").to_i.clamp(1000, 30000)
+    @loft_poll_idle_interval_ms = Setting.get("loft_poll_idle_interval_ms", "6000").to_i.clamp(2000, 60000)
+    @loft_poll_slow_interval_ms = Setting.get("loft_poll_slow_interval_ms", "15000").to_i.clamp(5000, 120000)
+  end
+
+  def current_host
+    Setting.get("loft_host").to_s.presence || ENV.fetch("VISTA_HOST", "").to_s
+  end
+
+  def current_token
+    Setting.get("loft_token").to_s.presence || ENV.fetch("VISTA_KEY", "").to_s
+  end
+
+  def loft_params
+    params.require(:loft).permit(
+      :enabled, :host, :token,
+      :schedule_enabled, :schedule_cron, :schedule_mode,
+      :sync_batch_size, :images_sync_limit,
+      :poll_processing_interval_ms, :poll_idle_interval_ms, :poll_slow_interval_ms
+    )
+  end
+
+  def normalize_host(value)
+    value.to_s.strip.chomp("/")
+  end
+
+  def normalize_cron(value)
+    cron = value.to_s.strip.presence || "20 4 * * *"
+    parsed = Fugit::Cron.parse(cron)
+    raise "Cron inválido. Exemplo: 20 4 * * *" if parsed.nil?
+
+    cron
+  end
+
+  def normalize_mode(value)
+    mode = value.to_s
+    %w[full batch].include?(mode) ? mode : "full"
+  end
+
+  def ensure_enabled_and_credentials!
+    raise "Integração Loft Soft desativada." unless @loft_enabled
+    raise "Host não configurado." if @loft_host.blank?
+    raise "Token não configurado." if @loft_token.blank?
+  end
+end

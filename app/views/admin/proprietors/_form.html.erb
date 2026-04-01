@@ -36,7 +36,7 @@
 
     <div class="col-md-6">
       <%= f.label :name, "Nome", class: "form-label fw-bold small text-muted text-uppercase" %>
-      <%= f.text_field :name, class: "form-control", required: true %>
+      <%= f.text_field :name, class: "form-control", required: true, autocomplete: "name" %>
     </div>
     <div class="col-md-3">
       <%= f.label :cpf_cnpj, "CPF / CNPJ", class: "form-label fw-bold small text-muted text-uppercase" %>
@@ -49,23 +49,23 @@
 
     <div class="col-md-4">
       <%= f.label :email, "E-mail", class: "form-label fw-bold small text-muted text-uppercase" %>
-      <%= f.email_field :email, class: "form-control" %>
+      <%= f.email_field :email, class: "form-control", autocomplete: "email" %>
     </div>
     <div class="col-md-2">
       <%= f.label :phone_primary, "Telefone", class: "form-label fw-bold small text-muted text-uppercase" %>
-      <%= f.text_field :phone_primary, class: "form-control", data: { controller: "mask", mask_type_value: "phone" } %>
+      <%= f.text_field :phone_primary, class: "form-control", autocomplete: "tel", data: { controller: "mask", mask_type_value: "phone" } %>
     </div>
     <div class="col-md-2">
       <%= f.label :mobile_phone, "Celular", class: "form-label fw-bold small text-muted text-uppercase" %>
-      <%= f.text_field :mobile_phone, class: "form-control", data: { controller: "mask", mask_type_value: "phone" } %>
+      <%= f.text_field :mobile_phone, class: "form-control", autocomplete: "tel-national", data: { controller: "mask", mask_type_value: "phone" } %>
     </div>
     <div class="col-md-2">
       <%= f.label :residential_phone, "Residencial", class: "form-label fw-bold small text-muted text-uppercase" %>
-      <%= f.text_field :residential_phone, class: "form-control", data: { controller: "mask", mask_type_value: "phone" } %>
+      <%= f.text_field :residential_phone, class: "form-control", autocomplete: "tel", data: { controller: "mask", mask_type_value: "phone" } %>
     </div>
     <div class="col-md-2">
       <%= f.label :business_phone, "Comercial", class: "form-label fw-bold small text-muted text-uppercase" %>
-      <%= f.text_field :business_phone, class: "form-control", data: { controller: "mask", mask_type_value: "phone" } %>
+      <%= f.text_field :business_phone, class: "form-control", autocomplete: "tel", data: { controller: "mask", mask_type_value: "phone" } %>
     </div>
 
     <div class="col-md-3">
@@ -101,7 +101,7 @@
     </div>
     <div class="col-md-3">
       <%= f.label :birth_date, "Data nascimento", class: "form-label fw-bold small text-muted text-uppercase" %>
-      <%= f.date_field :birth_date, class: "form-control" %>
+      <%= f.date_field :birth_date, class: "form-control", autocomplete: "bday" %>
     </div>
     <div class="col-md-3">
       <%= f.label :issuing_authority, "Emissor", class: "form-label fw-bold small text-muted text-uppercase" %>
@@ -127,6 +127,7 @@
                   <%= f.text_field :cep,
                                    class: "form-control",
                                    placeholder: "00000-000",
+                                   autocomplete: "postal-code",
                                    data: { controller: "mask", mask_type_value: "cep", cep_search_target: "cep", action: "blur->cep-search#search" } %>
                   <button class="btn btn-outline-secondary" type="button" data-action="click->cep-search#search">
                     <i class="bi bi-search me-1"></i> Buscar CEP
@@ -144,22 +145,22 @@
                 <%= f.label :uf, "UF", class: "form-label fw-bold small text-muted text-uppercase" %>
                 <%= f.select :uf, Habitation::UF_OPTIONS,
                              { include_blank: "UF" },
-                             { class: "form-select", data: { cep_search_target: "uf" } } %>
+                             { class: "form-select", autocomplete: "address-level1", data: { cep_search_target: "uf" } } %>
               </div>
             </div>
 
             <div class="row g-3 mt-1">
               <div class="col-md-6">
                 <%= f.label :street, "Logradouro", class: "form-label fw-bold small text-muted text-uppercase" %>
-                <%= f.text_field :street, class: "form-control", data: { cep_search_target: "logradouro" } %>
+                <%= f.text_field :street, class: "form-control", autocomplete: "address-line1", data: { cep_search_target: "logradouro" } %>
               </div>
               <div class="col-md-2">
                 <%= f.label :number, "Número", class: "form-label fw-bold small text-muted text-uppercase" %>
-                <%= f.text_field :number, class: "form-control", data: { cep_search_target: "numero" } %>
+                <%= f.text_field :number, class: "form-control", autocomplete: "address-line2", data: { cep_search_target: "numero" } %>
               </div>
               <div class="col-md-3">
                 <%= f.label :complement, "Complemento", class: "form-label fw-bold small text-muted text-uppercase" %>
-                <%= f.text_field :complement, class: "form-control", data: { cep_search_target: "complemento" } %>
+                <%= f.text_field :complement, class: "form-control", autocomplete: "address-line3", data: { cep_search_target: "complemento" } %>
               </div>
               <div class="col-md-1">
                 <%= f.label :block, "Bloco", class: "form-label fw-bold small text-muted text-uppercase" %>
@@ -170,11 +171,11 @@
             <div class="row g-3 mt-1">
               <div class="col-md-5">
                 <%= f.label :neighborhood, "Bairro", class: "form-label fw-bold small text-muted text-uppercase" %>
-                <%= f.text_field :neighborhood, class: "form-control", data: { cep_search_target: "bairro" } %>
+                <%= f.text_field :neighborhood, class: "form-control", autocomplete: "address-level3", data: { cep_search_target: "bairro" } %>
               </div>
               <div class="col-md-5">
                 <%= f.label :city, "Cidade", class: "form-label fw-bold small text-muted text-uppercase" %>
-                <%= f.text_field :city, class: "form-control", data: { cep_search_target: "cidade" } %>
+                <%= f.text_field :city, class: "form-control", autocomplete: "address-level2", data: { cep_search_target: "cidade" } %>
               </div>
             </div>
           </div>
@@ -202,15 +203,15 @@
           <div class="row g-3">
             <div class="col-md-5">
               <%= f.label :spouse_name, "Nome", class: "form-label fw-bold small text-muted text-uppercase" %>
-              <%= f.text_field :spouse_name, class: "form-control" %>
+              <%= f.text_field :spouse_name, class: "form-control", autocomplete: "section-spouse name" %>
             </div>
             <div class="col-md-3">
               <%= f.label :spouse_email, "E-mail", class: "form-label fw-bold small text-muted text-uppercase" %>
-              <%= f.email_field :spouse_email, class: "form-control" %>
+              <%= f.email_field :spouse_email, class: "form-control", autocomplete: "section-spouse email" %>
             </div>
             <div class="col-md-2">
               <%= f.label :spouse_phone, "Telefone", class: "form-label fw-bold small text-muted text-uppercase" %>
-              <%= f.text_field :spouse_phone, class: "form-control", data: { controller: "mask", mask_type_value: "phone" } %>
+              <%= f.text_field :spouse_phone, class: "form-control", autocomplete: "section-spouse tel", data: { controller: "mask", mask_type_value: "phone" } %>
             </div>
             <div class="col-md-2">
               <%= f.label :spouse_cpf_cnpj, "CPF / CNPJ", class: "form-label fw-bold small text-muted text-uppercase" %>

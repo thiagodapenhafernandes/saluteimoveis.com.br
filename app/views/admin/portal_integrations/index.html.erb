@@ -1,0 +1,173 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-1 text-gray-800">Integrações de Portais</h1>
+    <p class="text-muted small mb-0">Configure feed e retorno para ZapImóveis, Imovelweb e Chaves na Mão.</p>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-4">
+    <ul class="nav nav-tabs mb-4" role="tablist">
+      <% PortalIntegration::PORTALS.each do |portal_key| %>
+        <% integration = @integrations[portal_key] %>
+        <li class="nav-item" role="presentation">
+          <a class="nav-link <%= 'active' if @active_portal == portal_key %>" href="<%= admin_portal_integrations_path(portal: portal_key) %>">
+            <%= integration.title %>
+            <% if integration.enabled? %>
+              <span class="badge bg-success-subtle text-success border ms-2">Ativo</span>
+            <% else %>
+              <span class="badge bg-secondary-subtle text-secondary border ms-2">Inativo</span>
+            <% end %>
+          </a>
+        </li>
+      <% end %>
+    </ul>
+
+    <% current_integration = @integrations[@active_portal] %>
+    <% current_preview = @previews[@active_portal] || {} %>
+
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <%= form_with model: current_integration,
+                      url: admin_portal_integration_path(@active_portal),
+                      method: :patch,
+                      local: true,
+                      class: "card border-0 bg-light-subtle" do |f| %>
+          <div class="card-body">
+            <h5 class="fw-bold mb-3"><%= current_integration.title %></h5>
+
+            <div class="form-check form-switch mb-3">
+              <%= f.check_box :enabled, class: "form-check-input" %>
+              <%= f.label :enabled, "Integração ativa", class: "form-check-label" %>
+            </div>
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <%= f.label :account_id, "Account ID", class: "form-label fw-semibold" %>
+                <%= f.text_field :account_id, class: "form-control" %>
+              </div>
+              <div class="col-md-6">
+                <%= f.label :publisher_id, "Publisher ID", class: "form-label fw-semibold" %>
+                <%= f.text_field :publisher_id, class: "form-control" %>
+              </div>
+
+              <div class="col-md-6">
+                <%= f.label :feed_token, "Token do Feed", class: "form-label fw-semibold" %>
+                <%= f.password_field :feed_token, class: "form-control", autocomplete: "off", placeholder: (current_integration.feed_token.present? ? "Já configurado. Preencha para substituir." : "Defina o token de acesso ao feed") %>
+              </div>
+              <div class="col-md-6">
+                <%= f.label :webhook_secret, "Webhook Secret", class: "form-label fw-semibold" %>
+                <%= f.password_field :webhook_secret, class: "form-control", autocomplete: "off", placeholder: (current_integration.webhook_secret.present? ? "Já configurado. Preencha para substituir." : "Defina o segredo para assinatura") %>
+              </div>
+
+              <div class="col-md-6">
+                <%= f.label :allowed_statuses, "Status permitidos", class: "form-label fw-semibold" %>
+                <%= f.select :allowed_statuses,
+                             options_for_select(@status_options, current_integration.allowed_statuses),
+                             {},
+                             multiple: true,
+                             class: "form-select",
+                             data: { controller: "tom-select", tom_select_tags_value: true } %>
+              </div>
+
+              <div class="col-md-6">
+                <%= f.label :allowed_business_types, "Tipos de negócio", class: "form-label fw-semibold" %>
+                <%= f.select :allowed_business_types,
+                             options_for_select(@business_type_options, current_integration.allowed_business_types),
+                             {},
+                             multiple: true,
+                             class: "form-select",
+                             data: { controller: "tom-select", tom_select_tags_value: true } %>
+              </div>
+
+              <div class="col-12">
+                <div class="form-check">
+                  <%= f.check_box :require_exibir_no_site, class: "form-check-input" %>
+                  <%= f.label :require_exibir_no_site, "Enviar apenas imóveis exibidos no site", class: "form-check-label" %>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mt-4">
+              <%= f.submit "Salvar Configuração", class: "btn btn-primary" %>
+            </div>
+          </div>
+        <% end %>
+
+        <div class="text-end mt-3">
+          <%= button_to "Testar feed", test_feed_admin_portal_integration_path(@active_portal), method: :post, class: "btn btn-outline-primary" %>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-body">
+            <h6 class="fw-bold mb-3">Resumo do Feed</h6>
+            <ul class="list-unstyled small mb-0">
+              <li class="mb-2">Elegíveis: <strong><%= current_preview[:eligible_count].to_i %></strong></li>
+              <li class="mb-2">Rejeitados: <strong><%= current_preview[:rejected_count].to_i %></strong></li>
+              <li>Último feed: <strong><%= current_integration.last_feed_at.present? ? l(current_integration.last_feed_at, format: :short) : "N/D" %></strong></li>
+            </ul>
+            <% if current_preview[:top_reasons].present? %>
+              <hr>
+              <div class="small text-muted mb-2">Top motivos de rejeição</div>
+              <ul class="small mb-0">
+                <% current_preview[:top_reasons].each do |reason, count| %>
+                  <li><%= reason.humanize %>: <strong><%= count %></strong></li>
+                <% end %>
+              </ul>
+            <% end %>
+          </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <h6 class="fw-bold mb-2">URL do Feed</h6>
+            <div class="small text-muted mb-2">Use o token configurado para autenticação.</div>
+            <div class="border rounded p-2 bg-light small" style="word-break: break-all;">
+              <%= integrations_portals_feed_token_url(portal: @active_portal, token: (current_integration.feed_token.presence || "SEU_TOKEN"), format: current_integration.feed_format) %>
+            </div>
+            <div class="small text-muted mt-2">Compatível também com query param: <code><%= integrations_portals_feed_url(portal: @active_portal, format: current_integration.feed_format) %>?token=SEU_TOKEN</code></div>
+            <div class="small text-muted mt-2">Webhook: <code><%= webhooks_portal_events_url(portal: @active_portal) %></code></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mt-4">
+      <div class="card-header bg-white">
+        <h6 class="mb-0 fw-bold">Últimos retornos por anúncio</h6>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>ID Externo</th>
+              <th>Evento</th>
+              <th>Status</th>
+              <th>Atualizado em</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if @listing_states.any? %>
+              <% @listing_states.each do |state| %>
+                <tr>
+                  <td><%= state.habitation_code.presence || "-" %></td>
+                  <td><%= state.external_listing_id.presence || "-" %></td>
+                  <td><%= state.last_event_type %></td>
+                  <td><%= state.last_status.presence || "-" %></td>
+                  <td><%= state.last_received_at.present? ? l(state.last_received_at, format: :short) : "-" %></td>
+                </tr>
+              <% end %>
+            <% else %>
+              <tr>
+                <td colspan="5" class="text-center text-muted py-4">Sem eventos recebidos para este portal.</td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
