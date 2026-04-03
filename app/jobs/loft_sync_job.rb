@@ -4,7 +4,18 @@ class LoftSyncJob < ApplicationJob
   queue_as :default
 
   def perform(mode: "full", batch_size: nil, triggered_by_id: nil)
+    lock_service = Loft::SyncLockService.new(
+      lock_key: "loft_sync_lock",
+      lease_seconds: ENV.fetch("LOFT_SYNC_LOCK_LEASE_SECONDS", "5400")
+    )
+    lock_owner = lock_service.acquire
     status_service = Loft::SyncStatusService.new
+
+    unless lock_owner.present?
+      status_service.mark_skipped!(mode: mode, message: "Loft sync ignorado: já existe uma sincronização em andamento.")
+      return
+    end
+
     status_service.mark_processing!(mode: mode, message: "Sincronização Loft iniciada.", progress: 5)
 
     host = Setting.get("loft_host").to_s.presence || ENV.fetch("VISTA_HOST", "")
@@ -79,5 +90,7 @@ class LoftSyncJob < ApplicationJob
   rescue => e
     status_service&.mark_failed!(mode: mode, message: "Loft sync falhou: #{e.message}")
     raise e
+  ensure
+    lock_service&.release(lock_owner)
   end
 end

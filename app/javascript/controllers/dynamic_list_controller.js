@@ -2,6 +2,7 @@ import { Controller } from "@hotwired/stimulus"
 
 // Connects to data-controller="dynamic-list"
 export default class extends Controller {
+  static targets = ["container", "input", "template"]
   static values = { paramName: String }
 
   add(event) {

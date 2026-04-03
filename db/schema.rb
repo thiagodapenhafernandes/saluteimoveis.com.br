@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_04_01_141200) do
+ActiveRecord::Schema[7.1].define(version: 2026_04_01_180500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -453,6 +453,14 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_01_141200) do
     t.string "regiao_foco"
     t.string "tipo_fachada"
     t.integer "andares_qtd"
+    t.boolean "publicar_imovelweb_2", default: false, null: false
+    t.boolean "publicar_netimoveis_2", default: false, null: false
+    t.boolean "publicar_lais_ai", default: false, null: false
+    t.boolean "publicar_loft", default: false, null: false
+    t.boolean "publicar_chaves_na_mao", default: false, null: false
+    t.boolean "publicar_casa_mineira", default: false, null: false
+    t.boolean "publicar_imovelweb", default: false, null: false
+    t.boolean "publicar_viva_real_vrsync", default: false, null: false
     t.index ["aceita_permuta_flag"], name: "index_habitations_on_aceita_permuta_flag"
     t.index ["admin_user_id"], name: "index_habitations_on_admin_user_id"
     t.index ["area_total_m2"], name: "index_habitations_on_area_total_m2"
@@ -482,6 +490,14 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_01_141200) do
     t.index ["piscina_flag"], name: "index_habitations_on_piscina_flag"
     t.index ["praia_brava_flag"], name: "index_habitations_on_praia_brava_flag"
     t.index ["proprietor_id"], name: "index_habitations_on_proprietor_id"
+    t.index ["publicar_casa_mineira"], name: "index_habitations_on_publicar_casa_mineira"
+    t.index ["publicar_chaves_na_mao"], name: "index_habitations_on_publicar_chaves_na_mao"
+    t.index ["publicar_imovelweb"], name: "index_habitations_on_publicar_imovelweb"
+    t.index ["publicar_imovelweb_2"], name: "index_habitations_on_publicar_imovelweb_2"
+    t.index ["publicar_lais_ai"], name: "index_habitations_on_publicar_lais_ai"
+    t.index ["publicar_loft"], name: "index_habitations_on_publicar_loft"
+    t.index ["publicar_netimoveis_2"], name: "index_habitations_on_publicar_netimoveis_2"
+    t.index ["publicar_viva_real_vrsync"], name: "index_habitations_on_publicar_viva_real_vrsync"
     t.index ["quadra_mar_flag"], name: "index_habitations_on_quadra_mar_flag"
     t.index ["salute_rental_management_flag"], name: "index_habitations_on_salute_rental_management_flag"
     t.index ["slug"], name: "index_habitations_on_slug", unique: true
@@ -649,7 +665,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_01_141200) do
     t.string "allowed_statuses", default: [], null: false, array: true
     t.string "allowed_business_types", default: ["venda", "aluguel"], null: false, array: true
     t.boolean "require_exibir_no_site", default: true, null: false
-    t.string "feed_token"
+    t.string "feed_token", null: false
     t.string "account_id"
     t.string "publisher_id"
     t.string "webhook_secret"
@@ -660,6 +676,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_01_141200) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["enabled"], name: "index_portal_integrations_on_enabled"
+    t.index ["feed_token"], name: "index_portal_integrations_on_feed_token", unique: true
     t.index ["portal"], name: "index_portal_integrations_on_portal", unique: true
   end
 

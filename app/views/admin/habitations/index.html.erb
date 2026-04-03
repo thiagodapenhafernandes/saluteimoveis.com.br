@@ -22,11 +22,16 @@
 <%
   array_filter_keys = %w[dorms suites vagas banheiros]
   extra_filter_keys = %w[
-    cidade bairro promotion_status accepts_exchange key_location salute_rental_management min_price max_price
+    logradouro numero cep cidade bairro bairro_comercial promotion_status accepts_exchange key_location salute_rental_management min_price max_price
+    foto_classificacao
+    amenities
     permuta_vehicle permuta_property permuta_others permuta_min_value permuta_location
     permuta_min_dorms permuta_min_suites permuta_min_garagens
     situacao face ocupacao_status estado_conservacao area_total_min area_total_max area_privativa_min area_privativa_max
-    festival_salute exibir_no_site_salute tem_placa exclusivo empreendimento_codigo proprietor_id
+    festival_salute exibir_no_site_salute tem_placa exclusivo empreendimento_codigo corretor_id proprietor_id regiao_foco
+    publicar_imovelweb_2 publicar_netimoveis_2 publicar_lais_ai publicar_loft
+    publicar_chaves_na_mao publicar_casa_mineira publicar_imovelweb publicar_viva_real_vrsync
+    captacao_inicio captacao_fim somente_com_imagens somente_sem_imagens
   ] + array_filter_keys
   active_extra_filters_count = extra_filter_keys.count do |key|
     value = params[key]
@@ -36,8 +41,13 @@
   vista_advanced_keys = %w[
     situacao face ocupacao_status estado_conservacao area_total_min area_total_max area_privativa_min area_privativa_max
     festival_salute exibir_no_site_salute tem_placa exclusivo banheiros dorms suites vagas
-    empreendimento_codigo proprietor_id permuta_vehicle permuta_property permuta_others permuta_min_value
-    permuta_location permuta_min_dorms permuta_min_suites permuta_min_garagens
+    foto_classificacao
+    amenities
+    publicar_imovelweb_2 publicar_netimoveis_2 publicar_lais_ai publicar_loft
+    publicar_chaves_na_mao publicar_casa_mineira publicar_imovelweb publicar_viva_real_vrsync
+    empreendimento_codigo corretor_id proprietor_id permuta_vehicle permuta_property permuta_others permuta_min_value
+    permuta_location permuta_min_dorms permuta_min_suites permuta_min_garagens regiao_foco
+    captacao_inicio captacao_fim somente_com_imagens somente_sem_imagens
   ]
   vista_advanced_open = vista_advanced_keys.any? do |key|
     value = params[key]
@@ -115,15 +125,41 @@
         <%= hidden_field_tag :scope, params[:scope] if params[:scope].present? %>
 
         <div class="row g-3">
-          <div class="col-md-3">
+          <div class="col-md-2">
+            <label class="form-label small fw-bold text-muted text-uppercase">Rua</label>
+            <%= f.text_field :logradouro, value: params[:logradouro], class: "form-control", placeholder: "Ex: Avenida Brasil" %>
+          </div>
+          <div class="col-md-1">
+            <label class="form-label small fw-bold text-muted text-uppercase">Número</label>
+            <%= f.text_field :numero, value: params[:numero], class: "form-control", placeholder: "Ex: 123" %>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small fw-bold text-muted text-uppercase">CEP</label>
+            <%= f.text_field :cep, value: params[:cep], class: "form-control", placeholder: "Ex: 88330-590" %>
+          </div>
+          <div class="col-md-2">
             <label class="form-label small fw-bold text-muted text-uppercase">Cidade</label>
             <%= f.select :cidade, @filter_cities, { include_blank: "Todas", selected: params[:cidade] }, class: "form-select" %>
           </div>
-          <div class="col-md-3">
+          <div class="col-md-2">
             <label class="form-label small fw-bold text-muted text-uppercase">Bairro</label>
             <%= f.text_field :bairro, value: params[:bairro], class: "form-control", placeholder: "Ex: Centro" %>
           </div>
-          <div class="col-md-6">
+          <div class="col-md-3">
+            <label class="form-label small fw-bold text-muted text-uppercase">Bairro comercial</label>
+            <%= f.select :bairro_comercial,
+                         @filter_bairros_comerciais,
+                         { include_blank: "Todos", selected: params[:bairro_comercial] },
+                         {
+                           class: "form-select",
+                           data: {
+                             controller: "tom-select",
+                             tom_select_create_value: true,
+                             placeholder: "Ex: Barra"
+                           }
+                         } %>
+          </div>
+          <div class="col-md-3">
             <label class="form-label small fw-bold text-muted text-uppercase">Situação</label>
             <%= f.select :situacao, @filter_situacoes, { include_blank: "Todas", selected: params[:situacao] }, class: "form-select" %>
           </div>
@@ -168,6 +204,14 @@
               <%= f.text_field :max_price, value: params[:max_price], class: "form-control money-mask", placeholder: "S/ Limite" %>
             </div>
           </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-bold text-muted text-uppercase">Captação de</label>
+            <%= f.date_field :captacao_inicio, value: params[:captacao_inicio], class: "form-control" %>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-bold text-muted text-uppercase">Captação até</label>
+            <%= f.date_field :captacao_fim, value: params[:captacao_fim], class: "form-control" %>
+          </div>
         </div>
 
         <details class="mt-4 border rounded-3 bg-light-subtle" <%= "open" if vista_advanced_open %>>
@@ -189,6 +233,10 @@
                 <div class="col-md-3">
                   <label class="form-label small fw-bold text-muted text-uppercase">Conservação</label>
                   <%= f.select :estado_conservacao, @filter_estado_conservacoes, { include_blank: "Todas", selected: params[:estado_conservacao] }, class: "form-select" %>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Região foco (interno)</label>
+                  <%= f.select :regiao_foco, @filter_regioes_foco, { include_blank: "Todas", selected: params[:regiao_foco] }, class: "form-select" %>
                 </div>
                 <div class="col-md-3">
                   <label class="form-label small fw-bold text-muted text-uppercase">Banheiros (exato)</label>
@@ -287,19 +335,109 @@
                                { include_blank: "Todos", selected: params[:exibir_no_site_salute] },
                                class: "form-select" %>
                 </div>
+              </div>
+            </div>
+
+            <div class="border rounded-3 p-3 mb-3">
+              <h6 class="fw-bold text-secondary mb-3">Outros critérios</h6>
+              <div class="row g-3">
                 <div class="col-md-3">
-                  <label class="form-label small fw-bold text-muted text-uppercase">Tem Placa</label>
-                  <%= f.select :tem_placa,
-                               [["Sim", "1"], ["Não", "0"]],
-                               { include_blank: "Todos", selected: params[:tem_placa] },
-                               class: "form-select" %>
+                  <div class="form-check">
+                    <%= check_box_tag :somente_com_imagens, "1", params[:somente_com_imagens] == "1", class: "form-check-input", id: "somente_com_imagens_filter" %>
+                    <%= label_tag :somente_com_imagens_filter, "Somente com imagens", class: "form-check-label" %>
+                  </div>
                 </div>
                 <div class="col-md-3">
-                  <label class="form-label small fw-bold text-muted text-uppercase">Exclusivo</label>
-                  <%= f.select :exclusivo,
-                               [["Sim", "1"], ["Não", "0"]],
-                               { include_blank: "Todos", selected: params[:exclusivo] },
-                               class: "form-select" %>
+                  <div class="form-check">
+                    <%= check_box_tag :somente_sem_imagens, "1", params[:somente_sem_imagens] == "1", class: "form-check-input", id: "somente_sem_imagens_filter" %>
+                    <%= label_tag :somente_sem_imagens_filter, "Somente sem imagens", class: "form-check-label" %>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="form-check">
+                    <%= check_box_tag :tem_placa, "1", params[:tem_placa] == "1", class: "form-check-input", id: "tem_placa_filter_outros" %>
+                    <%= label_tag :tem_placa_filter_outros, "Tem Placa", class: "form-check-label" %>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="form-check">
+                    <%= check_box_tag :exclusivo, "1", params[:exclusivo] == "1", class: "form-check-input", id: "exclusivo_filter_outros" %>
+                    <%= label_tag :exclusivo_filter_outros, "Exclusivo", class: "form-check-label" %>
+                  </div>
+                </div>
+              </div>
+              <div class="row g-3 mt-1">
+                <div class="col-12">
+                  <label class="form-label small fw-bold text-muted text-uppercase mb-2">Publicado com fotos</label>
+                  <% selected_foto_classificacoes = Array(params[:foto_classificacao]).map(&:to_s) %>
+                  <div class="d-flex flex-wrap gap-3">
+                    <% ["Profissionais", "Boas", "Aceitáveis", "Não tem fotos"].each do |opcao| %>
+                      <div class="form-check">
+                        <%= check_box_tag "foto_classificacao[]", opcao, selected_foto_classificacoes.include?(opcao), class: "form-check-input", id: "foto_classificacao_#{opcao.parameterize}" %>
+                        <%= label_tag "foto_classificacao_#{opcao.parameterize}", opcao, class: "form-check-label" %>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+              <div class="row g-3 mt-1">
+                <div class="col-12">
+                  <label class="form-label small fw-bold text-muted text-uppercase mb-2">Características e infraestrutura</label>
+                  <% amenity_options = Admin::HabitationsController::AMENITY_FILTER_OPTIONS %>
+                  <% selected_amenities = Array(params[:amenities]).map(&:to_s) %>
+                  <div class="row g-2">
+                    <% amenity_options.each_with_index do |opcao, idx| %>
+                      <div class="col-md-4">
+                        <div class="form-check">
+                          <%= check_box_tag "amenities[]", opcao, selected_amenities.include?(opcao), class: "form-check-input", id: "amenity_filter_#{idx}" %>
+                          <%= label_tag "amenity_filter_#{idx}", opcao, class: "form-check-label" %>
+                        </div>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+              <div class="row g-3 mt-1">
+                <div class="col-12">
+                  <label class="form-label small fw-bold text-muted text-uppercase mb-2">Publicação em portais</label>
+                  <div class="row g-2">
+                    <div class="col-md-6">
+                      <div class="form-check">
+                        <%= check_box_tag :publicar_imovelweb_2, "1", params[:publicar_imovelweb_2] == "1", class: "form-check-input", id: "publicar_imovelweb_2_filter" %>
+                        <%= label_tag :publicar_imovelweb_2_filter, "Publicar Imovelweb 2", class: "form-check-label" %>
+                      </div>
+                      <div class="form-check">
+                        <%= check_box_tag :publicar_netimoveis_2, "1", params[:publicar_netimoveis_2] == "1", class: "form-check-input", id: "publicar_netimoveis_2_filter" %>
+                        <%= label_tag :publicar_netimoveis_2_filter, "Publicar Netimoveis 2", class: "form-check-label" %>
+                      </div>
+                      <div class="form-check">
+                        <%= check_box_tag :publicar_lais_ai, "1", params[:publicar_lais_ai] == "1", class: "form-check-input", id: "publicar_lais_ai_filter" %>
+                        <%= label_tag :publicar_lais_ai_filter, "Publicar Lais Ai", class: "form-check-label" %>
+                      </div>
+                      <div class="form-check">
+                        <%= check_box_tag :publicar_loft, "1", params[:publicar_loft] == "1", class: "form-check-input", id: "publicar_loft_filter" %>
+                        <%= label_tag :publicar_loft_filter, "Publicar Loft", class: "form-check-label" %>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="form-check">
+                        <%= check_box_tag :publicar_chaves_na_mao, "1", params[:publicar_chaves_na_mao] == "1", class: "form-check-input", id: "publicar_chaves_na_mao_filter" %>
+                        <%= label_tag :publicar_chaves_na_mao_filter, "Publicar Chaves Na Mao", class: "form-check-label" %>
+                      </div>
+                      <div class="form-check">
+                        <%= check_box_tag :publicar_casa_mineira, "1", params[:publicar_casa_mineira] == "1", class: "form-check-input", id: "publicar_casa_mineira_filter" %>
+                        <%= label_tag :publicar_casa_mineira_filter, "Publicar Casa Mineira", class: "form-check-label" %>
+                      </div>
+                      <div class="form-check">
+                        <%= check_box_tag :publicar_imovelweb, "1", params[:publicar_imovelweb] == "1", class: "form-check-input", id: "publicar_imovelweb_filter" %>
+                        <%= label_tag :publicar_imovelweb_filter, "Publicar Imovelweb", class: "form-check-label" %>
+                      </div>
+                      <div class="form-check">
+                        <%= check_box_tag :publicar_viva_real_vrsync, "1", params[:publicar_viva_real_vrsync] == "1", class: "form-check-input", id: "publicar_viva_real_vrsync_filter" %>
+                        <%= label_tag :publicar_viva_real_vrsync_filter, "Publicar Viva Real VRSync", class: "form-check-label" %>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -308,25 +446,22 @@
               <h6 class="fw-bold text-secondary mb-3">Permuta</h6>
               <div class="row g-3">
                 <div class="col-md-3">
-                  <label class="form-label small fw-bold text-muted text-uppercase">Permuta Veículo</label>
-                  <%= f.select :permuta_vehicle,
-                               [["Sim", "1"], ["Não", "0"]],
-                               { include_blank: "Todos", selected: params[:permuta_vehicle] },
-                               class: "form-select" %>
+                  <div class="form-check mt-4">
+                    <%= check_box_tag :permuta_vehicle, "1", params[:permuta_vehicle] == "1", class: "form-check-input", id: "permuta_vehicle_filter" %>
+                    <%= label_tag :permuta_vehicle_filter, "Aceita permuta veículo", class: "form-check-label" %>
+                  </div>
                 </div>
                 <div class="col-md-3">
-                  <label class="form-label small fw-bold text-muted text-uppercase">Permuta Imóvel</label>
-                  <%= f.select :permuta_property,
-                               [["Sim", "1"], ["Não", "0"]],
-                               { include_blank: "Todos", selected: params[:permuta_property] },
-                               class: "form-select" %>
+                  <div class="form-check mt-4">
+                    <%= check_box_tag :permuta_property, "1", params[:permuta_property] == "1", class: "form-check-input", id: "permuta_property_filter" %>
+                    <%= label_tag :permuta_property_filter, "Aceita permuta imóvel", class: "form-check-label" %>
+                  </div>
                 </div>
                 <div class="col-md-3">
-                  <label class="form-label small fw-bold text-muted text-uppercase">Permuta Outros</label>
-                  <%= f.select :permuta_others,
-                               [["Sim", "1"], ["Não", "0"]],
-                               { include_blank: "Todos", selected: params[:permuta_others] },
-                               class: "form-select" %>
+                  <div class="form-check mt-4">
+                    <%= check_box_tag :permuta_others, "1", params[:permuta_others] == "1", class: "form-check-input", id: "permuta_others_filter" %>
+                    <%= label_tag :permuta_others_filter, "Aceita permuta outros", class: "form-check-label" %>
+                  </div>
                 </div>
                 <div class="col-md-3">
                   <label class="form-label small fw-bold text-muted text-uppercase">Valor mín. permuta</label>
@@ -373,6 +508,20 @@
                                } %>
                 </div>
                 <% if current_admin_user&.admin? %>
+                  <div class="col-md-3">
+                    <label class="form-label small fw-bold text-muted text-uppercase">Corretor</label>
+                    <%= f.select :corretor_id,
+                                 @filter_brokers,
+                                 { include_blank: "Todos", selected: params[:corretor_id] },
+                                 {
+                                   class: "form-select",
+                                   data: {
+                                     controller: "tom-select",
+                                     tom_select_create_value: false,
+                                     tom_select_options_value: { placeholder: "Selecione corretor" }
+                                   }
+                                 } %>
+                  </div>
                   <div class="col-md-3">
                     <label class="form-label small fw-bold text-muted text-uppercase">Proprietário</label>
                     <%= f.select :proprietor_id,
@@ -543,8 +692,30 @@
   active_filter_chips << "Busca: #{params[:q]}" if params[:q].present?
   active_filter_chips << "Status: #{params[:status]}" if params[:status].present?
   active_filter_chips << "Categoria: #{params[:categoria]}" if params[:categoria].present?
+  active_filter_chips << "Rua: #{params[:logradouro]}" if params[:logradouro].present?
+  active_filter_chips << "Número: #{params[:numero]}" if params[:numero].present?
+  active_filter_chips << "CEP: #{params[:cep]}" if params[:cep].present?
   active_filter_chips << "Cidade: #{params[:cidade]}" if params[:cidade].present?
   active_filter_chips << "Bairro: #{params[:bairro]}" if params[:bairro].present?
+  active_filter_chips << "Bairro comercial: #{params[:bairro_comercial]}" if params[:bairro_comercial].present?
+  active_filter_chips << "Somente com imagens" if params[:somente_com_imagens] == "1"
+  active_filter_chips << "Somente sem imagens" if params[:somente_sem_imagens] == "1"
+  active_filter_chips << "Portal: Imovelweb 2" if params[:publicar_imovelweb_2] == "1"
+  active_filter_chips << "Portal: Netimoveis 2" if params[:publicar_netimoveis_2] == "1"
+  active_filter_chips << "Portal: Lais Ai" if params[:publicar_lais_ai] == "1"
+  active_filter_chips << "Portal: Loft" if params[:publicar_loft] == "1"
+  active_filter_chips << "Portal: Chaves Na Mao" if params[:publicar_chaves_na_mao] == "1"
+  active_filter_chips << "Portal: Casa Mineira" if params[:publicar_casa_mineira] == "1"
+  active_filter_chips << "Portal: Imovelweb" if params[:publicar_imovelweb] == "1"
+  active_filter_chips << "Portal: Viva Real VRSync" if params[:publicar_viva_real_vrsync] == "1"
+  Array(params[:foto_classificacao]).reject(&:blank?).each do |fc|
+    active_filter_chips << "Foto: #{fc}"
+  end
+  Array(params[:amenities]).reject(&:blank?).each do |amenity|
+    active_filter_chips << "Item: #{amenity}"
+  end
+  active_filter_chips << "Tem Placa" if params[:tem_placa] == "1"
+  active_filter_chips << "Exclusivo" if params[:exclusivo] == "1"
   active_filter_chips << "Permuta: Sim" if params[:accepts_exchange] == "1"
   active_filter_chips << "Permuta: Não" if params[:accepts_exchange] == "0"
   active_filter_chips << "Permuta veículo: Sim" if params[:permuta_vehicle] == "1"
@@ -556,7 +727,11 @@
   active_filter_chips << "Suítes permuta ≥ #{params[:permuta_min_suites]}" if params[:permuta_min_suites].present?
   active_filter_chips << "Garagens permuta ≥ #{params[:permuta_min_garagens]}" if params[:permuta_min_garagens].present?
   active_filter_chips << "Empreendimento: #{params[:empreendimento_codigo]}" if params[:empreendimento_codigo].present?
+  active_filter_chips << "Corretor: #{params[:corretor_id]}" if params[:corretor_id].present?
   active_filter_chips << "Proprietário: #{params[:proprietor_id]}" if current_admin_user&.admin? && params[:proprietor_id].present?
+  active_filter_chips << "Região foco: #{params[:regiao_foco]}" if params[:regiao_foco].present?
+  active_filter_chips << "Captação de: #{params[:captacao_inicio]}" if params[:captacao_inicio].present?
+  active_filter_chips << "Captação até: #{params[:captacao_fim]}" if params[:captacao_fim].present?
   active_filter_chips << "Escopo: #{params[:scope]}" if params[:scope].present?
 %>
 

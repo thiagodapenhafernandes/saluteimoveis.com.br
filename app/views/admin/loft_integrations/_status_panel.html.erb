@@ -8,6 +8,7 @@
       <li class="mb-2">Host configurado: <strong><%= @loft_host.present? ? "Sim" : "Não" %></strong></li>
       <li class="mb-2">Token configurado: <strong><%= @loft_token.present? ? "Sim" : "Não" %></strong></li>
       <li class="mb-2">Agendamento automático: <strong><%= @loft_schedule_enabled ? "Ativo" : "Inativo" %></strong></li>
+      <li class="mb-2">Preservar campos manuais: <strong><%= @loft_preserve_manual_fields ? "Ativo" : "Inativo" %></strong></li>
       <li class="mb-2">Agenda: <strong><code><%= @loft_schedule_cron %></code></strong></li>
       <li class="mb-2">Status atual: <strong><%= @loft_sync_status %></strong></li>
       <li class="mb-2">Progresso atual: <strong><%= @loft_sync_progress %>%</strong></li>

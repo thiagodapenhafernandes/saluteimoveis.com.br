@@ -3,8 +3,8 @@ class Admin::DashboardController < Admin::BaseController
     # Properties Stats
     @properties_count = Habitation.active.count
     @featured_count = Habitation.featured.count
-    @for_sale_count = Habitation.active.where("status IN (?)", ['Venda', 'Venda e Aluguel']).count
-    @for_rent_count = Habitation.active.where("status IN (?)", ['Aluguel', 'Venda e Aluguel']).count
+    @for_sale_count = Habitation.active.where(status: ['Venda']).count
+    @for_rent_count = Habitation.active.where(status: ['Locação', 'Locacao', 'Aluguel']).count
     @developments_count = Habitation.empreendimentos.count
     @proprietors_count = Proprietor.count
     
