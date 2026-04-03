@@ -125,7 +125,7 @@
             <h6 class="fw-bold mb-2">URL do Feed</h6>
             <div class="small text-muted mb-2">Use o token configurado para autenticação.</div>
             <div class="border rounded p-2 bg-light small" style="word-break: break-all;">
-              <%= integrations_portals_feed_token_url(portal: @active_portal, token: (current_integration.feed_token.presence || "SEU_TOKEN"), format: current_integration.feed_format) %>
+              <%= integrations_portals_feed_token_url(portal: @active_portal, token: current_integration.feed_token, format: current_integration.feed_format) %>
             </div>
             <div class="small text-muted mt-2">Compatível também com query param: <code><%= integrations_portals_feed_url(portal: @active_portal, format: current_integration.feed_format) %>?token=SEU_TOKEN</code></div>
             <div class="small text-muted mt-2">Webhook: <code><%= webhooks_portal_events_url(portal: @active_portal) %></code></div>

@@ -174,7 +174,6 @@ module Dwv
     def map_status(raw)
       value = raw.to_s.strip.downcase
       return nil if value.blank?
-      return "Venda e Locação" if value.include?("sale") && value.include?("rent")
       return "Venda" if value.include?("sale") || value.include?("venda")
       return "Locação" if value.include?("rent") || value.include?("loca") || value.include?("alug")
       return "Suspenso" if value.include?("inactive") || value.include?("inativo")
@@ -185,8 +184,9 @@ module Dwv
     def map_situation(raw)
       value = raw.to_s.strip.downcase
       return nil if value.blank?
-      return "Lançamento" if value.include?("pre-market") || value.include?("launch") || value.include?("lançamento")
-      return "Em Obras" if value.include?("under construction") || value.include?("obra")
+      return "Pré Lançamento" if value.include?("pre-market") || value.include?("pre market") || value.include?("pré lançamento") || value.include?("pre lançamento")
+      return "Lançamento" if value.include?("launch") || value.include?("lançamento")
+      return "Construção" if value.include?("under construction") || value.include?("obra")
       return "Novo" if value == "new"
       return "Usado" if value == "used"
 

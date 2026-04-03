@@ -12,11 +12,13 @@ class Admin::LoftIntegrationsController < Admin::BaseController
     host = loft_params[:host].to_s.strip
     token = loft_params[:token].to_s.strip
     schedule_enabled = ActiveModel::Type::Boolean.new.cast(loft_params[:schedule_enabled])
+    preserve_manual_fields = ActiveModel::Type::Boolean.new.cast(loft_params[:preserve_manual_fields])
 
     Setting.set("loft_enabled", enabled.to_s, "Habilita integração Loft Soft")
     Setting.set("loft_host", normalize_host(host), "Host da API Loft Soft") if host.present?
     Setting.set("loft_token", token, "Token da API Loft Soft") if token.present?
     Setting.set("loft_schedule_enabled", schedule_enabled.to_s, "Ativa agendamento Loft")
+    Setting.set("loft_preserve_manual_fields", preserve_manual_fields.to_s, "Preserva campos manuais para imóveis já sincronizados do Loft")
     Setting.set("loft_schedule_cron", normalize_cron(loft_params[:schedule_cron]), "Cron da sincronização Loft")
     Setting.set("loft_schedule_mode", normalize_mode(loft_params[:schedule_mode]), "Modo de sync agendada Loft")
     Setting.set("loft_sync_batch_size", loft_params[:sync_batch_size].to_i.clamp(1, 1000).to_s, "Batch size da sync Loft")
@@ -38,21 +40,36 @@ class Admin::LoftIntegrationsController < Admin::BaseController
     raise "Token não configurado." if token.blank?
 
     response = RestClient.get(
-      "#{host}/imoveis/detalhes",
+      "#{host}/imoveis/listar",
       params: {
         key: token,
-        imovel: "0",
-        pesquisa: { fields: ["Codigo"] }.to_json
+        pesquisa: {
+          fields: ["Codigo"],
+          paginacao: { pagina: 1, quantidade: 1 }
+        }.to_json,
+        showtotal: 1
       },
       accept: :json
     )
 
-    parsed = JSON.parse(response.body) rescue {}
-    if parsed.is_a?(Hash)
-      redirect_to admin_loft_integrations_path, notice: "Conexão com Loft Soft validada (host e token aceitos)."
-    else
-      redirect_to admin_loft_integrations_path, alert: "Resposta inesperada ao testar Loft Soft."
+    parsed = JSON.parse(response.body) rescue nil
+    unless parsed.is_a?(Hash)
+      return redirect_to admin_loft_integrations_path, alert: "Resposta inesperada ao testar Loft Soft."
     end
+
+    api_status = parsed["status"].to_i
+    if api_status >= 400
+      api_message = parsed["message"].presence || parsed["msg"].presence || "erro na API"
+      return redirect_to admin_loft_integrations_path, alert: "Falha ao testar conexão Loft Soft: #{api_message}"
+    end
+
+    redirect_to admin_loft_integrations_path, notice: "Conexão com Loft Soft validada (host e token aceitos)."
+  rescue RestClient::ExceptionWithResponse => e
+    body = e.response&.body.to_s
+    parsed_error = JSON.parse(body) rescue {}
+    api_message = parsed_error["message"].presence || parsed_error["msg"].presence
+    error_text = api_message.presence || "#{e.response&.code || e.http_code} #{e.message}"
+    redirect_to admin_loft_integrations_path, alert: "Falha ao testar conexão Loft Soft: #{error_text}"
   rescue => e
     redirect_to admin_loft_integrations_path, alert: "Falha ao testar conexão Loft Soft: #{e.message}"
   end
@@ -121,6 +138,7 @@ class Admin::LoftIntegrationsController < Admin::BaseController
     @loft_last_sync_time = Time.zone.parse(@loft_last_sync_at.to_s) rescue nil
     @loft_sync_history = Loft::SyncStatusService.new.history(limit: 5)
     @loft_schedule_enabled = Setting.get("loft_schedule_enabled", "false") == "true"
+    @loft_preserve_manual_fields = Setting.get("loft_preserve_manual_fields", "true") == "true"
     @loft_schedule_cron = Setting.get("loft_schedule_cron", "20 4 * * *")
     @loft_schedule_mode = Setting.get("loft_schedule_mode", "full")
     @loft_schedule_last_slot = Setting.get("loft_schedule_last_slot")
@@ -143,6 +161,7 @@ class Admin::LoftIntegrationsController < Admin::BaseController
     params.require(:loft).permit(
       :enabled, :host, :token,
       :schedule_enabled, :schedule_cron, :schedule_mode,
+      :preserve_manual_fields,
       :sync_batch_size, :images_sync_limit,
       :poll_processing_interval_ms, :poll_idle_interval_ms, :poll_slow_interval_ms
     )

@@ -15,11 +15,13 @@ class PortalIntegration < ApplicationRecord
 
   validates :portal, presence: true, inclusion: { in: PORTALS }, uniqueness: true
   validates :allowed_business_types, presence: true
+  validates :feed_token, presence: true, uniqueness: true
 
   has_many :portal_integration_events, primary_key: :portal, foreign_key: :portal, inverse_of: :portal_integration, dependent: :delete_all
   has_many :portal_listing_states, primary_key: :portal, foreign_key: :portal, inverse_of: :portal_integration, dependent: :delete_all
 
   before_validation :normalize_values
+  before_validation :ensure_feed_token
 
   scope :enabled, -> { where(enabled: true) }
 
@@ -73,5 +75,14 @@ class PortalIntegration < ApplicationRecord
     self.allowed_statuses = Habitation::STATUS_OPTIONS if allowed_statuses.blank?
     self.allowed_business_types = BUSINESS_TYPES if allowed_business_types.blank?
     self.operational_status = operational_status.to_s.presence || "idle"
+  end
+
+  def ensure_feed_token
+    return if feed_token.present?
+
+    self.feed_token = loop do
+      candidate = SecureRandom.hex(24)
+      break candidate unless self.class.where.not(id: id).exists?(feed_token: candidate)
+    end
   end
 end

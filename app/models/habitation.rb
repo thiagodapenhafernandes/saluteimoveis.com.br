@@ -17,11 +17,12 @@ class Habitation < ApplicationRecord
   ].freeze
 
   STATUS_OPTIONS = [
-    'Venda', 'Locação', 'Venda e Locação', 'Lançamento', 'Suspenso', 'Vendido', 'Alugado'
+    'Venda', 'Aluguel', 'Locação', 'Diária', 'Pendente', 'Lançamento', 'Suspenso',
+    'Vendido Imobiliária', 'Vendido Terceiros', 'Alugado Imobiliária', 'Alugado Terceiros'
   ].freeze
 
   SITUATIONS = [
-    'Lançamento', 'Em Obras', 'Pronto para Morar', 'Novo', 'Usado'
+    'Pré Lançamento', 'Lançamento', 'Construção', 'Pronto para Morar', 'Novo', 'Usado'
   ].freeze
 
   # INTERNAL_FEATURES = [ ... ] (Deprecated in favor of AttributeOption)
@@ -51,12 +52,22 @@ class Habitation < ApplicationRecord
   VAGA_TYPES = ["Privativa", "Rotativa", "Coberta", "Descoberta", "Gaveta", "Dupla"].freeze
   
   # Novos Enums (Gap Analysis)
-  OCUPACAO_STATUS = ["Vago", "Ocupado", "Inquilino", "Proprietário", "Reservado"].freeze
-  ESTADO_CONSERVACAO = ["Novo", "Seminovo", "Usado", "Reformado", "Original", "Em Obras", "Na Planta", "Depredado"].freeze
+  OCUPACAO_STATUS = ["Desocupado", "Ocupado", "Inquilino", "Proprietário", "Reservado"].freeze
+  ESTADO_CONSERVACAO = ["Novo", "Seminovo", "Usado", "Reformado", "Original", "Em Obras", "Na Planta"].freeze
   TOPOGRAFIA_OPTIONS = ["Plano", "Aclive", "Declive", "Irregular"].freeze
   FOTO_CLASSIFICACAO = ["Profissionais", "Boas", "Aceitáveis", "Amadoras", "Não tem fotos"].freeze
   KEY_LOCATION_OPTIONS = ["Imobiliária", "Corretor(a)", "Proprietário", "Zelador", "Portaria", "Inquilino", "Outro"].freeze
   REGIAO_FOCO_OPTIONS = ["Centro", "Norte", "Sul", "Leste", "Oeste", "Praia", "Interior", "Sem preferência"].freeze
+  PORTAL_PUBLICATION_FIELDS = {
+    "zapimoveis" => :publicar_imovelweb_2,
+    "vivareal_vrsync" => :publicar_viva_real_vrsync,
+    "imovelweb" => :publicar_imovelweb,
+    "chavesnamao" => :publicar_chaves_na_mao,
+    "casamineira" => :publicar_casa_mineira,
+    "lais_ai" => :publicar_lais_ai,
+    "netimoveis2" => :publicar_netimoveis_2,
+    "loft_portal" => :publicar_loft
+  }.freeze
 
   # FriendlyId para URLs amigáveis (SEO)
   extend FriendlyId
@@ -132,6 +143,10 @@ class Habitation < ApplicationRecord
     else
       'Venda'
     end
+  end
+
+  def self.portal_publication_column_for(portal_key)
+    PORTAL_PUBLICATION_FIELDS[portal_key.to_s]
   end
   
   # Retorna a URL da imagem principal

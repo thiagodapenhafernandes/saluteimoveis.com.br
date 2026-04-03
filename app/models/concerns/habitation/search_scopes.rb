@@ -12,7 +12,7 @@ module Habitation::SearchScopes
     # IMPORTANTE: Apenas imóveis com status válido para exibição pública
     scope :active, -> { 
       where(exibir_no_site_flag: true)
-        .where(status: ['Venda', 'Aluguel', 'Venda e Aluguel', 'Locação', 'Locacao'])
+        .where(status: ['Venda', 'Aluguel', 'Locação', 'Locacao'])
         .with_photos
         .with_price 
     }
@@ -357,7 +357,7 @@ module Habitation::SearchScopes
         "SELECT 1 FROM habitations units " \
         "WHERE units.codigo_empreendimento = habitations.codigo " \
         "AND units.exibir_no_site_flag = TRUE " \
-        "AND units.status IN ('Venda', 'Locação', 'Venda e Locação', 'Aluguel', 'Venda e Aluguel') " \
+        "AND units.status IN ('Venda', 'Locação', 'Aluguel', 'Locacao') " \
         "AND (units.valor_venda_cents > 0 OR units.valor_locacao_cents > 0) " \
         "AND jsonb_typeof(units.pictures) = 'array' " \
         "AND jsonb_array_length(units.pictures) > 0" \

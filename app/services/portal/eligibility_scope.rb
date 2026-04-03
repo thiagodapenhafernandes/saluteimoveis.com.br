@@ -6,6 +6,7 @@ module Portal
 
     def eligible_scope
       scope = Habitation.left_outer_joins(:address)
+      scope = apply_portal_publication_filter(scope)
       scope = scope.where(status: @integration.allowed_statuses) if @integration.allowed_statuses.present?
       scope = apply_business_type(scope)
       scope = scope.where(exibir_no_site_flag: true) if @integration.require_exibir_no_site?
@@ -28,6 +29,9 @@ module Portal
       if @integration.allowed_statuses.present?
         reasons["status_nao_permitido"] = base.where.not(status: @integration.allowed_statuses).count
       end
+
+      publication_filtered = apply_portal_publication_filter(base)
+      reasons["nao_marcado_para_portal"] = base.where.not(id: publication_filtered.select(:id)).count
 
       reasons["tipo_negocio_nao_permitido"] = base.where.not(id: apply_business_type(base).select(:id)).count
       reasons["sem_conteudo"] = base.where("COALESCE(habitations.titulo_anuncio, habitations.descricao_web, '') = ''").count
@@ -58,6 +62,13 @@ module Portal
       else
         scope.none
       end
+    end
+
+    def apply_portal_publication_filter(scope)
+      column = Habitation.portal_publication_column_for(@integration.portal)
+      return scope if column.blank?
+
+      scope.where(column => true)
     end
   end
 end

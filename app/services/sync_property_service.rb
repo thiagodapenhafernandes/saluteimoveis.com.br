@@ -2,11 +2,16 @@ class SyncPropertyService
   VISTA_KEY  = ENV.fetch('VISTA_KEY')  { 'ea83a702a7669520304be011258289fd' }
   VISTA_HOST = ENV.fetch('VISTA_HOST') { 'http://saluteim20174-rest.vistahost.com.br' }
   DETALHES_PATH = '/imoveis/detalhes'
+  PRESERVED_MANUAL_MODE_FIELDS = %i[
+    status situacao valor_venda_cents valor_locacao_cents valor_condominio_cents valor_iptu_cents
+    data_cadastro_crm data_atualizacao_crm pictures last_sync_at last_sync_status last_sync_message
+  ].freeze
 
-  def initialize(codigo, host: nil, token: nil)
+  def initialize(codigo, host: nil, token: nil, preserve_manual_fields: nil)
     @codigo = codigo
     @vista_host = host.presence || VISTA_HOST
     @vista_key = token.presence || VISTA_KEY
+    @preserve_manual_fields = preserve_manual_fields
   end
 
   def perform
@@ -15,8 +20,9 @@ class SyncPropertyService
     hb = fetch_details(@codigo)
     
     unless hb
-      habitation.update(last_sync_at: Time.current, last_sync_status: 'error', last_sync_message: "Imóvel não encontrado na API") if habitation.persisted?
-      return { success: false, error: "Imóvel não encontrado na API" }
+      error_message = @last_fetch_error.presence || "Imóvel não encontrado na API"
+      habitation.update(last_sync_at: Time.current, last_sync_status: 'error', last_sync_message: error_message) if habitation.persisted?
+      return { success: false, error: error_message }
     end
 
     habitation_attrs, address_attrs = map_vista_payload(hb)
@@ -27,12 +33,14 @@ class SyncPropertyService
     )
 
     Habitation.transaction do
-      habitation.assign_attributes(habitation_attrs)
+      habitation.assign_attributes(filtered_habitation_attrs(habitation_attrs, existing_record: existing_record))
       habitation.save!
 
-      address = habitation.address || habitation.build_address
-      address.assign_attributes(address_attrs)
-      address.save!
+      if sync_address_for?(existing_record: existing_record)
+        address = habitation.address || habitation.build_address
+        address.assign_attributes(address_attrs)
+        address.save!
+      end
     end
 
     sync_dynamic_attribute_options!(
@@ -63,7 +71,7 @@ class SyncPropertyService
         'ValorCondominio', 'ValorIptu', 'Empreendimento', 'CodigoEmpreendimento', 'Lancamento',
         'DescricaoWeb', 'CaracteristicaUnica', 'Caracteristicas', 'InfraEstrutura', 'ExibirNoSite', 'DestaqueWeb', 'Categoria', 'Construtora',
         'Proprietario', 'NomeProprietario', 'CodigoProprietario', 'EmailProprietario', 'CelularProprietario',
-        'DataAtualizacao', 'DataEntrega', { 'Foto' => ['Foto', 'FotoPequena', 'Destaque', 'Ordem'] }
+        'DataCadastro', 'DataAtualizacao', 'DataEntrega', { 'Foto' => ['Foto', 'FotoPequena', 'Destaque', 'Ordem'] }
       ]
     }
 
@@ -75,8 +83,21 @@ class SyncPropertyService
     }
     
     response = RestClient.get(url, params: params, accept: :json)
-    JSON.parse(response.body)
-  rescue => e
+    parsed = JSON.parse(response.body)
+    return parsed if parsed.is_a?(Hash)
+
+    raise "Resposta inválida ao consultar detalhes do imóvel #{@codigo}."
+  rescue RestClient::ExceptionWithResponse => e
+    body = e.response&.body.to_s
+    parsed_error = JSON.parse(body) rescue {}
+    api_message = parsed_error["message"].presence || parsed_error["msg"].presence
+    @last_fetch_error = "Falha ao consultar imóvel #{@codigo} na API Loft: #{api_message.presence || e.response&.code || e.message}"
+    nil
+  rescue JSON::ParserError
+    @last_fetch_error = "Resposta inválida da API Loft ao consultar imóvel #{@codigo}."
+    nil
+  rescue StandardError => e
+    @last_fetch_error = "Erro ao consultar imóvel #{@codigo} na API Loft: #{e.message}"
     nil
   end
 
@@ -124,7 +145,8 @@ class SyncPropertyService
       exibir_no_site_flag: hb['ExibirNoSite'] == 'Sim',
       destaque_web_flag: hb['DestaqueWeb'] == 'Sim',
       lancamento_flag: hb['Lancamento'] == 'Sim',
-      data_atualizacao_crm: (Time.zone.parse(hb['DataAtualizacao']) rescue Time.current),
+      data_cadastro_crm: parse_datetime_value(hb['DataCadastro']),
+      data_atualizacao_crm: parse_datetime_value(hb['DataAtualizacao']) || Time.current,
       pictures: format_photos(hb['Foto'])
     }
 
@@ -151,6 +173,35 @@ class SyncPropertyService
     return nil if v.blank?
     clean = v.to_s.gsub(/[^\d.,]/, '').tr(',', '.')
     (clean.to_f * 100).to_i
+  end
+
+  def parse_datetime_value(raw)
+    return nil if raw.blank?
+
+    Time.zone.parse(raw.to_s)
+  rescue StandardError
+    nil
+  end
+
+  def preserve_manual_fields?
+    return ActiveModel::Type::Boolean.new.cast(@preserve_manual_fields) unless @preserve_manual_fields.nil?
+
+    Setting.get("loft_preserve_manual_fields", "true") == "true"
+  rescue StandardError
+    true
+  end
+
+  def filtered_habitation_attrs(attrs, existing_record:)
+    return attrs unless existing_record
+    return attrs unless preserve_manual_fields?
+
+    attrs.slice(*PRESERVED_MANUAL_MODE_FIELDS)
+  end
+
+  def sync_address_for?(existing_record:)
+    return true unless existing_record
+
+    !preserve_manual_fields?
   end
 
   def format_photos(photos_data)

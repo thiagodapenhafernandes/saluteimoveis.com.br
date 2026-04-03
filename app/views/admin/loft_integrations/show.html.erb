@@ -30,6 +30,12 @@
             <div class="form-text">Use o token fornecido para autenticação da integração.</div>
           </div>
 
+          <div class="form-check form-switch mb-3">
+            <%= f.check_box :preserve_manual_fields, { class: "form-check-input", checked: @loft_preserve_manual_fields }, "true", "false" %>
+            <%= f.label :preserve_manual_fields, "Preservar campos manuais dos imóveis já sincronizados", class: "form-check-label" %>
+            <div class="form-text">Quando ativo, o Loft atualiza apenas status/situação/valores/datas/fotos em imóveis já existentes.</div>
+          </div>
+
           <div class="row g-2 mb-3">
             <div class="col-md-6">
               <%= f.label :sync_batch_size, "Imóveis por lote", class: "form-label fw-semibold" %>
