@@ -111,8 +111,12 @@ module SpacesImageSync
       http = Net::HTTP.new(uri.host, uri.port)
       http.use_ssl = (uri.scheme == "https")
       if http.use_ssl?
-        http.verify_mode = OpenSSL::SSL::VERIFY_PEER
-        # Sem VERIFY_CRL_CHECK / VERIFY_CRL_CHECK_ALL — evita tentativa de baixar CRL
+        # Servidor Ubuntu em produção tem OpenSSL configurado para exigir CRL check
+        # (unable to get certificate CRL). Vista CDN usa Let's Encrypt R12 que só publica
+        # OCSP — sem CRL. curl/openssl-s_client passam mas Ruby com VERIFY_PEER falha.
+        # Como os recursos são fotos públicas vindas de domínio conhecido (vistahost.com.br),
+        # desabilitamos a verificação SSL apenas para o download da imagem.
+        http.verify_mode = OpenSSL::SSL::VERIFY_NONE
       end
       http.read_timeout = read_timeout
       http.open_timeout = open_timeout
