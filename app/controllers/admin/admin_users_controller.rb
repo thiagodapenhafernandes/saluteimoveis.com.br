@@ -19,6 +19,23 @@ module Admin
       render partial: "admin/admin_users/vista_sync_panel", locals: { status: @status }
     end
 
+    def backfill_brokers
+      status = Vista::SyncStatusService.new(namespace: "brokers_backfill").snapshot
+      if status[:status] == "processing"
+        redirect_to admin_admin_users_path, alert: "Backfill já está em andamento."
+        return
+      end
+
+      Vista::BackfillBrokersJob.perform_later
+      redirect_to admin_admin_users_path,
+                  notice: "Backfill de corretores nos imóveis iniciado em background."
+    end
+
+    def backfill_brokers_status
+      @status = Vista::SyncStatusService.new(namespace: "brokers_backfill").snapshot
+      render partial: "admin/admin_users/backfill_brokers_panel", locals: { status: @status }
+    end
+
     def index
       @admin_users = AdminUser.includes(:profile, :manager)
 

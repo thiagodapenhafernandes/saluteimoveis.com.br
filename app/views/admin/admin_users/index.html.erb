@@ -7,8 +7,14 @@
     <%= button_to sync_from_vista_admin_admin_users_path,
           method: :post,
           class: "btn btn-outline-primary d-flex align-items-center shadow-sm",
-          data: { turbo_confirm: "Sincronizar corretores do Vista agora? Roda em background e pode levar alguns minutos." } do %>
-      <i class="bi bi-arrow-repeat me-2"></i> Sincronizar do Vista
+          data: { turbo_confirm: "Sincronizar corretores do Vista agora? Roda em background." } do %>
+      <i class="bi bi-arrow-repeat me-2"></i> Sincronizar corretores
+    <% end %>
+    <%= button_to backfill_brokers_admin_admin_users_path,
+          method: :post,
+          class: "btn btn-outline-info d-flex align-items-center shadow-sm",
+          data: { turbo_confirm: "Vincular imóveis aos corretores (via CodigoCorretor do Vista)? Roda em background." } do %>
+      <i class="bi bi-link-45deg me-2"></i> Vincular imóveis
     <% end %>
     <%= link_to new_admin_admin_user_path, class: "btn btn-primary d-flex align-items-center shadow-sm" do %>
       <i class="bi bi-person-plus me-2"></i> Adicionar Usuário
@@ -17,6 +23,7 @@
 </div>
 
 <%= render "vista_sync_panel" %>
+<%= render "backfill_brokers_panel" %>
 
 <!-- Search Filter -->
 <div class="card shadow-sm border-0 mb-4">

@@ -55,6 +55,8 @@ Rails.application.routes.draw do
       collection do
         post :sync_from_vista
         get  :vista_sync_status
+        post :backfill_brokers
+        get  :backfill_brokers_status
       end
     end
     resources :habitations do
