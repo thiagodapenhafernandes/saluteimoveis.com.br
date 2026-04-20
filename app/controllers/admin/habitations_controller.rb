@@ -1,5 +1,6 @@
 class Admin::HabitationsController < Admin::BaseController
   before_action -> { check_permission!(:view, :imoveis) }
+  before_action :require_admin!, only: [:bulk_publish, :bulk_publish_eligibility]
   before_action :scope_habitations_by_permission, only: [:edit, :update, :destroy, :sync, :purge_attachment]
   require "csv"
 
