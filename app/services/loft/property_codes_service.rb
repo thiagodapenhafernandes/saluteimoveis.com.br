@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "set"
+
 module Loft
   class PropertyCodesService
     LIST_PATH = "/imoveis/listar"
@@ -28,24 +30,19 @@ module Loft
       first_page = fetch_page(page: 1, page_size: MAX_PAGE_SIZE, show_total: true)
       total_pages = first_page["paginas"].to_i
       total_remote = first_page["total"].to_i
-      codes = extract_codes(first_page)
+      items = extract_items(first_page)
 
-      total_pages = 1 if total_pages <= 0 && codes.any?
+      total_pages = 1 if total_pages <= 0 && items.any?
 
       2.upto(total_pages) do |page|
         response = fetch_page(page: page, page_size: MAX_PAGE_SIZE, show_total: false)
-        page_codes = extract_codes(response)
-        break if page_codes.empty?
+        page_items = extract_items(response)
+        break if page_items.empty?
 
-        codes.concat(page_codes)
+        items.concat(page_items)
       end
 
-      unique_codes = codes.map(&:to_s).reject(&:blank?).uniq
-      {
-        codes: unique_codes,
-        remote_total: total_remote.positive? ? total_remote : unique_codes.size,
-        total_pages: total_pages
-      }
+      build_result(items: items, total_remote: total_remote, total_pages: total_pages)
     end
 
     def fetch_batch_codes(desired_count:)
@@ -54,32 +51,27 @@ module Loft
       page = 1
       total_pages = 1
       total_remote = 0
-      codes = []
+      items = []
 
-      while codes.size < target && page <= total_pages
+      while items.size < target && page <= total_pages
         response = fetch_page(page: page, page_size: page_size, show_total: page == 1)
         total_pages = response["paginas"].to_i if page == 1
         total_pages = 1 if total_pages <= 0
         total_remote = response["total"].to_i if page == 1
 
-        page_codes = extract_codes(response)
-        break if page_codes.empty?
+        page_items = extract_items(response)
+        break if page_items.empty?
 
-        codes.concat(page_codes)
+        items.concat(page_items)
         page += 1
       end
 
-      unique_codes = codes.map(&:to_s).reject(&:blank?).uniq.first(target)
-      {
-        codes: unique_codes,
-        remote_total: total_remote.positive? ? total_remote : unique_codes.size,
-        total_pages: total_pages
-      }
+      build_result(items: items.first(target), total_remote: total_remote, total_pages: total_pages)
     end
 
     def fetch_page(page:, page_size:, show_total:)
       query = {
-        fields: ["Codigo"],
+        fields: ["Codigo", "Categoria", "CodigoEmpreendimento"],
         paginacao: {
           pagina: page.to_i,
           quantidade: page_size.to_i.clamp(1, MAX_PAGE_SIZE)
@@ -88,7 +80,8 @@ module Loft
 
       params = {
         key: @token,
-        pesquisa: query.to_json
+        pesquisa: query.to_json,
+        showSuspended: 1
       }
       params[:showtotal] = 1 if show_total
 
@@ -111,15 +104,40 @@ module Loft
       raise "Resposta inválida ao listar imóveis na Vista (página #{page})."
     end
 
-    def extract_codes(response_hash)
+    def extract_items(response_hash)
       payload = response_hash.except(*METADATA_KEYS)
 
       payload.values.each_with_object([]) do |item, acc|
         next unless item.is_a?(Hash)
 
         code = item["Codigo"].to_s.strip
-        acc << code if code.present?
+        next if code.blank?
+
+        acc << {
+          code: code,
+          categoria: item["Categoria"].to_s.strip,
+          codigo_empreendimento: item["CodigoEmpreendimento"].to_s.strip
+        }
       end
+    end
+
+    def build_result(items:, total_remote:, total_pages:)
+      unique = items.uniq { |it| it[:code] }
+      codes = unique.map { |it| it[:code] }
+      categorias = unique.each_with_object({}) { |it, h| h[it[:code]] = it[:categoria] }
+      parent_codes = unique
+                       .map { |it| it[:codigo_empreendimento] }
+                       .reject(&:blank?)
+                       .uniq
+                       .to_set
+
+      {
+        codes: codes,
+        categorias: categorias,
+        parent_codes: parent_codes,
+        remote_total: total_remote.positive? ? total_remote : codes.size,
+        total_pages: total_pages
+      }
     end
   end
 end

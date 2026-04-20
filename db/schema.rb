@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_04_01_180500) do
+ActiveRecord::Schema[7.1].define(version: 2026_04_19_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -114,7 +114,6 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_01_180500) do
     t.text "description"
     t.string "link_url"
     t.string "link_text"
-    t.integer "position"
     t.boolean "active"
     t.integer "display_order"
     t.datetime "created_at", null: false
@@ -185,11 +184,6 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_01_180500) do
     t.jsonb "meta_page_ids", default: []
     t.jsonb "neighborhoods", default: []
     t.string "webhook_url"
-  end
-
-  create_table "featured_properties_views", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
   end
 
   create_table "footer_links", force: :cascade do |t|
@@ -362,7 +356,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_01_180500) do
     t.string "proprietario"
     t.string "inscricao_imobiliaria"
     t.text "descricao_empreendimento"
-    t.text "caracteristica_unica"
+    t.text "caracteristica_unica", default: [], array: true
     t.boolean "terceira_avenida_flag"
     t.boolean "arriba_flag"
     t.boolean "avenida_brasil_flag"
@@ -461,6 +455,15 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_01_180500) do
     t.boolean "publicar_casa_mineira", default: false, null: false
     t.boolean "publicar_imovelweb", default: false, null: false
     t.boolean "publicar_viva_real_vrsync", default: false, null: false
+    t.string "destaque_chaves_na_mao"
+    t.string "periodo_locacao_chaves_na_mao"
+    t.string "modelo_casa_mineira"
+    t.string "tipo_publicacao_viva_real"
+    t.string "divulgar_endereco_viva_real"
+    t.string "tipo_publicacao_imovelweb"
+    t.string "mostrar_mapa_imovelweb"
+    t.string "tipo_publicacao_imovelweb_2"
+    t.string "mostrar_mapa_imovelweb_2"
     t.index ["aceita_permuta_flag"], name: "index_habitations_on_aceita_permuta_flag"
     t.index ["admin_user_id"], name: "index_habitations_on_admin_user_id"
     t.index ["area_total_m2"], name: "index_habitations_on_area_total_m2"
@@ -921,7 +924,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_01_180500) do
 
   create_table "webhook_settings", force: :cascade do |t|
     t.string "webhook_url"
-    t.boolean "enabled"
+    t.boolean "enabled", default: true, null: false
     t.text "description"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false

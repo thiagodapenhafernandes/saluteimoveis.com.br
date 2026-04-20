@@ -69,6 +69,43 @@ class Habitation < ApplicationRecord
     "loft_portal" => :publicar_loft
   }.freeze
 
+  CHAVES_NA_MAO_DESTAQUE_OPTIONS = [["Sim", "sim"], ["Não", "nao"]].freeze
+  CHAVES_NA_MAO_PERIODO_LOCACAO_OPTIONS = [
+    ["Por Mês", "por_mes"],
+    ["Por Dia", "por_dia"],
+    ["Por Ano", "por_ano"],
+    ["Por Semana", "por_semana"],
+    ["Imóvel de Venda", "imovel_de_venda"]
+  ].freeze
+  CASA_MINEIRA_MODELO_OPTIONS = [
+    ["Simples", "simples"],
+    ["Destaque", "destaque"],
+    ["Home Destaque", "home_destaque"]
+  ].freeze
+  VIVA_REAL_TIPO_PUBLICACAO_OPTIONS = [
+    ["Padrão", "padrao"],
+    ["Destaque", "destaque"],
+    ["Super Destaque", "super_destaque"],
+    ["Destaque Superior", "destaque_superior"],
+    ["Destaque Exclusivo", "destaque_exclusivo"],
+    ["Destaque Triplo", "destaque_triplo"]
+  ].freeze
+  VIVA_REAL_DIVULGAR_ENDERECO_OPTIONS = [
+    ["Exata", "exata"],
+    ["Rua", "rua"],
+    ["Bairro", "bairro"]
+  ].freeze
+  IMOVELWEB_TIPO_PUBLICACAO_OPTIONS = [
+    ["Simples", "simples"],
+    ["Destaque", "destaque"],
+    ["Super Destaque", "super_destaque"]
+  ].freeze
+  IMOVELWEB_MOSTRAR_MAPA_OPTIONS = [
+    ["Exato", "exato"],
+    ["Não mostrar", "nao_mostrar"],
+    ["Aproximado", "aproximado"]
+  ].freeze
+
   # FriendlyId para URLs amigáveis (SEO)
   extend FriendlyId
   friendly_id :slug_candidates, use: [:slugged, :finders]

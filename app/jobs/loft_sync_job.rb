@@ -27,11 +27,20 @@ class LoftSyncJob < ApplicationJob
     size = batch_size.to_i.positive? ? batch_size.to_i : Setting.get("loft_sync_batch_size", "100").to_i
     listing = Loft::PropertyCodesService.new(host: host, token: token).call(mode: normalized_mode, batch_size: size)
     codes = listing[:codes]
+    categorias = listing[:categorias] || {}
+    parent_codes = listing[:parent_codes] || Set.new
 
     if codes.blank?
       status_service.mark_skipped!(mode: normalized_mode, message: "Nenhum imóvel encontrado para sincronização.")
       return
     end
+
+    # Empreendimentos/pais primeiro (validação de codigo_empreendimento_must_exist em unidades filhas).
+    # É pai se Categoria="Empreendimento" OU se algum outro imóvel referencia este código.
+    empreendimentos, unidades = codes.partition do |c|
+      categorias[c].to_s.casecmp("Empreendimento").zero? || parent_codes.include?(c)
+    end
+    codes = empreendimentos + unidades
 
     dwv_codes = Habitation.where(codigo: codes, imovel_dwv: "Sim").pluck(:codigo).map(&:to_s).to_set
 
@@ -51,7 +60,12 @@ class LoftSyncJob < ApplicationJob
         next
       end
 
-      result = SyncPropertyService.new(code, host: host, token: token).perform
+      result = SyncPropertyService.new(
+        code,
+        host: host,
+        token: token,
+        force_empreendimento: parent_codes.include?(code)
+      ).perform
       created += 1 if result[:created]
       updated += 1 if result[:updated]
       errors_count += 1 unless result[:success]

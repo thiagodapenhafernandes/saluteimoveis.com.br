@@ -47,7 +47,8 @@ class Admin::LoftIntegrationsController < Admin::BaseController
           fields: ["Codigo"],
           paginacao: { pagina: 1, quantidade: 1 }
         }.to_json,
-        showtotal: 1
+        showtotal: 1,
+        showSuspended: 1
       },
       accept: :json
     )

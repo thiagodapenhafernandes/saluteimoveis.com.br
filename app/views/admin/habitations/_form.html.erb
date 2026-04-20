@@ -356,49 +356,163 @@
             </div>
           </div>
 
-          <div class="form-section mb-3">
+          <div class="form-section mb-3 portal-publication-section">
             <div class="form-section-header">
               Publicação em portais
             </div>
+            <style>
+              .portal-publication-section .portal-option-group .portal-sub-options { display: none; margin-top: 0.5rem; padding: 0.75rem; border: 1px solid #e3e6ef; border-radius: 0.375rem; background-color: #f8f9fc; }
+              .portal-publication-section .portal-option-group:has(> label > input[type="checkbox"]:checked) .portal-sub-options { display: block; }
+              .portal-publication-section .portal-sub-options .portal-sub-options-title { font-size: 0.8rem; font-weight: 600; color: #6c757d; margin-bottom: 0.25rem; }
+              .portal-publication-section .portal-sub-options .portal-sub-options-title + .portal-sub-options-radios { margin-bottom: 0.5rem; }
+              .portal-publication-section .portal-sub-options .form-check { margin-right: 1rem; }
+            </style>
             <div class="row g-2">
               <div class="col-md-6">
                 <div class="d-flex flex-column gap-2">
-                  <label class="custom-checkbox-card">
-                    <%= f.check_box :publicar_imovelweb_2, class: "form-check-input mt-0" %>
-                    <span class="small fw-semibold">Publicar Imovelweb 2</span>
-                  </label>
-                  <label class="custom-checkbox-card">
-                    <%= f.check_box :publicar_netimoveis_2, class: "form-check-input mt-0" %>
-                    <span class="small fw-semibold">Publicar Netimoveis 2</span>
-                  </label>
-                  <label class="custom-checkbox-card">
-                    <%= f.check_box :publicar_lais_ai, class: "form-check-input mt-0" %>
-                    <span class="small fw-semibold">Publicar Lais Ai</span>
-                  </label>
-                  <label class="custom-checkbox-card">
-                    <%= f.check_box :publicar_loft, class: "form-check-input mt-0" %>
-                    <span class="small fw-semibold">Publicar Loft</span>
-                  </label>
+                  <div class="portal-option-group">
+                    <label class="custom-checkbox-card">
+                      <%= f.check_box :publicar_imovelweb_2, class: "form-check-input mt-0" %>
+                      <span class="small fw-semibold">Publicar Imovelweb 2</span>
+                    </label>
+                    <div class="portal-sub-options">
+                      <div class="portal-sub-options-title">Tipo Publicação Imovelweb 2</div>
+                      <div class="portal-sub-options-radios d-flex flex-wrap">
+                        <% Habitation::IMOVELWEB_TIPO_PUBLICACAO_OPTIONS.each do |(label, val)| %>
+                          <div class="form-check">
+                            <%= f.radio_button :tipo_publicacao_imovelweb_2, val, class: "form-check-input" %>
+                            <%= f.label :tipo_publicacao_imovelweb_2, label, value: val, class: "form-check-label small" %>
+                          </div>
+                        <% end %>
+                      </div>
+                      <div class="portal-sub-options-title">Mostrar Mapa</div>
+                      <div class="portal-sub-options-radios d-flex flex-wrap">
+                        <% Habitation::IMOVELWEB_MOSTRAR_MAPA_OPTIONS.each do |(label, val)| %>
+                          <div class="form-check">
+                            <%= f.radio_button :mostrar_mapa_imovelweb_2, val, class: "form-check-input" %>
+                            <%= f.label :mostrar_mapa_imovelweb_2, label, value: val, class: "form-check-label small" %>
+                          </div>
+                        <% end %>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="portal-option-group">
+                    <label class="custom-checkbox-card">
+                      <%= f.check_box :publicar_netimoveis_2, class: "form-check-input mt-0" %>
+                      <span class="small fw-semibold">Publicar Netimoveis 2</span>
+                    </label>
+                  </div>
+                  <div class="portal-option-group">
+                    <label class="custom-checkbox-card">
+                      <%= f.check_box :publicar_lais_ai, class: "form-check-input mt-0" %>
+                      <span class="small fw-semibold">Publicar Lais Ai</span>
+                    </label>
+                  </div>
+                  <div class="portal-option-group">
+                    <label class="custom-checkbox-card">
+                      <%= f.check_box :publicar_loft, class: "form-check-input mt-0" %>
+                      <span class="small fw-semibold">Publicar Loft</span>
+                    </label>
+                  </div>
+                  <div class="portal-option-group">
+                    <label class="custom-checkbox-card">
+                      <%= f.check_box :publicar_chaves_na_mao, class: "form-check-input mt-0" %>
+                      <span class="small fw-semibold">Publicar Chaves Na Mao</span>
+                    </label>
+                    <div class="portal-sub-options">
+                      <div class="portal-sub-options-title">Destaque Chaves na Mao</div>
+                      <div class="portal-sub-options-radios d-flex flex-wrap">
+                        <% Habitation::CHAVES_NA_MAO_DESTAQUE_OPTIONS.each do |(label, val)| %>
+                          <div class="form-check">
+                            <%= f.radio_button :destaque_chaves_na_mao, val, class: "form-check-input" %>
+                            <%= f.label :destaque_chaves_na_mao, label, value: val, class: "form-check-label small" %>
+                          </div>
+                        <% end %>
+                      </div>
+                      <div class="portal-sub-options-title">Período Locação</div>
+                      <div class="portal-sub-options-radios d-flex flex-wrap">
+                        <% Habitation::CHAVES_NA_MAO_PERIODO_LOCACAO_OPTIONS.each do |(label, val)| %>
+                          <div class="form-check">
+                            <%= f.radio_button :periodo_locacao_chaves_na_mao, val, class: "form-check-input" %>
+                            <%= f.label :periodo_locacao_chaves_na_mao, label, value: val, class: "form-check-label small" %>
+                          </div>
+                        <% end %>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="d-flex flex-column gap-2">
-                  <label class="custom-checkbox-card">
-                    <%= f.check_box :publicar_chaves_na_mao, class: "form-check-input mt-0" %>
-                    <span class="small fw-semibold">Publicar Chaves Na Mao</span>
-                  </label>
-                  <label class="custom-checkbox-card">
-                    <%= f.check_box :publicar_casa_mineira, class: "form-check-input mt-0" %>
-                    <span class="small fw-semibold">Publicar Casa Mineira</span>
-                  </label>
-                  <label class="custom-checkbox-card">
-                    <%= f.check_box :publicar_imovelweb, class: "form-check-input mt-0" %>
-                    <span class="small fw-semibold">Publicar Imovelweb</span>
-                  </label>
-                  <label class="custom-checkbox-card">
-                    <%= f.check_box :publicar_viva_real_vrsync, class: "form-check-input mt-0" %>
-                    <span class="small fw-semibold">Publicar Viva Real VRSync</span>
-                  </label>
+                  <div class="portal-option-group">
+                    <label class="custom-checkbox-card">
+                      <%= f.check_box :publicar_casa_mineira, class: "form-check-input mt-0" %>
+                      <span class="small fw-semibold">Publicar Casa Mineira</span>
+                    </label>
+                    <div class="portal-sub-options">
+                      <div class="portal-sub-options-title">Modelo Casa Mineira</div>
+                      <div class="portal-sub-options-radios d-flex flex-wrap">
+                        <% Habitation::CASA_MINEIRA_MODELO_OPTIONS.each do |(label, val)| %>
+                          <div class="form-check">
+                            <%= f.radio_button :modelo_casa_mineira, val, class: "form-check-input" %>
+                            <%= f.label :modelo_casa_mineira, label, value: val, class: "form-check-label small" %>
+                          </div>
+                        <% end %>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="portal-option-group">
+                    <label class="custom-checkbox-card">
+                      <%= f.check_box :publicar_imovelweb, class: "form-check-input mt-0" %>
+                      <span class="small fw-semibold">Publicar Imovelweb</span>
+                    </label>
+                    <div class="portal-sub-options">
+                      <div class="portal-sub-options-title">Tipo Publicação Imovelweb</div>
+                      <div class="portal-sub-options-radios d-flex flex-wrap">
+                        <% Habitation::IMOVELWEB_TIPO_PUBLICACAO_OPTIONS.each do |(label, val)| %>
+                          <div class="form-check">
+                            <%= f.radio_button :tipo_publicacao_imovelweb, val, class: "form-check-input" %>
+                            <%= f.label :tipo_publicacao_imovelweb, label, value: val, class: "form-check-label small" %>
+                          </div>
+                        <% end %>
+                      </div>
+                      <div class="portal-sub-options-title">Mostrar Mapa</div>
+                      <div class="portal-sub-options-radios d-flex flex-wrap">
+                        <% Habitation::IMOVELWEB_MOSTRAR_MAPA_OPTIONS.each do |(label, val)| %>
+                          <div class="form-check">
+                            <%= f.radio_button :mostrar_mapa_imovelweb, val, class: "form-check-input" %>
+                            <%= f.label :mostrar_mapa_imovelweb, label, value: val, class: "form-check-label small" %>
+                          </div>
+                        <% end %>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="portal-option-group">
+                    <label class="custom-checkbox-card">
+                      <%= f.check_box :publicar_viva_real_vrsync, class: "form-check-input mt-0" %>
+                      <span class="small fw-semibold">Publicar Viva Real VRSync</span>
+                    </label>
+                    <div class="portal-sub-options">
+                      <div class="portal-sub-options-title">Tipo Publicação Viva Real</div>
+                      <div class="portal-sub-options-radios d-flex flex-wrap">
+                        <% Habitation::VIVA_REAL_TIPO_PUBLICACAO_OPTIONS.each do |(label, val)| %>
+                          <div class="form-check">
+                            <%= f.radio_button :tipo_publicacao_viva_real, val, class: "form-check-input" %>
+                            <%= f.label :tipo_publicacao_viva_real, label, value: val, class: "form-check-label small" %>
+                          </div>
+                        <% end %>
+                      </div>
+                      <div class="portal-sub-options-title">Divulgar Endereço Viva Real</div>
+                      <div class="portal-sub-options-radios d-flex flex-wrap">
+                        <% Habitation::VIVA_REAL_DIVULGAR_ENDERECO_OPTIONS.each do |(label, val)| %>
+                          <div class="form-check">
+                            <%= f.radio_button :divulgar_endereco_viva_real, val, class: "form-check-input" %>
+                            <%= f.label :divulgar_endereco_viva_real, label, value: val, class: "form-check-label small" %>
+                          </div>
+                        <% end %>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

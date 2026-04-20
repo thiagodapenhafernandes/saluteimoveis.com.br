@@ -7,11 +7,13 @@ class SyncPropertyService
     data_cadastro_crm data_atualizacao_crm pictures last_sync_at last_sync_status last_sync_message
   ].freeze
 
-  def initialize(codigo, host: nil, token: nil, preserve_manual_fields: nil)
+  def initialize(codigo, host: nil, token: nil, preserve_manual_fields: nil, force_empreendimento: false, detach_orphan_parent: false)
     @codigo = codigo
     @vista_host = host.presence || VISTA_HOST
     @vista_key = token.presence || VISTA_KEY
     @preserve_manual_fields = preserve_manual_fields
+    @force_empreendimento = force_empreendimento
+    @detach_orphan_parent = detach_orphan_parent
   end
 
   def perform
@@ -70,7 +72,7 @@ class SyncPropertyService
         'AreaPrivativa', 'AreaTotal', 'Status', 'Situacao', 'ValorVenda', 'ValorLocacao',
         'ValorCondominio', 'ValorIptu', 'Empreendimento', 'CodigoEmpreendimento', 'Lancamento',
         'DescricaoWeb', 'CaracteristicaUnica', 'Caracteristicas', 'InfraEstrutura', 'ExibirNoSite', 'DestaqueWeb', 'Categoria', 'Construtora',
-        'Proprietario', 'NomeProprietario', 'CodigoProprietario', 'EmailProprietario', 'CelularProprietario',
+        'Proprietario', 'CodigoProprietario',
         'DataCadastro', 'DataAtualizacao', 'DataEntrega', { 'Foto' => ['Foto', 'FotoPequena', 'Destaque', 'Ordem'] }
       ]
     }
@@ -79,7 +81,8 @@ class SyncPropertyService
     params = {
       key: @vista_key,
       imovel: codigo,
-      pesquisa: payload.to_json
+      pesquisa: payload.to_json,
+      showSuspended: 1
     }
     
     response = RestClient.get(url, params: params, accept: :json)
@@ -103,7 +106,8 @@ class SyncPropertyService
 
   def map_vista_payload(hb)
     categoria = hb['Categoria'].to_s.strip
-    tipo = categoria.casecmp("Empreendimento").zero? ? "Empreendimento" : "Unitário"
+    is_empreendimento = @force_empreendimento || categoria.casecmp("Empreendimento").zero?
+    tipo = is_empreendimento ? "Empreendimento" : "Unitário"
     constructor_id = resolve_constructor(hb['Construtora'])
     proprietor = resolve_proprietor(hb)
     raw_imediacoes = hb['Imediacoes']
@@ -133,7 +137,7 @@ class SyncPropertyService
       caracteristica_unica: normalize_csv_list(hb['CaracteristicaUnica']),
       caracteristicas: extract_characteristics(hb),
       infra_estrutura: extract_infrastructure(hb),
-      codigo_empreendimento: hb['CodigoEmpreendimento'].to_s.strip.presence,
+      codigo_empreendimento: @detach_orphan_parent ? nil : hb['CodigoEmpreendimento'].to_s.strip.presence,
       nome_empreendimento: hb['Empreendimento'].to_s.strip.presence,
       construtora: hb['Construtora'].to_s.strip.presence,
       constructor_id: constructor_id,
@@ -242,25 +246,20 @@ class SyncPropertyService
   end
 
   def resolve_proprietor(hb)
-    proprietor_name = hb['NomeProprietario'].presence || hb['Proprietario'].presence || hb['Construtora'].presence
+    proprietor_name = hb['Proprietario'].presence || hb['Construtora'].presence
     proprietor_code = hb['CodigoProprietario'].to_s.strip.presence
-    proprietor_email = hb['EmailProprietario'].to_s.strip.presence
-    proprietor_phone = hb['CelularProprietario'].to_s.strip.presence
     return nil if proprietor_name.to_s.strip.blank?
 
-    role = hb['NomeProprietario'].present? || hb['Proprietario'].present? ? :owner : :developer
+    role = hb['Proprietario'].present? ? :owner : :developer
 
     proprietor = nil
     proprietor = Proprietor.find_by(vista_code: proprietor_code) if proprietor_code.present?
-    proprietor ||= Proprietor.find_by(email: proprietor_email) if proprietor_email.present?
     proprietor ||= Proprietor.where("lower(name) = lower(?)", proprietor_name.to_s.strip).first
     proprietor ||= Proprietor.new
 
     proprietor.name = proprietor_name.to_s.strip
     proprietor.role = role
     proprietor.vista_code = proprietor_code if proprietor_code.present?
-    proprietor.email = proprietor_email if proprietor_email.present?
-    proprietor.mobile_phone = proprietor_phone if proprietor_phone.present?
     proprietor.save!
     proprietor
   rescue
