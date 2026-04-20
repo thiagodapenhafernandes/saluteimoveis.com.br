@@ -1,0 +1,84 @@
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <div class="text-muted small mb-1"><i class="bi bi-sun-fill text-warning me-1"></i>Olá</div>
+    <h4 class="fw-bold mb-0"><%= @admin_user.name.presence || @admin_user.email %></h4>
+  </div>
+  <%= button_to destroy_admin_user_session_path, method: :delete, class: "btn btn-sm btn-outline-secondary" do %>
+    <i class="bi bi-box-arrow-right"></i>
+  <% end %>
+</div>
+
+<!-- Status de localização (placeholder - ativa na Fase 3) -->
+<div id="field-status" class="field-status-banner status-neutral"
+     data-controller="field-geolocation"
+     data-field-geolocation-discover-url-value="<%= field_stores_discover_path %>">
+  <div data-field-geolocation-target="statusIcon" class="mb-2">
+    <i class="bi bi-geo-alt" style="font-size: 2.5rem;"></i>
+  </div>
+  <div data-field-geolocation-target="statusTitle" class="fw-bold fs-5 mb-1">Procurando sua localização…</div>
+  <div data-field-geolocation-target="statusDescription" class="small">
+    Permita o acesso ao GPS para continuar.
+  </div>
+</div>
+
+<!-- Loja padrão -->
+<% if @default_store %>
+  <div class="field-card mb-3">
+    <div class="d-flex justify-content-between align-items-start mb-2">
+      <div>
+        <div class="text-muted small"><i class="bi bi-shop text-primary me-1"></i>Sua loja</div>
+        <div class="fw-bold fs-5"><%= @default_store.name %></div>
+      </div>
+      <span class="badge bg-primary-subtle text-primary border">Padrão</span>
+    </div>
+    <% if @default_store.address.present? %>
+      <div class="small text-muted">
+        <i class="bi bi-geo text-muted me-1"></i>
+        <%= [@default_store.address, @default_store.city, @default_store.state].compact_blank.join(" • ") %>
+      </div>
+    <% end %>
+  </div>
+<% end %>
+
+<!-- Turnos de hoje -->
+<div class="field-card mb-3">
+  <h6 class="fw-bold mb-3">
+    <i class="bi bi-calendar-check text-success me-1"></i>Seus turnos hoje
+  </h6>
+  <% if @today_shifts.any? %>
+    <% @today_shifts.each do |shift| %>
+      <% is_now = shift.active_at?(Time.current) %>
+      <div class="d-flex justify-content-between align-items-center py-2 <%= 'border-bottom' unless shift == @today_shifts.last %>">
+        <div>
+          <div class="fw-semibold">
+            <i class="bi bi-clock text-muted me-1"></i>
+            <%= shift.start_time.strftime("%H:%M") %> — <%= shift.end_time.strftime("%H:%M") %>
+          </div>
+          <div class="small text-muted">
+            <i class="bi bi-shop me-1"></i><%= shift.store.name %>
+          </div>
+        </div>
+        <% if is_now %>
+          <span class="badge bg-success">
+            <i class="bi bi-record-circle-fill me-1"></i>Em horário
+          </span>
+        <% else %>
+          <span class="badge bg-secondary-subtle text-secondary border">Fora do horário</span>
+        <% end %>
+      </div>
+    <% end %>
+  <% else %>
+    <p class="text-muted mb-0 small">
+      <i class="bi bi-moon me-1"></i>Sem turnos cadastrados para hoje.
+    </p>
+  <% end %>
+</div>
+
+<!-- Botão de check-in (placeholder — ativa na Fase 3) -->
+<button class="btn btn-primary big-action-btn" disabled data-field-geolocation-target="checkinButton">
+  <i class="bi bi-box-arrow-in-right me-2"></i>Fazer Check-in
+</button>
+<p class="text-center text-muted small mt-2">
+  <i class="bi bi-info-circle me-1"></i>Aguarde o GPS localizar você para habilitar o check-in.
+</p>

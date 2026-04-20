@@ -142,6 +142,9 @@ application.register("sortable", SortableController)
 import StoreMapPickerController from "controllers/store_map_picker_controller"
 application.register("store-map-picker", StoreMapPickerController)
 
+import FieldGeolocationController from "controllers/field/geolocation_controller"
+application.register("field-geolocation", FieldGeolocationController)
+
 import TagInputController from "controllers/tag_input_controller"
 application.register("tag-input", TagInputController)
 

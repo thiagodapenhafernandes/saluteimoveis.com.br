@@ -103,10 +103,13 @@ Rails.application.routes.draw do
     end
   end
 
-  # === Rotas do PWA de corretores (Fase 0: só health) ===
-  # Flag Setting.field_checkin_enabled decide se respondem.
+  # === Rotas do PWA de corretores em campo ===
+  # Flag Setting.field_checkin_enabled decide se respondem (retorna 404 com flag off).
+  # Corretor precisa estar autenticado via Devise + ter field_agent_enabled=true.
   namespace :field do
     get "up", to: "health#up"
+    get "", to: "home#show", as: :root
+    get "stores/discover", to: "stores#discover"
   end
 
   namespace :api do
