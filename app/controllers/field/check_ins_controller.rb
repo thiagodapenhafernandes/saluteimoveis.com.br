@@ -2,6 +2,8 @@
 
 module Field
   class CheckInsController < BaseController
+    before_action :ensure_field_enabled!
+    before_action :ensure_field_agent!
     before_action :set_active_check_in, only: [:check_out]
 
     # POST /field/check_ins

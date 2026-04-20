@@ -96,11 +96,50 @@
       <i class="bi bi-wifi-off me-1"></i>Você está offline — pings ficarão em fila.
     </div>
 
-    <div id="field-install-banner" class="d-none position-fixed bottom-0 start-50 translate-middle-x bg-primary text-white shadow-lg rounded-3 p-3 mb-3 text-center" style="max-width: 360px; z-index: 1050;">
-      <div class="fw-bold mb-1"><i class="bi bi-download me-1"></i>Instalar no celular</div>
-      <small class="d-block mb-2 opacity-75">Use como app nativo — GPS em background funciona melhor.</small>
-      <button id="field-install-btn" class="btn btn-light btn-sm fw-bold">Instalar</button>
-      <button id="field-install-dismiss" class="btn btn-link btn-sm text-white opacity-75">Agora não</button>
+    <!-- Install Modal -->
+    <div id="field-install-overlay" class="d-none position-fixed top-0 start-0 w-100 h-100" style="background: rgba(15, 23, 42, .75); z-index: 1060; backdrop-filter: blur(4px);">
+      <div class="position-absolute top-50 start-50 translate-middle bg-white rounded-4 shadow-lg p-4" style="max-width: 420px; width: 92%;">
+        <div class="text-center mb-3">
+          <div class="bg-primary bg-opacity-10 rounded-4 d-inline-flex align-items-center justify-content-center" style="width: 72px; height: 72px;">
+            <i class="bi bi-phone text-primary" style="font-size: 2.2rem;"></i>
+          </div>
+          <h4 class="fw-bold mt-3 mb-1">Instale o app Salute Campo</h4>
+          <p class="text-muted small mb-0">Experiência mais rápida, notificações e acesso offline.</p>
+        </div>
+
+        <!-- Android/Chrome: usa beforeinstallprompt -->
+        <div id="field-install-android" class="d-none">
+          <ul class="small text-muted mb-3 ps-3">
+            <li>Abre como app, sem barra de endereço</li>
+            <li>GPS em background funciona melhor</li>
+            <li>Pings continuam quando app fica escondido</li>
+          </ul>
+          <button id="field-install-btn" class="btn btn-primary w-100 fw-bold py-2 mb-2">
+            <i class="bi bi-download me-1"></i>Instalar agora
+          </button>
+        </div>
+
+        <!-- iOS: instruções manuais -->
+        <div id="field-install-ios" class="d-none">
+          <ol class="small text-muted mb-3 ps-3">
+            <li>Toque no ícone <i class="bi bi-box-arrow-up text-primary"></i> <strong>Compartilhar</strong> na barra do Safari</li>
+            <li>Escolha <strong>"Adicionar à Tela de Início"</strong></li>
+            <li>Confirme em "Adicionar"</li>
+          </ol>
+        </div>
+
+        <!-- Fallback (navegador desconhecido) -->
+        <div id="field-install-fallback" class="d-none">
+          <p class="small text-muted">
+            Abra este site no Chrome (Android) ou Safari (iPhone) e procure pela opção
+            "Instalar app" ou "Adicionar à Tela de Início" no menu do navegador.
+          </p>
+        </div>
+
+        <button id="field-install-dismiss" class="btn btn-link w-100 text-muted small">
+          Continuar no navegador por enquanto
+        </button>
+      </div>
     </div>
 
     <main class="field-layout">
@@ -108,28 +147,73 @@
     </main>
 
     <script>
-      // Banner de instalação (Chrome/Edge/Android)
       (function () {
+        const DISMISS_KEY = "field_install_dismissed_until";
+        const overlay   = document.getElementById("field-install-overlay");
+        const androidBox = document.getElementById("field-install-android");
+        const iosBox    = document.getElementById("field-install-ios");
+        const fallback  = document.getElementById("field-install-fallback");
+        const installBtn = document.getElementById("field-install-btn");
+        const dismissBtn = document.getElementById("field-install-dismiss");
+
+        // Já está instalado? display-mode: standalone é sinal de que rodou como PWA.
+        function isStandalone() {
+          return window.matchMedia("(display-mode: standalone)").matches
+              || window.navigator.standalone === true;
+        }
+
+        function isIos() {
+          return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        }
+
+        function shouldShow() {
+          if (isStandalone()) return false;
+          const until = parseInt(localStorage.getItem(DISMISS_KEY) || "0", 10);
+          if (until && Date.now() < until) return false;
+          return true;
+        }
+
+        function showOverlay(mode) {
+          if (!shouldShow()) return;
+          androidBox.classList.add("d-none");
+          iosBox.classList.add("d-none");
+          fallback.classList.add("d-none");
+          if (mode === "android") androidBox.classList.remove("d-none");
+          else if (mode === "ios") iosBox.classList.remove("d-none");
+          else fallback.classList.remove("d-none");
+          overlay.classList.remove("d-none");
+        }
+
         let deferredPrompt;
         window.addEventListener("beforeinstallprompt", function (e) {
           e.preventDefault();
           deferredPrompt = e;
-          const banner = document.getElementById("field-install-banner");
-          if (banner) banner.classList.remove("d-none");
+          showOverlay("android");
         });
-        const btn = document.getElementById("field-install-btn");
-        if (btn) btn.addEventListener("click", function () {
-          if (!deferredPrompt) return;
-          deferredPrompt.prompt();
-          deferredPrompt.userChoice.finally(function () {
-            deferredPrompt = null;
-            document.getElementById("field-install-banner").classList.add("d-none");
+
+        // iOS não suporta beforeinstallprompt → mostra instruções após 800ms
+        if (isIos() && shouldShow()) {
+          setTimeout(() => showOverlay("ios"), 800);
+        }
+
+        if (installBtn) {
+          installBtn.addEventListener("click", function () {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.finally(function () {
+              deferredPrompt = null;
+              overlay.classList.add("d-none");
+            });
           });
-        });
-        const dismiss = document.getElementById("field-install-dismiss");
-        if (dismiss) dismiss.addEventListener("click", function () {
-          document.getElementById("field-install-banner").classList.add("d-none");
-        });
+        }
+
+        if (dismissBtn) {
+          dismissBtn.addEventListener("click", function () {
+            // Esconde por 7 dias
+            localStorage.setItem(DISMISS_KEY, (Date.now() + 7 * 24 * 60 * 60 * 1000).toString());
+            overlay.classList.add("d-none");
+          });
+        }
 
         // Indicador offline
         function toggleOffline() {

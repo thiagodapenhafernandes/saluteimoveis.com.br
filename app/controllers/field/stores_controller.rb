@@ -2,6 +2,9 @@
 
 module Field
   class StoresController < BaseController
+    before_action :ensure_field_enabled!
+    before_action :ensure_field_agent!
+
     # GET /field/stores/discover?lat=...&lng=...
     # Retorna a loja mais próxima dentro do raio do corretor (ou a mais próxima
     # se nenhuma estiver no raio), com distância em metros.

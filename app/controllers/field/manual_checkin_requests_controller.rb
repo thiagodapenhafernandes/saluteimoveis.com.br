@@ -4,6 +4,9 @@
 # justificativa e aguarda aprovação do admin.
 module Field
   class ManualCheckinRequestsController < BaseController
+    before_action :ensure_field_enabled!
+    before_action :ensure_field_agent!
+
     def new
       @request = ManualCheckinRequest.new
       @stores = Store.active.order(:name)

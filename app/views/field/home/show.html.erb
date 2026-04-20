@@ -1,98 +1,198 @@
+<%
+  hour = Time.current.hour
+  greeting = if hour < 12 then "Bom dia"
+             elsif hour < 18 then "Boa tarde"
+             else "Boa noite"
+             end
+%>
+
+<style>
+  .field-hero {
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    color: #fff;
+    border-radius: 16px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+  .field-stat-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 1rem;
+    text-align: center;
+  }
+  .field-stat-card .val { font-size: 1.6rem; font-weight: 700; line-height: 1; }
+  .field-stat-card .lbl { font-size: .7rem; text-transform: uppercase; color: #64748b; margin-top: .35rem; }
+
+  .field-action-card {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 1rem;
+    text-decoration: none;
+    color: inherit;
+    transition: all .15s ease;
+  }
+  .field-action-card:active { transform: scale(.98); }
+  .field-action-card .icon-circle {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+  .field-action-card .title { font-weight: 600; font-size: .95rem; color: #0f172a; line-height: 1.15; }
+  .field-action-card .subtitle { font-size: .75rem; color: #64748b; }
+  .field-action-card .chevron { margin-left: auto; color: #cbd5e1; font-size: 1.1rem; }
+</style>
+
 <!-- Header -->
 <div class="d-flex justify-content-between align-items-center mb-3">
   <div>
-    <div class="text-muted small mb-1"><i class="bi bi-sun-fill text-warning me-1"></i>Olá</div>
-    <h4 class="fw-bold mb-0"><%= @admin_user.name.presence || @admin_user.email %></h4>
+    <div class="text-muted small mb-0"><i class="bi bi-sun-fill text-warning me-1"></i><%= greeting %>,</div>
+    <h5 class="fw-bold mb-0"><%= @admin_user.name.presence || @admin_user.email %></h5>
   </div>
   <%= button_to destroy_admin_user_session_path, method: :delete, class: "btn btn-sm btn-outline-secondary" do %>
     <i class="bi bi-box-arrow-right"></i>
   <% end %>
 </div>
 
-<!-- Status de localização (placeholder - ativa na Fase 3) -->
-<div id="field-status" class="field-status-banner status-neutral"
-     data-controller="field-geolocation"
-     data-field-geolocation-discover-url-value="<%= field_stores_discover_path %>">
-  <div data-field-geolocation-target="statusIcon" class="mb-2">
-    <i class="bi bi-geo-alt" style="font-size: 2.5rem;"></i>
-  </div>
-  <div data-field-geolocation-target="statusTitle" class="fw-bold fs-5 mb-1">Procurando sua localização…</div>
-  <div data-field-geolocation-target="statusDescription" class="small">
-    Permita o acesso ao GPS para continuar.
+<!-- Hero -->
+<div class="field-hero">
+  <div class="small opacity-75"><i class="bi bi-calendar3 me-1"></i><%= l(Date.current, format: :long) %></div>
+  <div class="fw-bold fs-4 mt-1">Olá, <%= @admin_user.name.to_s.split.first %>!</div>
+  <div class="opacity-75 small">
+    <% if @active_check_in %>
+      <i class="bi bi-broadcast-pin me-1"></i>Você está em check-in em <strong><%= @active_check_in.store.name %></strong>
+    <% else %>
+      Pronto para captar imóveis ou atender seus leads?
+    <% end %>
   </div>
 </div>
 
-<!-- Loja padrão -->
-<% if @default_store %>
-  <div class="field-card mb-3">
-    <div class="d-flex justify-content-between align-items-start mb-2">
-      <div>
-        <div class="text-muted small"><i class="bi bi-shop text-primary me-1"></i>Sua loja</div>
-        <div class="fw-bold fs-5"><%= @default_store.name %></div>
-      </div>
-      <span class="badge bg-primary-subtle text-primary border">Padrão</span>
+<!-- Stats do dia -->
+<div class="row g-2 mb-3">
+  <div class="col-4">
+    <div class="field-stat-card">
+      <div class="val text-success"><%= @my_leads_today %></div>
+      <div class="lbl"><i class="bi bi-megaphone me-1"></i>Leads hoje</div>
     </div>
-    <% if @default_store.address.present? %>
-      <div class="small text-muted">
-        <i class="bi bi-geo text-muted me-1"></i>
-        <%= [@default_store.address, @default_store.city, @default_store.state].compact_blank.join(" • ") %>
+  </div>
+  <div class="col-4">
+    <div class="field-stat-card">
+      <div class="val text-primary"><%= @my_active_captacoes %></div>
+      <div class="lbl"><i class="bi bi-journal me-1"></i>Captações</div>
+    </div>
+  </div>
+  <div class="col-4">
+    <div class="field-stat-card">
+      <div class="val text-info"><%= @my_total_habitations %></div>
+      <div class="lbl"><i class="bi bi-building me-1"></i>Imóveis</div>
+    </div>
+  </div>
+</div>
+
+<!-- Ações principais -->
+<div class="row g-2 mb-3">
+  <div class="col-12 col-md-6">
+    <%= link_to new_admin_captacao_path, class: "field-action-card" do %>
+      <span class="icon-circle bg-success-subtle text-success"><i class="bi bi-journal-plus"></i></span>
+      <div>
+        <div class="title">Nova captação</div>
+        <div class="subtitle">Residencial / Comercial / Terreno</div>
       </div>
+      <i class="bi bi-chevron-right chevron"></i>
     <% end %>
+  </div>
+
+  <div class="col-12 col-md-6">
+    <%= link_to admin_captacoes_path, class: "field-action-card" do %>
+      <span class="icon-circle bg-primary-subtle text-primary"><i class="bi bi-journals"></i></span>
+      <div>
+        <div class="title">Minhas captações</div>
+        <div class="subtitle">Rascunhos e finalizadas</div>
+      </div>
+      <i class="bi bi-chevron-right chevron"></i>
+    <% end %>
+  </div>
+
+  <div class="col-12 col-md-6">
+    <%= link_to admin_leads_path, class: "field-action-card" do %>
+      <span class="icon-circle bg-warning-subtle text-warning"><i class="bi bi-megaphone-fill"></i></span>
+      <div>
+        <div class="title">Meus leads</div>
+        <div class="subtitle">Novos contatos a atender</div>
+      </div>
+      <i class="bi bi-chevron-right chevron"></i>
+    <% end %>
+  </div>
+
+  <div class="col-12 col-md-6">
+    <%= link_to admin_habitations_path, class: "field-action-card" do %>
+      <span class="icon-circle bg-info-subtle text-info"><i class="bi bi-buildings"></i></span>
+      <div>
+        <div class="title">Meus imóveis</div>
+        <div class="subtitle">Portfólio atribuído</div>
+      </div>
+      <i class="bi bi-chevron-right chevron"></i>
+    <% end %>
+  </div>
+
+  <% if @field_enabled %>
+    <div class="col-12 col-md-6">
+      <%= link_to "#", class: "field-action-card",
+                  data: { controller: "field-geolocation", action: "click->field-geolocation#requestGeolocation" } do %>
+        <span class="icon-circle bg-danger-subtle text-danger"><i class="bi bi-geo-alt-fill"></i></span>
+        <div>
+          <div class="title"><%= @active_check_in ? "Ver check-in ativo" : "Fazer check-in" %></div>
+          <div class="subtitle">GPS + loja próxima</div>
+        </div>
+        <i class="bi bi-chevron-right chevron"></i>
+      <% end %>
+    </div>
+  <% end %>
+
+  <div class="col-12 col-md-6">
+    <%= link_to dashboard_admin_captacoes_path, class: "field-action-card" do %>
+      <span class="icon-circle bg-secondary-subtle text-secondary"><i class="bi bi-bullseye"></i></span>
+      <div>
+        <div class="title">Meta de captação</div>
+        <div class="subtitle">Progresso do ano</div>
+      </div>
+      <i class="bi bi-chevron-right chevron"></i>
+    <% end %>
+  </div>
+</div>
+
+<!-- Últimos leads do corretor -->
+<% if @recent_my_leads.any? %>
+  <div class="field-card mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h6 class="fw-bold mb-0"><i class="bi bi-clock-history text-primary me-1"></i>Leads recentes</h6>
+      <%= link_to "Ver todos", admin_leads_path, class: "small text-decoration-none" %>
+    </div>
+    <div class="list-group list-group-flush">
+      <% @recent_my_leads.each do |lead| %>
+        <%= link_to admin_lead_path(lead), class: "list-group-item list-group-item-action px-0 small" do %>
+          <div class="d-flex justify-content-between">
+            <div>
+              <div class="fw-semibold"><%= lead.display_name %></div>
+              <div class="text-muted"><i class="bi bi-telephone me-1"></i><%= lead.display_phone %></div>
+            </div>
+            <div class="text-muted small"><%= time_ago_in_words(lead.created_at) %></div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
   </div>
 <% end %>
 
-<!-- Turnos de hoje -->
-<div class="field-card mb-3">
-  <h6 class="fw-bold mb-3">
-    <i class="bi bi-calendar-check text-success me-1"></i>Seus turnos hoje
-  </h6>
-  <% if @today_shifts.any? %>
-    <% @today_shifts.each do |shift| %>
-      <% is_now = shift.active_at?(Time.current) %>
-      <div class="d-flex justify-content-between align-items-center py-2 <%= 'border-bottom' unless shift == @today_shifts.last %>">
-        <div>
-          <div class="fw-semibold">
-            <i class="bi bi-clock text-muted me-1"></i>
-            <%= shift.start_time.strftime("%H:%M") %> — <%= shift.end_time.strftime("%H:%M") %>
-          </div>
-          <div class="small text-muted">
-            <i class="bi bi-shop me-1"></i><%= shift.store.name %>
-          </div>
-        </div>
-        <% if is_now %>
-          <span class="badge bg-success">
-            <i class="bi bi-record-circle-fill me-1"></i>Em horário
-          </span>
-        <% else %>
-          <span class="badge bg-secondary-subtle text-secondary border">Fora do horário</span>
-        <% end %>
-      </div>
-    <% end %>
-  <% else %>
-    <p class="text-muted mb-0 small">
-      <i class="bi bi-moon me-1"></i>Sem turnos cadastrados para hoje.
-    </p>
-  <% end %>
-</div>
-
-<% if @admin_user.active_check_in.present? %>
-  <!-- Ping sender: só ativa enquanto há check-in ativo -->
-  <div data-controller="field-ping-sender"
-       data-field-ping-sender-ping-url-value="<%= field_location_pings_path %>"
-       data-field-ping-sender-csrf-value="<%= form_authenticity_token %>"
-       data-field-ping-sender-interval-ms-value="90000"></div>
-<% end %>
-
-<!-- Botão de check-in (placeholder — ativa na Fase 3) -->
-<button class="btn btn-primary big-action-btn" disabled data-field-geolocation-target="checkinButton">
-  <i class="bi bi-box-arrow-in-right me-2"></i>Fazer Check-in
-</button>
-<p class="text-center text-muted small mt-2">
-  <i class="bi bi-info-circle me-1"></i>Aguarde o GPS localizar você para habilitar o check-in.
-</p>
-
-<div class="text-center mt-3">
-  <%= link_to new_field_manual_checkin_request_path, class: "small text-muted text-decoration-none" do %>
-    <i class="bi bi-hand-index-thumb me-1"></i>Não consegui fazer check-in (pedir revisão manual)
+<!-- Banner de instalação -->
+<div class="text-center mt-4">
+  <%= link_to new_field_manual_checkin_request_path, class: "small text-muted text-decoration-none d-none" do %>
+    <i class="bi bi-hand-index-thumb me-1"></i>Precisa de check-in manual?
   <% end %>
 </div>

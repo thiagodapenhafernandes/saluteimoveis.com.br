@@ -2,6 +2,9 @@
 
 module Field
   class LocationPingsController < BaseController
+    before_action :ensure_field_enabled!
+    before_action :ensure_field_agent!
+
     # POST /field/location_pings
     # Payload JSON: { lat, lng, accuracy, battery_level, is_mock_location }
     def create
