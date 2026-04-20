@@ -31,9 +31,10 @@
         <div class="col-md-6">
           <%= f.label :director_admin_user_id, "Diretor da loja", class: "form-label fw-semibold" %>
           <%= f.select :director_admin_user_id,
-                       options_for_select(AdminUser.order(:name).map { |u| [u.name, u.id] }, store.director_admin_user_id),
+                       options_for_select(AdminUser.active.order(:name).map { |u| [u.name, u.id] }, store.director_admin_user_id),
                        { include_blank: "— Sem diretor —" },
-                       class: "form-select" %>
+                       class: "form-select",
+                       data: { controller: "tom-select", placeholder: "Buscar corretor…" } %>
           <small class="text-muted">Admin responsável por esta unidade.</small>
         </div>
         <div class="col-md-6">
@@ -57,7 +58,8 @@
                          store.timezone
                        ),
                        {},
-                       class: "form-select" %>
+                       class: "form-select",
+                       data: { controller: "tom-select", placeholder: "Buscar fuso…" } %>
         </div>
 
         <div class="col-md-6">
