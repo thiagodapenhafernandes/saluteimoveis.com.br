@@ -38,8 +38,24 @@
         </div>
         <div class="col-md-6">
           <%= f.label :timezone, "Fuso horário", class: "form-label fw-semibold" %>
+          <%
+            brazil_zones = [
+              ["Brasília / São Paulo (GMT-03:00)", "America/Sao_Paulo"],
+              ["Manaus / Cuiabá (GMT-04:00)",       "America/Manaus"],
+              ["Rio Branco (GMT-05:00)",            "America/Rio_Branco"],
+              ["Fernando de Noronha (GMT-02:00)",   "America/Noronha"]
+            ]
+            americas_zones = ActiveSupport::TimeZone
+              .all
+              .select { |tz| tz.tzinfo.name.start_with?("America/") }
+              .reject { |tz| brazil_zones.any? { |_, iana| iana == tz.tzinfo.name } }
+              .map    { |tz| [tz.to_s, tz.tzinfo.name] }
+          %>
           <%= f.select :timezone,
-                       options_for_select(ActiveSupport::TimeZone.all.select { |tz| tz.name.start_with?("America") }.map { |tz| [tz.to_s, tz.tzinfo.name] }, store.timezone),
+                       grouped_options_for_select(
+                         { "Brasil" => brazil_zones, "Américas" => americas_zones },
+                         store.timezone
+                       ),
                        {},
                        class: "form-select" %>
         </div>
