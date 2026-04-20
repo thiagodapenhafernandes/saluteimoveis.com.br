@@ -2,6 +2,7 @@ seed_files = %w[
   admin_users
   seo_settings
   home_sections
+  field_checkin_settings
 ]
 
 seed_files.each do |name|

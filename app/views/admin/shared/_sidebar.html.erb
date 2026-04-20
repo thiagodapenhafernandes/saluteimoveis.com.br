@@ -45,6 +45,13 @@
       <% end %>
     </li>
 
+    <li class="sidebar-menu-item">
+      <%= link_to admin_stores_path, class: controller_name == 'stores' ? 'active' : '' do %>
+        <i class="bi bi-shop"></i>
+        <span>Lojas</span>
+      <% end %>
+    </li>
+
     <!-- Marketing e Conteúdo Collapse -->
     <li class="sidebar-menu-item">
       <a href="#submenu-marketing" data-bs-toggle="collapse" class="d-flex justify-content-between align-items-center <%= ['landing_pages', 'seo_settings', 'banners', 'home_sections', 'contact_settings', 'layout_settings', 'footer_settings', 'home_settings'].include?(controller_name) ? '' : 'collapsed' %>">

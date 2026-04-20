@@ -12,6 +12,12 @@ class AdminUser < ApplicationRecord
   has_many :habitations
   has_many :habitation_share_links, dependent: :destroy
 
+  # Field ops (check-in geolocalizado)
+  belongs_to :default_store, class_name: "Store", optional: true
+  has_many :store_shifts, dependent: :destroy
+  has_many :store_shift_stores, -> { distinct }, through: :store_shifts, source: :store
+  has_many :directed_stores, class_name: "Store", foreign_key: :director_admin_user_id, dependent: :nullify
+
   enum role: { editor: 0, admin: 1 }
   enum acting_type: { sales: 0, rentals: 1, both: 2 }
   

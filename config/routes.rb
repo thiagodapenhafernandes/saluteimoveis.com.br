@@ -91,7 +91,32 @@ Rails.application.routes.draw do
     resources :landing_pages do
       get :preview, on: :collection
     end
+
+    # === Lojas físicas (módulo field) ===
+    resources :stores
+
+    # === Field (check-in geolocalizado de corretores) ===
+    # Namespace admin reservado para lojas (Fase 1) e dashboard de campo (futuro).
+    # Vazio na Fase 0 — fica aqui para não poluir o arquivo depois.
+    namespace :field do
+      # (preenchido nas fases 3+)
+    end
   end
+
+  # === Rotas do PWA de corretores (Fase 0: só health) ===
+  # Flag Setting.field_checkin_enabled decide se respondem.
+  namespace :field do
+    get "up", to: "health#up"
+  end
+
+  namespace :api do
+    namespace :v1 do
+      namespace :field do
+        # (preenchido nas fases 3+)
+      end
+    end
+  end
+
   # Root
   root 'home#index'
   

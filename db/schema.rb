@@ -10,9 +10,10 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_04_20_120000) do
+ActiveRecord::Schema[7.1].define(version: 2026_04_20_130000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+  enable_extension "postgis"
   enable_extension "unaccent"
 
   create_table "action_text_rich_texts", force: :cascade do |t|
@@ -93,7 +94,11 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_20_120000) do
     t.date "birth_date"
     t.string "city"
     t.integer "acting_type"
+    t.boolean "field_agent_enabled", default: false, null: false
+    t.bigint "default_store_id"
+    t.index ["default_store_id"], name: "index_admin_users_on_default_store_id"
     t.index ["email"], name: "index_admin_users_on_email", unique: true
+    t.index ["field_agent_enabled"], name: "index_admin_users_on_field_agent_enabled"
     t.index ["manager_id"], name: "index_admin_users_on_manager_id"
     t.index ["profile_id"], name: "index_admin_users_on_profile_id"
     t.index ["reset_password_token"], name: "index_admin_users_on_reset_password_token", unique: true
@@ -908,6 +913,32 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_20_120000) do
     t.index ["key"], name: "index_solid_queue_semaphores_on_key", unique: true
   end
 
+  create_table "spatial_ref_sys", primary_key: "srid", id: :integer, default: nil, force: :cascade do |t|
+    t.string "auth_name", limit: 256
+    t.integer "auth_srid"
+    t.string "srtext", limit: 2048
+    t.string "proj4text", limit: 2048
+    t.check_constraint "srid > 0 AND srid <= 998999", name: "spatial_ref_sys_srid_check"
+  end
+
+  create_table "store_shifts", force: :cascade do |t|
+    t.bigint "store_id", null: false
+    t.bigint "admin_user_id", null: false
+    t.integer "day_of_week", null: false
+    t.time "start_time", null: false
+    t.time "end_time", null: false
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["admin_user_id", "day_of_week", "active"], name: "idx_store_shifts_agent_day_active"
+    t.index ["admin_user_id"], name: "index_store_shifts_on_admin_user_id"
+    t.index ["store_id", "day_of_week"], name: "index_store_shifts_on_store_id_and_day_of_week"
+    t.index ["store_id"], name: "index_store_shifts_on_store_id"
+  end
+
+# Could not dump table "stores" because of following StandardError
+#   Unknown type 'geography(Point,4326)' for column 'location'
+
   create_table "user_meta_integrations", force: :cascade do |t|
     t.bigint "admin_user_id", null: false
     t.string "access_token"
@@ -938,6 +969,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_20_120000) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "admin_users", "admin_users", column: "manager_id"
   add_foreign_key "admin_users", "profiles"
+  add_foreign_key "admin_users", "stores", column: "default_store_id"
   add_foreign_key "distribution_rule_agents", "admin_users"
   add_foreign_key "distribution_rule_agents", "distribution_rules"
   add_foreign_key "footer_links", "footer_settings"
@@ -965,5 +997,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_20_120000) do
   add_foreign_key "solid_queue_ready_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_recurring_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_scheduled_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "store_shifts", "admin_users"
+  add_foreign_key "store_shifts", "stores"
+  add_foreign_key "stores", "admin_users", column: "director_admin_user_id"
+  add_foreign_key "stores", "footer_stores"
   add_foreign_key "user_meta_integrations", "admin_users"
 end

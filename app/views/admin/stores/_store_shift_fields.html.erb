@@ -1,0 +1,36 @@
+<div class="row g-2 align-items-center mb-2 p-2 border rounded bg-light-subtle" data-nested-form-target="item">
+  <div class="col-md-3">
+    <%= f.label :admin_user_id, "Corretor", class: "form-label small fw-semibold mb-1" %>
+    <%= f.select :admin_user_id,
+                 options_for_select(AdminUser.order(:name).map { |u| [u.name, u.id] }, f.object.admin_user_id),
+                 { include_blank: "Selecionar..." },
+                 class: "form-select form-select-sm" %>
+  </div>
+  <div class="col-md-3">
+    <%= f.label :day_of_week, "Dia", class: "form-label small fw-semibold mb-1" %>
+    <%= f.select :day_of_week,
+                 options_for_select(StoreShift::DAYS_OF_WEEK.invert.to_a, f.object.day_of_week),
+                 {},
+                 class: "form-select form-select-sm" %>
+  </div>
+  <div class="col-md-2">
+    <%= f.label :start_time, "Início", class: "form-label small fw-semibold mb-1" %>
+    <%= f.time_field :start_time, class: "form-control form-control-sm" %>
+  </div>
+  <div class="col-md-2">
+    <%= f.label :end_time, "Fim", class: "form-label small fw-semibold mb-1" %>
+    <%= f.time_field :end_time, class: "form-control form-control-sm" %>
+  </div>
+  <div class="col-md-1">
+    <label class="form-label small fw-semibold mb-1">Ativo</label>
+    <div class="form-check">
+      <%= f.check_box :active, class: "form-check-input" %>
+    </div>
+  </div>
+  <div class="col-md-1 text-end">
+    <%= f.hidden_field :_destroy, data: { nested_form_target: "destroyFlag" } %>
+    <button type="button" class="btn btn-sm btn-outline-danger" data-action="nested-form#remove" title="Remover">
+      <i class="bi bi-trash"></i>
+    </button>
+  </div>
+</div>

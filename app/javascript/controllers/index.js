@@ -139,6 +139,9 @@ application.register("save-state", SaveStateController)
 import SortableController from "controllers/sortable_controller"
 application.register("sortable", SortableController)
 
+import StoreMapPickerController from "controllers/store_map_picker_controller"
+application.register("store-map-picker", StoreMapPickerController)
+
 import TagInputController from "controllers/tag_input_controller"
 application.register("tag-input", TagInputController)
 
