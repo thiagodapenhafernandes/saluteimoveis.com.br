@@ -24,7 +24,7 @@
       <div class="small text-muted flex-grow-1">
         Etapa <%= shown_idx + 1 %> de <%= total_steps %> · <strong class="text-dark"><%= step_titles[@step] %></strong>
       </div>
-      <% if @captacao.draft? || !@captacao.completed %>
+      <% unless @captacao.completed? %>
         <span class="badge bg-warning-subtle text-warning">Rascunho</span>
       <% end %>
     </div>
