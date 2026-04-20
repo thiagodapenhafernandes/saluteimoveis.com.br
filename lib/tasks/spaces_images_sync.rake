@@ -13,6 +13,10 @@ module SpacesImageSync
     value.to_s.strip.downcase.in?(["1", "true", "yes", "y", "on"])
   end
 
+  def skip_analysis?
+    truthy_env?(ENV["SKIP_ANALYSIS"])
+  end
+
   def cursor_data(path)
     return { "last_id" => 0 } unless File.exist?(path)
 
@@ -84,7 +88,18 @@ module SpacesImageSync
 
       begin
         io = SpacesImageSync.download_image(url)
-        habitation.photos.attach(io: io, filename: filename)
+        if SpacesImageSync.skip_analysis?
+          # Cria blob já marcado como analyzed=true para evitar AnalyzeJob
+          # (que tenta baixar o blob de volta e falha SSL/CRL no servidor atual).
+          blob = ActiveStorage::Blob.create_and_upload!(
+            io: io,
+            filename: filename,
+            metadata: { "analyzed" => true, "identified" => true }
+          )
+          habitation.photos.attach(blob)
+        else
+          habitation.photos.attach(io: io, filename: filename)
+        end
         synced += 1
         existing_filenames << filename
       rescue => e
@@ -153,6 +168,7 @@ namespace :images do
     sleep_seconds = ENV.fetch("SLEEP_SECONDS", "3").to_f
     max_cycles = ENV.fetch("MAX_CYCLES", "0").to_i
     start_id = ENV.fetch("START_ID", "0").to_i
+    max_id = ENV.fetch("MAX_ID", "0").to_i
 
     cursor_file = ENV.fetch("CURSOR_FILE", Rails.root.join("tmp/spaces_habitation_images_cursor.yml").to_s)
     failed_file = ENV.fetch("FAILED_FILE", Rails.root.join("tmp/spaces_habitation_images_failed_ids.log").to_s)
@@ -166,14 +182,16 @@ namespace :images do
     total_failed = 0
     cycle = 0
 
-    puts "[images:sync_habitations_to_spaces] service=#{Rails.application.config.active_storage.service} dry_run=#{dry_run}"
+    puts "[images:sync_habitations_to_spaces] service=#{Rails.application.config.active_storage.service} dry_run=#{dry_run} skip_analysis=#{SpacesImageSync.skip_analysis?}"
     puts "[images:sync_habitations_to_spaces] batch_size=#{batch_size} loop=#{loop_mode} sleep=#{sleep_seconds}s cursor=#{cursor_file}"
+    puts "[images:sync_habitations_to_spaces] range=[start_id=#{start_id} max_id=#{max_id.positive? ? max_id : 'no limit'}]"
 
     loop do
       cycle += 1
       last_id = cursor["last_id"].to_i
 
       scope = Habitation.where("habitations.id > ?", last_id).where.not(imovel_dwv: "Sim").order("habitations.id")
+      scope = scope.where("habitations.id <= ?", max_id) if max_id.positive?
       scope = scope.where.missing(:photos_attachments) if only_without_attachments
       batch = scope.limit(batch_size).to_a
 
