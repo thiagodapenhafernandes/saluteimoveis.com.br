@@ -316,6 +316,46 @@
 
       <div class="card shadow-sm border-0 mb-4">
         <div class="card-header bg-white py-3">
+          <h5 class="card-title mb-0 fw-bold">
+            <i class="bi bi-geo-alt-fill me-2 text-success"></i>Check-in geolocalizado
+            <span class="badge bg-light text-muted ms-2 fw-normal">Opcional</span>
+          </h5>
+        </div>
+        <div class="card-body">
+          <p class="text-muted small mb-3">
+            Quando ativo, a regra só distribui leads para corretores com <strong>check-in ativo</strong> no momento.
+            Todas as flags ficam desligadas por padrão — a regra funciona como antes.
+          </p>
+
+          <div class="form-check form-switch mb-2">
+            <%= f.check_box :require_active_checkin, class: "form-check-input" %>
+            <%= f.label :require_active_checkin, "Exigir check-in ativo", class: "form-check-label small" %>
+          </div>
+
+          <div class="form-check form-switch mb-2">
+            <%= f.check_box :require_inside_radius, class: "form-check-input" %>
+            <%= f.label :require_inside_radius, "Exigir corretor dentro do raio da loja", class: "form-check-label small" %>
+          </div>
+
+          <div class="form-check form-switch mb-3">
+            <%= f.check_box :exclude_suspicious_checkins, class: "form-check-input" %>
+            <%= f.label :exclude_suspicious_checkins, "Excluir check-ins marcados como suspeitos", class: "form-check-label small" %>
+          </div>
+
+          <div class="mb-0">
+            <label class="form-label small text-muted text-uppercase fw-bold">
+              <i class="bi bi-shop me-1 text-primary"></i>Limitar à loja específica
+            </label>
+            <%= f.collection_select :checkin_store_id, Store.order(:name), :id, :name,
+                                    { include_blank: "— Qualquer loja —" },
+                                    class: "form-select form-select-sm" %>
+            <div class="form-text small">Se preenchido, apenas check-ins nesta loja contam.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white py-3">
           <h5 class="card-title mb-0 fw-bold"><i class="bi bi-bell me-2 text-danger"></i>Notificações</h5>
         </div>
         <div class="card-body">

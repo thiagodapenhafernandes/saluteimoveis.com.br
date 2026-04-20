@@ -28,7 +28,13 @@ module Leads
         return rule
       end
 
-      agent = rule.next_available_agent
+      candidates = rule.candidates_filtered_by_checkin
+      if rule.require_active_checkin? && candidates.empty?
+        return dammed_no_eligible_checkin(rule) if rule.represamento_active?
+        return nil
+      end
+
+      agent = rule.next_available_agent(candidates)
       return nil unless agent
 
       @lead.update(admin_user_id: agent.admin_user_id, status: :waiting_acceptance, distribution_rule_id: rule.id)
@@ -51,6 +57,16 @@ module Leads
     end
 
     private
+
+    def dammed_no_eligible_checkin(rule)
+      @lead.update(admin_user_id: nil, status: :represado, distribution_rule_id: rule.id)
+      @lead.activities.create(kind: "dammed", metadata: {
+        rule_id: rule.id,
+        rule_name: rule.name,
+        reason: "no_eligible_agent_with_checkin"
+      })
+      rule
+    end
 
     def find_matching_rule
       DistributionRule.active.find_each do |rule|

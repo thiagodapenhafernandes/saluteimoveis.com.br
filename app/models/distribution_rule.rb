@@ -5,6 +5,8 @@ class DistributionRule < ApplicationRecord
   has_many :admin_users, through: :distribution_rule_agents
   accepts_nested_attributes_for :distribution_rule_agents, allow_destroy: true
 
+  belongs_to :checkin_store, class_name: "Store", optional: true
+
   enum :business_type, { venda: 0, locacao: 1, ambos: 2 }, suffix: true
   enum :distribution_mode, { rotary: 0, performance: 1, shark_tank: 2 }
 
@@ -16,14 +18,27 @@ class DistributionRule < ApplicationRecord
 
   scope :active, -> { where(active: true) }
 
-  def next_available_agent
+  def next_available_agent(candidates = nil)
+    candidates ||= distribution_rule_agents
     if rotary?
-      distribution_rule_agents.order(position: :asc, last_lead_received_at: :asc).first
+      candidates.order(position: :asc, last_lead_received_at: :asc).first
     elsif performance?
-      distribution_rule_agents.max_by { |dra| rand ** (1.0 / dra.weight) }
+      candidates.to_a.max_by { |dra| rand ** (1.0 / dra.weight) }
     else
       nil # Shark Tank doesn't have a "next" individual agent upfront
     end
+  end
+
+  # Filtra candidatos pelas regras de check-in geolocalizado (Fase 5).
+  # Com flags default false, retorna a relation original (retrocompatibilidade total).
+  def candidates_filtered_by_checkin
+    return distribution_rule_agents unless require_active_checkin?
+
+    active_checkin_scope = CheckIn.where(status: :active)
+    active_checkin_scope = active_checkin_scope.where(store_id: checkin_store_id) if checkin_store_id.present?
+
+    user_ids_with_checkin = active_checkin_scope.pluck(:admin_user_id)
+    distribution_rule_agents.where(admin_user_id: user_ids_with_checkin)
   end
 
   def rotate_queue!(just_served_admin_user_id)

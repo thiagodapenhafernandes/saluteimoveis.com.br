@@ -1,4 +1,4 @@
-\restrict pe2zWpq7qL2W6h0jNj5K5XwbzoEwpEbIYLZbrrg6d5as0nGlpeVB4Lyglmeud5I
+\restrict fHtbhRO1PJjjuJhv8ZWM1RhLn3vpwOgbtjDqiaafMXPOaYZxIF2ZvVWJKmxACYY
 
 -- Dumped from database version 18.3 (Homebrew)
 -- Dumped by pg_dump version 18.3 (Homebrew)
@@ -538,7 +538,11 @@ CREATE TABLE public.distribution_rules (
     notify_webhook boolean DEFAULT false,
     meta_page_ids jsonb DEFAULT '[]'::jsonb,
     neighborhoods jsonb DEFAULT '[]'::jsonb,
-    webhook_url character varying
+    webhook_url character varying,
+    require_active_checkin boolean DEFAULT false NOT NULL,
+    require_inside_radius boolean DEFAULT false NOT NULL,
+    exclude_suspicious_checkins boolean DEFAULT true NOT NULL,
+    checkin_store_id bigint
 );
 
 
@@ -3377,6 +3381,13 @@ CREATE INDEX index_distribution_rule_agents_on_distribution_rule_id ON public.di
 
 
 --
+-- Name: index_distribution_rules_on_checkin_store_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_distribution_rules_on_checkin_store_id ON public.distribution_rules USING btree (checkin_store_id);
+
+
+--
 -- Name: index_featured_properties_view_on_categoria; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4543,6 +4554,14 @@ ALTER TABLE ONLY public.admin_users
 
 
 --
+-- Name: distribution_rules fk_rails_ec979d2a3e; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.distribution_rules
+    ADD CONSTRAINT fk_rails_ec979d2a3e FOREIGN KEY (checkin_store_id) REFERENCES public.stores(id);
+
+
+--
 -- Name: lead_activities fk_rails_ee14909c06; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4570,11 +4589,12 @@ ALTER TABLE ONLY public.store_shifts
 -- PostgreSQL database dump complete
 --
 
-\unrestrict pe2zWpq7qL2W6h0jNj5K5XwbzoEwpEbIYLZbrrg6d5as0nGlpeVB4Lyglmeud5I
+\unrestrict fHtbhRO1PJjjuJhv8ZWM1RhLn3vpwOgbtjDqiaafMXPOaYZxIF2ZvVWJKmxACYY
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260420160000'),
 ('20260420150000'),
 ('20260420140000'),
 ('20260420130000'),
