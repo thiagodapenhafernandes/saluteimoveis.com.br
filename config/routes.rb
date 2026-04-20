@@ -102,6 +102,13 @@ Rails.application.routes.draw do
     # === Lojas físicas (módulo field) ===
     resources :stores
 
+    # === Captação (wizard + dashboard) ===
+    resources :captacoes do
+      member      { post :publish }
+      collection  { get :dashboard }
+    end
+    resources :captacao_goals
+
     # === Field settings (toggle da feature flag) ===
     resource :field_settings, only: [:edit, :update]
 

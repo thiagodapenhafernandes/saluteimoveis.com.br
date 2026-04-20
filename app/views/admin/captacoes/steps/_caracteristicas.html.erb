@@ -1,0 +1,226 @@
+<%
+  kind = @captacao.property_kind.to_s
+  features_imovel = case kind
+                    when "residencial"
+                      ["Armários nos quartos", "Cozinha planejada", "Ar-condicionado", "Aquecimento a gás",
+                       "Fechadura digital", "Lavabo", "Piscina", "Churrasqueira", "Área de serviço"]
+                    when "sala_comercial"
+                      ["Ar-condicionado", "Recepção", "Sanitários", "Copa/cozinha", "Piso elevado", "Sprinklers",
+                       "Sistema de segurança", "Divisórias prontas"]
+                    else  # terreno
+                      ["Murado", "Cercado", "Aterrado", "Com edificação", "Esquina", "Frente para mar"]
+                    end
+
+  features_predio = case kind
+                    when "residencial"
+                      ["Elevador", "Salão de festas", "Academia", "Playground", "Piscina", "Churrasqueira",
+                       "Portaria 24h", "Quadra poliesportiva", "Sauna", "Bicicletário", "Pet place", "Coworking"]
+                    when "sala_comercial"
+                      ["Elevador", "Gerador", "Estacionamento rotativo", "Portaria 24h", "Câmeras de segurança", "Heliponto"]
+                    else
+                      []
+                    end
+%>
+
+<h1 class="wizard-section-title"><i class="bi bi-rulers text-primary me-2"></i>Características</h1>
+<p class="wizard-section-subtitle">Campos variam por tipo de imóvel (<strong><%= kind.humanize %></strong>).</p>
+
+<!-- Áreas (comum a todos) -->
+<div class="row g-2">
+  <div class="col-6">
+    <div class="wizard-field-group">
+      <%= f.label :area_total, "Área total (m²)", class: "form-label" %>
+      <span class="required-star">*</span>
+      <%= f.number_field :area_total, step: 0.01, inputmode: "decimal", class: "form-control" %>
+    </div>
+  </div>
+  <% unless @captacao.property_kind_terreno? %>
+    <div class="col-6">
+      <div class="wizard-field-group">
+        <%= f.label :area_privativa, "Área privativa (m²)", class: "form-label" %>
+        <%= f.number_field :area_privativa, step: 0.01, inputmode: "decimal", class: "form-control" %>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<% if @captacao.property_kind_residencial? %>
+  <div class="row g-2">
+    <% [[:dormitorios, "Dormitórios", true], [:suites, "Suítes"], [:demi_suites, "Demi-suítes"]].each do |field, label, req| %>
+      <div class="col-4">
+        <div class="wizard-field-group">
+          <%= f.label field, label, class: "form-label" %>
+          <% if req %><span class="required-star">*</span><% end %>
+          <%= f.number_field field, min: 0, inputmode: "numeric", class: "form-control" %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="row g-2">
+    <div class="col-4">
+      <div class="wizard-field-group">
+        <%= f.label :banheiros, "Banheiros", class: "form-label" %>
+        <span class="required-star">*</span>
+        <%= f.number_field :banheiros, min: 0, inputmode: "numeric", class: "form-control" %>
+      </div>
+    </div>
+    <div class="col-4">
+      <div class="wizard-field-group">
+        <%= f.label :vagas_garagem, "Vagas", class: "form-label" %>
+        <%= f.number_field :vagas_garagem, min: 0, inputmode: "numeric", class: "form-control" %>
+      </div>
+    </div>
+    <div class="col-4">
+      <div class="wizard-field-group">
+        <%= f.label :salas, "Salas", class: "form-label" %>
+        <%= f.number_field :salas, min: 0, inputmode: "numeric", class: "form-control" %>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-2">
+    <div class="col-md-4">
+      <div class="wizard-field-group">
+        <%= f.label :ocupacao, "Ocupação", class: "form-label" %>
+        <%= f.select :ocupacao, [["Desocupado", "desocupado"], ["Inquilino", "inquilino"], ["Proprietário", "proprietario"]], { include_blank: "—" }, class: "form-select" %>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="wizard-field-group">
+        <%= f.label :estado_imovel, "Estado", class: "form-label" %>
+        <%= f.select :estado_imovel, [["Ótimo", "otimo"], ["Bom", "bom"], ["Regular", "regular"]], { include_blank: "—" }, class: "form-select" %>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="wizard-field-group">
+        <%= f.label :situacao_imovel, "Situação", class: "form-label" %>
+        <%= f.select :situacao_imovel, [["Em construção", "construcao"], ["Novo", "novo"], ["Usado", "usado"]], { include_blank: "—" }, class: "form-select" %>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-2">
+    <% [[:sacada, "Sacada"], [:terraco, "Terraço"], [:dependencia_empregada, "Dep. empregada"], [:precisa_reforma, "Precisa reforma"]].each do |field, label| %>
+      <div class="col-6 col-md-3">
+        <div class="form-check form-switch py-2">
+          <%= f.check_box field, class: "form-check-input" %>
+          <%= f.label field, label, class: "form-check-label small" %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+<% elsif @captacao.property_kind_sala_comercial? %>
+  <div class="row g-2">
+    <div class="col-4">
+      <div class="wizard-field-group">
+        <%= f.label :salas, "Salas/Ambientes", class: "form-label" %>
+        <span class="required-star">*</span>
+        <%= f.number_field :salas, min: 0, inputmode: "numeric", class: "form-control" %>
+      </div>
+    </div>
+    <div class="col-4">
+      <div class="wizard-field-group">
+        <%= f.label :banheiros, "Banheiros", class: "form-label" %>
+        <%= f.number_field :banheiros, min: 0, inputmode: "numeric", class: "form-control" %>
+      </div>
+    </div>
+    <div class="col-4">
+      <div class="wizard-field-group">
+        <%= f.label :vagas_garagem, "Vagas", class: "form-label" %>
+        <%= f.number_field :vagas_garagem, min: 0, inputmode: "numeric", class: "form-control" %>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-2">
+    <div class="col-md-6">
+      <div class="wizard-field-group">
+        <%= f.label :ocupacao, "Ocupação", class: "form-label" %>
+        <%= f.select :ocupacao, [["Desocupado", "desocupado"], ["Inquilino", "inquilino"], ["Proprietário", "proprietario"]], { include_blank: "—" }, class: "form-select" %>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="wizard-field-group">
+        <%= f.label :situacao_imovel, "Situação", class: "form-label" %>
+        <%= f.select :situacao_imovel, [["Novo", "novo"], ["Usado", "usado"], ["Em construção", "construcao"]], { include_blank: "—" }, class: "form-select" %>
+      </div>
+    </div>
+  </div>
+
+<% else  # terreno %>
+  <div class="row g-2">
+    <div class="col-md-6">
+      <div class="wizard-field-group">
+        <%= f.label "extras[frente_metros]", "Frente (m)", class: "form-label" %>
+        <%= number_field_tag "captacao[extras][frente_metros]", @captacao.extras["frente_metros"], step: 0.1, inputmode: "decimal", class: "form-control" %>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="wizard-field-group">
+        <%= f.label "extras[topografia]", "Topografia", class: "form-label" %>
+        <%= select_tag "captacao[extras][topografia]", options_for_select([["Plano", "plano"], ["Aclive", "aclive"], ["Declive", "declive"], ["Irregular", "irregular"]], @captacao.extras["topografia"]), include_blank: "—", class: "form-select" %>
+      </div>
+    </div>
+  </div>
+  <div class="wizard-field-group">
+    <%= f.label "extras[face]", "Face predominante", class: "form-label" %>
+    <%= select_tag "captacao[extras][face]", options_for_select(%w[Norte Sul Leste Oeste Nordeste Noroeste Sudeste Sudoeste], @captacao.extras["face"]), include_blank: "—", class: "form-select" %>
+  </div>
+<% end %>
+
+<% unless @captacao.property_kind_terreno? %>
+  <hr class="my-3">
+  <div class="row g-2">
+    <div class="col-6 col-md-4">
+      <div class="wizard-field-group">
+        <%= f.label :andares_total, "Total andares", class: "form-label" %>
+        <%= f.number_field :andares_total, min: 0, inputmode: "numeric", class: "form-control" %>
+      </div>
+    </div>
+    <div class="col-6 col-md-4">
+      <div class="wizard-field-group">
+        <%= f.label :aptos_por_andar, "Aptos/andar", class: "form-label" %>
+        <%= f.number_field :aptos_por_andar, min: 0, inputmode: "numeric", class: "form-control" %>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="wizard-field-group">
+        <%= f.label :distancia_praia, "Distância da praia (m)", class: "form-label" %>
+        <%= f.number_field :distancia_praia, min: 0, inputmode: "decimal", class: "form-control" %>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<% if features_imovel.any? %>
+  <hr class="my-3">
+  <div class="wizard-field-group">
+    <label class="form-label">Características do imóvel</label>
+    <div>
+      <% features_imovel.each do |feat| %>
+        <% selected = Array(@captacao.caracteristicas_imovel).include?(feat) %>
+        <label class="wizard-feature-chip <%= 'selected' if selected %>">
+          <%= check_box_tag "captacao[caracteristicas_imovel][]", feat, selected, onchange: "this.closest('label').classList.toggle('selected', this.checked)" %>
+          <%= feat %>
+        </label>
+      <% end %>
+    </div>
+  </div>
+<% end %>
+
+<% if features_predio.any? %>
+  <div class="wizard-field-group">
+    <label class="form-label">Características do edifício</label>
+    <div>
+      <% features_predio.each do |feat| %>
+        <% selected = Array(@captacao.caracteristicas_predio).include?(feat) %>
+        <label class="wizard-feature-chip <%= 'selected' if selected %>">
+          <%= check_box_tag "captacao[caracteristicas_predio][]", feat, selected, onchange: "this.closest('label').classList.toggle('selected', this.checked)" %>
+          <%= feat %>
+        </label>
+      <% end %>
+    </div>
+  </div>
+<% end %>

@@ -1,0 +1,89 @@
+<h1 class="wizard-section-title"><i class="bi bi-cash-stack text-primary me-2"></i>Negociação</h1>
+<p class="wizard-section-subtitle">
+  Modalidade: <strong><%= @captacao.modalidade.to_s.humanize %></strong>. Preencha conforme aplicável.
+</p>
+
+<% if @captacao.requires_sale_price? %>
+  <div class="wizard-field-group">
+    <%= f.label :valor_venda, "Valor de venda (R$)", class: "form-label" %>
+    <span class="required-star">*</span>
+    <%= f.number_field :valor_venda, step: 0.01, inputmode: "decimal", class: "form-control",
+                       data: { controller: "currency-mask" } %>
+  </div>
+
+  <div class="wizard-field-group">
+    <%= f.label :motivo_venda, "Motivo da venda", class: "form-label" %>
+    <%= f.text_field :motivo_venda, class: "form-control", placeholder: "Ex: mudança, investimento, etc" %>
+  </div>
+
+  <div class="wizard-field-group">
+    <label class="form-label">Aceita permuta?</label>
+    <% %w[Sim Não Negociável].each do |opt| %>
+      <% selected = Array(@captacao.aceita_permuta).include?(opt) %>
+      <label class="wizard-feature-chip <%= 'selected' if selected %>">
+        <%= check_box_tag "captacao[aceita_permuta][]", opt, selected, onchange: "this.closest('label').classList.toggle('selected', this.checked)" %>
+        <%= opt %>
+      </label>
+    <% end %>
+  </div>
+
+  <div class="row g-2">
+    <div class="col-md-6">
+      <div class="wizard-field-group">
+        <%= f.label :cidade_permuta, "Cidade aceita permuta", class: "form-label" %>
+        <%= f.text_field :cidade_permuta, class: "form-control" %>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="wizard-field-group">
+        <%= f.label :aceita_parcelamento, "Parcelamento", class: "form-label" %>
+        <%= f.select :aceita_parcelamento, [["Aceita", "sim"], ["Não aceita", "nao"], ["Negociável", "negociavel"]], { include_blank: "—" }, class: "form-select" %>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<% if @captacao.requires_rent_price? %>
+  <hr class="my-3">
+  <div class="wizard-field-group">
+    <%= f.label :valor_locacao, "Valor de locação (R$)", class: "form-label" %>
+    <span class="required-star">*</span>
+    <%= f.number_field :valor_locacao, step: 0.01, inputmode: "decimal", class: "form-control",
+                       data: { controller: "currency-mask" } %>
+  </div>
+<% end %>
+
+<hr class="my-3">
+<h6 class="fw-bold mb-2 text-muted small text-uppercase">Taxas e despesas</h6>
+
+<div class="row g-2">
+  <div class="col-6">
+    <div class="wizard-field-group">
+      <%= f.label :valor_condominio, "Condomínio (R$)", class: "form-label" %>
+      <%= f.number_field :valor_condominio, step: 0.01, inputmode: "decimal", class: "form-control" %>
+    </div>
+  </div>
+  <div class="col-6">
+    <div class="wizard-field-group">
+      <%= f.label :valor_iptu, "IPTU anual (R$)", class: "form-label" %>
+      <%= f.number_field :valor_iptu, step: 0.01, inputmode: "decimal", class: "form-control" %>
+    </div>
+  </div>
+</div>
+
+<div class="wizard-field-group">
+  <%= f.label :saldo_devedor, "Saldo devedor (R$)", class: "form-label" %>
+  <%= f.number_field :saldo_devedor, step: 0.01, inputmode: "decimal", class: "form-control" %>
+  <small class="text-muted">Se houver financiamento em aberto.</small>
+</div>
+
+<div class="wizard-field-group">
+  <label class="form-label">Outras taxas / contribuições</label>
+  <% %w[Fundo\ de\ reserva Taxa\ extra Lazer Água Gás].each do |opt| %>
+    <% selected = Array(@captacao.outras_taxas).include?(opt) %>
+    <label class="wizard-feature-chip <%= 'selected' if selected %>">
+      <%= check_box_tag "captacao[outras_taxas][]", opt, selected, onchange: "this.closest('label').classList.toggle('selected', this.checked)" %>
+      <%= opt %>
+    </label>
+  <% end %>
+</div>

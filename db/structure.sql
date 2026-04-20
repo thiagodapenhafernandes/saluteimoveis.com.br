@@ -1,4 +1,4 @@
-\restrict ke2NMPf0lKydnpdKr2ykeOkJd3mlIKvO5oNV5g91mXSfGshLreK52GuauXCqScO
+\restrict 7VfSFus2orO49iFKp5PBDRTRJ6QMOERWhzvNACK7sKsNemhfLZADKugMlAdbbKd
 
 -- Dumped from database version 18.3 (Homebrew)
 -- Dumped by pg_dump version 18.3 (Homebrew)
@@ -366,6 +366,130 @@ CREATE SEQUENCE public.banners_id_seq
 --
 
 ALTER SEQUENCE public.banners_id_seq OWNED BY public.banners.id;
+
+
+--
+-- Name: captacao_goals; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.captacao_goals (
+    id bigint NOT NULL,
+    year integer NOT NULL,
+    kind integer NOT NULL,
+    target integer NOT NULL,
+    foco_regiao character varying,
+    foco_valor_min numeric(12,2),
+    foco_valor_max numeric(12,2),
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: captacao_goals_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.captacao_goals_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: captacao_goals_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.captacao_goals_id_seq OWNED BY public.captacao_goals.id;
+
+
+--
+-- Name: captacoes; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.captacoes (
+    id bigint NOT NULL,
+    corretor_id bigint NOT NULL,
+    step character varying DEFAULT 'intro'::character varying NOT NULL,
+    completed boolean DEFAULT false NOT NULL,
+    published_on_site boolean DEFAULT false NOT NULL,
+    submitted_at timestamp(6) without time zone,
+    property_kind integer DEFAULT 0 NOT NULL,
+    modalidade integer,
+    proprietario_nome character varying,
+    proprietario_telefone character varying,
+    proprietario_cpf_cnpj character varying,
+    proprietario_email character varying,
+    proprietario_cidade character varying,
+    zip_code character varying,
+    street character varying,
+    street_number character varying,
+    neighborhood character varying,
+    city character varying,
+    state character varying(2),
+    edificio_nome character varying,
+    unidade_numero character varying,
+    latitude numeric(10,6),
+    longitude numeric(10,6),
+    dormitorios integer,
+    suites integer,
+    demi_suites integer,
+    salas integer,
+    banheiros integer,
+    vagas_garagem integer,
+    area_privativa numeric(10,2),
+    area_total numeric(10,2),
+    ocupacao character varying,
+    estado_imovel character varying,
+    situacao_imovel character varying,
+    precisa_reforma boolean DEFAULT false NOT NULL,
+    sacada boolean DEFAULT false NOT NULL,
+    terraco boolean DEFAULT false NOT NULL,
+    dependencia_empregada boolean DEFAULT false NOT NULL,
+    andares_total integer,
+    aptos_por_andar integer,
+    distancia_praia numeric(6,2),
+    caracteristicas_imovel character varying[] DEFAULT '{}'::character varying[],
+    caracteristicas_predio character varying[] DEFAULT '{}'::character varying[],
+    outras_taxas character varying[] DEFAULT '{}'::character varying[],
+    aceita_permuta character varying[] DEFAULT '{}'::character varying[],
+    dias_visitas character varying[] DEFAULT '{}'::character varying[],
+    valor_venda numeric(12,2),
+    valor_locacao numeric(10,2),
+    valor_condominio numeric(10,2),
+    valor_iptu numeric(10,2),
+    saldo_devedor numeric(12,2),
+    cidade_permuta character varying,
+    aceita_parcelamento character varying,
+    motivo_venda character varying,
+    chaves_com character varying,
+    senha_imovel character varying,
+    senha_portaria character varying,
+    observacoes text,
+    extras jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: captacoes_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.captacoes_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: captacoes_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.captacoes_id_seq OWNED BY public.captacoes.id;
 
 
 --
@@ -2458,6 +2582,20 @@ ALTER TABLE ONLY public.banners ALTER COLUMN id SET DEFAULT nextval('public.bann
 
 
 --
+-- Name: captacao_goals id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.captacao_goals ALTER COLUMN id SET DEFAULT nextval('public.captacao_goals_id_seq'::regclass);
+
+
+--
+-- Name: captacoes id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.captacoes ALTER COLUMN id SET DEFAULT nextval('public.captacoes_id_seq'::regclass);
+
+
+--
 -- Name: check_ins id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -2863,6 +3001,22 @@ ALTER TABLE ONLY public.attribute_options
 
 ALTER TABLE ONLY public.banners
     ADD CONSTRAINT banners_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: captacao_goals captacao_goals_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.captacao_goals
+    ADD CONSTRAINT captacao_goals_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: captacoes captacoes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.captacoes
+    ADD CONSTRAINT captacoes_pkey PRIMARY KEY (id);
 
 
 --
@@ -3458,6 +3612,69 @@ CREATE INDEX index_admin_users_on_vista_id ON public.admin_users USING btree (vi
 --
 
 CREATE UNIQUE INDEX index_attribute_options_on_context_category_lower_name ON public.attribute_options USING btree (lower((name)::text), category, context);
+
+
+--
+-- Name: index_captacao_goals_on_year_and_kind; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_captacao_goals_on_year_and_kind ON public.captacao_goals USING btree (year, kind);
+
+
+--
+-- Name: index_captacoes_on_caracteristicas_imovel; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_captacoes_on_caracteristicas_imovel ON public.captacoes USING gin (caracteristicas_imovel);
+
+
+--
+-- Name: index_captacoes_on_caracteristicas_predio; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_captacoes_on_caracteristicas_predio ON public.captacoes USING gin (caracteristicas_predio);
+
+
+--
+-- Name: index_captacoes_on_corretor_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_captacoes_on_corretor_id ON public.captacoes USING btree (corretor_id);
+
+
+--
+-- Name: index_captacoes_on_corretor_id_and_completed; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_captacoes_on_corretor_id_and_completed ON public.captacoes USING btree (corretor_id, completed);
+
+
+--
+-- Name: index_captacoes_on_modalidade; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_captacoes_on_modalidade ON public.captacoes USING btree (modalidade);
+
+
+--
+-- Name: index_captacoes_on_property_kind; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_captacoes_on_property_kind ON public.captacoes USING btree (property_kind);
+
+
+--
+-- Name: index_captacoes_on_published_on_site; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_captacoes_on_published_on_site ON public.captacoes USING btree (published_on_site);
+
+
+--
+-- Name: index_captacoes_on_submitted_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_captacoes_on_submitted_at ON public.captacoes USING btree (submitted_at);
 
 
 --
@@ -4478,6 +4695,14 @@ ALTER TABLE ONLY public.leads
 
 
 --
+-- Name: captacoes fk_rails_121e1dda03; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.captacoes
+    ADD CONSTRAINT fk_rails_121e1dda03 FOREIGN KEY (corretor_id) REFERENCES public.admin_users(id);
+
+
+--
 -- Name: footer_links fk_rails_14fda2a7a0; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4865,11 +5090,13 @@ ALTER TABLE ONLY public.store_shifts
 -- PostgreSQL database dump complete
 --
 
-\unrestrict ke2NMPf0lKydnpdKr2ykeOkJd3mlIKvO5oNV5g91mXSfGshLreK52GuauXCqScO
+\unrestrict 7VfSFus2orO49iFKp5PBDRTRJ6QMOERWhzvNACK7sKsNemhfLZADKugMlAdbbKd
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260420220001'),
+('20260420220000'),
 ('20260420210000'),
 ('20260420200000'),
 ('20260420180000'),

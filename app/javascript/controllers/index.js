@@ -154,6 +154,9 @@ application.register("field-ping-sender", FieldPingSenderController)
 import VistaSyncStatusController from "controllers/vista_sync_status_controller"
 application.register("vista-sync-status", VistaSyncStatusController)
 
+import OptionPickerController from "controllers/option_picker_controller"
+application.register("option-picker", OptionPickerController)
+
 import TagInputController from "controllers/tag_input_controller"
 application.register("tag-input", TagInputController)
 

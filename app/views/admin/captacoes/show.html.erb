@@ -1,0 +1,154 @@
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <div>
+    <h1 class="h4 mb-1"><%= @captacao.display_title %></h1>
+    <div class="small text-muted">
+      <%= @captacao.property_kind.humanize %> · <%= @captacao.modalidade.humanize %> ·
+      <% if @captacao.submitted_at %>
+        Finalizada em <%= l(@captacao.submitted_at, format: :short) %>
+      <% end %>
+    </div>
+  </div>
+  <div class="d-flex gap-2">
+    <%= link_to admin_captacoes_path, class: "btn btn-outline-secondary btn-sm" do %>
+      <i class="bi bi-arrow-left me-1"></i>Voltar
+    <% end %>
+    <% if current_admin_user.admin? %>
+      <%= button_to publish_admin_captacao_path(@captacao), method: :post,
+                    class: "btn btn-sm #{@captacao.published_on_site? ? 'btn-outline-secondary' : 'btn-success'}" do %>
+        <i class="bi bi-globe me-1"></i><%= @captacao.published_on_site? ? "Desmarcar publicada" : "Marcar como publicada" %>
+      <% end %>
+    <% end %>
+  </div>
+</div>
+
+<% if @captacao.published_on_site? %>
+  <div class="alert alert-success">
+    <i class="bi bi-check-circle-fill me-1"></i>
+    <strong>Publicada no site</strong> — admin já aprovou para divulgação externa.
+  </div>
+<% end %>
+
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="card shadow-sm border-0 mb-3">
+      <div class="card-body">
+        <h6 class="fw-bold text-uppercase small text-muted mb-3"><i class="bi bi-geo-alt me-1"></i>Endereço</h6>
+        <dl class="row small mb-0">
+          <dt class="col-sm-3">Logradouro</dt>
+          <dd class="col-sm-9"><%= [@captacao.street, @captacao.street_number].compact_blank.join(", ") %></dd>
+          <% if @captacao.edificio_nome.present? %>
+            <dt class="col-sm-3">Edifício</dt>
+            <dd class="col-sm-9"><%= @captacao.edificio_nome %><%= " · Unidade #{@captacao.unidade_numero}" if @captacao.unidade_numero.present? %></dd>
+          <% end %>
+          <dt class="col-sm-3">Bairro</dt>
+          <dd class="col-sm-9"><%= @captacao.neighborhood.presence || "—" %></dd>
+          <dt class="col-sm-3">Cidade/UF</dt>
+          <dd class="col-sm-9"><%= [@captacao.city, @captacao.state].compact_blank.join("/") %></dd>
+          <% if @captacao.zip_code.present? %>
+            <dt class="col-sm-3">CEP</dt>
+            <dd class="col-sm-9"><%= @captacao.zip_code %></dd>
+          <% end %>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-3">
+      <div class="card-body">
+        <h6 class="fw-bold text-uppercase small text-muted mb-3"><i class="bi bi-rulers me-1"></i>Características</h6>
+        <dl class="row small mb-0">
+          <dt class="col-sm-3">Área total</dt>
+          <dd class="col-sm-9"><%= @captacao.area_total %> m²<%= " · privativa #{@captacao.area_privativa} m²" if @captacao.area_privativa.present? %></dd>
+          <% if @captacao.property_kind_residencial? %>
+            <dt class="col-sm-3">Dorms · Suítes · Banheiros</dt>
+            <dd class="col-sm-9"><%= [@captacao.dormitorios, @captacao.suites, @captacao.banheiros].join(" · ") %></dd>
+            <dt class="col-sm-3">Vagas</dt>
+            <dd class="col-sm-9"><%= @captacao.vagas_garagem.presence || "—" %></dd>
+          <% end %>
+          <% if @captacao.caracteristicas_imovel.any? %>
+            <dt class="col-sm-3">Imóvel</dt>
+            <dd class="col-sm-9"><%= @captacao.caracteristicas_imovel.join(" · ") %></dd>
+          <% end %>
+          <% if @captacao.caracteristicas_predio.any? %>
+            <dt class="col-sm-3">Edifício</dt>
+            <dd class="col-sm-9"><%= @captacao.caracteristicas_predio.join(" · ") %></dd>
+          <% end %>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-3">
+      <div class="card-body">
+        <h6 class="fw-bold text-uppercase small text-muted mb-3"><i class="bi bi-cash-stack me-1"></i>Negociação</h6>
+        <dl class="row small mb-0">
+          <% if @captacao.valor_venda.present? %>
+            <dt class="col-sm-3">Venda</dt>
+            <dd class="col-sm-9"><strong><%= number_to_currency(@captacao.valor_venda, unit: "R$ ") %></strong></dd>
+          <% end %>
+          <% if @captacao.valor_locacao.present? %>
+            <dt class="col-sm-3">Locação</dt>
+            <dd class="col-sm-9"><strong><%= number_to_currency(@captacao.valor_locacao, unit: "R$ ") %></strong> / mês</dd>
+          <% end %>
+          <% if @captacao.valor_condominio.present? %>
+            <dt class="col-sm-3">Condomínio</dt>
+            <dd class="col-sm-9"><%= number_to_currency(@captacao.valor_condominio, unit: "R$ ") %></dd>
+          <% end %>
+          <% if @captacao.valor_iptu.present? %>
+            <dt class="col-sm-3">IPTU</dt>
+            <dd class="col-sm-9"><%= number_to_currency(@captacao.valor_iptu, unit: "R$ ") %>/ano</dd>
+          <% end %>
+        </dl>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card shadow-sm border-0 mb-3">
+      <div class="card-body">
+        <h6 class="fw-bold text-uppercase small text-muted mb-3"><i class="bi bi-person me-1"></i>Proprietário</h6>
+        <div class="small"><strong><%= @captacao.proprietario_nome %></strong></div>
+        <% if @captacao.proprietario_telefone.present? %>
+          <div class="small mt-1"><i class="bi bi-telephone me-1"></i><%= @captacao.proprietario_telefone %></div>
+        <% end %>
+        <% if @captacao.proprietario_email.present? %>
+          <div class="small mt-1"><i class="bi bi-envelope me-1"></i><%= @captacao.proprietario_email %></div>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-3">
+      <div class="card-body">
+        <h6 class="fw-bold text-uppercase small text-muted mb-3"><i class="bi bi-person-badge me-1"></i>Corretor responsável</h6>
+        <div class="small"><strong><%= @captacao.corretor.name %></strong></div>
+        <div class="small text-muted"><%= @captacao.corretor.email %></div>
+      </div>
+    </div>
+
+    <% if @captacao.autorizacao_pdf.attached? %>
+      <div class="card shadow-sm border-0 mb-3">
+        <div class="card-body">
+          <h6 class="fw-bold text-uppercase small text-muted mb-2"><i class="bi bi-file-earmark-pdf me-1"></i>Autorização</h6>
+          <%= link_to rails_blob_path(@captacao.autorizacao_pdf, disposition: "inline"), target: "_blank", class: "btn btn-sm btn-outline-primary w-100" do %>
+            <i class="bi bi-download me-1"></i><%= @captacao.autorizacao_pdf.filename %>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<% if @captacao.fotos.attached? %>
+  <div class="card shadow-sm border-0 mb-3">
+    <div class="card-body">
+      <h6 class="fw-bold text-uppercase small text-muted mb-3"><i class="bi bi-images me-1"></i>Fotos (<%= @captacao.fotos.count %>)</h6>
+      <div class="row g-2">
+        <% @captacao.fotos.each do |photo| %>
+          <div class="col-6 col-md-3">
+            <%= link_to rails_blob_path(photo, disposition: "inline"), target: "_blank" do %>
+              <%= image_tag photo.representation(resize_to_limit: [400, 400]), class: "w-100 rounded", style: "height: 160px; object-fit: cover;", loading: "lazy" %>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+<% end %>

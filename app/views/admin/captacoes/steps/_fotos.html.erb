@@ -1,0 +1,38 @@
+<h1 class="wizard-section-title"><i class="bi bi-camera-fill text-primary me-2"></i>Fotos e autorização</h1>
+<p class="wizard-section-subtitle">Use a câmera do celular — as fotos vão direto pro armazenamento seguro.</p>
+
+<div class="wizard-field-group">
+  <label class="form-label">Fotos do imóvel</label>
+  <%= f.file_field :fotos, multiple: true, accept: "image/*", capture: "environment",
+                   class: "form-control", direct_upload: true %>
+  <small class="text-muted">Você pode selecionar várias. Depois ordena no painel web.</small>
+</div>
+
+<% if @captacao.fotos.attached? %>
+  <div class="row g-2 wizard-photo-grid mb-4">
+    <% @captacao.fotos.each do |photo| %>
+      <div class="col-4 col-md-3">
+        <%= image_tag photo.representation(resize_to_limit: [400, 400]), loading: "lazy" %>
+      </div>
+    <% end %>
+  </div>
+  <small class="text-muted d-block mb-3">
+    <i class="bi bi-images me-1"></i><%= pluralize(@captacao.fotos.count, "foto anexada", "fotos anexadas") %>
+  </small>
+<% end %>
+
+<hr class="my-3">
+
+<div class="wizard-field-group">
+  <label class="form-label">Autorização do proprietário (PDF)</label>
+  <%= f.file_field :autorizacao_pdf, accept: "application/pdf", class: "form-control", direct_upload: true %>
+  <small class="text-muted">Opcional. Recomendado anexar antes de marcar como publicada.</small>
+</div>
+
+<% if @captacao.autorizacao_pdf.attached? %>
+  <div class="alert alert-success small">
+    <i class="bi bi-file-earmark-pdf-fill me-1"></i>
+    <%= @captacao.autorizacao_pdf.filename %> anexada
+    (<%= number_to_human_size(@captacao.autorizacao_pdf.byte_size) %>).
+  </div>
+<% end %>

@@ -1,0 +1,385 @@
+<%
+  def foco_label(goal)
+    return nil unless goal
+    return goal.foco_regiao if goal.foco_regiao.present?
+    parts = []
+    parts << number_to_currency(goal.foco_valor_min, unit: "R$ ", precision: 0) if goal.foco_valor_min
+    parts << number_to_currency(goal.foco_valor_max, unit: "R$ ", precision: 0) if goal.foco_valor_max
+    parts.join(" — ").presence
+  end
+%>
+
+<style>
+  .capt-dash-hero {
+    background: linear-gradient(135deg, #0d253f 0%, #1b3a5b 100%);
+    color: #fff;
+    border-radius: 14px;
+    padding: 1.25rem 1.5rem;
+  }
+  .capt-gauge-wrapper {
+    position: relative;
+    height: 220px;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+  .capt-gauge-center {
+    position: absolute;
+    top: 55%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+  .capt-gauge-center .value {
+    font-size: 3rem;
+    font-weight: 800;
+    color: #0d253f;
+    line-height: 1;
+  }
+  .capt-gauge-center .meta-label {
+    font-size: .8rem;
+    color: #64748b;
+  }
+  .capt-foco-banner {
+    background: linear-gradient(135deg, #198754 0%, #146c43 100%);
+    color: #fff;
+    border-radius: 12px;
+    padding: .9rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .capt-ranking-row .bar-cell {
+    position: relative;
+    background: #e0f2fe;
+    border-radius: 4px;
+    height: 22px;
+    min-width: 60px;
+  }
+  .capt-ranking-row .bar-cell .fill {
+    background: #0ea5e9;
+    height: 100%;
+    border-radius: 4px;
+  }
+  .capt-ranking-row .bar-cell .label {
+    position: absolute; top: 0; left: 6px; line-height: 22px;
+    font-size: .85rem; font-weight: 600; color: #0d253f;
+  }
+  @media (max-width: 575px) {
+    .capt-gauge-wrapper { height: 180px; }
+    .capt-gauge-center .value { font-size: 2.2rem; }
+  }
+</style>
+
+<!-- Hero -->
+<div class="capt-dash-hero mb-3">
+  <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+    <div>
+      <div class="opacity-75 small text-uppercase">Palavra do Ano</div>
+      <h2 class="fw-bold mb-0">Captação</h2>
+    </div>
+    <div class="d-flex gap-2">
+      <% if current_admin_user.admin? %>
+        <%= link_to admin_captacao_goals_path, class: "btn btn-sm btn-light" do %>
+          <i class="bi bi-bullseye me-1"></i>Metas
+        <% end %>
+      <% end %>
+      <%= link_to admin_captacoes_path, class: "btn btn-sm btn-outline-light" do %>
+        <i class="bi bi-list me-1"></i>Ver lista
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<!-- Filtros -->
+<div class="card shadow-sm border-0 mb-3">
+  <div class="card-body py-3">
+    <%= form_with url: dashboard_admin_captacoes_path, method: :get, local: true, class: "row g-2 align-items-end" do %>
+      <div class="col-6 col-md-3">
+        <label class="form-label small text-muted">Início</label>
+        <%= date_field_tag :start_date, @period_start, class: "form-control form-control-sm" %>
+      </div>
+      <div class="col-6 col-md-3">
+        <label class="form-label small text-muted">Fim</label>
+        <%= date_field_tag :end_date, @period_end, class: "form-control form-control-sm" %>
+      </div>
+      <div class="col-6 col-md-3">
+        <label class="form-label small text-muted">Mês</label>
+        <%= select_tag :month,
+                       options_for_select([["Todos", ""]] + (1..12).map { |m| [I18n.l(Date.new(2026, m), format: "%B").capitalize, m] }, @month_filter),
+                       class: "form-select form-select-sm" %>
+      </div>
+      <div class="col-6 col-md-3">
+        <%= submit_tag "Aplicar", class: "btn btn-primary btn-sm w-100" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs mb-3" id="captTabs" role="tablist">
+  <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-geral" type="button">Geral</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-venda" type="button">Venda</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-locacao" type="button">Locação</button></li>
+</ul>
+
+<div class="tab-content">
+
+  <!-- GERAL -->
+  <div class="tab-pane fade show active" id="tab-geral">
+    <div class="row g-3 mb-3">
+      <div class="col-md-6">
+        <div class="card shadow-sm border-0">
+          <div class="card-body">
+            <div class="d-flex justify-content-between mb-2">
+              <h6 class="fw-bold text-muted text-uppercase small mb-0">Captação Venda</h6>
+              <span class="badge bg-info-subtle text-info">Meta <%= @meta_venda %></span>
+            </div>
+            <div class="capt-gauge-wrapper">
+              <canvas id="gaugeVenda"></canvas>
+              <div class="capt-gauge-center">
+                <div class="value"><%= @total_venda %></div>
+                <div class="meta-label">de <%= @meta_venda %></div>
+              </div>
+            </div>
+            <div class="d-flex justify-content-between small text-muted mt-2">
+              <span>0</span>
+              <span><%= @meta_venda %></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card shadow-sm border-0">
+          <div class="card-body">
+            <div class="d-flex justify-content-between mb-2">
+              <h6 class="fw-bold text-muted text-uppercase small mb-0">Publicado no Site (Venda)</h6>
+            </div>
+            <div class="capt-gauge-wrapper">
+              <canvas id="pubVenda"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="card shadow-sm border-0">
+          <div class="card-body">
+            <div class="d-flex justify-content-between mb-2">
+              <h6 class="fw-bold text-muted text-uppercase small mb-0">Captação Locação</h6>
+              <span class="badge bg-warning-subtle text-warning">Meta <%= @meta_locacao %></span>
+            </div>
+            <div class="capt-gauge-wrapper">
+              <canvas id="gaugeLocacao"></canvas>
+              <div class="capt-gauge-center">
+                <div class="value"><%= @total_locacao %></div>
+                <div class="meta-label">de <%= @meta_locacao %></div>
+              </div>
+            </div>
+            <div class="d-flex justify-content-between small text-muted mt-2">
+              <span>0</span>
+              <span><%= @meta_locacao %></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card shadow-sm border-0">
+          <div class="card-body">
+            <div class="d-flex justify-content-between mb-2">
+              <h6 class="fw-bold text-muted text-uppercase small mb-0">Publicado no Site (Locação)</h6>
+            </div>
+            <div class="capt-gauge-wrapper">
+              <canvas id="pubLocacao"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3">
+      <% if (label = foco_label(@goal_venda_obj)) %>
+        <div class="col-md-6">
+          <div class="capt-foco-banner">
+            <div>
+              <small class="opacity-75">Região foco captação Venda</small>
+              <div class="fw-bold"><%= label %></div>
+            </div>
+            <i class="bi bi-bullseye fs-3"></i>
+          </div>
+        </div>
+      <% end %>
+      <% if (label = foco_label(@goal_locacao_obj)) %>
+        <div class="col-md-6">
+          <div class="capt-foco-banner">
+            <div>
+              <small class="opacity-75">Região foco captação Locação</small>
+              <div class="fw-bold"><%= label %></div>
+            </div>
+            <i class="bi bi-bullseye fs-3"></i>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- VENDA -->
+  <div class="tab-pane fade" id="tab-venda">
+    <div class="row g-3">
+      <div class="col-lg-5">
+        <div class="card shadow-sm border-0">
+          <div class="card-body">
+            <h6 class="fw-bold text-muted text-uppercase small mb-3">Acompanhamento de Meta</h6>
+            <div class="capt-gauge-wrapper" style="height: 260px; max-width: none;">
+              <canvas id="gaugeVendaBig"></canvas>
+              <div class="capt-gauge-center">
+                <div class="value"><%= @total_venda %></div>
+                <div class="meta-label">de <%= @meta_venda %></div>
+              </div>
+            </div>
+            <div class="d-flex justify-content-between small text-muted mt-2">
+              <span>0</span><span><%= @meta_venda %></span>
+            </div>
+            <hr>
+            <div class="row g-2 text-center">
+              <div class="col-6">
+                <div class="small text-muted">Total Captação Venda</div>
+                <div class="fs-3 fw-bold"><%= @total_venda %></div>
+              </div>
+              <div class="col-6">
+                <div class="small text-muted">Total Venda</div>
+                <div class="fs-3 fw-bold"><%= number_to_currency(@total_valor_venda, unit: "R$ ", precision: 0) %></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-7">
+        <div class="card shadow-sm border-0">
+          <div class="card-body">
+            <h6 class="fw-bold text-muted text-uppercase small mb-3">Ranking de corretores</h6>
+            <%= render "ranking_table", rows: @ranking_venda, value_key: :total_value, value_label: "Total Venda" %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOCAÇÃO -->
+  <div class="tab-pane fade" id="tab-locacao">
+    <div class="row g-3">
+      <div class="col-lg-5">
+        <div class="card shadow-sm border-0">
+          <div class="card-body">
+            <h6 class="fw-bold text-muted text-uppercase small mb-3">Acompanhamento de Meta</h6>
+            <div class="capt-gauge-wrapper" style="height: 260px; max-width: none;">
+              <canvas id="gaugeLocacaoBig"></canvas>
+              <div class="capt-gauge-center">
+                <div class="value"><%= @total_locacao %></div>
+                <div class="meta-label">de <%= @meta_locacao %></div>
+              </div>
+            </div>
+            <div class="d-flex justify-content-between small text-muted mt-2">
+              <span>0</span><span><%= @meta_locacao %></span>
+            </div>
+            <hr>
+            <div class="row g-2 text-center">
+              <div class="col-6">
+                <div class="small text-muted">Total Captação Locação</div>
+                <div class="fs-3 fw-bold"><%= @total_locacao %></div>
+              </div>
+              <div class="col-6">
+                <div class="small text-muted">Total Locação</div>
+                <div class="fs-3 fw-bold"><%= number_to_currency(@total_valor_locacao, unit: "R$ ", precision: 0) %></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-7">
+        <div class="card shadow-sm border-0">
+          <div class="card-body">
+            <h6 class="fw-bold text-muted text-uppercase small mb-3">Ranking de corretores</h6>
+            <%= render "ranking_table", rows: @ranking_locacao, value_key: :total_value, value_label: "Total Locação" %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  window.__captDashCharts = window.__captDashCharts || {};
+
+  function gaugeConfig(atual, meta, color) {
+    return {
+      type: 'doughnut',
+      data: {
+        datasets: [{
+          data: [atual, Math.max(meta - atual, 0)],
+          backgroundColor: [color, '#e5e7eb'],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        resizeDelay: 150,
+        rotation: 270,
+        circumference: 180,
+        cutout: '75%',
+        plugins: { legend: { display: false }, tooltip: { enabled: false } }
+      }
+    }
+  }
+
+  function donutConfig(publicado, naoPublicado, color = '#f59e0b') {
+    return {
+      type: 'doughnut',
+      data: {
+        labels: ['Publicado', 'Não publicado'],
+        datasets: [{
+          data: [publicado, naoPublicado],
+          backgroundColor: [color, '#1f2937'],
+          borderWidth: 2,
+          borderColor: '#fff'
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, resizeDelay: 150,
+        cutout: '55%',
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 10, padding: 8, font: { size: 11 } } }
+        }
+      }
+    }
+  }
+
+  function renderCaptCharts() {
+    if (!window.Chart) return;
+    const mk = (id, cfg) => {
+      const c = document.getElementById(id);
+      if (!c) return;
+      if (window.__captDashCharts[id]) { window.__captDashCharts[id].destroy(); }
+      window.__captDashCharts[id] = new Chart(c, cfg);
+    };
+    mk('gaugeVenda',   gaugeConfig(<%= @total_venda %>, <%= [@meta_venda, 1].max %>, '#f59e0b'));
+    mk('gaugeLocacao', gaugeConfig(<%= @total_locacao %>, <%= [@meta_locacao, 1].max %>, '#f59e0b'));
+    mk('gaugeVendaBig',    gaugeConfig(<%= @total_venda %>, <%= [@meta_venda, 1].max %>, '#f59e0b'));
+    mk('gaugeLocacaoBig',  gaugeConfig(<%= @total_locacao %>, <%= [@meta_locacao, 1].max %>, '#f59e0b'));
+    mk('pubVenda',    donutConfig(<%= @publicado_venda %>,   <%= @nao_publicado_venda %>, '#f59e0b'));
+    mk('pubLocacao',  donutConfig(<%= @publicado_locacao %>, <%= @nao_publicado_locacao %>, '#f59e0b'));
+  }
+
+  function destroyCaptCharts() {
+    Object.values(window.__captDashCharts || {}).forEach(c => { try { c.destroy(); } catch (e) {} });
+    window.__captDashCharts = {};
+  }
+
+  document.addEventListener('turbo:load', renderCaptCharts);
+  document.addEventListener('turbo:before-cache', destroyCaptCharts);
+  if (document.readyState === 'complete') renderCaptCharts();
+  else window.addEventListener('load', renderCaptCharts, { once: true });
+</script>

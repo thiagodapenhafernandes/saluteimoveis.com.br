@@ -15,6 +15,20 @@
       <% end %>
     </li>
 
+    <li class="sidebar-menu-item">
+      <%= link_to admin_captacoes_path, class: ((controller_name == 'captacoes' && action_name != 'dashboard') || controller_name == 'captacao_goals') ? 'active' : '' do %>
+        <i class="bi bi-journal-plus"></i>
+        <span>Captações</span>
+      <% end %>
+    </li>
+
+    <li class="sidebar-menu-item">
+      <%= link_to dashboard_admin_captacoes_path, class: (controller_name == 'captacoes' && action_name == 'dashboard') ? 'active' : '' do %>
+        <i class="bi bi-bullseye"></i>
+        <span>Dashboard Captação</span>
+      <% end %>
+    </li>
+
     <% if current_admin_user&.admin? %>
       <li class="sidebar-menu-item">
         <%= link_to admin_proprietors_path, class: controller_name == 'proprietors' ? 'active' : '' do %>

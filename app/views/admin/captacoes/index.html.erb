@@ -1,0 +1,123 @@
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <div>
+    <h1 class="h3 mb-1"><i class="bi bi-journal-plus text-primary me-2"></i>Captações</h1>
+    <p class="text-muted small mb-0">
+      <% if current_admin_user.admin? %>
+        Todas as captações da equipe.
+      <% else %>
+        Suas captações.
+      <% end %>
+    </p>
+  </div>
+  <%= link_to new_admin_captacao_path, class: "btn btn-primary d-flex align-items-center" do %>
+    <i class="bi bi-plus-lg me-1"></i>Nova captação
+  <% end %>
+</div>
+
+<!-- Filtros -->
+<div class="card shadow-sm border-0 mb-3">
+  <div class="card-body py-3">
+    <%= form_with url: admin_captacoes_path, method: :get, local: true, class: "row g-2 align-items-center" do %>
+      <div class="col-md-3">
+        <%= select_tag :property_kind,
+                       options_for_select([["Todos os tipos", ""], ["Residencial", "residencial"], ["Sala comercial", "sala_comercial"], ["Terreno", "terreno"]], params[:property_kind]),
+                       class: "form-select form-select-sm", onchange: "this.form.submit()" %>
+      </div>
+      <div class="col-md-3">
+        <%= select_tag :status,
+                       options_for_select([["Todos status", ""], ["Rascunhos", "draft"], ["Finalizadas", "completed"], ["Publicadas no site", "published"]], params[:status]),
+                       class: "form-select form-select-sm", onchange: "this.form.submit()" %>
+      </div>
+      <% if params[:property_kind].present? || params[:status].present? %>
+        <div class="col-md-2">
+          <%= link_to "Limpar", admin_captacoes_path, class: "btn btn-sm btn-outline-secondary" %>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+</div>
+
+<% if @captacoes.any? %>
+  <div class="card shadow-sm border-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="bg-light text-muted small text-uppercase fw-bold">
+          <tr>
+            <th class="px-3">Imóvel</th>
+            <th>Tipo</th>
+            <th>Modalidade</th>
+            <% if current_admin_user.admin? %><th>Corretor</th><% end %>
+            <th>Valor</th>
+            <th>Status</th>
+            <th>Atualizada</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @captacoes.each do |c| %>
+            <tr>
+              <td class="px-3">
+                <div class="fw-semibold"><%= c.display_title %></div>
+                <div class="small text-muted">
+                  <% if c.city.present? %><i class="bi bi-geo-alt me-1"></i><%= c.city %><% end %>
+                </div>
+              </td>
+              <td><span class="badge bg-light text-dark border"><%= c.property_kind.humanize %></span></td>
+              <td>
+                <% case c.modalidade
+                   when "venda" %><span class="badge bg-info-subtle text-info border">Venda</span>
+                <% when "locacao_anual" %><span class="badge bg-warning-subtle text-warning border">Locação</span>
+                <% when "ambos" %><span class="badge bg-success-subtle text-success border">Ambos</span>
+                <% when "locacao_diaria" %><span class="badge bg-primary-subtle text-primary border">Temporada</span>
+                <% else %>—
+                <% end %>
+              </td>
+              <% if current_admin_user.admin? %>
+                <td class="small"><%= c.corretor.name %></td>
+              <% end %>
+              <td class="small">
+                <% if c.valor_venda.present? %>
+                  <%= number_to_currency(c.valor_venda, unit: "R$ ", precision: 0) %>
+                <% elsif c.valor_locacao.present? %>
+                  <%= number_to_currency(c.valor_locacao, unit: "R$ ", precision: 0) %>/mês
+                <% else %>—
+                <% end %>
+              </td>
+              <td>
+                <% if c.published_on_site? %>
+                  <span class="badge bg-success"><i class="bi bi-globe me-1"></i>Publicada</span>
+                <% elsif c.completed? %>
+                  <span class="badge bg-primary">Finalizada</span>
+                <% else %>
+                  <span class="badge bg-warning text-dark">Rascunho</span>
+                <% end %>
+              </td>
+              <td class="small text-muted"><%= time_ago_in_words(c.updated_at) %> atrás</td>
+              <td class="text-end pe-3">
+                <% if c.completed? %>
+                  <%= link_to admin_captacao_path(c), class: "btn btn-sm btn-outline-primary border-0" do %>
+                    <i class="bi bi-eye"></i>
+                  <% end %>
+                <% else %>
+                  <%= link_to edit_admin_captacao_path(c), class: "btn btn-sm btn-outline-primary border-0" do %>
+                    <i class="bi bi-pencil"></i>Continuar
+                  <% end %>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+    <div class="card-footer bg-white py-3">
+      <div class="d-flex justify-content-center">
+        <%= will_paginate @captacoes, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
+      </div>
+    </div>
+  </div>
+<% else %>
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+    <p class="mt-2">Você ainda não tem captações. <%= link_to "Criar primeira", new_admin_captacao_path %>.</p>
+  </div>
+<% end %>

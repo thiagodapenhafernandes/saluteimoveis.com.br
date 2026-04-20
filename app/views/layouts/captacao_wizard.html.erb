@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <title>Captação — Salute Imóveis</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <meta name="theme-color" content="#0d6efd">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+    <%= stylesheet_link_tag "admin", media: "all" %>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <%= javascript_importmap_tags %>
+
+    <style>
+      body {
+        background: #f6f7f9;
+        font-family: Inter, -apple-system, sans-serif;
+        padding-bottom: calc(90px + env(safe-area-inset-bottom, 0));
+      }
+      .wizard-shell {
+        max-width: 720px;
+        margin: 0 auto;
+      }
+      .wizard-top-bar {
+        position: sticky; top: 0; z-index: 1020;
+        background: #fff;
+        border-bottom: 1px solid #e5e7eb;
+        padding: .75rem 1rem;
+      }
+      .wizard-progress { height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden; }
+      .wizard-progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #0d6efd, #0a58ca);
+        transition: width .3s ease;
+      }
+      .wizard-content {
+        padding: 1rem 1rem 2rem;
+      }
+      .wizard-bottom-nav {
+        position: fixed; bottom: 0; left: 0; right: 0; z-index: 1020;
+        background: #fff;
+        border-top: 1px solid #e5e7eb;
+        padding: .75rem 1rem calc(.75rem + env(safe-area-inset-bottom, 0));
+      }
+      .wizard-bottom-nav .btn { min-height: 48px; font-weight: 600; }
+
+      .wizard-option-card {
+        display: block;
+        min-height: 110px;
+        border: 2px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 1rem;
+        cursor: pointer;
+        transition: all .15s ease;
+        background: #fff;
+        text-align: center;
+      }
+      .wizard-option-card:hover { border-color: #0d6efd; background: rgba(13,110,253,.04); }
+      .wizard-option-card input[type="radio"] { display: none; }
+      .wizard-option-card.selected {
+        border-color: #0d6efd;
+        background: rgba(13,110,253,.08);
+        box-shadow: 0 4px 12px rgba(13,110,253,.18);
+      }
+      .wizard-option-card .icon { font-size: 2rem; color: #0d6efd; }
+
+      .wizard-field-group { margin-bottom: 1.25rem; }
+      .wizard-field-group .form-label {
+        font-weight: 600;
+        font-size: .85rem;
+        color: #374151;
+        margin-bottom: .35rem;
+      }
+      .wizard-field-group .form-control,
+      .wizard-field-group .form-select {
+        min-height: 48px;
+        font-size: 1rem;
+      }
+      .wizard-field-group .required-star { color: #dc3545; }
+
+      .wizard-section-title {
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin-bottom: .25rem;
+        color: #0f172a;
+      }
+      .wizard-section-subtitle {
+        color: #64748b;
+        font-size: .95rem;
+        margin-bottom: 1.25rem;
+      }
+
+      .wizard-feature-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: .6rem 1rem;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 999px;
+        font-size: .9rem;
+        margin: .2rem;
+        cursor: pointer;
+        transition: all .12s ease;
+        background: #fff;
+      }
+      .wizard-feature-chip input { display: none; }
+      .wizard-feature-chip.selected {
+        background: #0d6efd;
+        color: #fff;
+        border-color: #0d6efd;
+      }
+
+      .wizard-photo-grid img {
+        width: 100%;
+        height: 110px;
+        object-fit: cover;
+        border-radius: 8px;
+      }
+
+      @media (min-width: 768px) {
+        body { padding-bottom: 0; }
+        .wizard-bottom-nav {
+          position: static;
+          max-width: 720px;
+          margin: 1rem auto 2rem;
+          border-radius: 14px;
+          border: 1px solid #e5e7eb;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <% if flash.any? %>
+      <div class="wizard-shell">
+        <% flash.each do |type, msg| %>
+          <% next if msg.blank? %>
+          <div class="alert alert-<%= type == 'notice' ? 'info' : 'warning' %> mb-0 rounded-0"><%= msg %></div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <%= yield %>
+  </body>
+</html>

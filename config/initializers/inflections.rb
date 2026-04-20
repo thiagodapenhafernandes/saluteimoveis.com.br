@@ -14,3 +14,9 @@
 # ActiveSupport::Inflector.inflections(:en) do |inflect|
 #   inflect.acronym "RESTful"
 # end
+
+# Termos em pt-BR usados como nomes de model — forçamos o plural correto
+ActiveSupport::Inflector.inflections(:en) do |inflect|
+  inflect.irregular "captacao", "captacoes"
+  inflect.irregular "captacao_goal", "captacao_goals"
+end
