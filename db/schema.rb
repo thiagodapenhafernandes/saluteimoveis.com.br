@@ -913,14 +913,6 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_20_130000) do
     t.index ["key"], name: "index_solid_queue_semaphores_on_key", unique: true
   end
 
-  create_table "spatial_ref_sys", primary_key: "srid", id: :integer, default: nil, force: :cascade do |t|
-    t.string "auth_name", limit: 256
-    t.integer "auth_srid"
-    t.string "srtext", limit: 2048
-    t.string "proj4text", limit: 2048
-    t.check_constraint "srid > 0 AND srid <= 998999", name: "spatial_ref_sys_srid_check"
-  end
-
   create_table "store_shifts", force: :cascade do |t|
     t.bigint "store_id", null: false
     t.bigint "admin_user_id", null: false

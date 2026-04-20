@@ -39,6 +39,9 @@ export default class extends Controller {
     this.currentPosition = pos
     const { latitude, longitude, accuracy } = pos.coords
 
+    // Publica para o field-checkin controller pegar na hora do clique
+    window.__lastFieldPosition = { latitude, longitude, accuracy, timestamp: pos.timestamp }
+
     if (accuracy > 50) {
       this.renderStatus("warn", "bi-exclamation-triangle-fill",
         "Sinal de GPS fraco",

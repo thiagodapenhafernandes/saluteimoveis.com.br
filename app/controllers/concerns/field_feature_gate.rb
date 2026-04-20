@@ -14,16 +14,22 @@ module FieldFeatureGate
 
   SETTING_KEY = "field_checkin_enabled"
 
+  # Disponível tanto como módulo (FieldFeatureGate.field_checkin_enabled?) quanto
+  # como class method no controller que includa (ex: Field::BaseController.field_checkin_enabled?).
+  def self.field_checkin_enabled?
+    Setting.get(SETTING_KEY, "false").to_s == "true"
+  end
+
   class_methods do
     def field_checkin_enabled?
-      Setting.get(SETTING_KEY, "false").to_s == "true"
+      FieldFeatureGate.field_checkin_enabled?
     end
   end
 
   private
 
   def ensure_field_enabled!
-    return if self.class.field_checkin_enabled?
+    return if FieldFeatureGate.field_checkin_enabled?
 
     if request.format.json?
       render json: { error: "feature_disabled" }, status: :not_found

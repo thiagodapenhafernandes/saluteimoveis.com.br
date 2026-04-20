@@ -51,5 +51,10 @@ module SaluteImoveisV3
     config.active_storage.variant_processor = :mini_magick
     config.active_storage.content_types_allowed_inline << "image/svg+xml"
     config.active_storage.content_types_to_serve_as_binary.delete("image/svg+xml")
+
+    # Usar structure.sql em vez de schema.rb: necessário para tipos PostGIS
+    # (geography/geometry) que o schema dumper do Rails não entende
+    # nativamente. structure.sql é gerado com pg_dump e preserva tudo.
+    config.active_record.schema_format = :sql
   end
 end

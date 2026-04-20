@@ -65,6 +65,10 @@ group :development, :test do
   gem "pry"
   gem "pry-rails"
   gem "bullet"
+  gem "rspec-rails", "~> 7.0"
+  gem "factory_bot_rails"
+  gem "shoulda-matchers", "~> 6.0"
+  gem "faker"
 end
 
 group :development do

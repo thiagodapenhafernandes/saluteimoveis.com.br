@@ -17,6 +17,8 @@ class AdminUser < ApplicationRecord
   has_many :store_shifts, dependent: :destroy
   has_many :store_shift_stores, -> { distinct }, through: :store_shifts, source: :store
   has_many :directed_stores, class_name: "Store", foreign_key: :director_admin_user_id, dependent: :nullify
+  has_many :check_ins, dependent: :destroy
+  has_one :active_check_in, -> { where(status: :active) }, class_name: "CheckIn"
 
   enum role: { editor: 0, admin: 1 }
   enum acting_type: { sales: 0, rentals: 1, both: 2 }

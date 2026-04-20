@@ -1,0 +1,4577 @@
+\restrict mcEvqdDwq5cjgSVbV7ATh1gyoknd3e7yKsi9vj5guostYciJkg9f2ehLgt5b2Kq
+
+-- Dumped from database version 18.3 (Homebrew)
+-- Dumped by pg_dump version 18.3 (Homebrew)
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- Name: postgis; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION postgis; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION postgis IS 'PostGIS geometry and geography spatial types and functions';
+
+
+--
+-- Name: unaccent; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS unaccent WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION unaccent; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION unaccent IS 'text search dictionary that removes accents';
+
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- Name: action_text_rich_texts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.action_text_rich_texts (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    body text,
+    record_type character varying NOT NULL,
+    record_id bigint NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: action_text_rich_texts_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.action_text_rich_texts_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: action_text_rich_texts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.action_text_rich_texts_id_seq OWNED BY public.action_text_rich_texts.id;
+
+
+--
+-- Name: active_storage_attachments; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.active_storage_attachments (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    record_type character varying NOT NULL,
+    record_id bigint NOT NULL,
+    blob_id bigint NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: active_storage_attachments_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.active_storage_attachments_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: active_storage_attachments_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.active_storage_attachments_id_seq OWNED BY public.active_storage_attachments.id;
+
+
+--
+-- Name: active_storage_blobs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.active_storage_blobs (
+    id bigint NOT NULL,
+    key character varying NOT NULL,
+    filename character varying NOT NULL,
+    content_type character varying,
+    metadata text,
+    service_name character varying NOT NULL,
+    byte_size bigint NOT NULL,
+    checksum character varying,
+    created_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: active_storage_blobs_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.active_storage_blobs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: active_storage_blobs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.active_storage_blobs_id_seq OWNED BY public.active_storage_blobs.id;
+
+
+--
+-- Name: active_storage_variant_records; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.active_storage_variant_records (
+    id bigint NOT NULL,
+    blob_id bigint NOT NULL,
+    variation_digest character varying NOT NULL
+);
+
+
+--
+-- Name: active_storage_variant_records_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.active_storage_variant_records_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: active_storage_variant_records_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.active_storage_variant_records_id_seq OWNED BY public.active_storage_variant_records.id;
+
+
+--
+-- Name: addresses; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.addresses (
+    id bigint NOT NULL,
+    addressable_type character varying NOT NULL,
+    addressable_id bigint NOT NULL,
+    tipo_endereco character varying,
+    logradouro character varying,
+    numero character varying,
+    complemento character varying,
+    bairro character varying,
+    bairro_comercial character varying,
+    cidade character varying,
+    uf character varying(2),
+    cep character varying(10),
+    pais character varying DEFAULT 'Brasil'::character varying,
+    latitude numeric(10,7),
+    longitude numeric(10,7),
+    imediacoes text[] DEFAULT '{}'::text[] NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: addresses_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.addresses_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: addresses_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.addresses_id_seq OWNED BY public.addresses.id;
+
+
+--
+-- Name: admin_users; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.admin_users (
+    id bigint NOT NULL,
+    email character varying DEFAULT ''::character varying NOT NULL,
+    encrypted_password character varying DEFAULT ''::character varying NOT NULL,
+    name character varying NOT NULL,
+    role integer DEFAULT 0 NOT NULL,
+    reset_password_token character varying,
+    reset_password_sent_at timestamp(6) without time zone,
+    remember_created_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    profile_id bigint,
+    manager_id bigint,
+    vista_id character varying,
+    creci character varying,
+    phone character varying,
+    biography text,
+    birth_date date,
+    city character varying,
+    acting_type integer,
+    field_agent_enabled boolean DEFAULT false NOT NULL,
+    default_store_id bigint
+);
+
+
+--
+-- Name: admin_users_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.admin_users_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: admin_users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.admin_users_id_seq OWNED BY public.admin_users.id;
+
+
+--
+-- Name: ar_internal_metadata; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ar_internal_metadata (
+    key character varying NOT NULL,
+    value character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: attribute_options; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.attribute_options (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    category character varying NOT NULL,
+    context character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: attribute_options_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.attribute_options_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: attribute_options_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.attribute_options_id_seq OWNED BY public.attribute_options.id;
+
+
+--
+-- Name: banners; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.banners (
+    id bigint NOT NULL,
+    title character varying,
+    description text,
+    link_url character varying,
+    link_text character varying,
+    active boolean,
+    display_order integer,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    positions character varying[] DEFAULT '{}'::character varying[]
+);
+
+
+--
+-- Name: banners_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.banners_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: banners_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.banners_id_seq OWNED BY public.banners.id;
+
+
+--
+-- Name: check_ins; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.check_ins (
+    id bigint NOT NULL,
+    admin_user_id bigint NOT NULL,
+    store_id bigint NOT NULL,
+    store_shift_id bigint,
+    checked_in_at timestamp(6) without time zone NOT NULL,
+    checked_out_at timestamp(6) without time zone,
+    status integer DEFAULT 0 NOT NULL,
+    checkin_accuracy_meters integer,
+    checkout_accuracy_meters integer,
+    checkin_ip inet,
+    checkout_ip inet,
+    device_info jsonb DEFAULT '{}'::jsonb,
+    out_of_radius_since timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    checkin_location public.geography(Point,4326),
+    checkout_location public.geography(Point,4326)
+);
+
+
+--
+-- Name: check_ins_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.check_ins_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: check_ins_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.check_ins_id_seq OWNED BY public.check_ins.id;
+
+
+--
+-- Name: constructors; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.constructors (
+    id bigint NOT NULL,
+    name character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    website_url character varying
+);
+
+
+--
+-- Name: constructors_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.constructors_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: constructors_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.constructors_id_seq OWNED BY public.constructors.id;
+
+
+--
+-- Name: contact_settings; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.contact_settings (
+    id bigint NOT NULL,
+    whatsapp_primary character varying,
+    whatsapp_secondary character varying,
+    phone character varying,
+    email_primary character varying,
+    email_commercial character varying,
+    address text,
+    business_hours text,
+    facebook_url character varying,
+    instagram_url character varying,
+    youtube_url character varying,
+    linkedin_url character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: contact_settings_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.contact_settings_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: contact_settings_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.contact_settings_id_seq OWNED BY public.contact_settings.id;
+
+
+--
+-- Name: distribution_rule_agents; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.distribution_rule_agents (
+    id bigint NOT NULL,
+    distribution_rule_id bigint NOT NULL,
+    admin_user_id bigint NOT NULL,
+    weight integer DEFAULT 1,
+    last_lead_received_at timestamp(6) without time zone,
+    "position" integer,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: distribution_rule_agents_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.distribution_rule_agents_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: distribution_rule_agents_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.distribution_rule_agents_id_seq OWNED BY public.distribution_rule_agents.id;
+
+
+--
+-- Name: distribution_rules; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.distribution_rules (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    business_type integer DEFAULT 0,
+    source_meta boolean DEFAULT false,
+    source_webhook boolean DEFAULT false,
+    source_portal boolean DEFAULT false,
+    meta_forms jsonb DEFAULT '[]'::jsonb,
+    webhook_tags jsonb DEFAULT '[]'::jsonb,
+    custom_filters jsonb DEFAULT '[]'::jsonb,
+    distribution_mode integer DEFAULT 0,
+    pocket_active boolean DEFAULT false,
+    pocket_time integer DEFAULT 30,
+    represamento_active boolean DEFAULT false,
+    represamento_schedule jsonb DEFAULT '{}'::jsonb,
+    active boolean DEFAULT true,
+    min_price numeric(15,2),
+    max_price numeric(15,2),
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    source_site boolean DEFAULT false,
+    auto_add_forms boolean DEFAULT false,
+    notify_whatsapp boolean DEFAULT false,
+    notify_email boolean DEFAULT false,
+    notify_webhook boolean DEFAULT false,
+    meta_page_ids jsonb DEFAULT '[]'::jsonb,
+    neighborhoods jsonb DEFAULT '[]'::jsonb,
+    webhook_url character varying
+);
+
+
+--
+-- Name: distribution_rules_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.distribution_rules_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: distribution_rules_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.distribution_rules_id_seq OWNED BY public.distribution_rules.id;
+
+
+--
+-- Name: habitations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.habitations (
+    id bigint NOT NULL,
+    codigo character varying NOT NULL,
+    slug character varying,
+    categoria character varying,
+    status character varying,
+    situacao character varying,
+    tipo character varying,
+    codigo_empreendimento character varying,
+    nome_empreendimento character varying,
+    tipo_endereco character varying,
+    endereco character varying,
+    numero character varying,
+    complemento character varying,
+    bairro character varying,
+    cidade character varying,
+    uf character varying(2),
+    cep character varying(10),
+    pais character varying DEFAULT 'Brasil'::character varying,
+    latitude numeric(10,7),
+    longitude numeric(10,7),
+    dormitorios_qtd integer DEFAULT 0,
+    suites_qtd integer DEFAULT 0,
+    banheiros_qtd integer DEFAULT 0,
+    vagas_qtd integer DEFAULT 0,
+    elevadores_qtd integer DEFAULT 0,
+    area_privativa_m2 numeric(10,2),
+    area_total_m2 numeric(10,2),
+    area_terreno_m2 numeric(10,2),
+    area_util_m2 numeric(10,2),
+    valor_venda_cents bigint,
+    valor_locacao_cents bigint,
+    valor_condominio_cents bigint,
+    valor_iptu_cents bigint,
+    valor_por_m2_cents bigint,
+    caracteristicas jsonb DEFAULT '{}'::jsonb,
+    infra_estrutura jsonb DEFAULT '{}'::jsonb,
+    destaque_localizacao jsonb DEFAULT '{}'::jsonb,
+    pictures jsonb DEFAULT '[]'::jsonb,
+    videos jsonb DEFAULT '[]'::jsonb,
+    plantas jsonb DEFAULT '[]'::jsonb,
+    descricao_web text,
+    descricao_interna text,
+    titulo_anuncio character varying,
+    observacoes text,
+    corretor_nome character varying,
+    corretor_telefone character varying,
+    corretor_email character varying,
+    proprietario_codigo character varying,
+    exibir_no_site_flag boolean DEFAULT false,
+    destaque_web_flag boolean DEFAULT false,
+    lancamento_flag boolean DEFAULT false,
+    aceita_permuta_flag boolean DEFAULT false,
+    aceita_financiamento_flag boolean DEFAULT false,
+    mobiliado_flag boolean DEFAULT false,
+    data_atualizacao_crm timestamp(6) without time zone,
+    data_cadastro_crm timestamp(6) without time zone,
+    status_vista character varying,
+    meta_title character varying,
+    meta_description text,
+    meta_keywords character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    piscina_flag boolean DEFAULT false,
+    lavabo_flag boolean DEFAULT false,
+    varanda_gourmet_flag boolean DEFAULT false,
+    bairro_comercial character varying,
+    bloco character varying,
+    lote character varying,
+    imediacoes text,
+    banheiro_social_qtd integer,
+    decorado_flag boolean,
+    aptos_andar integer,
+    aptos_edificio integer,
+    garden_flag boolean,
+    quadra_mar_flag boolean,
+    sem_mobilia_flag boolean,
+    valor_venda_anterior_cents integer,
+    valor_total_aluguel_cents integer,
+    valor_promocional_cents integer,
+    construtora character varying,
+    proprietario character varying,
+    inscricao_imobiliaria character varying,
+    descricao_empreendimento text,
+    caracteristica_unica text[] DEFAULT '{}'::text[],
+    terceira_avenida_flag boolean,
+    arriba_flag boolean,
+    avenida_brasil_flag boolean,
+    bairro_fazenda_itajai_flag boolean,
+    balneario_picarras_flag boolean,
+    barra_flag boolean,
+    barra_norte_flag boolean,
+    barra_sul_flag boolean,
+    cabecudas_flag boolean,
+    camboriu_flag boolean,
+    centro_flag boolean,
+    estaleirinho_flag boolean,
+    frente_mar_avenida_atlantica_flag boolean,
+    itajai_flag boolean,
+    itapema_flag boolean,
+    nacoes_flag boolean,
+    pioneiros_flag boolean,
+    praia_brava_flag boolean,
+    praia_dos_amores_flag boolean,
+    vista_frente_mar_flag boolean,
+    festival_salute_flag boolean,
+    exibir_no_site_salute_flag boolean,
+    categoria_grupo character varying,
+    data_entrega date,
+    tour_virtual character varying,
+    fotos_empreendimento jsonb,
+    codigo_corretor character varying,
+    captador_account_id character varying,
+    agenciador character varying,
+    codigo_dwv character varying,
+    imovel_dwv character varying,
+    tem_placa_flag boolean,
+    photo_ids_order jsonb DEFAULT '[]'::jsonb,
+    last_sync_at timestamp(6) without time zone,
+    last_sync_status character varying,
+    last_sync_message text,
+    admin_user_id bigint,
+    constructor_id bigint,
+    proprietario_celular character varying,
+    proprietario_telefone_comercial character varying,
+    proprietario_telefone_residencial character varying,
+    proprietario_email character varying,
+    face character varying,
+    perfil_construcao character varying,
+    tipo_vaga character varying,
+    hidromassagem_qtd integer,
+    exclusivo_flag boolean,
+    ocupacao_status character varying,
+    estado_conservacao character varying,
+    andar integer,
+    ano_construcao integer,
+    demi_suites_qtd integer,
+    numero_box character varying,
+    dimensoes_terreno character varying,
+    topografia character varying,
+    foto_classificacao character varying,
+    podcast_url character varying,
+    captador_commission_percentage numeric(5,2),
+    broker_commission_percentage numeric(5,2),
+    salute_rental_management_flag boolean DEFAULT false NOT NULL,
+    key_location character varying,
+    key_location_notes character varying,
+    proprietor_id bigint,
+    home_corporate_flag boolean DEFAULT false NOT NULL,
+    home_corporate_position integer,
+    valor_aceito_permuta_cents integer,
+    aceita_permuta_veiculo_flag boolean DEFAULT false NOT NULL,
+    aceita_permuta_imovel_flag boolean DEFAULT false NOT NULL,
+    aceita_permuta_outros_flag boolean DEFAULT false NOT NULL,
+    tipo_veiculo_aceito_permuta character varying,
+    ano_minimo_veiculo_aceito_permuta integer,
+    permuta_valor_cents integer,
+    permuta_localizacao character varying,
+    permuta_dormitorios_qtd integer,
+    permuta_suites_qtd integer,
+    permuta_garagens_qtd integer,
+    matricula_imovel character varying,
+    zona character varying,
+    aceita_doacao_flag boolean DEFAULT false NOT NULL,
+    condicoes_negociacao text,
+    valor_locacao_anterior_cents integer,
+    saldo_devedor_cents integer,
+    numero_prestacoes integer,
+    responsavel_reserva character varying,
+    zelador_nome character varying,
+    zelador_telefone character varying,
+    observacoes_visitas text,
+    regiao_foco character varying,
+    tipo_fachada character varying,
+    andares_qtd integer,
+    publicar_imovelweb_2 boolean DEFAULT false NOT NULL,
+    publicar_netimoveis_2 boolean DEFAULT false NOT NULL,
+    publicar_lais_ai boolean DEFAULT false NOT NULL,
+    publicar_loft boolean DEFAULT false NOT NULL,
+    publicar_chaves_na_mao boolean DEFAULT false NOT NULL,
+    publicar_casa_mineira boolean DEFAULT false NOT NULL,
+    publicar_imovelweb boolean DEFAULT false NOT NULL,
+    publicar_viva_real_vrsync boolean DEFAULT false NOT NULL,
+    destaque_chaves_na_mao character varying,
+    periodo_locacao_chaves_na_mao character varying,
+    modelo_casa_mineira character varying,
+    tipo_publicacao_viva_real character varying,
+    divulgar_endereco_viva_real character varying,
+    tipo_publicacao_imovelweb character varying,
+    mostrar_mapa_imovelweb character varying,
+    tipo_publicacao_imovelweb_2 character varying,
+    mostrar_mapa_imovelweb_2 character varying,
+    publicar_zapimoveis boolean DEFAULT false NOT NULL
+);
+
+
+--
+-- Name: featured_properties_view; Type: MATERIALIZED VIEW; Schema: public; Owner: -
+--
+
+CREATE MATERIALIZED VIEW public.featured_properties_view AS
+ SELECT id,
+    codigo,
+    slug,
+    categoria,
+    status,
+    cidade,
+    bairro,
+    titulo_anuncio,
+    valor_venda_cents,
+    valor_locacao_cents,
+    dormitorios_qtd,
+    suites_qtd,
+    vagas_qtd,
+    area_total_m2,
+    pictures,
+    destaque_web_flag,
+    lancamento_flag,
+    data_atualizacao_crm,
+    updated_at
+   FROM public.habitations
+  WHERE ((exibir_no_site_flag = true) AND (destaque_web_flag = true) AND (((status)::text = 'Venda'::text) OR ((status)::text = 'Locação'::text)))
+  ORDER BY data_atualizacao_crm DESC NULLS LAST
+ LIMIT 100
+  WITH NO DATA;
+
+
+--
+-- Name: footer_links; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.footer_links (
+    id bigint NOT NULL,
+    label character varying,
+    url character varying,
+    "position" integer,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    footer_setting_id bigint NOT NULL
+);
+
+
+--
+-- Name: footer_links_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.footer_links_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: footer_links_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.footer_links_id_seq OWNED BY public.footer_links.id;
+
+
+--
+-- Name: footer_settings; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.footer_settings (
+    id bigint NOT NULL,
+    about_title character varying,
+    about_text text,
+    links_title character varying,
+    stores_title character varying,
+    contact_title character varying,
+    social_title character varying,
+    whatsapp character varying,
+    email character varying,
+    copyright_text character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: footer_settings_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.footer_settings_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: footer_settings_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.footer_settings_id_seq OWNED BY public.footer_settings.id;
+
+
+--
+-- Name: footer_social_links; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.footer_social_links (
+    id bigint NOT NULL,
+    platform character varying,
+    url character varying,
+    enabled boolean,
+    "position" integer,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    footer_setting_id bigint NOT NULL
+);
+
+
+--
+-- Name: footer_social_links_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.footer_social_links_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: footer_social_links_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.footer_social_links_id_seq OWNED BY public.footer_social_links.id;
+
+
+--
+-- Name: footer_stores; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.footer_stores (
+    id bigint NOT NULL,
+    name character varying,
+    address character varying,
+    zip_code character varying,
+    creci character varying,
+    phone character varying,
+    "position" integer,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    footer_setting_id bigint NOT NULL
+);
+
+
+--
+-- Name: footer_stores_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.footer_stores_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: footer_stores_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.footer_stores_id_seq OWNED BY public.footer_stores.id;
+
+
+--
+-- Name: friendly_id_slugs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.friendly_id_slugs (
+    id bigint NOT NULL,
+    slug character varying NOT NULL,
+    sluggable_id integer NOT NULL,
+    sluggable_type character varying(50),
+    scope character varying,
+    created_at timestamp(6) without time zone
+);
+
+
+--
+-- Name: friendly_id_slugs_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.friendly_id_slugs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: friendly_id_slugs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.friendly_id_slugs_id_seq OWNED BY public.friendly_id_slugs.id;
+
+
+--
+-- Name: habitation_broker_assignments; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.habitation_broker_assignments (
+    id bigint NOT NULL,
+    habitation_id bigint NOT NULL,
+    admin_user_id bigint NOT NULL,
+    role character varying,
+    commission_type character varying,
+    commission_value numeric(10,2),
+    observations text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: habitation_broker_assignments_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.habitation_broker_assignments_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: habitation_broker_assignments_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.habitation_broker_assignments_id_seq OWNED BY public.habitation_broker_assignments.id;
+
+
+--
+-- Name: habitation_share_links; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.habitation_share_links (
+    id bigint NOT NULL,
+    habitation_id bigint NOT NULL,
+    admin_user_id bigint NOT NULL,
+    token character varying NOT NULL,
+    expires_at timestamp(6) without time zone NOT NULL,
+    last_clicked_at timestamp(6) without time zone,
+    clicks_count integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: habitation_share_links_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.habitation_share_links_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: habitation_share_links_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.habitation_share_links_id_seq OWNED BY public.habitation_share_links.id;
+
+
+--
+-- Name: habitations_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.habitations_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: habitations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.habitations_id_seq OWNED BY public.habitations.id;
+
+
+--
+-- Name: home_section_items; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.home_section_items (
+    id bigint NOT NULL,
+    home_section_id bigint NOT NULL,
+    title character varying,
+    description text,
+    active boolean,
+    display_order integer,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: home_section_items_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.home_section_items_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: home_section_items_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.home_section_items_id_seq OWNED BY public.home_section_items.id;
+
+
+--
+-- Name: home_sections; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.home_sections (
+    id bigint NOT NULL,
+    section_type integer,
+    title character varying,
+    subtitle text,
+    active boolean,
+    display_order integer,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    order_position integer DEFAULT 0
+);
+
+
+--
+-- Name: home_sections_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.home_sections_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: home_sections_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.home_sections_id_seq OWNED BY public.home_sections.id;
+
+
+--
+-- Name: home_settings; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.home_settings (
+    id bigint NOT NULL,
+    hero_title text,
+    hero_subtitle text,
+    cta_title text,
+    cta_subtitle text,
+    services_active boolean,
+    why_choose_active boolean,
+    cta_contact_active boolean,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    hero_cta_text character varying,
+    hero_cta_link character varying,
+    overlay_opacity numeric,
+    overlay_color character varying,
+    hero_button_color character varying,
+    hero_button_text_color character varying
+);
+
+
+--
+-- Name: home_settings_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.home_settings_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: home_settings_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.home_settings_id_seq OWNED BY public.home_settings.id;
+
+
+--
+-- Name: landing_pages; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.landing_pages (
+    id bigint NOT NULL,
+    title character varying,
+    slug character varying,
+    filter_params jsonb DEFAULT '{}'::jsonb,
+    meta_title character varying,
+    meta_description text,
+    content text,
+    active boolean,
+    description text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: landing_pages_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.landing_pages_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: landing_pages_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.landing_pages_id_seq OWNED BY public.landing_pages.id;
+
+
+--
+-- Name: layout_settings; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.layout_settings (
+    id bigint NOT NULL,
+    primary_color character varying,
+    secondary_color character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    site_name character varying,
+    accent_color character varying
+);
+
+
+--
+-- Name: layout_settings_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.layout_settings_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: layout_settings_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.layout_settings_id_seq OWNED BY public.layout_settings.id;
+
+
+--
+-- Name: lead_activities; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.lead_activities (
+    id bigint NOT NULL,
+    lead_id bigint NOT NULL,
+    kind character varying,
+    metadata jsonb DEFAULT '{}'::jsonb,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: lead_activities_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.lead_activities_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: lead_activities_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.lead_activities_id_seq OWNED BY public.lead_activities.id;
+
+
+--
+-- Name: leads; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.leads (
+    id bigint NOT NULL,
+    name character varying,
+    email character varying,
+    phone character varying,
+    property_id integer,
+    source_url character varying,
+    lead_type character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    status character varying,
+    notes text,
+    client_name character varying,
+    client_email character varying,
+    client_phone character varying,
+    client_c2s_id character varying,
+    agent_name character varying,
+    agent_email character varying,
+    agent_phone character varying,
+    agent_c2s_id character varying,
+    event_name character varying,
+    origin character varying,
+    product character varying,
+    other_information jsonb DEFAULT '{}'::jsonb,
+    custom_answers jsonb DEFAULT '[]'::jsonb,
+    distribution_rule_id bigint,
+    admin_user_id bigint,
+    share_token character varying,
+    shared_by_admin_user_id bigint
+);
+
+
+--
+-- Name: leads_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.leads_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: leads_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.leads_id_seq OWNED BY public.leads.id;
+
+
+--
+-- Name: meta_facebook_pages; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.meta_facebook_pages (
+    id bigint NOT NULL,
+    user_meta_integration_id bigint NOT NULL,
+    page_id character varying,
+    name character varying,
+    access_token character varying,
+    active boolean DEFAULT true,
+    category character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: meta_facebook_pages_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.meta_facebook_pages_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: meta_facebook_pages_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.meta_facebook_pages_id_seq OWNED BY public.meta_facebook_pages.id;
+
+
+--
+-- Name: meta_lead_forms; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.meta_lead_forms (
+    id bigint NOT NULL,
+    meta_facebook_page_id bigint NOT NULL,
+    form_id character varying,
+    name character varying,
+    active boolean DEFAULT true,
+    facebook_created_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: meta_lead_forms_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.meta_lead_forms_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: meta_lead_forms_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.meta_lead_forms_id_seq OWNED BY public.meta_lead_forms.id;
+
+
+--
+-- Name: portal_integration_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.portal_integration_events (
+    id bigint NOT NULL,
+    portal character varying NOT NULL,
+    habitation_id bigint,
+    habitation_code character varying,
+    external_listing_id character varying,
+    event_type character varying NOT NULL,
+    normalized_status character varying,
+    received_at timestamp(6) without time zone NOT NULL,
+    source_ip character varying,
+    raw_payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: portal_integration_events_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.portal_integration_events_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: portal_integration_events_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.portal_integration_events_id_seq OWNED BY public.portal_integration_events.id;
+
+
+--
+-- Name: portal_integrations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.portal_integrations (
+    id bigint NOT NULL,
+    portal character varying NOT NULL,
+    enabled boolean DEFAULT false NOT NULL,
+    allowed_statuses character varying[] DEFAULT '{}'::character varying[] NOT NULL,
+    allowed_business_types character varying[] DEFAULT '{venda,aluguel}'::character varying[] NOT NULL,
+    require_exibir_no_site boolean DEFAULT true NOT NULL,
+    feed_token character varying NOT NULL,
+    account_id character varying,
+    publisher_id character varying,
+    webhook_secret character varying,
+    operational_status character varying DEFAULT 'idle'::character varying NOT NULL,
+    settings jsonb DEFAULT '{}'::jsonb NOT NULL,
+    last_feed_at timestamp(6) without time zone,
+    last_webhook_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: portal_integrations_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.portal_integrations_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: portal_integrations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.portal_integrations_id_seq OWNED BY public.portal_integrations.id;
+
+
+--
+-- Name: portal_listing_states; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.portal_listing_states (
+    id bigint NOT NULL,
+    portal character varying NOT NULL,
+    habitation_id bigint,
+    habitation_code character varying,
+    external_listing_id character varying,
+    last_event_type character varying NOT NULL,
+    last_status character varying,
+    last_received_at timestamp(6) without time zone NOT NULL,
+    last_payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: portal_listing_states_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.portal_listing_states_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: portal_listing_states_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.portal_listing_states_id_seq OWNED BY public.portal_listing_states.id;
+
+
+--
+-- Name: profiles; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.profiles (
+    id bigint NOT NULL,
+    name character varying,
+    permissions jsonb,
+    active boolean,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: profiles_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.profiles_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: profiles_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.profiles_id_seq OWNED BY public.profiles.id;
+
+
+--
+-- Name: property_pages; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.property_pages (
+    id bigint NOT NULL,
+    title character varying NOT NULL,
+    meta_title character varying,
+    meta_description text,
+    slug character varying NOT NULL,
+    filter_params jsonb DEFAULT '{}'::jsonb,
+    active boolean DEFAULT true,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: property_pages_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.property_pages_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: property_pages_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.property_pages_id_seq OWNED BY public.property_pages.id;
+
+
+--
+-- Name: proprietors; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.proprietors (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    role integer DEFAULT 0 NOT NULL,
+    vista_code character varying,
+    cpf_cnpj character varying,
+    rg_ie character varying,
+    issuing_authority character varying,
+    birth_date date,
+    email character varying,
+    phone_primary character varying,
+    mobile_phone character varying,
+    residential_phone character varying,
+    business_phone character varying,
+    phone_extension character varying,
+    profession character varying,
+    marital_status character varying,
+    marriage_regime character varying,
+    nationality character varying,
+    capture_vehicle character varying,
+    registered_at date,
+    notes text,
+    is_client boolean DEFAULT false NOT NULL,
+    address_type character varying,
+    street character varying,
+    number character varying,
+    complement character varying,
+    block character varying,
+    uf character varying(2),
+    cep character varying(10),
+    neighborhood character varying,
+    city character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    spouse_name character varying,
+    spouse_email character varying,
+    spouse_phone character varying,
+    spouse_cpf_cnpj character varying
+);
+
+
+--
+-- Name: proprietors_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.proprietors_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: proprietors_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.proprietors_id_seq OWNED BY public.proprietors.id;
+
+
+--
+-- Name: schema_migrations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.schema_migrations (
+    version character varying NOT NULL
+);
+
+
+--
+-- Name: seo_settings; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.seo_settings (
+    id bigint NOT NULL,
+    page_name character varying,
+    meta_title character varying,
+    meta_description text,
+    meta_keywords text,
+    og_image character varying,
+    canonical_url character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: seo_settings_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.seo_settings_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: seo_settings_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.seo_settings_id_seq OWNED BY public.seo_settings.id;
+
+
+--
+-- Name: settings; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.settings (
+    id bigint NOT NULL,
+    key character varying,
+    value text,
+    description character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: settings_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.settings_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: settings_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.settings_id_seq OWNED BY public.settings.id;
+
+
+--
+-- Name: solid_queue_blocked_executions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.solid_queue_blocked_executions (
+    id bigint NOT NULL,
+    job_id bigint NOT NULL,
+    queue_name character varying NOT NULL,
+    priority integer DEFAULT 0 NOT NULL,
+    concurrency_key character varying NOT NULL,
+    expires_at timestamp(6) without time zone NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: solid_queue_blocked_executions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.solid_queue_blocked_executions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: solid_queue_blocked_executions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.solid_queue_blocked_executions_id_seq OWNED BY public.solid_queue_blocked_executions.id;
+
+
+--
+-- Name: solid_queue_claimed_executions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.solid_queue_claimed_executions (
+    id bigint NOT NULL,
+    job_id bigint NOT NULL,
+    process_id bigint,
+    created_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: solid_queue_claimed_executions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.solid_queue_claimed_executions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: solid_queue_claimed_executions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.solid_queue_claimed_executions_id_seq OWNED BY public.solid_queue_claimed_executions.id;
+
+
+--
+-- Name: solid_queue_failed_executions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.solid_queue_failed_executions (
+    id bigint NOT NULL,
+    job_id bigint NOT NULL,
+    error text,
+    created_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: solid_queue_failed_executions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.solid_queue_failed_executions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: solid_queue_failed_executions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.solid_queue_failed_executions_id_seq OWNED BY public.solid_queue_failed_executions.id;
+
+
+--
+-- Name: solid_queue_jobs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.solid_queue_jobs (
+    id bigint NOT NULL,
+    queue_name character varying NOT NULL,
+    class_name character varying NOT NULL,
+    arguments text,
+    priority integer DEFAULT 0 NOT NULL,
+    active_job_id character varying,
+    scheduled_at timestamp(6) without time zone,
+    finished_at timestamp(6) without time zone,
+    concurrency_key character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: solid_queue_jobs_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.solid_queue_jobs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: solid_queue_jobs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.solid_queue_jobs_id_seq OWNED BY public.solid_queue_jobs.id;
+
+
+--
+-- Name: solid_queue_pauses; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.solid_queue_pauses (
+    id bigint NOT NULL,
+    queue_name character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: solid_queue_pauses_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.solid_queue_pauses_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: solid_queue_pauses_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.solid_queue_pauses_id_seq OWNED BY public.solid_queue_pauses.id;
+
+
+--
+-- Name: solid_queue_processes; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.solid_queue_processes (
+    id bigint NOT NULL,
+    kind character varying NOT NULL,
+    last_heartbeat_at timestamp(6) without time zone NOT NULL,
+    supervisor_id bigint,
+    pid integer NOT NULL,
+    hostname character varying,
+    metadata text,
+    created_at timestamp(6) without time zone NOT NULL,
+    name character varying NOT NULL
+);
+
+
+--
+-- Name: solid_queue_processes_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.solid_queue_processes_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: solid_queue_processes_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.solid_queue_processes_id_seq OWNED BY public.solid_queue_processes.id;
+
+
+--
+-- Name: solid_queue_ready_executions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.solid_queue_ready_executions (
+    id bigint NOT NULL,
+    job_id bigint NOT NULL,
+    queue_name character varying NOT NULL,
+    priority integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: solid_queue_ready_executions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.solid_queue_ready_executions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: solid_queue_ready_executions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.solid_queue_ready_executions_id_seq OWNED BY public.solid_queue_ready_executions.id;
+
+
+--
+-- Name: solid_queue_recurring_executions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.solid_queue_recurring_executions (
+    id bigint NOT NULL,
+    job_id bigint NOT NULL,
+    task_key character varying NOT NULL,
+    run_at timestamp(6) without time zone NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: solid_queue_recurring_executions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.solid_queue_recurring_executions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: solid_queue_recurring_executions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.solid_queue_recurring_executions_id_seq OWNED BY public.solid_queue_recurring_executions.id;
+
+
+--
+-- Name: solid_queue_recurring_tasks; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.solid_queue_recurring_tasks (
+    id bigint NOT NULL,
+    key character varying NOT NULL,
+    schedule character varying NOT NULL,
+    command character varying(2048),
+    class_name character varying,
+    arguments text,
+    queue_name character varying,
+    priority integer DEFAULT 0,
+    static boolean DEFAULT true NOT NULL,
+    description text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: solid_queue_recurring_tasks_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.solid_queue_recurring_tasks_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: solid_queue_recurring_tasks_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.solid_queue_recurring_tasks_id_seq OWNED BY public.solid_queue_recurring_tasks.id;
+
+
+--
+-- Name: solid_queue_scheduled_executions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.solid_queue_scheduled_executions (
+    id bigint NOT NULL,
+    job_id bigint NOT NULL,
+    queue_name character varying NOT NULL,
+    priority integer DEFAULT 0 NOT NULL,
+    scheduled_at timestamp(6) without time zone NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: solid_queue_scheduled_executions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.solid_queue_scheduled_executions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: solid_queue_scheduled_executions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.solid_queue_scheduled_executions_id_seq OWNED BY public.solid_queue_scheduled_executions.id;
+
+
+--
+-- Name: solid_queue_semaphores; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.solid_queue_semaphores (
+    id bigint NOT NULL,
+    key character varying NOT NULL,
+    value integer DEFAULT 1 NOT NULL,
+    expires_at timestamp(6) without time zone NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: solid_queue_semaphores_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.solid_queue_semaphores_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: solid_queue_semaphores_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.solid_queue_semaphores_id_seq OWNED BY public.solid_queue_semaphores.id;
+
+
+--
+-- Name: store_shifts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.store_shifts (
+    id bigint NOT NULL,
+    store_id bigint NOT NULL,
+    admin_user_id bigint NOT NULL,
+    day_of_week integer NOT NULL,
+    start_time time without time zone NOT NULL,
+    end_time time without time zone NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: store_shifts_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.store_shifts_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: store_shifts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.store_shifts_id_seq OWNED BY public.store_shifts.id;
+
+
+--
+-- Name: stores; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.stores (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    slug character varying,
+    address character varying,
+    zip_code character varying,
+    city character varying,
+    state character varying(2),
+    phone character varying,
+    creci character varying,
+    geofence_radius_meters integer DEFAULT 150 NOT NULL,
+    out_of_radius_tolerance_minutes integer DEFAULT 10 NOT NULL,
+    auto_checkout_after_minutes integer DEFAULT 60 NOT NULL,
+    timezone character varying DEFAULT 'America/Sao_Paulo'::character varying NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    director_admin_user_id bigint,
+    footer_store_id bigint,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    location public.geography(Point,4326)
+);
+
+
+--
+-- Name: stores_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.stores_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: stores_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.stores_id_seq OWNED BY public.stores.id;
+
+
+--
+-- Name: user_meta_integrations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_meta_integrations (
+    id bigint NOT NULL,
+    admin_user_id bigint NOT NULL,
+    access_token character varying,
+    facebook_user_id character varying,
+    name character varying,
+    email character varying,
+    token_expires_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    sync_status character varying,
+    sync_progress integer,
+    last_synced_at timestamp(6) without time zone,
+    sync_message character varying
+);
+
+
+--
+-- Name: user_meta_integrations_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.user_meta_integrations_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: user_meta_integrations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.user_meta_integrations_id_seq OWNED BY public.user_meta_integrations.id;
+
+
+--
+-- Name: webhook_settings; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.webhook_settings (
+    id bigint NOT NULL,
+    webhook_url character varying,
+    enabled boolean DEFAULT true NOT NULL,
+    description text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    whatsapp_webhook_url character varying,
+    lead_capture_enabled boolean
+);
+
+
+--
+-- Name: webhook_settings_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.webhook_settings_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: webhook_settings_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.webhook_settings_id_seq OWNED BY public.webhook_settings.id;
+
+
+--
+-- Name: action_text_rich_texts id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.action_text_rich_texts ALTER COLUMN id SET DEFAULT nextval('public.action_text_rich_texts_id_seq'::regclass);
+
+
+--
+-- Name: active_storage_attachments id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.active_storage_attachments ALTER COLUMN id SET DEFAULT nextval('public.active_storage_attachments_id_seq'::regclass);
+
+
+--
+-- Name: active_storage_blobs id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.active_storage_blobs ALTER COLUMN id SET DEFAULT nextval('public.active_storage_blobs_id_seq'::regclass);
+
+
+--
+-- Name: active_storage_variant_records id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.active_storage_variant_records ALTER COLUMN id SET DEFAULT nextval('public.active_storage_variant_records_id_seq'::regclass);
+
+
+--
+-- Name: addresses id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.addresses ALTER COLUMN id SET DEFAULT nextval('public.addresses_id_seq'::regclass);
+
+
+--
+-- Name: admin_users id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.admin_users ALTER COLUMN id SET DEFAULT nextval('public.admin_users_id_seq'::regclass);
+
+
+--
+-- Name: attribute_options id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.attribute_options ALTER COLUMN id SET DEFAULT nextval('public.attribute_options_id_seq'::regclass);
+
+
+--
+-- Name: banners id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.banners ALTER COLUMN id SET DEFAULT nextval('public.banners_id_seq'::regclass);
+
+
+--
+-- Name: check_ins id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.check_ins ALTER COLUMN id SET DEFAULT nextval('public.check_ins_id_seq'::regclass);
+
+
+--
+-- Name: constructors id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.constructors ALTER COLUMN id SET DEFAULT nextval('public.constructors_id_seq'::regclass);
+
+
+--
+-- Name: contact_settings id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contact_settings ALTER COLUMN id SET DEFAULT nextval('public.contact_settings_id_seq'::regclass);
+
+
+--
+-- Name: distribution_rule_agents id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.distribution_rule_agents ALTER COLUMN id SET DEFAULT nextval('public.distribution_rule_agents_id_seq'::regclass);
+
+
+--
+-- Name: distribution_rules id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.distribution_rules ALTER COLUMN id SET DEFAULT nextval('public.distribution_rules_id_seq'::regclass);
+
+
+--
+-- Name: footer_links id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.footer_links ALTER COLUMN id SET DEFAULT nextval('public.footer_links_id_seq'::regclass);
+
+
+--
+-- Name: footer_settings id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.footer_settings ALTER COLUMN id SET DEFAULT nextval('public.footer_settings_id_seq'::regclass);
+
+
+--
+-- Name: footer_social_links id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.footer_social_links ALTER COLUMN id SET DEFAULT nextval('public.footer_social_links_id_seq'::regclass);
+
+
+--
+-- Name: footer_stores id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.footer_stores ALTER COLUMN id SET DEFAULT nextval('public.footer_stores_id_seq'::regclass);
+
+
+--
+-- Name: friendly_id_slugs id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.friendly_id_slugs ALTER COLUMN id SET DEFAULT nextval('public.friendly_id_slugs_id_seq'::regclass);
+
+
+--
+-- Name: habitation_broker_assignments id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.habitation_broker_assignments ALTER COLUMN id SET DEFAULT nextval('public.habitation_broker_assignments_id_seq'::regclass);
+
+
+--
+-- Name: habitation_share_links id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.habitation_share_links ALTER COLUMN id SET DEFAULT nextval('public.habitation_share_links_id_seq'::regclass);
+
+
+--
+-- Name: habitations id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.habitations ALTER COLUMN id SET DEFAULT nextval('public.habitations_id_seq'::regclass);
+
+
+--
+-- Name: home_section_items id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.home_section_items ALTER COLUMN id SET DEFAULT nextval('public.home_section_items_id_seq'::regclass);
+
+
+--
+-- Name: home_sections id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.home_sections ALTER COLUMN id SET DEFAULT nextval('public.home_sections_id_seq'::regclass);
+
+
+--
+-- Name: home_settings id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.home_settings ALTER COLUMN id SET DEFAULT nextval('public.home_settings_id_seq'::regclass);
+
+
+--
+-- Name: landing_pages id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.landing_pages ALTER COLUMN id SET DEFAULT nextval('public.landing_pages_id_seq'::regclass);
+
+
+--
+-- Name: layout_settings id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.layout_settings ALTER COLUMN id SET DEFAULT nextval('public.layout_settings_id_seq'::regclass);
+
+
+--
+-- Name: lead_activities id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.lead_activities ALTER COLUMN id SET DEFAULT nextval('public.lead_activities_id_seq'::regclass);
+
+
+--
+-- Name: leads id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.leads ALTER COLUMN id SET DEFAULT nextval('public.leads_id_seq'::regclass);
+
+
+--
+-- Name: meta_facebook_pages id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.meta_facebook_pages ALTER COLUMN id SET DEFAULT nextval('public.meta_facebook_pages_id_seq'::regclass);
+
+
+--
+-- Name: meta_lead_forms id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.meta_lead_forms ALTER COLUMN id SET DEFAULT nextval('public.meta_lead_forms_id_seq'::regclass);
+
+
+--
+-- Name: portal_integration_events id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.portal_integration_events ALTER COLUMN id SET DEFAULT nextval('public.portal_integration_events_id_seq'::regclass);
+
+
+--
+-- Name: portal_integrations id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.portal_integrations ALTER COLUMN id SET DEFAULT nextval('public.portal_integrations_id_seq'::regclass);
+
+
+--
+-- Name: portal_listing_states id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.portal_listing_states ALTER COLUMN id SET DEFAULT nextval('public.portal_listing_states_id_seq'::regclass);
+
+
+--
+-- Name: profiles id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.profiles ALTER COLUMN id SET DEFAULT nextval('public.profiles_id_seq'::regclass);
+
+
+--
+-- Name: property_pages id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.property_pages ALTER COLUMN id SET DEFAULT nextval('public.property_pages_id_seq'::regclass);
+
+
+--
+-- Name: proprietors id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.proprietors ALTER COLUMN id SET DEFAULT nextval('public.proprietors_id_seq'::regclass);
+
+
+--
+-- Name: seo_settings id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.seo_settings ALTER COLUMN id SET DEFAULT nextval('public.seo_settings_id_seq'::regclass);
+
+
+--
+-- Name: settings id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.settings ALTER COLUMN id SET DEFAULT nextval('public.settings_id_seq'::regclass);
+
+
+--
+-- Name: solid_queue_blocked_executions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.solid_queue_blocked_executions ALTER COLUMN id SET DEFAULT nextval('public.solid_queue_blocked_executions_id_seq'::regclass);
+
+
+--
+-- Name: solid_queue_claimed_executions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.solid_queue_claimed_executions ALTER COLUMN id SET DEFAULT nextval('public.solid_queue_claimed_executions_id_seq'::regclass);
+
+
+--
+-- Name: solid_queue_failed_executions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.solid_queue_failed_executions ALTER COLUMN id SET DEFAULT nextval('public.solid_queue_failed_executions_id_seq'::regclass);
+
+
+--
+-- Name: solid_queue_jobs id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.solid_queue_jobs ALTER COLUMN id SET DEFAULT nextval('public.solid_queue_jobs_id_seq'::regclass);
+
+
+--
+-- Name: solid_queue_pauses id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.solid_queue_pauses ALTER COLUMN id SET DEFAULT nextval('public.solid_queue_pauses_id_seq'::regclass);
+
+
+--
+-- Name: solid_queue_processes id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.solid_queue_processes ALTER COLUMN id SET DEFAULT nextval('public.solid_queue_processes_id_seq'::regclass);
+
+
+--
+-- Name: solid_queue_ready_executions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.solid_queue_ready_executions ALTER COLUMN id SET DEFAULT nextval('public.solid_queue_ready_executions_id_seq'::regclass);
+
+
+--
+-- Name: solid_queue_recurring_executions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.solid_queue_recurring_executions ALTER COLUMN id SET DEFAULT nextval('public.solid_queue_recurring_executions_id_seq'::regclass);
+
+
+--
+-- Name: solid_queue_recurring_tasks id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.solid_queue_recurring_tasks ALTER COLUMN id SET DEFAULT nextval('public.solid_queue_recurring_tasks_id_seq'::regclass);
+
+
+--
+-- Name: solid_queue_scheduled_executions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.solid_queue_scheduled_executions ALTER COLUMN id SET DEFAULT nextval('public.solid_queue_scheduled_executions_id_seq'::regclass);
+
+
+--
+-- Name: solid_queue_semaphores id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.solid_queue_semaphores ALTER COLUMN id SET DEFAULT nextval('public.solid_queue_semaphores_id_seq'::regclass);
+
+
+--
+-- Name: store_shifts id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store_shifts ALTER COLUMN id SET DEFAULT nextval('public.store_shifts_id_seq'::regclass);
+
+
+--
+-- Name: stores id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.stores ALTER COLUMN id SET DEFAULT nextval('public.stores_id_seq'::regclass);
+
+
+--
+-- Name: user_meta_integrations id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_meta_integrations ALTER COLUMN id SET DEFAULT nextval('public.user_meta_integrations_id_seq'::regclass);
+
+
+--
+-- Name: webhook_settings id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.webhook_settings ALTER COLUMN id SET DEFAULT nextval('public.webhook_settings_id_seq'::regclass);
+
+
+--
+-- Name: action_text_rich_texts action_text_rich_texts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.action_text_rich_texts
+    ADD CONSTRAINT action_text_rich_texts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: active_storage_attachments active_storage_attachments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.active_storage_attachments
+    ADD CONSTRAINT active_storage_attachments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: active_storage_blobs active_storage_blobs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.active_storage_blobs
+    ADD CONSTRAINT active_storage_blobs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: active_storage_variant_records active_storage_variant_records_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.active_storage_variant_records
+    ADD CONSTRAINT active_storage_variant_records_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: addresses addresses_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.addresses
+    ADD CONSTRAINT addresses_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: admin_users admin_users_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.admin_users
+    ADD CONSTRAINT admin_users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ar_internal_metadata ar_internal_metadata_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ar_internal_metadata
+    ADD CONSTRAINT ar_internal_metadata_pkey PRIMARY KEY (key);
+
+
+--
+-- Name: attribute_options attribute_options_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.attribute_options
+    ADD CONSTRAINT attribute_options_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: banners banners_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.banners
+    ADD CONSTRAINT banners_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: check_ins check_ins_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.check_ins
+    ADD CONSTRAINT check_ins_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: constructors constructors_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.constructors
+    ADD CONSTRAINT constructors_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: contact_settings contact_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contact_settings
+    ADD CONSTRAINT contact_settings_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: distribution_rule_agents distribution_rule_agents_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.distribution_rule_agents
+    ADD CONSTRAINT distribution_rule_agents_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: distribution_rules distribution_rules_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.distribution_rules
+    ADD CONSTRAINT distribution_rules_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: footer_links footer_links_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.footer_links
+    ADD CONSTRAINT footer_links_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: footer_settings footer_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.footer_settings
+    ADD CONSTRAINT footer_settings_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: footer_social_links footer_social_links_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.footer_social_links
+    ADD CONSTRAINT footer_social_links_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: footer_stores footer_stores_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.footer_stores
+    ADD CONSTRAINT footer_stores_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: friendly_id_slugs friendly_id_slugs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.friendly_id_slugs
+    ADD CONSTRAINT friendly_id_slugs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: habitation_broker_assignments habitation_broker_assignments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.habitation_broker_assignments
+    ADD CONSTRAINT habitation_broker_assignments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: habitation_share_links habitation_share_links_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.habitation_share_links
+    ADD CONSTRAINT habitation_share_links_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: habitations habitations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.habitations
+    ADD CONSTRAINT habitations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: home_section_items home_section_items_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.home_section_items
+    ADD CONSTRAINT home_section_items_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: home_sections home_sections_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.home_sections
+    ADD CONSTRAINT home_sections_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: home_settings home_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.home_settings
+    ADD CONSTRAINT home_settings_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: landing_pages landing_pages_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.landing_pages
+    ADD CONSTRAINT landing_pages_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: layout_settings layout_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.layout_settings
+    ADD CONSTRAINT layout_settings_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: lead_activities lead_activities_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.lead_activities
+    ADD CONSTRAINT lead_activities_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: leads leads_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.leads
+    ADD CONSTRAINT leads_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: meta_facebook_pages meta_facebook_pages_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.meta_facebook_pages
+    ADD CONSTRAINT meta_facebook_pages_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: meta_lead_forms meta_lead_forms_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.meta_lead_forms
+    ADD CONSTRAINT meta_lead_forms_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: portal_integration_events portal_integration_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.portal_integration_events
+    ADD CONSTRAINT portal_integration_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: portal_integrations portal_integrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.portal_integrations
+    ADD CONSTRAINT portal_integrations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: portal_listing_states portal_listing_states_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.portal_listing_states
+    ADD CONSTRAINT portal_listing_states_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: profiles profiles_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.profiles
+    ADD CONSTRAINT profiles_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: property_pages property_pages_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.property_pages
+    ADD CONSTRAINT property_pages_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: proprietors proprietors_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.proprietors
+    ADD CONSTRAINT proprietors_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: schema_migrations schema_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.schema_migrations
+    ADD CONSTRAINT schema_migrations_pkey PRIMARY KEY (version);
+
+
+--
+-- Name: seo_settings seo_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.seo_settings
+    ADD CONSTRAINT seo_settings_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: settings settings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.settings
+    ADD CONSTRAINT settings_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: solid_queue_blocked_executions solid_queue_blocked_executions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.solid_queue_blocked_executions
+    ADD CONSTRAINT solid_queue_blocked_executions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: solid_queue_claimed_executions solid_queue_claimed_executions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.solid_queue_claimed_executions
+    ADD CONSTRAINT solid_queue_claimed_executions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: solid_queue_failed_executions solid_queue_failed_executions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.solid_queue_failed_executions
+    ADD CONSTRAINT solid_queue_failed_executions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: solid_queue_jobs solid_queue_jobs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.solid_queue_jobs
+    ADD CONSTRAINT solid_queue_jobs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: solid_queue_pauses solid_queue_pauses_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.solid_queue_pauses
+    ADD CONSTRAINT solid_queue_pauses_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: solid_queue_processes solid_queue_processes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.solid_queue_processes
+    ADD CONSTRAINT solid_queue_processes_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: solid_queue_ready_executions solid_queue_ready_executions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.solid_queue_ready_executions
+    ADD CONSTRAINT solid_queue_ready_executions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: solid_queue_recurring_executions solid_queue_recurring_executions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.solid_queue_recurring_executions
+    ADD CONSTRAINT solid_queue_recurring_executions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: solid_queue_recurring_tasks solid_queue_recurring_tasks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.solid_queue_recurring_tasks
+    ADD CONSTRAINT solid_queue_recurring_tasks_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: solid_queue_scheduled_executions solid_queue_scheduled_executions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.solid_queue_scheduled_executions
+    ADD CONSTRAINT solid_queue_scheduled_executions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: solid_queue_semaphores solid_queue_semaphores_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.solid_queue_semaphores
+    ADD CONSTRAINT solid_queue_semaphores_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: store_shifts store_shifts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store_shifts
+    ADD CONSTRAINT store_shifts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: stores stores_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.stores
+    ADD CONSTRAINT stores_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_meta_integrations user_meta_integrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_meta_integrations
+    ADD CONSTRAINT user_meta_integrations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: webhook_settings webhook_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.webhook_settings
+    ADD CONSTRAINT webhook_settings_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: idx_dist_rule_agents_on_rule_and_admin; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_dist_rule_agents_on_rule_and_admin ON public.distribution_rule_agents USING btree (distribution_rule_id, admin_user_id);
+
+
+--
+-- Name: idx_hab_share_links_hab_admin_exp; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_hab_share_links_hab_admin_exp ON public.habitation_share_links USING btree (habitation_id, admin_user_id, expires_at);
+
+
+--
+-- Name: idx_habitations_categoria_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_habitations_categoria_status ON public.habitations USING btree (categoria, status);
+
+
+--
+-- Name: idx_habitations_exibir_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_habitations_exibir_status ON public.habitations USING btree (exibir_no_site_flag, status);
+
+
+--
+-- Name: idx_habitations_geolocation; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_habitations_geolocation ON public.habitations USING btree (latitude, longitude);
+
+
+--
+-- Name: idx_habitations_home_corporate_order; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_habitations_home_corporate_order ON public.habitations USING btree (home_corporate_flag, home_corporate_position);
+
+
+--
+-- Name: idx_habitations_localizacao_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_habitations_localizacao_status ON public.habitations USING btree (cidade, bairro, status);
+
+
+--
+-- Name: idx_habitations_status_categoria_cidade; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_habitations_status_categoria_cidade ON public.habitations USING btree (status, categoria, cidade);
+
+
+--
+-- Name: idx_habitations_venda_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_habitations_venda_status ON public.habitations USING btree (valor_venda_cents, status);
+
+
+--
+-- Name: idx_on_portal_external_listing_id_a9202d155f; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_on_portal_external_listing_id_a9202d155f ON public.portal_integration_events USING btree (portal, external_listing_id);
+
+
+--
+-- Name: idx_portal_listing_states_portal_code; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_portal_listing_states_portal_code ON public.portal_listing_states USING btree (portal, habitation_code);
+
+
+--
+-- Name: idx_portal_listing_states_portal_external; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_portal_listing_states_portal_external ON public.portal_listing_states USING btree (portal, external_listing_id) WHERE (external_listing_id IS NOT NULL);
+
+
+--
+-- Name: idx_store_shifts_agent_day_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_store_shifts_agent_day_active ON public.store_shifts USING btree (admin_user_id, day_of_week, active);
+
+
+--
+-- Name: idx_unique_active_checkin_per_user; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_unique_active_checkin_per_user ON public.check_ins USING btree (admin_user_id) WHERE (status = 0);
+
+
+--
+-- Name: index_action_text_rich_texts_uniqueness; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_action_text_rich_texts_uniqueness ON public.action_text_rich_texts USING btree (record_type, record_id, name);
+
+
+--
+-- Name: index_active_storage_attachments_on_blob_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_active_storage_attachments_on_blob_id ON public.active_storage_attachments USING btree (blob_id);
+
+
+--
+-- Name: index_active_storage_attachments_uniqueness; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_active_storage_attachments_uniqueness ON public.active_storage_attachments USING btree (record_type, record_id, name, blob_id);
+
+
+--
+-- Name: index_active_storage_blobs_on_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_active_storage_blobs_on_key ON public.active_storage_blobs USING btree (key);
+
+
+--
+-- Name: index_active_storage_variant_records_uniqueness; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_active_storage_variant_records_uniqueness ON public.active_storage_variant_records USING btree (blob_id, variation_digest);
+
+
+--
+-- Name: index_addresses_on_addressable; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_addresses_on_addressable ON public.addresses USING btree (addressable_type, addressable_id);
+
+
+--
+-- Name: index_admin_users_on_default_store_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_admin_users_on_default_store_id ON public.admin_users USING btree (default_store_id);
+
+
+--
+-- Name: index_admin_users_on_email; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_admin_users_on_email ON public.admin_users USING btree (email);
+
+
+--
+-- Name: index_admin_users_on_field_agent_enabled; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_admin_users_on_field_agent_enabled ON public.admin_users USING btree (field_agent_enabled);
+
+
+--
+-- Name: index_admin_users_on_manager_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_admin_users_on_manager_id ON public.admin_users USING btree (manager_id);
+
+
+--
+-- Name: index_admin_users_on_profile_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_admin_users_on_profile_id ON public.admin_users USING btree (profile_id);
+
+
+--
+-- Name: index_admin_users_on_reset_password_token; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_admin_users_on_reset_password_token ON public.admin_users USING btree (reset_password_token);
+
+
+--
+-- Name: index_admin_users_on_vista_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_admin_users_on_vista_id ON public.admin_users USING btree (vista_id);
+
+
+--
+-- Name: index_attribute_options_on_context_category_lower_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_attribute_options_on_context_category_lower_name ON public.attribute_options USING btree (lower((name)::text), category, context);
+
+
+--
+-- Name: index_check_ins_on_admin_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_check_ins_on_admin_user_id ON public.check_ins USING btree (admin_user_id);
+
+
+--
+-- Name: index_check_ins_on_admin_user_id_and_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_check_ins_on_admin_user_id_and_status ON public.check_ins USING btree (admin_user_id, status);
+
+
+--
+-- Name: index_check_ins_on_store_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_check_ins_on_store_id ON public.check_ins USING btree (store_id);
+
+
+--
+-- Name: index_check_ins_on_store_id_and_checked_in_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_check_ins_on_store_id_and_checked_in_at ON public.check_ins USING btree (store_id, checked_in_at);
+
+
+--
+-- Name: index_check_ins_on_store_shift_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_check_ins_on_store_shift_id ON public.check_ins USING btree (store_shift_id);
+
+
+--
+-- Name: index_distribution_rule_agents_on_admin_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_distribution_rule_agents_on_admin_user_id ON public.distribution_rule_agents USING btree (admin_user_id);
+
+
+--
+-- Name: index_distribution_rule_agents_on_distribution_rule_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_distribution_rule_agents_on_distribution_rule_id ON public.distribution_rule_agents USING btree (distribution_rule_id);
+
+
+--
+-- Name: index_featured_properties_view_on_categoria; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_featured_properties_view_on_categoria ON public.featured_properties_view USING btree (categoria);
+
+
+--
+-- Name: index_featured_properties_view_on_cidade; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_featured_properties_view_on_cidade ON public.featured_properties_view USING btree (cidade);
+
+
+--
+-- Name: index_featured_properties_view_on_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_featured_properties_view_on_id ON public.featured_properties_view USING btree (id);
+
+
+--
+-- Name: index_footer_links_on_footer_setting_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_footer_links_on_footer_setting_id ON public.footer_links USING btree (footer_setting_id);
+
+
+--
+-- Name: index_footer_social_links_on_footer_setting_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_footer_social_links_on_footer_setting_id ON public.footer_social_links USING btree (footer_setting_id);
+
+
+--
+-- Name: index_footer_stores_on_footer_setting_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_footer_stores_on_footer_setting_id ON public.footer_stores USING btree (footer_setting_id);
+
+
+--
+-- Name: index_friendly_id_slugs_on_slug_and_sluggable_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_friendly_id_slugs_on_slug_and_sluggable_type ON public.friendly_id_slugs USING btree (slug, sluggable_type);
+
+
+--
+-- Name: index_friendly_id_slugs_on_slug_and_sluggable_type_and_scope; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_friendly_id_slugs_on_slug_and_sluggable_type_and_scope ON public.friendly_id_slugs USING btree (slug, sluggable_type, scope);
+
+
+--
+-- Name: index_friendly_id_slugs_on_sluggable_type_and_sluggable_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_friendly_id_slugs_on_sluggable_type_and_sluggable_id ON public.friendly_id_slugs USING btree (sluggable_type, sluggable_id);
+
+
+--
+-- Name: index_habitation_broker_assignments_on_admin_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitation_broker_assignments_on_admin_user_id ON public.habitation_broker_assignments USING btree (admin_user_id);
+
+
+--
+-- Name: index_habitation_broker_assignments_on_habitation_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitation_broker_assignments_on_habitation_id ON public.habitation_broker_assignments USING btree (habitation_id);
+
+
+--
+-- Name: index_habitation_share_links_on_admin_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitation_share_links_on_admin_user_id ON public.habitation_share_links USING btree (admin_user_id);
+
+
+--
+-- Name: index_habitation_share_links_on_habitation_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitation_share_links_on_habitation_id ON public.habitation_share_links USING btree (habitation_id);
+
+
+--
+-- Name: index_habitation_share_links_on_token; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_habitation_share_links_on_token ON public.habitation_share_links USING btree (token);
+
+
+--
+-- Name: index_habitations_on_aceita_permuta_flag; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_aceita_permuta_flag ON public.habitations USING btree (aceita_permuta_flag);
+
+
+--
+-- Name: index_habitations_on_admin_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_admin_user_id ON public.habitations USING btree (admin_user_id);
+
+
+--
+-- Name: index_habitations_on_area_total_m2; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_area_total_m2 ON public.habitations USING btree (area_total_m2);
+
+
+--
+-- Name: index_habitations_on_caracteristicas; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_caracteristicas ON public.habitations USING gin (caracteristicas);
+
+
+--
+-- Name: index_habitations_on_centro_flag; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_centro_flag ON public.habitations USING btree (centro_flag);
+
+
+--
+-- Name: index_habitations_on_codigo; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_habitations_on_codigo ON public.habitations USING btree (codigo);
+
+
+--
+-- Name: index_habitations_on_codigo_dwv_unique_when_dwv; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_habitations_on_codigo_dwv_unique_when_dwv ON public.habitations USING btree (codigo_dwv) WHERE (((imovel_dwv)::text = 'Sim'::text) AND (codigo_dwv IS NOT NULL) AND ((codigo_dwv)::text <> ''::text));
+
+
+--
+-- Name: index_habitations_on_codigo_empreendimento; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_codigo_empreendimento ON public.habitations USING btree (codigo_empreendimento);
+
+
+--
+-- Name: index_habitations_on_constructor_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_constructor_id ON public.habitations USING btree (constructor_id);
+
+
+--
+-- Name: index_habitations_on_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_created_at ON public.habitations USING btree (created_at);
+
+
+--
+-- Name: index_habitations_on_data_atualizacao_crm; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_data_atualizacao_crm ON public.habitations USING btree (data_atualizacao_crm);
+
+
+--
+-- Name: index_habitations_on_destaque_localizacao; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_destaque_localizacao ON public.habitations USING gin (destaque_localizacao);
+
+
+--
+-- Name: index_habitations_on_destaque_web_flag; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_destaque_web_flag ON public.habitations USING btree (destaque_web_flag);
+
+
+--
+-- Name: index_habitations_on_dormitorios_qtd; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_dormitorios_qtd ON public.habitations USING btree (dormitorios_qtd);
+
+
+--
+-- Name: index_habitations_on_frente_mar_avenida_atlantica_flag; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_frente_mar_avenida_atlantica_flag ON public.habitations USING btree (frente_mar_avenida_atlantica_flag);
+
+
+--
+-- Name: index_habitations_on_home_corporate_flag; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_home_corporate_flag ON public.habitations USING btree (home_corporate_flag);
+
+
+--
+-- Name: index_habitations_on_infra_estrutura; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_infra_estrutura ON public.habitations USING gin (infra_estrutura);
+
+
+--
+-- Name: index_habitations_on_key_location; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_key_location ON public.habitations USING btree (key_location);
+
+
+--
+-- Name: index_habitations_on_lancamento_flag; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_lancamento_flag ON public.habitations USING btree (lancamento_flag);
+
+
+--
+-- Name: index_habitations_on_lavabo_flag; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_lavabo_flag ON public.habitations USING btree (lavabo_flag);
+
+
+--
+-- Name: index_habitations_on_pictures; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_pictures ON public.habitations USING gin (pictures);
+
+
+--
+-- Name: index_habitations_on_piscina_flag; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_piscina_flag ON public.habitations USING btree (piscina_flag);
+
+
+--
+-- Name: index_habitations_on_praia_brava_flag; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_praia_brava_flag ON public.habitations USING btree (praia_brava_flag);
+
+
+--
+-- Name: index_habitations_on_proprietor_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_proprietor_id ON public.habitations USING btree (proprietor_id);
+
+
+--
+-- Name: index_habitations_on_publicar_casa_mineira; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_publicar_casa_mineira ON public.habitations USING btree (publicar_casa_mineira);
+
+
+--
+-- Name: index_habitations_on_publicar_chaves_na_mao; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_publicar_chaves_na_mao ON public.habitations USING btree (publicar_chaves_na_mao);
+
+
+--
+-- Name: index_habitations_on_publicar_imovelweb; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_publicar_imovelweb ON public.habitations USING btree (publicar_imovelweb);
+
+
+--
+-- Name: index_habitations_on_publicar_imovelweb_2; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_publicar_imovelweb_2 ON public.habitations USING btree (publicar_imovelweb_2);
+
+
+--
+-- Name: index_habitations_on_publicar_lais_ai; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_publicar_lais_ai ON public.habitations USING btree (publicar_lais_ai);
+
+
+--
+-- Name: index_habitations_on_publicar_loft; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_publicar_loft ON public.habitations USING btree (publicar_loft);
+
+
+--
+-- Name: index_habitations_on_publicar_netimoveis_2; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_publicar_netimoveis_2 ON public.habitations USING btree (publicar_netimoveis_2);
+
+
+--
+-- Name: index_habitations_on_publicar_viva_real_vrsync; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_publicar_viva_real_vrsync ON public.habitations USING btree (publicar_viva_real_vrsync);
+
+
+--
+-- Name: index_habitations_on_publicar_zapimoveis; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_publicar_zapimoveis ON public.habitations USING btree (publicar_zapimoveis);
+
+
+--
+-- Name: index_habitations_on_quadra_mar_flag; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_quadra_mar_flag ON public.habitations USING btree (quadra_mar_flag);
+
+
+--
+-- Name: index_habitations_on_salute_rental_management_flag; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_salute_rental_management_flag ON public.habitations USING btree (salute_rental_management_flag);
+
+
+--
+-- Name: index_habitations_on_slug; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_habitations_on_slug ON public.habitations USING btree (slug);
+
+
+--
+-- Name: index_habitations_on_updated_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_updated_at ON public.habitations USING btree (updated_at);
+
+
+--
+-- Name: index_habitations_on_vagas_qtd; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_vagas_qtd ON public.habitations USING btree (vagas_qtd);
+
+
+--
+-- Name: index_habitations_on_valor_locacao_cents; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_valor_locacao_cents ON public.habitations USING btree (valor_locacao_cents);
+
+
+--
+-- Name: index_habitations_on_valor_venda_cents; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_valor_venda_cents ON public.habitations USING btree (valor_venda_cents);
+
+
+--
+-- Name: index_home_section_items_on_home_section_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_home_section_items_on_home_section_id ON public.home_section_items USING btree (home_section_id);
+
+
+--
+-- Name: index_lead_activities_on_lead_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_lead_activities_on_lead_id ON public.lead_activities USING btree (lead_id);
+
+
+--
+-- Name: index_leads_on_admin_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_leads_on_admin_user_id ON public.leads USING btree (admin_user_id);
+
+
+--
+-- Name: index_leads_on_client_c2s_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_leads_on_client_c2s_id ON public.leads USING btree (client_c2s_id);
+
+
+--
+-- Name: index_leads_on_distribution_rule_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_leads_on_distribution_rule_id ON public.leads USING btree (distribution_rule_id);
+
+
+--
+-- Name: index_leads_on_origin; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_leads_on_origin ON public.leads USING btree (origin);
+
+
+--
+-- Name: index_leads_on_share_token; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_leads_on_share_token ON public.leads USING btree (share_token);
+
+
+--
+-- Name: index_leads_on_shared_by_admin_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_leads_on_shared_by_admin_user_id ON public.leads USING btree (shared_by_admin_user_id);
+
+
+--
+-- Name: index_meta_facebook_pages_on_page_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_meta_facebook_pages_on_page_id ON public.meta_facebook_pages USING btree (page_id);
+
+
+--
+-- Name: index_meta_facebook_pages_on_user_meta_integration_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_meta_facebook_pages_on_user_meta_integration_id ON public.meta_facebook_pages USING btree (user_meta_integration_id);
+
+
+--
+-- Name: index_meta_lead_forms_on_form_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_meta_lead_forms_on_form_id ON public.meta_lead_forms USING btree (form_id);
+
+
+--
+-- Name: index_meta_lead_forms_on_meta_facebook_page_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_meta_lead_forms_on_meta_facebook_page_id ON public.meta_lead_forms USING btree (meta_facebook_page_id);
+
+
+--
+-- Name: index_portal_integration_events_on_habitation_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_portal_integration_events_on_habitation_id ON public.portal_integration_events USING btree (habitation_id);
+
+
+--
+-- Name: index_portal_integration_events_on_portal_and_habitation_code; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_portal_integration_events_on_portal_and_habitation_code ON public.portal_integration_events USING btree (portal, habitation_code);
+
+
+--
+-- Name: index_portal_integration_events_on_portal_and_received_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_portal_integration_events_on_portal_and_received_at ON public.portal_integration_events USING btree (portal, received_at);
+
+
+--
+-- Name: index_portal_integrations_on_enabled; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_portal_integrations_on_enabled ON public.portal_integrations USING btree (enabled);
+
+
+--
+-- Name: index_portal_integrations_on_feed_token; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_portal_integrations_on_feed_token ON public.portal_integrations USING btree (feed_token);
+
+
+--
+-- Name: index_portal_integrations_on_portal; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_portal_integrations_on_portal ON public.portal_integrations USING btree (portal);
+
+
+--
+-- Name: index_portal_listing_states_on_habitation_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_portal_listing_states_on_habitation_id ON public.portal_listing_states USING btree (habitation_id);
+
+
+--
+-- Name: index_property_pages_on_slug; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_property_pages_on_slug ON public.property_pages USING btree (slug);
+
+
+--
+-- Name: index_proprietors_on_cpf_cnpj; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_proprietors_on_cpf_cnpj ON public.proprietors USING btree (cpf_cnpj);
+
+
+--
+-- Name: index_proprietors_on_email; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_proprietors_on_email ON public.proprietors USING btree (email);
+
+
+--
+-- Name: index_proprietors_on_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_proprietors_on_name ON public.proprietors USING btree (name);
+
+
+--
+-- Name: index_proprietors_on_spouse_cpf_cnpj; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_proprietors_on_spouse_cpf_cnpj ON public.proprietors USING btree (spouse_cpf_cnpj);
+
+
+--
+-- Name: index_proprietors_on_spouse_email; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_proprietors_on_spouse_email ON public.proprietors USING btree (spouse_email);
+
+
+--
+-- Name: index_proprietors_on_spouse_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_proprietors_on_spouse_name ON public.proprietors USING btree (spouse_name);
+
+
+--
+-- Name: index_proprietors_on_vista_code; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_proprietors_on_vista_code ON public.proprietors USING btree (vista_code);
+
+
+--
+-- Name: index_settings_on_key_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_settings_on_key_unique ON public.settings USING btree (key);
+
+
+--
+-- Name: index_solid_queue_blocked_executions_for_maintenance; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_solid_queue_blocked_executions_for_maintenance ON public.solid_queue_blocked_executions USING btree (expires_at, concurrency_key);
+
+
+--
+-- Name: index_solid_queue_blocked_executions_for_release; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_solid_queue_blocked_executions_for_release ON public.solid_queue_blocked_executions USING btree (concurrency_key, priority, job_id);
+
+
+--
+-- Name: index_solid_queue_blocked_executions_on_job_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_solid_queue_blocked_executions_on_job_id ON public.solid_queue_blocked_executions USING btree (job_id);
+
+
+--
+-- Name: index_solid_queue_claimed_executions_on_job_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_solid_queue_claimed_executions_on_job_id ON public.solid_queue_claimed_executions USING btree (job_id);
+
+
+--
+-- Name: index_solid_queue_claimed_executions_on_process_id_and_job_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_solid_queue_claimed_executions_on_process_id_and_job_id ON public.solid_queue_claimed_executions USING btree (process_id, job_id);
+
+
+--
+-- Name: index_solid_queue_dispatch_all; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_solid_queue_dispatch_all ON public.solid_queue_scheduled_executions USING btree (scheduled_at, priority, job_id);
+
+
+--
+-- Name: index_solid_queue_failed_executions_on_job_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_solid_queue_failed_executions_on_job_id ON public.solid_queue_failed_executions USING btree (job_id);
+
+
+--
+-- Name: index_solid_queue_jobs_for_alerting; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_solid_queue_jobs_for_alerting ON public.solid_queue_jobs USING btree (scheduled_at, finished_at);
+
+
+--
+-- Name: index_solid_queue_jobs_for_filtering; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_solid_queue_jobs_for_filtering ON public.solid_queue_jobs USING btree (queue_name, finished_at);
+
+
+--
+-- Name: index_solid_queue_jobs_on_active_job_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_solid_queue_jobs_on_active_job_id ON public.solid_queue_jobs USING btree (active_job_id);
+
+
+--
+-- Name: index_solid_queue_jobs_on_class_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_solid_queue_jobs_on_class_name ON public.solid_queue_jobs USING btree (class_name);
+
+
+--
+-- Name: index_solid_queue_jobs_on_finished_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_solid_queue_jobs_on_finished_at ON public.solid_queue_jobs USING btree (finished_at);
+
+
+--
+-- Name: index_solid_queue_pauses_on_queue_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_solid_queue_pauses_on_queue_name ON public.solid_queue_pauses USING btree (queue_name);
+
+
+--
+-- Name: index_solid_queue_poll_all; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_solid_queue_poll_all ON public.solid_queue_ready_executions USING btree (priority, job_id);
+
+
+--
+-- Name: index_solid_queue_poll_by_queue; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_solid_queue_poll_by_queue ON public.solid_queue_ready_executions USING btree (queue_name, priority, job_id);
+
+
+--
+-- Name: index_solid_queue_processes_on_last_heartbeat_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_solid_queue_processes_on_last_heartbeat_at ON public.solid_queue_processes USING btree (last_heartbeat_at);
+
+
+--
+-- Name: index_solid_queue_processes_on_name_and_supervisor_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_solid_queue_processes_on_name_and_supervisor_id ON public.solid_queue_processes USING btree (name, supervisor_id);
+
+
+--
+-- Name: index_solid_queue_processes_on_supervisor_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_solid_queue_processes_on_supervisor_id ON public.solid_queue_processes USING btree (supervisor_id);
+
+
+--
+-- Name: index_solid_queue_ready_executions_on_job_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_solid_queue_ready_executions_on_job_id ON public.solid_queue_ready_executions USING btree (job_id);
+
+
+--
+-- Name: index_solid_queue_recurring_executions_on_job_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_solid_queue_recurring_executions_on_job_id ON public.solid_queue_recurring_executions USING btree (job_id);
+
+
+--
+-- Name: index_solid_queue_recurring_executions_on_task_key_and_run_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_solid_queue_recurring_executions_on_task_key_and_run_at ON public.solid_queue_recurring_executions USING btree (task_key, run_at);
+
+
+--
+-- Name: index_solid_queue_recurring_tasks_on_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_solid_queue_recurring_tasks_on_key ON public.solid_queue_recurring_tasks USING btree (key);
+
+
+--
+-- Name: index_solid_queue_recurring_tasks_on_static; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_solid_queue_recurring_tasks_on_static ON public.solid_queue_recurring_tasks USING btree (static);
+
+
+--
+-- Name: index_solid_queue_scheduled_executions_on_job_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_solid_queue_scheduled_executions_on_job_id ON public.solid_queue_scheduled_executions USING btree (job_id);
+
+
+--
+-- Name: index_solid_queue_semaphores_on_expires_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_solid_queue_semaphores_on_expires_at ON public.solid_queue_semaphores USING btree (expires_at);
+
+
+--
+-- Name: index_solid_queue_semaphores_on_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_solid_queue_semaphores_on_key ON public.solid_queue_semaphores USING btree (key);
+
+
+--
+-- Name: index_solid_queue_semaphores_on_key_and_value; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_solid_queue_semaphores_on_key_and_value ON public.solid_queue_semaphores USING btree (key, value);
+
+
+--
+-- Name: index_store_shifts_on_admin_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_store_shifts_on_admin_user_id ON public.store_shifts USING btree (admin_user_id);
+
+
+--
+-- Name: index_store_shifts_on_store_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_store_shifts_on_store_id ON public.store_shifts USING btree (store_id);
+
+
+--
+-- Name: index_store_shifts_on_store_id_and_day_of_week; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_store_shifts_on_store_id_and_day_of_week ON public.store_shifts USING btree (store_id, day_of_week);
+
+
+--
+-- Name: index_stores_on_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_stores_on_active ON public.stores USING btree (active);
+
+
+--
+-- Name: index_stores_on_director_admin_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_stores_on_director_admin_user_id ON public.stores USING btree (director_admin_user_id);
+
+
+--
+-- Name: index_stores_on_footer_store_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_stores_on_footer_store_id ON public.stores USING btree (footer_store_id);
+
+
+--
+-- Name: index_stores_on_location; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_stores_on_location ON public.stores USING gist (location);
+
+
+--
+-- Name: index_stores_on_slug; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_stores_on_slug ON public.stores USING btree (slug);
+
+
+--
+-- Name: index_user_meta_integrations_on_admin_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_user_meta_integrations_on_admin_user_id ON public.user_meta_integrations USING btree (admin_user_id);
+
+
+--
+-- Name: habitation_share_links fk_rails_0e80d0e62c; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.habitation_share_links
+    ADD CONSTRAINT fk_rails_0e80d0e62c FOREIGN KEY (habitation_id) REFERENCES public.habitations(id);
+
+
+--
+-- Name: leads fk_rails_0ed786c31e; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.leads
+    ADD CONSTRAINT fk_rails_0ed786c31e FOREIGN KEY (shared_by_admin_user_id) REFERENCES public.admin_users(id);
+
+
+--
+-- Name: footer_links fk_rails_14fda2a7a0; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.footer_links
+    ADD CONSTRAINT fk_rails_14fda2a7a0 FOREIGN KEY (footer_setting_id) REFERENCES public.footer_settings(id);
+
+
+--
+-- Name: stores fk_rails_19c4970b14; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.stores
+    ADD CONSTRAINT fk_rails_19c4970b14 FOREIGN KEY (director_admin_user_id) REFERENCES public.admin_users(id);
+
+
+--
+-- Name: leads fk_rails_20d5a6bd75; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.leads
+    ADD CONSTRAINT fk_rails_20d5a6bd75 FOREIGN KEY (distribution_rule_id) REFERENCES public.distribution_rules(id);
+
+
+--
+-- Name: portal_integration_events fk_rails_23eb6add0b; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.portal_integration_events
+    ADD CONSTRAINT fk_rails_23eb6add0b FOREIGN KEY (habitation_id) REFERENCES public.habitations(id);
+
+
+--
+-- Name: habitation_share_links fk_rails_2772a86517; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.habitation_share_links
+    ADD CONSTRAINT fk_rails_2772a86517 FOREIGN KEY (admin_user_id) REFERENCES public.admin_users(id);
+
+
+--
+-- Name: solid_queue_recurring_executions fk_rails_318a5533ed; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.solid_queue_recurring_executions
+    ADD CONSTRAINT fk_rails_318a5533ed FOREIGN KEY (job_id) REFERENCES public.solid_queue_jobs(id) ON DELETE CASCADE;
+
+
+--
+-- Name: solid_queue_failed_executions fk_rails_39bbc7a631; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.solid_queue_failed_executions
+    ADD CONSTRAINT fk_rails_39bbc7a631 FOREIGN KEY (job_id) REFERENCES public.solid_queue_jobs(id) ON DELETE CASCADE;
+
+
+--
+-- Name: distribution_rule_agents fk_rails_43433f55b6; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.distribution_rule_agents
+    ADD CONSTRAINT fk_rails_43433f55b6 FOREIGN KEY (distribution_rule_id) REFERENCES public.distribution_rules(id);
+
+
+--
+-- Name: habitations fk_rails_469bb01085; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.habitations
+    ADD CONSTRAINT fk_rails_469bb01085 FOREIGN KEY (constructor_id) REFERENCES public.constructors(id);
+
+
+--
+-- Name: habitations fk_rails_49efca6fdb; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.habitations
+    ADD CONSTRAINT fk_rails_49efca6fdb FOREIGN KEY (proprietor_id) REFERENCES public.proprietors(id);
+
+
+--
+-- Name: solid_queue_blocked_executions fk_rails_4cd34e2228; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.solid_queue_blocked_executions
+    ADD CONSTRAINT fk_rails_4cd34e2228 FOREIGN KEY (job_id) REFERENCES public.solid_queue_jobs(id) ON DELETE CASCADE;
+
+
+--
+-- Name: check_ins fk_rails_4ffa2041a7; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.check_ins
+    ADD CONSTRAINT fk_rails_4ffa2041a7 FOREIGN KEY (admin_user_id) REFERENCES public.admin_users(id);
+
+
+--
+-- Name: meta_facebook_pages fk_rails_5348759d86; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.meta_facebook_pages
+    ADD CONSTRAINT fk_rails_5348759d86 FOREIGN KEY (user_meta_integration_id) REFERENCES public.user_meta_integrations(id);
+
+
+--
+-- Name: check_ins fk_rails_58d2ce0005; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.check_ins
+    ADD CONSTRAINT fk_rails_58d2ce0005 FOREIGN KEY (store_id) REFERENCES public.stores(id);
+
+
+--
+-- Name: admin_users fk_rails_591ae579ef; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.admin_users
+    ADD CONSTRAINT fk_rails_591ae579ef FOREIGN KEY (profile_id) REFERENCES public.profiles(id);
+
+
+--
+-- Name: home_section_items fk_rails_5d2e2b9dc2; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.home_section_items
+    ADD CONSTRAINT fk_rails_5d2e2b9dc2 FOREIGN KEY (home_section_id) REFERENCES public.home_sections(id);
+
+
+--
+-- Name: footer_social_links fk_rails_7efc10f336; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.footer_social_links
+    ADD CONSTRAINT fk_rails_7efc10f336 FOREIGN KEY (footer_setting_id) REFERENCES public.footer_settings(id);
+
+
+--
+-- Name: habitations fk_rails_80a7cb3f5d; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.habitations
+    ADD CONSTRAINT fk_rails_80a7cb3f5d FOREIGN KEY (admin_user_id) REFERENCES public.admin_users(id);
+
+
+--
+-- Name: solid_queue_ready_executions fk_rails_81fcbd66af; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.solid_queue_ready_executions
+    ADD CONSTRAINT fk_rails_81fcbd66af FOREIGN KEY (job_id) REFERENCES public.solid_queue_jobs(id) ON DELETE CASCADE;
+
+
+--
+-- Name: habitation_broker_assignments fk_rails_837051d439; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.habitation_broker_assignments
+    ADD CONSTRAINT fk_rails_837051d439 FOREIGN KEY (admin_user_id) REFERENCES public.admin_users(id);
+
+
+--
+-- Name: distribution_rule_agents fk_rails_89af5b0a07; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.distribution_rule_agents
+    ADD CONSTRAINT fk_rails_89af5b0a07 FOREIGN KEY (admin_user_id) REFERENCES public.admin_users(id);
+
+
+--
+-- Name: portal_listing_states fk_rails_8def14d270; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.portal_listing_states
+    ADD CONSTRAINT fk_rails_8def14d270 FOREIGN KEY (habitation_id) REFERENCES public.habitations(id);
+
+
+--
+-- Name: footer_stores fk_rails_937ebd4dbd; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.footer_stores
+    ADD CONSTRAINT fk_rails_937ebd4dbd FOREIGN KEY (footer_setting_id) REFERENCES public.footer_settings(id);
+
+
+--
+-- Name: active_storage_variant_records fk_rails_993965df05; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.active_storage_variant_records
+    ADD CONSTRAINT fk_rails_993965df05 FOREIGN KEY (blob_id) REFERENCES public.active_storage_blobs(id);
+
+
+--
+-- Name: solid_queue_claimed_executions fk_rails_9cfe4d4944; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.solid_queue_claimed_executions
+    ADD CONSTRAINT fk_rails_9cfe4d4944 FOREIGN KEY (job_id) REFERENCES public.solid_queue_jobs(id) ON DELETE CASCADE;
+
+
+--
+-- Name: stores fk_rails_a351b46480; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.stores
+    ADD CONSTRAINT fk_rails_a351b46480 FOREIGN KEY (footer_store_id) REFERENCES public.footer_stores(id);
+
+
+--
+-- Name: user_meta_integrations fk_rails_b1764c6b36; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_meta_integrations
+    ADD CONSTRAINT fk_rails_b1764c6b36 FOREIGN KEY (admin_user_id) REFERENCES public.admin_users(id);
+
+
+--
+-- Name: meta_lead_forms fk_rails_b4b9beb161; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.meta_lead_forms
+    ADD CONSTRAINT fk_rails_b4b9beb161 FOREIGN KEY (meta_facebook_page_id) REFERENCES public.meta_facebook_pages(id);
+
+
+--
+-- Name: check_ins fk_rails_c2a6d4a105; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.check_ins
+    ADD CONSTRAINT fk_rails_c2a6d4a105 FOREIGN KEY (store_shift_id) REFERENCES public.store_shifts(id);
+
+
+--
+-- Name: habitation_broker_assignments fk_rails_c366289351; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.habitation_broker_assignments
+    ADD CONSTRAINT fk_rails_c366289351 FOREIGN KEY (habitation_id) REFERENCES public.habitations(id);
+
+
+--
+-- Name: active_storage_attachments fk_rails_c3b3935057; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.active_storage_attachments
+    ADD CONSTRAINT fk_rails_c3b3935057 FOREIGN KEY (blob_id) REFERENCES public.active_storage_blobs(id);
+
+
+--
+-- Name: solid_queue_scheduled_executions fk_rails_c4316f352d; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.solid_queue_scheduled_executions
+    ADD CONSTRAINT fk_rails_c4316f352d FOREIGN KEY (job_id) REFERENCES public.solid_queue_jobs(id) ON DELETE CASCADE;
+
+
+--
+-- Name: store_shifts fk_rails_c9e77c3011; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store_shifts
+    ADD CONSTRAINT fk_rails_c9e77c3011 FOREIGN KEY (store_id) REFERENCES public.stores(id);
+
+
+--
+-- Name: admin_users fk_rails_d966db7d2f; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.admin_users
+    ADD CONSTRAINT fk_rails_d966db7d2f FOREIGN KEY (default_store_id) REFERENCES public.stores(id);
+
+
+--
+-- Name: admin_users fk_rails_e4ce59bd8f; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.admin_users
+    ADD CONSTRAINT fk_rails_e4ce59bd8f FOREIGN KEY (manager_id) REFERENCES public.admin_users(id);
+
+
+--
+-- Name: lead_activities fk_rails_ee14909c06; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.lead_activities
+    ADD CONSTRAINT fk_rails_ee14909c06 FOREIGN KEY (lead_id) REFERENCES public.leads(id);
+
+
+--
+-- Name: leads fk_rails_f3159e7558; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.leads
+    ADD CONSTRAINT fk_rails_f3159e7558 FOREIGN KEY (admin_user_id) REFERENCES public.admin_users(id);
+
+
+--
+-- Name: store_shifts fk_rails_fe171d980e; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store_shifts
+    ADD CONSTRAINT fk_rails_fe171d980e FOREIGN KEY (admin_user_id) REFERENCES public.admin_users(id);
+
+
+--
+-- PostgreSQL database dump complete
+--
+
+\unrestrict mcEvqdDwq5cjgSVbV7ATh1gyoknd3e7yKsi9vj5guostYciJkg9f2ehLgt5b2Kq
+
+SET search_path TO "$user", public;
+
+INSERT INTO "schema_migrations" (version) VALUES
+('20260420140000'),
+('20260420130000'),
+('20260420120000'),
+('20260420020000'),
+('20260420010000'),
+('20260419230000'),
+('20260419220000'),
+('20260419120000'),
+('20260401180500'),
+('20260401173500'),
+('20260401171000'),
+('20260401170000'),
+('20260401145500'),
+('20260401141200'),
+('20260401141100'),
+('20260401141000'),
+('20260323195000'),
+('20260323154500'),
+('20260317103100'),
+('20260317103000'),
+('20260317013500'),
+('20260317004500'),
+('20260317002000'),
+('20260316212000'),
+('20260316201000'),
+('20260316181000'),
+('20260316180000'),
+('20260219110000'),
+('20260209231500'),
+('20260209224000'),
+('20260209221000'),
+('20260209214000'),
+('20260209203000'),
+('20260209190000'),
+('20260209160804'),
+('20260209160803'),
+('20260209144202'),
+('20260209011909'),
+('20260209011821'),
+('20260208224237'),
+('20260208211941'),
+('20260205221756'),
+('20260205201505'),
+('20260205190553'),
+('20260205182455'),
+('20260205175616'),
+('20260205173935'),
+('20260205173934'),
+('20260205173933'),
+('20260205162648'),
+('20260205153508'),
+('20260205153343'),
+('20260205135413'),
+('20260205133839'),
+('20260205125516'),
+('20260205125515'),
+('20260205125514'),
+('20260205122955'),
+('20260205122807'),
+('20260205122634'),
+('20260205121042'),
+('20260112012254'),
+('20260111230258'),
+('20260111230256'),
+('20260110192156'),
+('20260110185519'),
+('20260110185210'),
+('20260110011550'),
+('20260110004530'),
+('20260110004529'),
+('20260110004527'),
+('20260110004526'),
+('20260109222214'),
+('20260109215741'),
+('20260109215740'),
+('20260109210957'),
+('20260109210040'),
+('20260109161448'),
+('20260109161447'),
+('20260109131432'),
+('20251126042444'),
+('20251125175442'),
+('20251125174440'),
+('20251125165431'),
+('20251125160808'),
+('20251125160807'),
+('20251125160805'),
+('20251125160804'),
+('20251125160425'),
+('20251124011442'),
+('20251124011439'),
+('20251124011435'),
+('20251124011430'),
+('20251124003706'),
+('20251123102600'),
+('20251123040000'),
+('20251123005900'),
+('20251122130154'),
+('20251122125348'),
+('20251122125042');
+

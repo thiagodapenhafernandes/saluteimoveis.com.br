@@ -96,10 +96,10 @@ Rails.application.routes.draw do
     resources :stores
 
     # === Field (check-in geolocalizado de corretores) ===
-    # Namespace admin reservado para lojas (Fase 1) e dashboard de campo (futuro).
-    # Vazio na Fase 0 — fica aqui para não poluir o arquivo depois.
     namespace :field do
-      # (preenchido nas fases 3+)
+      resources :check_ins, only: [:index, :show] do
+        post :force_check_out, on: :member
+      end
     end
   end
 
@@ -110,6 +110,9 @@ Rails.application.routes.draw do
     get "up", to: "health#up"
     get "", to: "home#show", as: :root
     get "stores/discover", to: "stores#discover"
+    resources :check_ins, only: [:create] do
+      patch :check_out, on: :member
+    end
   end
 
   namespace :api do
