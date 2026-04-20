@@ -135,7 +135,7 @@ Rails.application.routes.draw do
     get "manifest", to: "manifests#show", as: :manifest, defaults: { format: :json }
     get "", to: "home#show", as: :root
     get "stores/discover", to: "stores#discover"
-    resources :check_ins, only: [:create] do
+    resources :check_ins, only: [:new, :create] do
       patch :check_out, on: :member
     end
     resources :location_pings, only: [:create]

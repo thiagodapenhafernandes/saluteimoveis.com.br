@@ -6,6 +6,11 @@ module Field
     before_action :ensure_field_agent!
     before_action :set_active_check_in, only: [:check_out]
 
+    # GET /field/check_ins/new — tela do fluxo GPS → check-in
+    def new
+      @active_check_in = current_admin_user.active_check_in
+    end
+
     # POST /field/check_ins
     # Params esperados: lat, lng, accuracy, device_info (JSON)
     def create
