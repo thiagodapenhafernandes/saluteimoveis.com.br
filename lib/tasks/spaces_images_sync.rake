@@ -2,6 +2,9 @@ require "open-uri"
 require "yaml"
 require "fileutils"
 require "set"
+require "openssl"
+require "net/http"
+require "stringio"
 
 module SpacesImageSync
   module_function
@@ -80,7 +83,7 @@ module SpacesImageSync
       end
 
       begin
-        io = URI.open(url, read_timeout: 20, open_timeout: 10)
+        io = SpacesImageSync.download_image(url)
         habitation.photos.attach(io: io, filename: filename)
         synced += 1
         existing_filenames << filename
@@ -92,6 +95,42 @@ module SpacesImageSync
     end
 
     { synced: synced, skipped: skipped, failed: failed, habitation_failed: habitation_failed }
+  end
+
+  # Baixa uma imagem HTTP(S) com VERIFY_PEER mas sem checagem de CRL.
+  # A Vista CDN usa certificados Let's Encrypt R12 que não publicam CRL
+  # (apenas OCSP), e o OpenURI default falha com "unable to get certificate CRL".
+  # Retorna StringIO pronto pro ActiveStorage#attach.
+  def download_image(url, read_timeout: 20, open_timeout: 10, max_redirects: 5)
+    remaining_redirects = max_redirects
+
+    loop do
+      uri = URI.parse(url.to_s)
+      raise "URL inválida para download: #{url.inspect}" unless uri.is_a?(URI::HTTP) || uri.is_a?(URI::HTTPS)
+
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = (uri.scheme == "https")
+      if http.use_ssl?
+        http.verify_mode = OpenSSL::SSL::VERIFY_PEER
+        # Sem VERIFY_CRL_CHECK / VERIFY_CRL_CHECK_ALL — evita tentativa de baixar CRL
+      end
+      http.read_timeout = read_timeout
+      http.open_timeout = open_timeout
+
+      request = Net::HTTP::Get.new(uri.request_uri)
+      response = http.request(request)
+
+      case response
+      when Net::HTTPSuccess
+        return StringIO.new(response.body)
+      when Net::HTTPRedirection
+        raise "Muitos redirects para #{url}" if remaining_redirects <= 0
+        remaining_redirects -= 1
+        url = response["location"]
+      else
+        raise "Download falhou (#{response.code} #{response.message}) para #{url}"
+      end
+    end
   end
 end
 
