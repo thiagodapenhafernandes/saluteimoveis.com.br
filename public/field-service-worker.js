@@ -7,7 +7,7 @@
 //
 // NOTE: Keep this file minimal and dependency-free. Bumps cache version when shipping changes.
 
-const CACHE_VERSION = "v1";
+const CACHE_VERSION = "v2";
 const SHELL_CACHE = `field-shell-${CACHE_VERSION}`;
 const PING_QUEUE_DB = "field-ping-queue";
 const PING_QUEUE_STORE = "pings";
@@ -15,7 +15,9 @@ const PING_QUEUE_STORE = "pings";
 const SHELL_URLS = [
   "/field",
   "/field-icons/icon-192.png",
-  "/field-icons/icon-512.png"
+  "/field-icons/icon-512.png",
+  "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css",
+  "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
 ];
 
 // ---------- Install / Activate ----------
@@ -45,7 +47,26 @@ self.addEventListener("fetch", (event) => {
   const request = event.request;
   const url = new URL(request.url);
 
-  // Only handle same-origin /field/* requests.
+  // Cachear CDNs que o field usa (Bootstrap, Bootstrap Icons) para
+  // funcionarem offline.
+  const isTrustedCdn = url.origin === "https://cdn.jsdelivr.net";
+  if (isTrustedCdn && request.method === "GET") {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        if (cached) return cached;
+        return fetch(request).then((resp) => {
+          if (resp && resp.status === 200) {
+            const clone = resp.clone();
+            caches.open(SHELL_CACHE).then((c) => c.put(request, clone).catch(() => {}));
+          }
+          return resp;
+        });
+      })
+    );
+    return;
+  }
+
+  // Only handle same-origin /field/* requests beyond this point.
   if (url.origin !== self.location.origin) return;
   if (!url.pathname.startsWith("/field")) return;
 
@@ -60,7 +81,6 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          // Clone and cache successful HTML/asset responses.
           if (response && response.status === 200) {
             const clone = response.clone();
             caches.open(SHELL_CACHE).then((cache) => cache.put(request, clone).catch(() => {}));
