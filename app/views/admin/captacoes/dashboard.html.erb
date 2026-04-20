@@ -120,6 +120,7 @@
   <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-geral" type="button">Geral</button></li>
   <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-venda" type="button">Venda</button></li>
   <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-locacao" type="button">Locação</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-leads" type="button">Leads</button></li>
 </ul>
 
 <div class="tab-content">
@@ -306,6 +307,11 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- LEADS HEATMAP -->
+  <div class="tab-pane fade" id="tab-leads">
+    <%= render "leads_heatmap" %>
   </div>
 </div>
 

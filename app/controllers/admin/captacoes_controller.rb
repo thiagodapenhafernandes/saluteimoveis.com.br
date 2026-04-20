@@ -45,6 +45,8 @@ module Admin
 
       @goal_venda_obj   = CaptacaoGoal.current_foco(year: @period_end.year, kind: :venda)
       @goal_locacao_obj = CaptacaoGoal.current_foco(year: @period_end.year, kind: :locacao)
+
+      build_leads_heatmap
     end
 
     def index
@@ -72,7 +74,6 @@ module Admin
       @step = params[:step].presence_in(Captacao::STEPS) || @captacao.step
       # Terreno pula o step de visitas
       @step = @captacao.next_step if @step == "visitas" && @captacao.skip_visitas?
-      render step_template(@step)
     end
 
     def update
@@ -103,7 +104,7 @@ module Admin
         end
       else
         @step = current_step
-        render step_template(@step), status: :unprocessable_entity
+        render :edit, status: :unprocessable_entity
       end
     end
 
@@ -136,6 +137,33 @@ module Admin
       Date.parse(str) rescue nil
     end
 
+    def build_leads_heatmap
+      leads = Lead.where(created_at: @period_start.beginning_of_day..@period_end.end_of_day)
+                  .where.not(admin_user_id: nil)
+      leads = leads.where(lead_type: params[:lead_category]) if params[:lead_category].present?
+      leads = leads.where(origin: params[:lead_source])      if params[:lead_source].present?
+      leads = leads.where(admin_user_id: current_admin_user.id) unless current_admin_user.admin?
+
+      rows = leads.group(:admin_user_id, "DATE(created_at)").count
+
+      user_ids = rows.keys.map(&:first).uniq
+      @heatmap_corretores = AdminUser.where(id: user_ids).order(:name).to_a
+      @heatmap_dates = (@period_start.to_date..@period_end.to_date).to_a
+
+      # Monta hash { admin_user_id => { date => count } }
+      @heatmap_matrix = Hash.new { |h, k| h[k] = Hash.new(0) }
+      rows.each do |(uid, date), count|
+        dt = date.is_a?(Date) ? date : Date.parse(date.to_s)
+        @heatmap_matrix[uid][dt] = count
+      end
+
+      @heatmap_max = rows.values.max || 0
+
+      # Opções dos filtros
+      @lead_categories = Lead.distinct.pluck(:lead_type).compact.sort
+      @lead_sources    = Lead.distinct.pluck(:origin).compact.sort
+    end
+
     def authorize_access!
       return if current_admin_user.admin?
       return if @captacao.corretor_id == current_admin_user.id
@@ -152,10 +180,6 @@ module Admin
 
     def resolve_layout
       action_name.in?(%w[new edit update]) ? "captacao_wizard" : "admin"
-    end
-
-    def step_template(step)
-      "admin/captacoes/steps/#{step}"
     end
 
     def default_modalidade
