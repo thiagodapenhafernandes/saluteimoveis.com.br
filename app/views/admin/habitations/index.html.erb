@@ -634,13 +634,44 @@
   </div>
 </div>
 
+<div data-controller="bulk-publish"
+     data-bulk-publish-url-value="<%= bulk_publish_admin_habitations_path %>"
+     data-bulk-publish-csrf-value="<%= form_authenticity_token %>">
+
+<!-- Floating bulk action toolbar -->
+<div data-bulk-publish-target="toolbar"
+     class="bulk-publish-toolbar d-none position-sticky top-0 bg-white border rounded-3 shadow-sm px-3 py-2 mb-3 d-flex align-items-center justify-content-between"
+     style="z-index: 1020;">
+  <div class="d-flex align-items-center gap-2">
+    <i class="bi bi-check2-square text-success"></i>
+    <span class="fw-semibold"><span data-bulk-publish-target="count">0</span> imóvel(is) selecionado(s)</span>
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-action="click->bulk-publish#clearSelection">
+      Limpar
+    </button>
+    <button type="button" class="btn btn-sm btn-success" data-action="click->bulk-publish#openModal">
+      <i class="bi bi-megaphone me-1"></i> Divulgar
+    </button>
+  </div>
+</div>
+
 <!-- Results Header -->
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <% if params[:q].present? || params[:status].present? || params[:categoria].present? || params[:scope].present? || active_extra_filters_count.positive? %>
-     <h6 class="text-muted fw-normal mb-0">Filtrando resultados...</h6>
-  <% else %>
-     <h6 class="text-muted fw-normal mb-0"><%= link_to "Selecionar Todos", "#", class: "text-decoration-none fw-bold small" %></h6>
-  <% end %>
+  <div class="d-flex align-items-center gap-2">
+    <div class="form-check mb-0">
+      <input type="checkbox" class="form-check-input"
+             id="bulkPublishMaster"
+             data-bulk-publish-target="master"
+             data-action="change->bulk-publish#toggleAll">
+      <label class="form-check-label small fw-bold text-muted text-uppercase" for="bulkPublishMaster">
+        Selecionar todos
+      </label>
+    </div>
+    <% if params[:q].present? || params[:status].present? || params[:categoria].present? || params[:scope].present? || active_extra_filters_count.positive? %>
+      <span class="text-muted fw-normal small">• Filtrando resultados...</span>
+    <% end %>
+  </div>
   <div class="d-flex align-items-center gap-3">
     <span class="small text-muted fw-semibold">Mostrando <span class="text-dark"><%= @habitations.count %></span> de <%= Habitation.count %> registros.</span>
 
@@ -770,6 +801,17 @@
                   <i class="bi bi-image display-4 opacity-25"></i>
                 </div>
               <% end %>
+              <!-- Selection checkbox -->
+              <div class="position-absolute top-0 end-0 p-2" style="z-index: 5;">
+                <label class="bulk-select-label m-0 d-inline-flex align-items-center justify-content-center bg-white rounded-2 shadow-sm" style="width: 28px; height: 28px; cursor: pointer;" onclick="event.stopPropagation();">
+                  <input type="checkbox"
+                         class="form-check-input m-0"
+                         data-bulk-publish-target="item"
+                         data-id="<%= imovel.id %>"
+                         data-action="change->bulk-publish#toggleOne"
+                         aria-label="Selecionar imóvel <%= imovel.codigo %>">
+                </label>
+              </div>
               <!-- Badges -->
               <div class="position-absolute top-0 start-0 p-3">
                  <span class="badge bg-white text-dark shadow-sm uppercase-badge fw-bold"><%= imovel.status %></span>
@@ -906,6 +948,182 @@
   <%= will_paginate @habitations, renderer: WillPaginate::ActionView::BootstrapLinkRenderer, class: "shadow-sm" %>
 </div>
 
+<!-- Bulk Publish Modal -->
+<div class="modal fade" id="bulkPublishModal" tabindex="-1" aria-hidden="true"
+     data-bulk-publish-target="modal"
+     data-bulk-publish-eligibility-url-value="<%= bulk_publish_eligibility_admin_habitations_path %>">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title d-flex align-items-center gap-2">
+          <i class="bi bi-megaphone-fill text-success"></i>
+          Divulgação de <span data-bulk-publish-target="modalCount">0</span> Imóveis
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <form id="bulkPublishForm" data-bulk-publish-target="form">
+          <!-- Canal (single-select) -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Selecione o canal de divulgação.</label>
+            <select name="channel" class="form-select"
+                    data-bulk-publish-target="channelSelect"
+                    data-action="change->bulk-publish#onChannelChange">
+              <option value="">Selecione</option>
+              <option value="site">Site da Imobiliária</option>
+              <option value="netimoveis_2">Netimoveis 2</option>
+              <option value="lais_ai">Lais Ai</option>
+              <option value="loft">Loft</option>
+              <option value="chaves_na_mao">Chaves Na Mão</option>
+              <option value="casa_mineira">Casa Mineira</option>
+              <option value="imovelweb">Imovelweb</option>
+              <option value="imovelweb_2">Imovelweb 2</option>
+              <option value="viva_real_vrsync">Viva Real VRSync</option>
+            </select>
+          </div>
+
+          <!-- Ação -->
+          <div class="mb-3">
+            <div class="d-flex gap-4 align-items-center">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="action_type" value="publicar" id="bulkActionPublish" checked
+                       data-bulk-publish-target="actionRadio"
+                       data-action="change->bulk-publish#onActionChange">
+                <label class="form-check-label" for="bulkActionPublish">Publicar</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="action_type" value="despublicar" id="bulkActionUnpublish"
+                       data-bulk-publish-target="actionRadio"
+                       data-action="change->bulk-publish#onActionChange">
+                <label class="form-check-label text-success fw-semibold" for="bulkActionUnpublish">Despublicar</label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-opções específicas do canal (só visíveis quando canal tem opções E ação=publicar) -->
+          <div class="mb-3 d-none" data-bulk-publish-target="channelOptionsWrapper">
+            <!-- Chaves Na Mão -->
+            <div class="channel-options-block d-none border rounded-3 p-2" data-channel="chaves_na_mao">
+              <div class="small fw-semibold text-muted mb-1">Destaque</div>
+              <div class="d-flex flex-wrap mb-2">
+                <% Habitation::CHAVES_NA_MAO_DESTAQUE_OPTIONS.each do |(label, val)| %>
+                  <div class="form-check me-3">
+                    <input class="form-check-input" type="radio" name="channel_options[chaves_na_mao][destaque_chaves_na_mao]" value="<%= val %>" id="bulk_chaves_destaque_<%= val %>">
+                    <label class="form-check-label small" for="bulk_chaves_destaque_<%= val %>"><%= label %></label>
+                  </div>
+                <% end %>
+              </div>
+              <div class="small fw-semibold text-muted mb-1">Período Locação</div>
+              <div class="d-flex flex-wrap">
+                <% Habitation::CHAVES_NA_MAO_PERIODO_LOCACAO_OPTIONS.each do |(label, val)| %>
+                  <div class="form-check me-3">
+                    <input class="form-check-input" type="radio" name="channel_options[chaves_na_mao][periodo_locacao_chaves_na_mao]" value="<%= val %>" id="bulk_chaves_periodo_<%= val %>">
+                    <label class="form-check-label small" for="bulk_chaves_periodo_<%= val %>"><%= label %></label>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+
+            <!-- Casa Mineira -->
+            <div class="channel-options-block d-none border rounded-3 p-2" data-channel="casa_mineira">
+              <div class="small fw-semibold text-muted mb-1">Modelo</div>
+              <div class="d-flex flex-wrap">
+                <% Habitation::CASA_MINEIRA_MODELO_OPTIONS.each do |(label, val)| %>
+                  <div class="form-check me-3">
+                    <input class="form-check-input" type="radio" name="channel_options[casa_mineira][modelo_casa_mineira]" value="<%= val %>" id="bulk_casa_modelo_<%= val %>">
+                    <label class="form-check-label small" for="bulk_casa_modelo_<%= val %>"><%= label %></label>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+
+            <!-- Imovelweb -->
+            <div class="channel-options-block d-none border rounded-3 p-2" data-channel="imovelweb">
+              <div class="small fw-semibold text-muted mb-1">Tipo Publicação</div>
+              <div class="d-flex flex-wrap mb-2">
+                <% Habitation::IMOVELWEB_TIPO_PUBLICACAO_OPTIONS.each do |(label, val)| %>
+                  <div class="form-check me-3">
+                    <input class="form-check-input" type="radio" name="channel_options[imovelweb][tipo_publicacao_imovelweb]" value="<%= val %>" id="bulk_iw_tipo_<%= val %>">
+                    <label class="form-check-label small" for="bulk_iw_tipo_<%= val %>"><%= label %></label>
+                  </div>
+                <% end %>
+              </div>
+              <div class="small fw-semibold text-muted mb-1">Mostrar Mapa</div>
+              <div class="d-flex flex-wrap">
+                <% Habitation::IMOVELWEB_MOSTRAR_MAPA_OPTIONS.each do |(label, val)| %>
+                  <div class="form-check me-3">
+                    <input class="form-check-input" type="radio" name="channel_options[imovelweb][mostrar_mapa_imovelweb]" value="<%= val %>" id="bulk_iw_mapa_<%= val %>">
+                    <label class="form-check-label small" for="bulk_iw_mapa_<%= val %>"><%= label %></label>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+
+            <!-- Imovelweb 2 -->
+            <div class="channel-options-block d-none border rounded-3 p-2" data-channel="imovelweb_2">
+              <div class="small fw-semibold text-muted mb-1">Tipo Publicação</div>
+              <div class="d-flex flex-wrap mb-2">
+                <% Habitation::IMOVELWEB_TIPO_PUBLICACAO_OPTIONS.each do |(label, val)| %>
+                  <div class="form-check me-3">
+                    <input class="form-check-input" type="radio" name="channel_options[imovelweb_2][tipo_publicacao_imovelweb_2]" value="<%= val %>" id="bulk_iw2_tipo_<%= val %>">
+                    <label class="form-check-label small" for="bulk_iw2_tipo_<%= val %>"><%= label %></label>
+                  </div>
+                <% end %>
+              </div>
+              <div class="small fw-semibold text-muted mb-1">Mostrar Mapa</div>
+              <div class="d-flex flex-wrap">
+                <% Habitation::IMOVELWEB_MOSTRAR_MAPA_OPTIONS.each do |(label, val)| %>
+                  <div class="form-check me-3">
+                    <input class="form-check-input" type="radio" name="channel_options[imovelweb_2][mostrar_mapa_imovelweb_2]" value="<%= val %>" id="bulk_iw2_mapa_<%= val %>">
+                    <label class="form-check-label small" for="bulk_iw2_mapa_<%= val %>"><%= label %></label>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+
+            <!-- Viva Real VRSync -->
+            <div class="channel-options-block d-none border rounded-3 p-2" data-channel="viva_real_vrsync">
+              <div class="small fw-semibold text-muted mb-1">Tipo Publicação</div>
+              <div class="d-flex flex-wrap mb-2">
+                <% Habitation::VIVA_REAL_TIPO_PUBLICACAO_OPTIONS.each do |(label, val)| %>
+                  <div class="form-check me-3">
+                    <input class="form-check-input" type="radio" name="channel_options[viva_real_vrsync][tipo_publicacao_viva_real]" value="<%= val %>" id="bulk_vr_tipo_<%= val %>">
+                    <label class="form-check-label small" for="bulk_vr_tipo_<%= val %>"><%= label %></label>
+                  </div>
+                <% end %>
+              </div>
+              <div class="small fw-semibold text-muted mb-1">Divulgar Endereço</div>
+              <div class="d-flex flex-wrap">
+                <% Habitation::VIVA_REAL_DIVULGAR_ENDERECO_OPTIONS.each do |(label, val)| %>
+                  <div class="form-check me-3">
+                    <input class="form-check-input" type="radio" name="channel_options[viva_real_vrsync][divulgar_endereco_viva_real]" value="<%= val %>" id="bulk_vr_endereco_<%= val %>">
+                    <label class="form-check-label small" for="bulk_vr_endereco_<%= val %>"><%= label %></label>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          </div>
+
+          <!-- Contador de elegibilidade -->
+          <div class="bg-light rounded-3 p-3 small text-muted">
+            Você selecionou <strong class="text-dark" data-bulk-publish-target="eligTotal">0</strong> imóveis.<br>
+            Em <strong class="text-dark" data-bulk-publish-target="eligCount">—</strong> você pode atualizar as opções de divulgação.
+            <i class="bi bi-question-circle-fill text-muted ms-1" data-bs-toggle="tooltip" title="Quantos dos imóveis selecionados realmente serão afetados pela ação escolhida."></i>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-success" data-action="click->bulk-publish#submit">
+          Confirmar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /data-controller="bulk-publish" -->
+
 <style>
   .uppercase-badge {
     text-transform: uppercase;
@@ -917,6 +1135,7 @@
     transform: translateY(-1px);
     transition: all 0.2s;
   }
+  .bulk-select-label input[type="checkbox"] { width: 1rem; height: 1rem; cursor: pointer; }
   .property-card-horizontal:hover {
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05) !important;
     transform: translateY(-2px);

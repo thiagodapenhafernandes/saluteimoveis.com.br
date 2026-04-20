@@ -157,6 +157,101 @@ class Admin::HabitationsController < Admin::BaseController
               type: "text/csv; charset=utf-8"
   end
 
+  BULK_PUBLISH_CHANNELS = {
+    "site"             => { flag: :exibir_no_site_flag, options: [] },
+    "netimoveis_2"     => { flag: :publicar_netimoveis_2, options: [] },
+    "lais_ai"          => { flag: :publicar_lais_ai, options: [] },
+    "loft"             => { flag: :publicar_loft, options: [] },
+    "chaves_na_mao"    => { flag: :publicar_chaves_na_mao, options: [:destaque_chaves_na_mao, :periodo_locacao_chaves_na_mao] },
+    "casa_mineira"     => { flag: :publicar_casa_mineira, options: [:modelo_casa_mineira] },
+    "imovelweb"        => { flag: :publicar_imovelweb, options: [:tipo_publicacao_imovelweb, :mostrar_mapa_imovelweb] },
+    "imovelweb_2"      => { flag: :publicar_imovelweb_2, options: [:tipo_publicacao_imovelweb_2, :mostrar_mapa_imovelweb_2] },
+    "viva_real_vrsync" => { flag: :publicar_viva_real_vrsync, options: [:tipo_publicacao_viva_real, :divulgar_endereco_viva_real] }
+  }.freeze
+
+  def bulk_publish
+    ids = sanitized_selected_ids
+    action_type = params[:action_type].to_s
+    channels = Array(params[:channels]).map(&:to_s) & BULK_PUBLISH_CHANNELS.keys
+
+    if ids.empty?
+      return render json: { error: "Nenhum imóvel selecionado." }, status: :unprocessable_entity
+    end
+    unless %w[publicar despublicar].include?(action_type)
+      return render json: { error: "Ação inválida." }, status: :unprocessable_entity
+    end
+    if channels.empty?
+      return render json: { error: "Selecione ao menos um canal." }, status: :unprocessable_entity
+    end
+
+    updates = {}
+    flag_value = (action_type == "publicar")
+    site_flag_touched = false
+    portals_touched = []
+
+    channels.each do |channel_key|
+      config = BULK_PUBLISH_CHANNELS[channel_key]
+      updates[config[:flag]] = flag_value
+      site_flag_touched = true if config[:flag] == :exibir_no_site_flag
+      portals_touched << channel_key unless channel_key == "site"
+
+      if flag_value
+        config[:options].each do |option_key|
+          value = params.dig(:channel_options, channel_key, option_key).presence
+          updates[option_key] = value if value
+        end
+      end
+    end
+
+    # Bump updated_at so feed ETags e cache_keys das habitations invalidem automaticamente
+    updates[:updated_at] = Time.current
+
+    updated_count = 0
+    Habitation.transaction do
+      updated_count = Habitation.where(id: ids).update_all(updates)
+    end
+
+    # Invalida caches individuais (replica o after_save :clear_cache manualmente, pois update_all pula callbacks)
+    ids.each do |habitation_id|
+      Rails.cache.delete("habitation_#{habitation_id}")
+      Rails.cache.delete([Habitation.name, habitation_id])
+    end
+
+    # Materialized view de destaques depende de exibir_no_site_flag
+    if site_flag_touched && defined?(RefreshFeaturedPropertiesJob)
+      RefreshFeaturedPropertiesJob.perform_later
+    end
+
+    # Bump last_feed_at nas integrations afetadas pra sinalizar no admin que houve mudança
+    if portals_touched.any?
+      portal_keys = Habitation::PORTAL_PUBLICATION_FIELDS.select { |_, col| updates.key?(col) }.keys
+      PortalIntegration.where(portal: portal_keys).update_all(updated_at: Time.current) if portal_keys.any?
+    end
+
+    render json: {
+      updated: updated_count,
+      action_type: action_type,
+      channels: channels
+    }
+  end
+
+  def bulk_publish_eligibility
+    ids = sanitized_selected_ids
+    channel = params[:channel].to_s
+    action_type = params[:action_type].to_s
+    config = BULK_PUBLISH_CHANNELS[channel]
+
+    unless config && %w[publicar despublicar].include?(action_type)
+      return render json: { error: "Parâmetros inválidos." }, status: :unprocessable_entity
+    end
+
+    flag_column = config[:flag]
+    target_flag = (action_type == "despublicar")
+    eligible = Habitation.where(id: ids).where(flag_column => target_flag).count
+
+    render json: { total: ids.size, eligible: eligible }
+  end
+
   def new
     @habitation = Habitation.new
     @habitation.build_address

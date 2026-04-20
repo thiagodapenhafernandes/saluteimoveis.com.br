@@ -19,6 +19,9 @@ application.register("card-swiper", CardSwiperController)
 import BrokerShareController from "controllers/broker_share_controller"
 application.register("broker-share", BrokerShareController)
 
+import BulkPublishController from "controllers/bulk_publish_controller"
+application.register("bulk-publish", BulkPublishController)
+
 import CategoryFilterController from "controllers/category_filter_controller"
 application.register("category-filter", CategoryFilterController)
 

@@ -18,6 +18,8 @@ Rails.application.routes.draw do
       collection do
         get :print
         get :export
+        post :bulk_publish
+        post :bulk_publish_eligibility
       end
     end
     
