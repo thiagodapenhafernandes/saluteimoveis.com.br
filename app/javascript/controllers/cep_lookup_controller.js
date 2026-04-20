@@ -10,12 +10,12 @@ import { Controller } from "@hotwired/stimulus"
 //   address       — logradouro
 //   neighborhood  — bairro
 //   city          — cidade
-//   state         — UF
+//   uf            — UF
 //   number        — número (recebe focus automático após CEP resolver)
 //   button        — opcional: botão "Buscar" (troca ícone enquanto carrega)
 //   status        — opcional: elemento para mostrar mensagens de status
 export default class extends Controller {
-  static targets = ["cep", "address", "neighborhood", "city", "state", "number", "button", "status"]
+  static targets = ["cep", "address", "neighborhood", "city", "uf", "number", "button", "status"]
 
   connect() {
     // Formata CEP enquanto digita (xxxxx-xxx)
@@ -88,7 +88,7 @@ export default class extends Controller {
     if (this.hasAddressTarget && data.logradouro) this.addressTarget.value = data.logradouro
     if (this.hasNeighborhoodTarget && data.bairro) this.neighborhoodTarget.value = data.bairro
     if (this.hasCityTarget && data.localidade) this.cityTarget.value = data.localidade
-    if (this.hasStateTarget && data.uf) this.stateTarget.value = data.uf
+    if (this.hasUfTarget && data.uf) this.ufTarget.value = data.uf.toUpperCase()
   }
 
   async triggerGeocode(cepData = null) {
@@ -121,7 +121,7 @@ export default class extends Controller {
     const num  = this.hasNumberTarget  ? this.numberTarget.value  : ""
     const hood = this.hasNeighborhoodTarget ? this.neighborhoodTarget.value : (cepData?.bairro || "")
     const city = this.hasCityTarget ? this.cityTarget.value : (cepData?.localidade || "")
-    const st   = this.hasStateTarget ? this.stateTarget.value : (cepData?.uf || "")
+    const st   = this.hasUfTarget ? this.ufTarget.value : (cepData?.uf || "")
 
     if (addr) parts.push(num ? `${addr}, ${num}` : addr)
     if (hood) parts.push(hood)
