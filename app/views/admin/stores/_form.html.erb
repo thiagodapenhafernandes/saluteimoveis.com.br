@@ -198,36 +198,6 @@
     </div>
   </div>
 
-  <!-- Card 4: Turnos -->
-  <div class="card border-0 shadow-sm mb-4" data-controller="nested-form">
-    <div class="card-body">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="fw-bold mb-0">
-          <i class="bi bi-calendar-week-fill text-success me-2"></i>Turnos e corretores
-        </h5>
-        <button type="button" class="btn btn-sm btn-outline-primary" data-action="nested-form#add">
-          <i class="bi bi-plus-lg me-1"></i>Adicionar turno
-        </button>
-      </div>
-
-      <p class="small text-muted mb-3">
-        Cada turno define um corretor + dia da semana + horário. Adicione múltiplos para escala completa.
-      </p>
-
-      <div data-nested-form-target="container">
-        <%= f.fields_for :store_shifts do |shift_f| %>
-          <%= render "store_shift_fields", f: shift_f %>
-        <% end %>
-      </div>
-
-      <template data-nested-form-target="template">
-        <%= f.fields_for :store_shifts, StoreShift.new(day_of_week: 1, start_time: "09:00", end_time: "18:00", active: true), child_index: "NEW_RECORD" do |shift_f| %>
-          <%= render "store_shift_fields", f: shift_f %>
-        <% end %>
-      </template>
-    </div>
-  </div>
-
   <div class="d-flex justify-content-end gap-2 mb-5">
     <%= link_to "Cancelar", admin_stores_path, class: "btn btn-outline-secondary" %>
     <%= f.submit class: "btn btn-primary" do %>

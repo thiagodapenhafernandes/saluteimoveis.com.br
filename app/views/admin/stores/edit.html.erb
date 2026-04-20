@@ -12,7 +12,7 @@
     <% if current_admin_user&.admin? %>
       <%= button_to admin_store_path(@store),
                     method: :delete,
-                    data: { turbo_confirm: "Remover a loja '#{@store.name}'? Os turnos também serão removidos." },
+                    data: { turbo_confirm: "Remover a loja '#{@store.name}'? Esta ação não pode ser desfeita." },
                     class: "btn btn-outline-danger btn-sm" do %>
         <i class="bi bi-trash me-1"></i>Remover
       <% end %>

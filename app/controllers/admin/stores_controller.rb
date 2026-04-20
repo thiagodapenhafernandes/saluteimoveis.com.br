@@ -11,7 +11,6 @@ module Admin
     end
 
     def show
-      @store_shifts = @store.store_shifts.includes(:admin_user).order(:day_of_week, :start_time)
     end
 
     def new
@@ -22,7 +21,6 @@ module Admin
         auto_checkout_after_minutes: 60,
         active: true
       )
-      @store.store_shifts.build(day_of_week: 1, start_time: "09:00", end_time: "18:00", active: true)
     end
 
     def create
@@ -66,10 +64,7 @@ module Admin
         :latitude, :longitude,
         :geofence_radius_meters, :out_of_radius_tolerance_minutes,
         :auto_checkout_after_minutes, :timezone, :active,
-        :director_admin_user_id, :footer_store_id,
-        store_shifts_attributes: [
-          :id, :day_of_week, :admin_user_id, :start_time, :end_time, :active, :_destroy
-        ]
+        :director_admin_user_id, :footer_store_id
       )
     end
   end
