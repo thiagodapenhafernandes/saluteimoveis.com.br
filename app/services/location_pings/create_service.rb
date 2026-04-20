@@ -52,6 +52,8 @@ module LocationPings
       )
       return fail_with(:save_failed, ping.errors.full_messages.to_sentence) unless ping.save
 
+      AntiFraud::AnalyzePingJob.perform_later(ping.id)
+
       auto_checked_out = update_radius_state!(ping)
 
       { success: true, ping: ping, auto_checked_out: auto_checked_out, inside_radius: inside }

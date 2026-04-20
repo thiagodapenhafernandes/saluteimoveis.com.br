@@ -8,13 +8,14 @@ module CheckIns
   #   :closed_auto_out_of_radius  — ping detectou saída do raio
   #   :closed_admin_force         — admin forçou manualmente
   class CheckOutService
-    def initialize(check_in:, reason: :closed_manual, lat: nil, lng: nil, ip: nil, accuracy: nil)
+    def initialize(check_in:, reason: :closed_manual, lat: nil, lng: nil, ip: nil, accuracy: nil, actor: nil)
       @check_in = check_in
       @reason = reason
       @lat = lat
       @lng = lng
       @ip = ip
       @accuracy = accuracy
+      @actor = actor
     end
 
     def call
@@ -26,6 +27,17 @@ module CheckIns
         lng: @lng,
         ip: @ip,
         accuracy: @accuracy
+      )
+
+      CheckinAuditLog.log!(
+        action: @reason == :closed_admin_force ? "forced_closed" : "closed",
+        check_in: @check_in,
+        actor: @actor,
+        ip: @ip,
+        metadata: {
+          reason: @reason.to_s,
+          duration_seconds: @check_in.duration.to_i
+        }
       )
 
       { success: true, check_in: @check_in.reload }

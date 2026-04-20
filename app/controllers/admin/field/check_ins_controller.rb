@@ -17,7 +17,9 @@ module Admin
       def force_check_out
         result = CheckIns::CheckOutService.new(
           check_in: @check_in,
-          reason: :closed_admin_force
+          reason: :closed_admin_force,
+          actor: current_admin_user,
+          ip: request.remote_ip
         ).call
 
         if result[:success]

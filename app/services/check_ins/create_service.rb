@@ -26,13 +26,14 @@ module CheckIns
       save_failed:           "Falha ao salvar o check-in."
     }.freeze
 
-    def initialize(admin_user:, lat:, lng:, accuracy: nil, ip: nil, device_info: {})
+    def initialize(admin_user:, lat:, lng:, accuracy: nil, ip: nil, device_info: {}, fingerprint_hash: nil)
       @admin_user = admin_user
       @lat = lat
       @lng = lng
       @accuracy = accuracy
       @ip = ip
       @device_info = device_info || {}
+      @fingerprint_hash = fingerprint_hash
     end
 
     def call
@@ -61,10 +62,22 @@ module CheckIns
         checkin_longitude: @lng,
         checkin_accuracy_meters: @accuracy&.to_i,
         checkin_ip: @ip,
-        device_info: @device_info
+        device_info: @device_info,
+        fingerprint_hash: @fingerprint_hash
       )
 
       if check_in.save
+        CheckinAuditLog.log!(
+          action: "created",
+          check_in: check_in,
+          ip: @ip,
+          metadata: {
+            store_id: store.id,
+            distance_meters: discovery[:distance_meters],
+            accuracy: @accuracy&.to_i,
+            manual: @device_info["manual"] == true
+          }
+        )
         { success: true, check_in: check_in, distance_meters: discovery[:distance_meters] }
       else
         fail_with(:save_failed, check_in.errors.full_messages.to_sentence)

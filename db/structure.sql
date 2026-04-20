@@ -1,4 +1,4 @@
-\restrict fHtbhRO1PJjjuJhv8ZWM1RhLn3vpwOgbtjDqiaafMXPOaYZxIF2ZvVWJKmxACYY
+\restrict k8Unq82ApyDbPLlZmmI9Eu1769fId0bUAmErIVbw2pGcetbqlsItS9Tji10WjBd
 
 -- Dumped from database version 18.3 (Homebrew)
 -- Dumped by pg_dump version 18.3 (Homebrew)
@@ -41,6 +41,18 @@ CREATE EXTENSION IF NOT EXISTS unaccent WITH SCHEMA public;
 --
 
 COMMENT ON EXTENSION unaccent IS 'text search dictionary that removes accents';
+
+
+--
+-- Name: raise_checkin_audit_immutable(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.raise_checkin_audit_immutable() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'checkin_audit_logs is append-only';
+END; $$;
 
 
 SET default_tablespace = '';
@@ -376,7 +388,10 @@ CREATE TABLE public.check_ins (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     checkin_location public.geography(Point,4326),
-    checkout_location public.geography(Point,4326)
+    checkout_location public.geography(Point,4326),
+    suspicious boolean DEFAULT false NOT NULL,
+    suspicious_reasons jsonb DEFAULT '[]'::jsonb,
+    fingerprint_hash character varying
 );
 
 
@@ -397,6 +412,41 @@ CREATE SEQUENCE public.check_ins_id_seq
 --
 
 ALTER SEQUENCE public.check_ins_id_seq OWNED BY public.check_ins.id;
+
+
+--
+-- Name: checkin_audit_logs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.checkin_audit_logs (
+    id bigint NOT NULL,
+    check_in_id bigint,
+    admin_user_id bigint,
+    actor_admin_user_id bigint,
+    action character varying NOT NULL,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    ip inet,
+    created_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: checkin_audit_logs_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.checkin_audit_logs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: checkin_audit_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.checkin_audit_logs_id_seq OWNED BY public.checkin_audit_logs.id;
 
 
 --
@@ -1379,6 +1429,44 @@ CREATE SEQUENCE public.location_pings_id_seq
 --
 
 ALTER SEQUENCE public.location_pings_id_seq OWNED BY public.location_pings.id;
+
+
+--
+-- Name: manual_checkin_requests; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.manual_checkin_requests (
+    id bigint NOT NULL,
+    admin_user_id bigint NOT NULL,
+    store_id bigint NOT NULL,
+    justification text NOT NULL,
+    status integer DEFAULT 0 NOT NULL,
+    reviewed_by_admin_user_id bigint,
+    reviewed_at timestamp(6) without time zone,
+    review_notes text,
+    approved_check_in_id bigint,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: manual_checkin_requests_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.manual_checkin_requests_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: manual_checkin_requests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.manual_checkin_requests_id_seq OWNED BY public.manual_checkin_requests.id;
 
 
 --
@@ -2373,6 +2461,13 @@ ALTER TABLE ONLY public.check_ins ALTER COLUMN id SET DEFAULT nextval('public.ch
 
 
 --
+-- Name: checkin_audit_logs id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.checkin_audit_logs ALTER COLUMN id SET DEFAULT nextval('public.checkin_audit_logs_id_seq'::regclass);
+
+
+--
 -- Name: constructors id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -2510,6 +2605,13 @@ ALTER TABLE ONLY public.leads ALTER COLUMN id SET DEFAULT nextval('public.leads_
 --
 
 ALTER TABLE ONLY public.location_pings ALTER COLUMN id SET DEFAULT nextval('public.location_pings_id_seq'::regclass);
+
+
+--
+-- Name: manual_checkin_requests id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manual_checkin_requests ALTER COLUMN id SET DEFAULT nextval('public.manual_checkin_requests_id_seq'::regclass);
 
 
 --
@@ -2768,6 +2870,14 @@ ALTER TABLE ONLY public.check_ins
 
 
 --
+-- Name: checkin_audit_logs checkin_audit_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.checkin_audit_logs
+    ADD CONSTRAINT checkin_audit_logs_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: constructors constructors_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2925,6 +3035,14 @@ ALTER TABLE ONLY public.leads
 
 ALTER TABLE ONLY public.location_pings
     ADD CONSTRAINT location_pings_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: manual_checkin_requests manual_checkin_requests_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manual_checkin_requests
+    ADD CONSTRAINT manual_checkin_requests_pkey PRIMARY KEY (id);
 
 
 --
@@ -3346,6 +3464,13 @@ CREATE INDEX index_check_ins_on_admin_user_id_and_status ON public.check_ins USI
 
 
 --
+-- Name: index_check_ins_on_fingerprint_hash; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_check_ins_on_fingerprint_hash ON public.check_ins USING btree (fingerprint_hash);
+
+
+--
 -- Name: index_check_ins_on_store_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3364,6 +3489,48 @@ CREATE INDEX index_check_ins_on_store_id_and_checked_in_at ON public.check_ins U
 --
 
 CREATE INDEX index_check_ins_on_store_shift_id ON public.check_ins USING btree (store_shift_id);
+
+
+--
+-- Name: index_check_ins_on_suspicious; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_check_ins_on_suspicious ON public.check_ins USING btree (suspicious);
+
+
+--
+-- Name: index_checkin_audit_logs_on_action; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_checkin_audit_logs_on_action ON public.checkin_audit_logs USING btree (action);
+
+
+--
+-- Name: index_checkin_audit_logs_on_actor_admin_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_checkin_audit_logs_on_actor_admin_user_id ON public.checkin_audit_logs USING btree (actor_admin_user_id);
+
+
+--
+-- Name: index_checkin_audit_logs_on_admin_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_checkin_audit_logs_on_admin_user_id ON public.checkin_audit_logs USING btree (admin_user_id);
+
+
+--
+-- Name: index_checkin_audit_logs_on_admin_user_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_checkin_audit_logs_on_admin_user_id_and_created_at ON public.checkin_audit_logs USING btree (admin_user_id, created_at);
+
+
+--
+-- Name: index_checkin_audit_logs_on_check_in_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_checkin_audit_logs_on_check_in_id ON public.checkin_audit_logs USING btree (check_in_id);
 
 
 --
@@ -3850,6 +4017,41 @@ CREATE INDEX index_location_pings_on_check_in_id_and_recorded_at ON public.locat
 
 
 --
+-- Name: index_manual_checkin_requests_on_admin_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_manual_checkin_requests_on_admin_user_id ON public.manual_checkin_requests USING btree (admin_user_id);
+
+
+--
+-- Name: index_manual_checkin_requests_on_approved_check_in_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_manual_checkin_requests_on_approved_check_in_id ON public.manual_checkin_requests USING btree (approved_check_in_id);
+
+
+--
+-- Name: index_manual_checkin_requests_on_reviewed_by_admin_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_manual_checkin_requests_on_reviewed_by_admin_user_id ON public.manual_checkin_requests USING btree (reviewed_by_admin_user_id);
+
+
+--
+-- Name: index_manual_checkin_requests_on_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_manual_checkin_requests_on_status ON public.manual_checkin_requests USING btree (status);
+
+
+--
+-- Name: index_manual_checkin_requests_on_store_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_manual_checkin_requests_on_store_id ON public.manual_checkin_requests USING btree (store_id);
+
+
+--
 -- Name: index_meta_facebook_pages_on_page_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4242,6 +4444,13 @@ CREATE INDEX index_user_meta_integrations_on_admin_user_id ON public.user_meta_i
 
 
 --
+-- Name: checkin_audit_logs checkin_audit_logs_no_update; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER checkin_audit_logs_no_update BEFORE DELETE OR UPDATE ON public.checkin_audit_logs FOR EACH ROW EXECUTE FUNCTION public.raise_checkin_audit_immutable();
+
+
+--
 -- Name: habitation_share_links fk_rails_0e80d0e62c; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4263,6 +4472,14 @@ ALTER TABLE ONLY public.leads
 
 ALTER TABLE ONLY public.footer_links
     ADD CONSTRAINT fk_rails_14fda2a7a0 FOREIGN KEY (footer_setting_id) REFERENCES public.footer_settings(id);
+
+
+--
+-- Name: checkin_audit_logs fk_rails_155a88a0eb; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.checkin_audit_logs
+    ADD CONSTRAINT fk_rails_155a88a0eb FOREIGN KEY (admin_user_id) REFERENCES public.admin_users(id);
 
 
 --
@@ -4295,6 +4512,14 @@ ALTER TABLE ONLY public.portal_integration_events
 
 ALTER TABLE ONLY public.habitation_share_links
     ADD CONSTRAINT fk_rails_2772a86517 FOREIGN KEY (admin_user_id) REFERENCES public.admin_users(id);
+
+
+--
+-- Name: checkin_audit_logs fk_rails_281c7e6935; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.checkin_audit_logs
+    ADD CONSTRAINT fk_rails_281c7e6935 FOREIGN KEY (check_in_id) REFERENCES public.check_ins(id);
 
 
 --
@@ -4394,6 +4619,14 @@ ALTER TABLE ONLY public.home_section_items
 
 
 --
+-- Name: checkin_audit_logs fk_rails_6ab3e3b6ba; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.checkin_audit_logs
+    ADD CONSTRAINT fk_rails_6ab3e3b6ba FOREIGN KEY (actor_admin_user_id) REFERENCES public.admin_users(id);
+
+
+--
 -- Name: footer_social_links fk_rails_7efc10f336; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4434,11 +4667,27 @@ ALTER TABLE ONLY public.distribution_rule_agents
 
 
 --
+-- Name: manual_checkin_requests fk_rails_8ae7061d93; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manual_checkin_requests
+    ADD CONSTRAINT fk_rails_8ae7061d93 FOREIGN KEY (admin_user_id) REFERENCES public.admin_users(id);
+
+
+--
 -- Name: portal_listing_states fk_rails_8def14d270; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.portal_listing_states
     ADD CONSTRAINT fk_rails_8def14d270 FOREIGN KEY (habitation_id) REFERENCES public.habitations(id);
+
+
+--
+-- Name: manual_checkin_requests fk_rails_90325dd80b; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manual_checkin_requests
+    ADD CONSTRAINT fk_rails_90325dd80b FOREIGN KEY (reviewed_by_admin_user_id) REFERENCES public.admin_users(id);
 
 
 --
@@ -4455,6 +4704,14 @@ ALTER TABLE ONLY public.footer_stores
 
 ALTER TABLE ONLY public.active_storage_variant_records
     ADD CONSTRAINT fk_rails_993965df05 FOREIGN KEY (blob_id) REFERENCES public.active_storage_blobs(id);
+
+
+--
+-- Name: manual_checkin_requests fk_rails_99b1cb9567; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manual_checkin_requests
+    ADD CONSTRAINT fk_rails_99b1cb9567 FOREIGN KEY (approved_check_in_id) REFERENCES public.check_ins(id);
 
 
 --
@@ -4554,6 +4811,14 @@ ALTER TABLE ONLY public.admin_users
 
 
 --
+-- Name: manual_checkin_requests fk_rails_e7ad16aecb; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manual_checkin_requests
+    ADD CONSTRAINT fk_rails_e7ad16aecb FOREIGN KEY (store_id) REFERENCES public.stores(id);
+
+
+--
 -- Name: distribution_rules fk_rails_ec979d2a3e; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4589,11 +4854,12 @@ ALTER TABLE ONLY public.store_shifts
 -- PostgreSQL database dump complete
 --
 
-\unrestrict fHtbhRO1PJjjuJhv8ZWM1RhLn3vpwOgbtjDqiaafMXPOaYZxIF2ZvVWJKmxACYY
+\unrestrict k8Unq82ApyDbPLlZmmI9Eu1769fId0bUAmErIVbw2pGcetbqlsItS9Tji10WjBd
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260420170000'),
 ('20260420160000'),
 ('20260420150000'),
 ('20260420140000'),

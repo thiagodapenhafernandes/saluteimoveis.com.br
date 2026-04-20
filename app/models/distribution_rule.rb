@@ -36,6 +36,7 @@ class DistributionRule < ApplicationRecord
 
     active_checkin_scope = CheckIn.where(status: :active)
     active_checkin_scope = active_checkin_scope.where(store_id: checkin_store_id) if checkin_store_id.present?
+    active_checkin_scope = active_checkin_scope.where(suspicious: false) if exclude_suspicious_checkins?
 
     user_ids_with_checkin = active_checkin_scope.pluck(:admin_user_id)
     distribution_rule_agents.where(admin_user_id: user_ids_with_checkin)

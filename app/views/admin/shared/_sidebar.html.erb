@@ -53,9 +53,23 @@
     </li>
 
     <li class="sidebar-menu-item">
-      <%= link_to admin_field_check_ins_path, class: (controller_path.start_with?('admin/field')) ? 'active' : '' do %>
+      <%= link_to admin_field_check_ins_path, class: (controller_path == 'admin/field/check_ins') ? 'active' : '' do %>
         <i class="bi bi-geo-fill"></i>
         <span>Check-ins em campo</span>
+      <% end %>
+    </li>
+
+    <li class="sidebar-menu-item">
+      <%= link_to admin_field_manual_checkin_requests_path, class: (controller_path == 'admin/field/manual_checkin_requests') ? 'active' : '' do %>
+        <i class="bi bi-hand-index-thumb-fill"></i>
+        <span>Pedidos manuais</span>
+      <% end %>
+    </li>
+
+    <li class="sidebar-menu-item">
+      <%= link_to admin_field_audit_logs_path, class: (controller_path == 'admin/field/audit_logs') ? 'active' : '' do %>
+        <i class="bi bi-shield-lock-fill"></i>
+        <span>Auditoria field</span>
       <% end %>
     </li>
 

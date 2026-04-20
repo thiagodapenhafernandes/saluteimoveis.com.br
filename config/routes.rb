@@ -100,6 +100,13 @@ Rails.application.routes.draw do
       resources :check_ins, only: [:index, :show] do
         post :force_check_out, on: :member
       end
+      resources :manual_checkin_requests, only: [:index, :show] do
+        member do
+          post :approve
+          post :reject
+        end
+      end
+      resources :audit_logs, only: [:index, :show]
     end
   end
 
@@ -114,6 +121,7 @@ Rails.application.routes.draw do
       patch :check_out, on: :member
     end
     resources :location_pings, only: [:create]
+    resources :manual_checkin_requests, only: [:new, :create]
   end
 
   namespace :api do

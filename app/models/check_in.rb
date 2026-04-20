@@ -21,6 +21,14 @@ class CheckIn < ApplicationRecord
   validates :checked_in_at, presence: true
 
   scope :today, -> { where(checked_in_at: Time.current.beginning_of_day..Time.current.end_of_day) }
+  scope :suspicious, -> { where(suspicious: true) }
+  scope :trustworthy, -> { where(suspicious: false) }
+
+  def flag_suspicious!(reasons:)
+    existing = Array(suspicious_reasons)
+    merged = (existing + Array(reasons)).uniq
+    update!(suspicious: true, suspicious_reasons: merged)
+  end
 
   attr_accessor :checkin_latitude, :checkin_longitude, :checkout_latitude, :checkout_longitude
 
