@@ -93,6 +93,7 @@ module Dwv
 
       Habitation.where(codigo_dwv: removed_ids).update_all(
         exibir_no_site_flag: false,
+        status: "Suspenso",
         last_sync_at: Time.current,
         last_sync_status: "inactive",
         last_sync_message: "Desativado localmente por status removido na DWV"

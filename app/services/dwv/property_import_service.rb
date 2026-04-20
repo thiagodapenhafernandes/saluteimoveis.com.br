@@ -38,17 +38,27 @@ module Dwv
         raise "Payload DWV incompleto para novo cadastro (id=#{dwv_id})."
       end
 
-      mapped_status = map_status(value(["status"], ["property_status"]))
+      raw_status = value(["status"], ["property_status"]).to_s.strip.downcase
+      raw_integration_status = value(["status"], ["integration_status"]).to_s.strip.downcase
+      raw_deleted = value(["deleted"])
       next_sale_cents = to_cents(value(["price"], ["sale_price"], ["valor_venda"], ["unit", "price"]))
       next_rent_cents = to_cents(value(["rent_price"], ["valor_locacao"], ["unit", "rent"]))
       effective_sale = next_sale_cents || habitation.valor_venda_cents
       effective_rent = next_rent_cents || habitation.valor_locacao_cents
-      inferred_status = mapped_status || infer_status_from_prices(effective_sale, effective_rent)
+
+      derived_status = derive_dwv_status(
+        raw_status: raw_status,
+        raw_integration_status: raw_integration_status,
+        raw_deleted: raw_deleted,
+        sale_cents: effective_sale,
+        rent_cents: effective_rent,
+        current_status: habitation.status
+      )
 
       habitation.assign_attributes(
         codigo_dwv: dwv_id,
         imovel_dwv: "Sim",
-        status: inferred_status || habitation.status,
+        status: derived_status,
         valor_venda_cents: effective_sale,
         valor_locacao_cents: effective_rent,
         exibir_no_site_flag: active_on_site?
@@ -196,6 +206,24 @@ module Dwv
       return "Venda"   if sale_cents.to_i.positive?
       return "Aluguel" if rent_cents.to_i.positive?
       nil
+    end
+
+    # Status canônico para imóveis DWV considerando os 3 sinais oficiais da API:
+    #   deleted=true            -> Suspenso (removido pela imobiliária na DWV)
+    #   status=inactive         -> Suspenso (manualmente desativado)
+    #   status=auto_inactive    -> Vendido terceiros (sistema marcou vendido/indisponível)
+    # Para os ativos: usa map_status normal e fallback pelo preço.
+    def derive_dwv_status(raw_status:, raw_integration_status:, raw_deleted:, sale_cents:, rent_cents:, current_status:)
+      return "Suspenso" if raw_deleted == true || raw_deleted.to_s == "true"
+
+      [raw_status, raw_integration_status].each do |value|
+        next if value.blank?
+        return "Vendido terceiros" if value == "auto_inactive"
+        return "Suspenso"          if value == "inactive"
+      end
+
+      mapped = map_status(raw_status)
+      mapped || infer_status_from_prices(sale_cents, rent_cents) || current_status
     end
 
     def map_situation(raw)
