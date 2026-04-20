@@ -30,7 +30,7 @@ body.admin-layout {
   background: white;
   border-bottom: 1px solid #e5e7eb;
   padding: 12px 24px;
-  position: fixed;
+  position: sticky;
   top: 0;
   left: 0;
   right: 0;
@@ -39,6 +39,7 @@ body.admin-layout {
   justify-content: space-between;
   align-items: center;
   height: 64px;
+  width: 100%;
 }
 
 .admin-navbar-brand {
@@ -97,6 +98,7 @@ body.admin-layout {
   top: 64px;
   overflow-y: auto;
   padding: 20px 0;
+  z-index: 900;
 }
 
 .sidebar-menu {
@@ -142,7 +144,6 @@ body.admin-layout {
 /* Content Layout */
 .admin-content {
   margin-left: 260px;
-  margin-top: 64px;
   padding: 1.25rem;
   width: calc(100% - 260px);
   min-height: calc(100vh - 64px);
