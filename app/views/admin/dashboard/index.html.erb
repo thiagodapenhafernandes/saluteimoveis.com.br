@@ -53,25 +53,43 @@
       <div class="opacity-75 small"><i class="bi bi-calendar3 me-1"></i> <%= l(Date.current, format: :long) %></div>
       <h2 class="fw-bold mb-1"><%= greeting %>, <%= current_admin_user.name.split.first %>!</h2>
       <p class="opacity-75 mb-0">
-        <% if @field_feature_enabled %>
-          <i class="bi bi-broadcast-pin me-1"></i>Feature Field ativa —
-          <strong><%= @active_checkins_count %></strong> check-ins agora,
-          <strong><%= @leads_today %></strong> leads hoje.
+        <% if @is_admin_view %>
+          <% if @field_feature_enabled %>
+            <i class="bi bi-broadcast-pin me-1"></i>Feature Field ativa —
+            <strong><%= @active_checkins_count %></strong> check-ins agora,
+            <strong><%= @leads_today %></strong> leads hoje.
+          <% else %>
+            <i class="bi bi-pause-circle me-1"></i>Feature Field desativada.
+            <%= link_to "Ativar em Field Settings", edit_admin_field_settings_path, class: "text-white text-decoration-underline" %>
+          <% end %>
         <% else %>
-          <i class="bi bi-pause-circle me-1"></i>Feature Field desativada.
-          <%= link_to "Ativar em Field Settings", edit_admin_field_settings_path, class: "text-white text-decoration-underline" %>
+          <i class="bi bi-person-badge me-1"></i>Painel pessoal —
+          <strong><%= @leads_today %></strong> leads hoje,
+          <strong><%= @properties_count %></strong> imóveis atribuídos.
         <% end %>
       </p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
-      <%= link_to admin_stores_path, class: "btn btn-light btn-sm fw-bold" do %>
-        <i class="bi bi-shop me-1"></i>Lojas
-      <% end %>
-      <%= link_to admin_distribution_rules_path, class: "btn btn-light btn-sm fw-bold" do %>
-        <i class="bi bi-diagram-3 me-1"></i>Regras
-      <% end %>
-      <%= link_to admin_field_check_ins_path, class: "btn btn-warning btn-sm fw-bold" do %>
-        <i class="bi bi-geo-fill me-1"></i>Check-ins
+      <% if @is_admin_view %>
+        <%= link_to admin_stores_path, class: "btn btn-light btn-sm fw-bold" do %>
+          <i class="bi bi-shop me-1"></i>Lojas
+        <% end %>
+        <%= link_to admin_distribution_rules_path, class: "btn btn-light btn-sm fw-bold" do %>
+          <i class="bi bi-diagram-3 me-1"></i>Regras
+        <% end %>
+        <%= link_to admin_field_check_ins_path, class: "btn btn-warning btn-sm fw-bold" do %>
+          <i class="bi bi-geo-fill me-1"></i>Check-ins
+        <% end %>
+      <% else %>
+        <%= link_to new_admin_captacao_path, class: "btn btn-warning btn-sm fw-bold" do %>
+          <i class="bi bi-journal-plus me-1"></i>Nova captação
+        <% end %>
+        <%= link_to admin_leads_path, class: "btn btn-light btn-sm fw-bold" do %>
+          <i class="bi bi-megaphone me-1"></i>Meus leads
+        <% end %>
+        <%= link_to field_root_path, class: "btn btn-light btn-sm fw-bold" do %>
+          <i class="bi bi-phone me-1"></i>Ir para PWA
+        <% end %>
       <% end %>
     </div>
   </div>
@@ -112,6 +130,7 @@
       </div>
     </div>
 
+    <% if @is_admin_view %>
     <div class="col-xl-3 col-md-6">
       <div class="card dash-kpi shadow-sm h-100">
         <div class="card-body">
@@ -151,6 +170,7 @@
         </div>
       </div>
     </div>
+    <% end %>
   </div>
 
   <!-- OPERAÇÃO FIELD -->
@@ -159,7 +179,7 @@
       <div class="card dash-section-card h-100">
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="fw-bold mb-0"><i class="bi bi-graph-up-arrow text-primary me-2"></i>Leads — últimos 30 dias</h5>
+            <h5 class="fw-bold mb-0"><i class="bi bi-graph-up-arrow text-primary me-2"></i><%= @is_admin_view ? "Leads — últimos 30 dias" : "Meus leads — últimos 30 dias" %></h5>
             <span class="badge bg-primary-subtle text-primary"><%= @leads_last_30_days %> total</span>
           </div>
           <div class="chart-container" style="position: relative; height: 280px; width: 100%;">
@@ -182,6 +202,7 @@
   </div>
 
   <!-- TOP LISTAS -->
+  <% if @is_admin_view %>
   <div class="row g-3 mb-4">
     <div class="col-lg-6">
       <div class="card dash-section-card h-100">
@@ -237,6 +258,7 @@
       </div>
     </div>
   </div>
+  <% end %>
 
   <!-- ATIVIDADE RECENTE + SAÚDE DO SISTEMA -->
   <div class="row g-3 mb-4">
