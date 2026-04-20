@@ -115,6 +115,7 @@ Rails.application.routes.draw do
   # Corretor precisa estar autenticado via Devise + ter field_agent_enabled=true.
   namespace :field do
     get "up", to: "health#up"
+    get "manifest", to: "manifests#show", as: :manifest, defaults: { format: :json }
     get "", to: "home#show", as: :root
     get "stores/discover", to: "stores#discover"
     resources :check_ins, only: [:create] do
