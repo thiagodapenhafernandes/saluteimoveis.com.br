@@ -142,6 +142,7 @@ body.admin-layout {
 /* Content Layout */
 .admin-content {
   margin-left: 260px;
+  margin-top: 64px;
   padding: 1.25rem;
   width: calc(100% - 260px);
   min-height: calc(100vh - 64px);
