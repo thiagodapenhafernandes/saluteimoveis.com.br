@@ -54,6 +54,7 @@ Rails.application.routes.draw do
     resources :admin_users, only: [:index, :new, :create, :edit, :update, :destroy] do
       collection do
         post :sync_from_vista
+        get  :vista_sync_status
       end
     end
     resources :habitations do

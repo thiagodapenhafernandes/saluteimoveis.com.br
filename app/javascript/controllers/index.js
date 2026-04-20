@@ -151,6 +151,9 @@ application.register("field-checkin", FieldCheckinController)
 import FieldPingSenderController from "controllers/field/ping_sender_controller"
 application.register("field-ping-sender", FieldPingSenderController)
 
+import VistaSyncStatusController from "controllers/vista_sync_status_controller"
+application.register("vista-sync-status", VistaSyncStatusController)
+
 import TagInputController from "controllers/tag_input_controller"
 application.register("tag-input", TagInputController)
 

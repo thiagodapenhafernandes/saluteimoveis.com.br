@@ -12,45 +12,73 @@ module Vista
     end
 
     def call
-      puts "Iniciando importação de corretores do Vista..."
-      
+      status = SyncStatusService.new
+      status.mark_processing!(message: "Iniciando importação de corretores...", stats: empty_stats)
+
       page = 1
       total_processed = 0
       total_created = 0
       total_updated = 0
+      total_errors = 0
+      total_pages = nil
 
       loop do
         response = fetch_users(page)
-        
-        if response.blank? || response['status'].present? && response['status'].to_i >= 400
-           puts "Erro ou fim da lista: #{response}"
-           break
+
+        if response.blank? || (response['status'].present? && response['status'].to_i >= 400)
+          status.mark_failed!(
+            message: "Erro ao buscar página #{page}: #{response['message'] || response}",
+            stats: build_stats(processed: total_processed, created: total_created, updated: total_updated, errors: total_errors + 1, page: page, total_pages: total_pages)
+          )
+          return
         end
 
         total_pages = response['paginas'].to_i
         users_data = response.except('total', 'paginas', 'pagina', 'quantidade')
-        
+
         break if users_data.empty?
 
-        users_data.each do |key, user_data|
-          # Skip structural keys if any leak through, usually they are numeric strings "1", "2"
+        users_data.each do |_, user_data|
           next unless user_data.is_a?(Hash)
-          
-          process_user(user_data) ? total_created += 1 : total_updated += 1
-          total_processed += 1
+
+          result = process_user(user_data)
+          case result
+          when :created then total_created += 1
+          when :updated then total_updated += 1
+          when :error   then total_errors  += 1
+          end
+          total_processed += 1 unless result == :skipped
         end
 
-        puts "Página #{page}/#{total_pages} processada."
-        
+        progress = total_pages.positive? ? ((page.to_f / total_pages) * 100).to_i : 0
+        status.update_progress!(
+          progress: progress,
+          message: "Página #{page} de #{total_pages} processada — #{total_processed} corretores até aqui",
+          stats: build_stats(processed: total_processed, created: total_created, updated: total_updated, errors: total_errors, page: page, total_pages: total_pages)
+        )
+
         break if page >= total_pages
         page += 1
       end
 
-      puts "Importação finalizada!"
-      puts "Processados: #{total_processed} | Criados: #{total_created} | Atualizados: #{total_updated}"
+      status.mark_completed!(
+        message: "Importação finalizada — #{total_created} criados, #{total_updated} atualizados, #{total_errors} erros",
+        stats: build_stats(processed: total_processed, created: total_created, updated: total_updated, errors: total_errors, page: page, total_pages: total_pages)
+      )
+    rescue => e
+      SyncStatusService.new.mark_failed!(message: "Exceção: #{e.message}", stats: {})
+      raise
     end
 
     private
+
+    def empty_stats
+      { processed: 0, created: 0, updated: 0, errors: 0, page: 0, total_pages: 0 }
+    end
+
+    def build_stats(**attrs)
+      empty_stats.merge(attrs)
+    end
 
     def fetch_users(page)
       # Fields verified via 'listarcampos' and manual testing
@@ -93,10 +121,10 @@ module Vista
     end
 
     def process_user(data)
-      return if data['Inativo'] == 'Sim'
-      
+      return :skipped if data['Inativo'] == 'Sim'
+
       email = data['E-mail']
-      return unless email.present?
+      return :skipped unless email.present?
 
       # Find by vista_id first to handle email changes, fallback to email
       user = AdminUser.find_by(vista_id: data['Codigo']) || AdminUser.find_or_initialize_by(email: email)
@@ -143,11 +171,10 @@ module Vista
       end
 
       if user.save
-        print is_new ? "." : "*"
-        is_new
+        is_new ? :created : :updated
       else
-        puts "\nErro ao salvar #{email}: #{user.errors.full_messages.join(', ')}"
-        false
+        Rails.logger.warn("[Vista Import] Falha ao salvar #{email}: #{user.errors.full_messages.join(', ')}")
+        :error
       end
     end
 

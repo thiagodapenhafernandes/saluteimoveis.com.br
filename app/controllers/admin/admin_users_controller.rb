@@ -3,9 +3,20 @@ module Admin
     before_action :set_admin_user, only: %i[show edit update destroy]
 
     def sync_from_vista
+      status = Vista::SyncStatusService.new.snapshot
+      if status[:status] == "processing"
+        redirect_to admin_admin_users_path, alert: "Uma sincronização já está em andamento."
+        return
+      end
+
       Vista::ImportAgentsJob.perform_later
       redirect_to admin_admin_users_path,
-                  notice: "Sincronização de corretores do Vista iniciada em background. Reloaded em alguns minutos."
+                  notice: "Sincronização de corretores do Vista iniciada em background."
+    end
+
+    def vista_sync_status
+      @status = Vista::SyncStatusService.new.snapshot
+      render partial: "admin/admin_users/vista_sync_panel", locals: { status: @status }
     end
 
     def index

@@ -786,8 +786,10 @@ pre code {
   font-size: 0.8rem;
 }
 
-.fa-spin {
+.fa-spin,
+i.spin {
   animation: fa-spin 2s infinite linear;
+  display: inline-block;
 }
 
 @keyframes fa-spin {
