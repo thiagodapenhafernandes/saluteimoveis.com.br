@@ -3,6 +3,13 @@
 module Field
   class HomeController < BaseController
     def show
+      # Requests JSON caem aqui (cache antigo do SW apontando pra /field
+      # com params lat/lng). Responde vazio pra evitar 406.
+      if request.format.json?
+        render json: { ok: true, redirect: field_root_path }
+        return
+      end
+
       @admin_user       = current_admin_user
       @default_store    = @admin_user.default_store
       @field_enabled    = FieldFeatureGate.field_checkin_enabled?
