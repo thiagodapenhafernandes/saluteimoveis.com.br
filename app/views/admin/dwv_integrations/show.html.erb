@@ -1,7 +1,127 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
   <div>
     <h1 class="h3 mb-1 text-gray-800">Integração DWV</h1>
-    <p class="text-muted small mb-0">Configure o token da DWV e controle sincronização de imóveis no sistema local.</p>
+    <p class="text-muted small mb-0">Lançamentos e estoque de empreendimentos das principais incorporadoras parceiras.</p>
+  </div>
+  <div>
+    <a href="https://api.dwvapp.com.br/" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-box-arrow-up-right me-1"></i>Documentação API DWV
+    </a>
+  </div>
+</div>
+
+<!-- Card "Sobre o produto DWV" -->
+<div class="card border-0 shadow-sm mb-4 bg-gradient-info-soft" style="background: linear-gradient(135deg, #e7f5ff 0%, #f8f9fa 100%);">
+  <div class="card-body p-4">
+    <div class="row g-4 align-items-start">
+      <div class="col-md-7">
+        <h5 class="fw-bold mb-3"><i class="bi bi-stars text-info me-2"></i>Sobre a DWV</h5>
+        <p class="small mb-2">
+          A <strong>DWV</strong> é uma plataforma B2B de imobiliárias que centraliza o estoque
+          de <strong>lançamentos imobiliários</strong> das principais incorporadoras do Brasil.
+          Quando uma imobiliária parceira (como nós) seleciona empreendimentos no painel da DWV,
+          essa integração traz os imóveis selecionados automaticamente para o nosso CRM e site.
+        </p>
+        <p class="small text-muted mb-0">
+          Os imóveis trazidos pela DWV são identificados internamente com a flag
+          <code>imovel_dwv = "Sim"</code> e código no formato <code>DWV-XXXXXX</code>.
+        </p>
+      </div>
+
+      <div class="col-md-5">
+        <h6 class="fw-semibold small text-uppercase text-muted mb-2"><i class="bi bi-clock-history me-1"></i>Frequência de atualização</h6>
+        <ul class="list-unstyled small mb-0">
+          <li class="mb-2 d-flex align-items-start">
+            <i class="bi bi-arrow-clockwise text-success me-2 mt-1"></i>
+            <div>
+              <strong>Sincronização diária — todo dia às 04:20</strong><br>
+              <span class="text-muted">Importa novos imóveis ativos e desativa imóveis removidos da DWV. Job: <code>DwvSyncJob</code> (modo full).</span>
+            </div>
+          </li>
+          <li class="mb-2 d-flex align-items-start">
+            <i class="bi bi-hand-index text-primary me-2 mt-1"></i>
+            <div>
+              <strong>Sincronização manual sob demanda</strong><br>
+              <span class="text-muted">Use os controles abaixo para forçar atualização imediata (imóvel único, 1 página ou tudo).</span>
+            </div>
+          </li>
+          <li class="d-flex align-items-start">
+            <i class="bi bi-shield-check text-warning me-2 mt-1"></i>
+            <div>
+              <strong>Limite da API: 100 req/min</strong><br>
+              <span class="text-muted">Pausa entre requisições configurada para respeitar o rate limit.</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <hr class="my-4">
+
+    <div class="row g-3">
+      <div class="col-12">
+        <h6 class="fw-semibold small text-uppercase text-muted mb-3"><i class="bi bi-arrow-down-up me-1"></i>O que esta integração faz</h6>
+      </div>
+      <div class="col-md-6 col-lg-3">
+        <div class="d-flex align-items-start gap-2">
+          <i class="bi bi-cloud-download text-success fs-4"></i>
+          <div>
+            <div class="fw-semibold small">Importa imóveis</div>
+            <small class="text-muted">Empreendimentos selecionados na DWV viram imóveis no nosso CRM com fotos, plantas, valores e características.</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-3">
+        <div class="d-flex align-items-start gap-2">
+          <i class="bi bi-arrow-repeat text-info fs-4"></i>
+          <div>
+            <div class="fw-semibold small">Atualiza valores e disponibilidade</div>
+            <small class="text-muted">Em cada sync, valores de venda/locação e flags de exibição são atualizados sem sobrescrever edições manuais.</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-3">
+        <div class="d-flex align-items-start gap-2">
+          <i class="bi bi-x-circle text-danger fs-4"></i>
+          <div>
+            <div class="fw-semibold small">Desativa imóveis removidos</div>
+            <small class="text-muted">Quando a DWV marca <code>deleted=true</code> ou <code>status=inactive</code>, o imóvel vira <strong>Suspenso</strong> e some do site.</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-3">
+        <div class="d-flex align-items-start gap-2">
+          <i class="bi bi-bag-check text-warning fs-4"></i>
+          <div>
+            <div class="fw-semibold small">Detecta vendas</div>
+            <small class="text-muted">Quando a DWV marca <code>auto_inactive</code> (sistema confirmou venda), o imóvel vira <strong>Vendido terceiros</strong>.</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-4">
+
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="text-center p-3 bg-white rounded border">
+          <div class="display-6 fw-bold text-info"><%= Habitation.where(imovel_dwv: "Sim").count %></div>
+          <small class="text-muted text-uppercase">Total importados</small>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="text-center p-3 bg-white rounded border">
+          <div class="display-6 fw-bold text-success"><%= Habitation.where(imovel_dwv: "Sim", exibir_no_site_flag: true).count %></div>
+          <small class="text-muted text-uppercase">Ativos no site</small>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="text-center p-3 bg-white rounded border">
+          <div class="display-6 fw-bold text-secondary"><%= Habitation.where(imovel_dwv: "Sim", exibir_no_site_flag: false).count %></div>
+          <small class="text-muted text-uppercase">Desativados</small>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
