@@ -74,28 +74,62 @@
       </h5>
       <p class="small text-muted mb-3">Clique no mapa para definir o centro da loja. Arraste o slider de raio para ajustar.</p>
 
-      <div class="row g-3">
-        <div class="col-md-5">
-          <%= f.label :zip_code, "CEP", class: "form-label fw-semibold" %>
-          <div class="input-group" data-controller="cep-lookup">
-            <span class="input-group-text bg-white"><i class="bi bi-mailbox text-muted"></i></span>
-            <%= f.text_field :zip_code,
-                             class: "form-control",
-                             placeholder: "88330-030",
-                             data: { cep_lookup_target: "input", action: "blur->cep-lookup#search" } %>
+      <div data-controller="cep-lookup">
+        <div class="row g-3">
+          <div class="col-md-5">
+            <%= f.label :zip_code, "CEP", class: "form-label fw-semibold" %>
+            <div class="input-group">
+              <span class="input-group-text bg-white"><i class="bi bi-mailbox text-muted"></i></span>
+              <%= f.text_field :zip_code,
+                               class: "form-control",
+                               placeholder: "88330-030",
+                               maxlength: 9,
+                               data: { cep_lookup_target: "cep", action: "blur->cep-lookup#lookup" } %>
+              <button type="button"
+                      class="btn btn-outline-primary"
+                      data-cep-lookup-target="button"
+                      data-action="cep-lookup#lookup">
+                <i class="bi bi-search me-1"></i>Buscar
+              </button>
+            </div>
+            <small data-cep-lookup-target="status" class="form-text small text-muted">
+              Digite o CEP e clique Buscar — preenchemos endereço + mapa automaticamente.
+            </small>
           </div>
-        </div>
-        <div class="col-md-7">
-          <%= f.label :address, "Endereço", class: "form-label fw-semibold" %>
-          <%= f.text_field :address, class: "form-control", placeholder: "Av. Atlântica, 3750" %>
-        </div>
-        <div class="col-md-8">
-          <%= f.label :city, "Cidade", class: "form-label fw-semibold" %>
-          <%= f.text_field :city, class: "form-control" %>
-        </div>
-        <div class="col-md-4">
-          <%= f.label :state, "UF", class: "form-label fw-semibold" %>
-          <%= f.text_field :state, class: "form-control text-uppercase", maxlength: 2 %>
+          <div class="col-md-5">
+            <%= f.label :address, "Endereço", class: "form-label fw-semibold" %>
+            <%= f.text_field :address,
+                             class: "form-control",
+                             placeholder: "Av. Atlântica",
+                             data: { cep_lookup_target: "address" } %>
+          </div>
+          <div class="col-md-2">
+            <%= f.label :number, "Número", class: "form-label fw-semibold" %>
+            <%= f.text_field :number,
+                             class: "form-control",
+                             placeholder: "3750",
+                             data: { cep_lookup_target: "number" } %>
+          </div>
+
+          <div class="col-md-5">
+            <%= f.label :neighborhood, "Bairro", class: "form-label fw-semibold" %>
+            <%= f.text_field :neighborhood,
+                             class: "form-control",
+                             data: { cep_lookup_target: "neighborhood" } %>
+          </div>
+          <div class="col-md-5">
+            <%= f.label :city, "Cidade", class: "form-label fw-semibold" %>
+            <%= f.text_field :city,
+                             class: "form-control",
+                             data: { cep_lookup_target: "city" } %>
+          </div>
+          <div class="col-md-2">
+            <%= f.label :state, "UF", class: "form-label fw-semibold" %>
+            <%= f.text_field :state,
+                             class: "form-control text-uppercase",
+                             maxlength: 2,
+                             data: { cep_lookup_target: "state" } %>
+          </div>
         </div>
       </div>
 

@@ -27,13 +27,24 @@ export default class extends Controller {
 
   connect() {
     this.ensureLeafletLoaded().then(() => this.initMap())
+    this.boundGeocoded = (e) => this.handleGeocoded(e)
+    document.addEventListener("cep-lookup:geocoded", this.boundGeocoded)
   }
 
   disconnect() {
+    document.removeEventListener("cep-lookup:geocoded", this.boundGeocoded)
     if (this.map) {
       this.map.remove()
       this.map = null
     }
+  }
+
+  handleGeocoded(event) {
+    if (!this.map || this.readonlyValue) return
+    const { lat, lng } = event.detail || {}
+    if (!lat || !lng) return
+    this.map.setView([lat, lng], 18)
+    this.placeMarker(lat, lng)
   }
 
   // --- Setup ---

@@ -1,4 +1,4 @@
-\restrict GXrH2Skf1OzWrHVDEruVgcguDrzGNgcPdVJwKDFisizcfa5bHJWpI6NxUe7q590
+\restrict ke2NMPf0lKydnpdKr2ykeOkJd3mlIKvO5oNV5g91mXSfGshLreK52GuauXCqScO
 
 -- Dumped from database version 18.3 (Homebrew)
 -- Dumped by pg_dump version 18.3 (Homebrew)
@@ -2301,7 +2301,9 @@ CREATE TABLE public.stores (
     footer_store_id bigint,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    location public.geography(Point,4326)
+    location public.geography(Point,4326),
+    number character varying,
+    neighborhood character varying
 );
 
 
@@ -4863,11 +4865,12 @@ ALTER TABLE ONLY public.store_shifts
 -- PostgreSQL database dump complete
 --
 
-\unrestrict GXrH2Skf1OzWrHVDEruVgcguDrzGNgcPdVJwKDFisizcfa5bHJWpI6NxUe7q590
+\unrestrict ke2NMPf0lKydnpdKr2ykeOkJd3mlIKvO5oNV5g91mXSfGshLreK52GuauXCqScO
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260420210000'),
 ('20260420200000'),
 ('20260420180000'),
 ('20260420170000'),

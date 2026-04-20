@@ -62,7 +62,7 @@ module Admin
 
     def store_params
       params.require(:store).permit(
-        :name, :address, :zip_code, :city, :state, :phone, :creci,
+        :name, :address, :number, :neighborhood, :zip_code, :city, :state, :phone, :creci,
         :latitude, :longitude,
         :geofence_radius_meters, :out_of_radius_tolerance_minutes,
         :auto_checkout_after_minutes, :timezone, :active,
