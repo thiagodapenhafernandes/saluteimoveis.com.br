@@ -121,8 +121,6 @@ module Vista
     end
 
     def process_user(data)
-      return :skipped if data['Inativo'] == 'Sim'
-
       email = data['E-mail']
       return :skipped unless email.present?
 
@@ -136,6 +134,7 @@ module Vista
       user.phone    = data['Celular']
       user.biography = data['Observacoes']
       user.city     = data['Cidade']
+      user.active   = data['Inativo'] != 'Sim'
       
       # Assign Profile
       corretor_profile = Profile.find_by(name: 'Corretor')

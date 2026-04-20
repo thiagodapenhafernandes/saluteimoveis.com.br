@@ -648,6 +648,19 @@
                         Campo opcional. Pode salvar o imóvel sem proprietário e vincular depois.
                       </div>
                     </div>
+
+                    <div class="col-md-4">
+                      <%= f.label :admin_user_id, "Corretor responsável:", class: "form-label small fw-bold mb-1" %>
+                      <%= f.collection_select :admin_user_id,
+                            AdminUser.active.order(:name),
+                            :id, :name,
+                            { include_blank: "— sem corretor —" },
+                            { class: "form-select form-select-sm",
+                              data: { controller: "tom-select", placeholder: "Selecione..." } } %>
+                      <div class="form-text text-muted extra-small mt-1">
+                        Atualizado automaticamente via sync Vista quando disponível.
+                      </div>
+                    </div>
                   <% end %>
                   <div class="col-md-3">
                     <%= f.label :perfil_construcao, "Perfil de construção:", class: "form-label small fw-bold mb-1" %>

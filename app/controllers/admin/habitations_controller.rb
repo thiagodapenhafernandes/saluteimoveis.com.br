@@ -828,7 +828,7 @@ class Admin::HabitationsController < Admin::BaseController
       :valor_venda_anterior_cents, :valor_venda_anterior_formatted, :valor_total_aluguel_cents, :valor_promocional_formatted, 
       :proprietario, :inscricao_imobiliaria, :descricao_empreendimento,
       :categoria_grupo, :tour_virtual,
-      :constructor_id, :proprietor_id,
+      :constructor_id, :proprietor_id, :admin_user_id,
       :terceira_avenida_flag, :arriba_flag, :avenida_brasil_flag, :bairro_fazenda_itajai_flag, 
       :balneario_picarras_flag, :barra_flag, :barra_norte_flag, :barra_sul_flag, 
       :cabecudas_flag, :camboriu_flag, :centro_flag, :estaleirinho_flag, 

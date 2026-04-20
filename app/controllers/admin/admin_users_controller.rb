@@ -31,6 +31,11 @@ module Admin
         @admin_users = @admin_users.where(profile_id: params[:profile_id])
       end
 
+      case params[:status]
+      when "active"   then @admin_users = @admin_users.active
+      when "inactive" then @admin_users = @admin_users.inactive
+      end
+
       @admin_users = @admin_users.order(name: :asc).paginate(page: params[:page], per_page: 20)
     end
 
@@ -78,7 +83,7 @@ module Admin
     end
 
     def admin_user_params
-      params.require(:admin_user).permit(:email, :password, :password_confirmation, :name, :role, :profile_id, :manager_id, :creci, :phone, :biography, :birth_date, :city, :avatar, :acting_type)
+      params.require(:admin_user).permit(:email, :password, :password_confirmation, :name, :role, :profile_id, :manager_id, :creci, :phone, :biography, :birth_date, :city, :avatar, :acting_type, :active, :field_agent_enabled, :default_store_id)
     end
   end
 end

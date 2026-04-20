@@ -73,6 +73,7 @@ class SyncPropertyService
         'ValorCondominio', 'ValorIptu', 'Empreendimento', 'CodigoEmpreendimento', 'Lancamento',
         'DescricaoWeb', 'CaracteristicaUnica', 'Caracteristicas', 'InfraEstrutura', 'ExibirNoSite', 'DestaqueWeb', 'Categoria', 'Construtora',
         'Proprietario', 'CodigoProprietario',
+        'Corretor', 'CodigoCorretor',
         'DataCadastro', 'DataAtualizacao', 'DataEntrega', { 'Foto' => ['Foto', 'FotoPequena', 'Destaque', 'Ordem'] }
       ]
     }
@@ -110,6 +111,7 @@ class SyncPropertyService
     tipo = is_empreendimento ? "Empreendimento" : "Unitário"
     constructor_id = resolve_constructor(hb['Construtora'])
     proprietor = resolve_proprietor(hb)
+    broker_id = resolve_broker(hb)
     raw_imediacoes = hb['Imediacoes']
 
     habitation_attrs = {
@@ -141,6 +143,7 @@ class SyncPropertyService
       nome_empreendimento: hb['Empreendimento'].to_s.strip.presence,
       construtora: hb['Construtora'].to_s.strip.presence,
       constructor_id: constructor_id,
+      admin_user_id: broker_id,
       proprietor_id: proprietor&.id,
       proprietario: proprietor&.name,
       proprietario_codigo: proprietor&.vista_code,
@@ -243,6 +246,20 @@ class SyncPropertyService
     constructor.id
   rescue
     nil
+  end
+
+  # Mapeia corretor responsável do Vista → AdminUser local via vista_id.
+  # Preserva valor atual se não conseguir resolver (não sobrescreve com nil).
+  def resolve_broker(hb)
+    code = hb['CodigoCorretor'].to_s.strip.presence
+    return current_broker_id if code.blank?
+
+    user = AdminUser.find_by(vista_id: code)
+    user&.id || current_broker_id
+  end
+
+  def current_broker_id
+    Habitation.where(codigo: @codigo).limit(1).pluck(:admin_user_id).first
   end
 
   def resolve_proprietor(hb)

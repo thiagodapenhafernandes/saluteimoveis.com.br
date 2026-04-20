@@ -1,4 +1,4 @@
-\restrict VARdzrR8E0UzCMOFfQv08Lc3vNUxGPNOcFKTLqviFFW3ZLr67orQ2M4tfbworna
+\restrict GXrH2Skf1OzWrHVDEruVgcguDrzGNgcPdVJwKDFisizcfa5bHJWpI6NxUe7q590
 
 -- Dumped from database version 18.3 (Homebrew)
 -- Dumped by pg_dump version 18.3 (Homebrew)
@@ -262,7 +262,8 @@ CREATE TABLE public.admin_users (
     city character varying,
     acting_type integer,
     field_agent_enabled boolean DEFAULT false NOT NULL,
-    default_store_id bigint
+    default_store_id bigint,
+    active boolean DEFAULT true NOT NULL
 );
 
 
@@ -3395,6 +3396,13 @@ CREATE INDEX index_addresses_on_addressable ON public.addresses USING btree (add
 
 
 --
+-- Name: index_admin_users_on_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_admin_users_on_active ON public.admin_users USING btree (active);
+
+
+--
 -- Name: index_admin_users_on_default_store_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4855,11 +4863,12 @@ ALTER TABLE ONLY public.store_shifts
 -- PostgreSQL database dump complete
 --
 
-\unrestrict VARdzrR8E0UzCMOFfQv08Lc3vNUxGPNOcFKTLqviFFW3ZLr67orQ2M4tfbworna
+\unrestrict GXrH2Skf1OzWrHVDEruVgcguDrzGNgcPdVJwKDFisizcfa5bHJWpI6NxUe7q590
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260420200000'),
 ('20260420180000'),
 ('20260420170000'),
 ('20260420160000'),
