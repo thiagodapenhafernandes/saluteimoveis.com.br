@@ -1,376 +1,345 @@
+<%
+  hour = Time.current.hour
+  greeting = if hour < 12 then "Bom dia"
+             elsif hour < 18 then "Boa tarde"
+             else "Boa noite"
+             end
+%>
+
+<style>
+  .dash-hero {
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    color: white;
+    border-radius: 1rem;
+    padding: 1.75rem 2rem;
+  }
+  .dash-kpi {
+    border-radius: 1rem;
+    border: none;
+    transition: transform .15s ease;
+  }
+  .dash-kpi:hover { transform: translateY(-2px); }
+  .dash-kpi .kpi-icon {
+    width: 3rem; height: 3rem;
+    border-radius: .75rem;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+  }
+  .dash-kpi .kpi-delta {
+    font-size: .75rem;
+    font-weight: 600;
+  }
+  .dash-section-card {
+    border-radius: 1rem;
+    border: none;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  }
+  .activity-item {
+    padding: .6rem 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .activity-item:last-child { border-bottom: none; }
+  .gradient-green { background: linear-gradient(135deg, #198754 0%, #146c43 100%); }
+  .gradient-orange { background: linear-gradient(135deg, #fd7e14 0%, #c9570c 100%); }
+  .gradient-purple { background: linear-gradient(135deg, #6f42c1 0%, #59359a 100%); }
+  .gradient-red { background: linear-gradient(135deg, #dc3545 0%, #b02a37 100%); }
+  .dash-mini-chart { height: 60px; }
+</style>
+
 <div class="container-fluid py-4">
-  <!-- Header -->
-  <div class="d-flex justify-content-between align-items-center mb-4">
+  <!-- HERO -->
+  <div class="dash-hero mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
     <div>
-      <h1 class="mb-1"><i class="bi bi-speedometer2"></i> Dashboard</h1>
-      <p class="text-muted mb-0">Visão geral do sistema</p>
+      <div class="opacity-75 small"><i class="bi bi-calendar3 me-1"></i> <%= l(Date.current, format: :long) %></div>
+      <h2 class="fw-bold mb-1"><%= greeting %>, <%= current_admin_user.name.split.first %>!</h2>
+      <p class="opacity-75 mb-0">
+        <% if @field_feature_enabled %>
+          <i class="bi bi-broadcast-pin me-1"></i>Feature Field ativa —
+          <strong><%= @active_checkins_count %></strong> check-ins agora,
+          <strong><%= @leads_today %></strong> leads hoje.
+        <% else %>
+          <i class="bi bi-pause-circle me-1"></i>Feature Field desativada.
+          <%= link_to "Ativar em Field Settings", edit_admin_field_settings_path, class: "text-white text-decoration-underline" %>
+        <% end %>
+      </p>
     </div>
-    <div class="text-muted">
-      <i class="bi bi-calendar3"></i> <%= l(Date.today, format: :long) %>
-    </div>
-  </div>
-
-  <!-- Main Stats Cards -->
-  <div class="row g-3 mb-4">
-    <!-- Properties -->
-    <div class="col-md-3">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="flex-shrink-0">
-              <div class="bg-primary bg-opacity-10 rounded-3 p-3">
-                <i class="bi bi-building text-primary" style="font-size: 2rem;"></i>
-              </div>
-            </div>
-            <div class="ms-3">
-              <h2 class="mb-0"><%= number_with_delimiter(@properties_count) %></h2>
-              <p class="text-muted mb-0 small">Imóveis Ativos</p>
-            </div>
-          </div>
-        </div>
-        <div class="card-footer bg-transparent border-0 pt-0">
-          <%= link_to raw('<i class="bi bi-arrow-right"></i> Ver todos'), '#', class: 'btn btn-sm btn-link text-primary text-decoration-none' %>
-        </div>
-      </div>
-    </div>
-
-    <!-- For Sale -->
-    <div class="col-md-3">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="flex-shrink-0">
-              <div class="bg-success bg-opacity-10 rounded-3 p-3">
-                <i class="bi bi-tag text-success" style="font-size: 2rem;"></i>
-              </div>
-            </div>
-            <div class="ms-3">
-              <h2 class="mb-0"><%= number_with_delimiter(@for_sale_count) %></h2>
-              <p class="text-muted mb-0 small">Para Venda</p>
-            </div>
-          </div>
-        </div>
-        <div class="card-footer bg-transparent border-0 pt-0">
-          <small class="text-muted">
-            <i class="bi bi-star-fill text-warning"></i> <%= @featured_count %> destaques
-          </small>
-        </div>
-      </div>
-    </div>
-
-    <!-- For Rent -->
-    <div class="col-md-3">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="flex-shrink-0">
-              <div class="bg-info bg-opacity-10 rounded-3 p-3">
-                <i class="bi bi-key text-info" style="font-size: 2rem;"></i>
-              </div>
-            </div>
-            <div class="ms-3">
-              <h2 class="mb-0"><%= number_with_delimiter(@for_rent_count) %></h2>
-              <p class="text-muted mb-0 small">Para Locação</p>
-            </div>
-          </div>
-        </div>
-        <div class="card-footer bg-transparent border-0 pt-0 text-muted small">
-          <i class="bi bi-link-45deg"></i> <%= @developments_count %> <%= @developments_count == 1 ? 'projeto' : 'projetos' %> vinculados
-        </div>
-      </div>
-    </div>
-
-    <!-- Total Value -->
-    <div class="col-md-3">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="flex-shrink-0">
-              <div class="bg-warning bg-opacity-10 rounded-3 p-3">
-                <i class="bi bi-cash-stack text-warning" style="font-size: 2rem;"></i>
-              </div>
-            </div>
-            <div class="ms-3">
-              <h2 class="mb-0" style="font-size: 1.3rem;"><%= number_to_currency(@total_sale_value / 1_000_000, unit: 'R$', precision: 1) %>M</h2>
-              <p class="text-muted mb-0 small">Valor Total em Venda</p>
-            </div>
-          </div>
-        </div>
-        <div class="card-footer bg-transparent border-0 pt-0">
-          <small class="text-muted">
-            Média: <%= number_to_currency(@avg_sale_value, precision: 0) %>
-          </small>
-        </div>
-      </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <%= link_to admin_stores_path, class: "btn btn-light btn-sm fw-bold" do %>
+        <i class="bi bi-shop me-1"></i>Lojas
+      <% end %>
+      <%= link_to admin_distribution_rules_path, class: "btn btn-light btn-sm fw-bold" do %>
+        <i class="bi bi-diagram-3 me-1"></i>Regras
+      <% end %>
+      <%= link_to admin_field_check_ins_path, class: "btn btn-warning btn-sm fw-bold" do %>
+        <i class="bi bi-geo-fill me-1"></i>Check-ins
+      <% end %>
     </div>
   </div>
 
-  <!-- Inventory Stats -->
+  <!-- KPI CARDS -->
   <div class="row g-3 mb-4">
-    <div class="col-md-6">
-      <div class="card shadow-sm border-0 h-100 bg-white">
-        <div class="card-body py-3">
-          <div class="d-flex align-items-center text-dark">
-            <div class="flex-shrink-0">
-              <div class="bg-info bg-opacity-10 rounded-3 p-3 text-info border border-info border-opacity-10">
-                <i class="bi bi-buildings" style="font-size: 1.5rem;"></i>
-              </div>
-            </div>
-            <div class="ms-3">
-              <h3 class="mb-0 fw-bold"><%= number_with_delimiter(@developments_count) %></h3>
-              <p class="text-muted mb-0 small fw-bold text-uppercase ls-wide" style="font-size: 0.65rem;">Empreendimentos Ativos</p>
-            </div>
-            <div class="ms-auto">
-              <%= link_to admin_habitations_path(tipo: 'Empreendimento'), class: "btn btn-sm btn-outline-info rounded-pill" do %>
-                <i class="bi bi-list-ul me-1"></i> Ver Lista
-              <% end %>
-            </div>
+    <div class="col-xl-3 col-md-6">
+      <div class="card dash-kpi shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div class="kpi-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-building"></i></div>
+            <span class="kpi-delta text-success"><i class="bi bi-check-circle-fill"></i> Ativos</span>
+          </div>
+          <h3 class="fw-bold mb-0"><%= number_with_delimiter(@properties_count) %></h3>
+          <div class="text-muted small">Imóveis no catálogo</div>
+          <div class="small text-muted mt-2 border-top pt-2">
+            <i class="bi bi-star-fill text-warning"></i> <%= @featured_count %> destaques ·
+            <i class="bi bi-tags text-secondary"></i> <%= @developments_count %> empreendimentos
           </div>
         </div>
       </div>
     </div>
-    <div class="col-md-6">
-      <div class="card shadow-sm border-0 h-100 bg-white shadow-hover transition-all">
-        <div class="card-body py-3">
-          <div class="d-flex align-items-center text-dark">
-            <div class="flex-shrink-0">
-              <div class="bg-primary bg-opacity-10 rounded-3 p-3 text-primary border border-primary border-opacity-10">
-                <i class="bi bi-person-vcard" style="font-size: 1.5rem;"></i>
-              </div>
-            </div>
-            <div class="ms-3">
-              <h3 class="mb-0 fw-bold"><%= number_with_delimiter(@proprietors_count) %></h3>
-              <p class="text-muted mb-0 small fw-bold text-uppercase ls-wide" style="font-size: 0.65rem;">Proprietários / Parceiros</p>
-            </div>
-            <div class="ms-auto">
-              <%= link_to admin_proprietors_path, class: "btn btn-sm btn-outline-primary rounded-pill" do %>
-                <i class="bi bi-list-ul me-1"></i> Ver Lista
-              <% end %>
-            </div>
+
+    <div class="col-xl-3 col-md-6">
+      <div class="card dash-kpi shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div class="kpi-icon bg-success bg-opacity-10 text-success"><i class="bi bi-megaphone-fill"></i></div>
+            <span class="kpi-delta text-primary"><i class="bi bi-graph-up"></i> <%= @leads_last_7_days %> em 7 dias</span>
+          </div>
+          <h3 class="fw-bold mb-0"><%= number_with_delimiter(@leads_today) %></h3>
+          <div class="text-muted small">Leads hoje</div>
+          <div class="small text-muted mt-2 border-top pt-2">
+            <i class="bi bi-hourglass-split text-warning"></i> <%= @holding_leads %> represados ·
+            <i class="bi bi-inbox text-info"></i> <%= @new_leads %> novos
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+      <div class="card dash-kpi shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div class="kpi-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-geo-alt-fill"></i></div>
+            <% if @active_checkins_count > 0 %>
+              <span class="kpi-delta text-success"><i class="bi bi-record-circle-fill"></i> ao vivo</span>
+            <% end %>
+          </div>
+          <h3 class="fw-bold mb-0"><%= @active_checkins_count %></h3>
+          <div class="text-muted small">Check-ins ativos</div>
+          <div class="small text-muted mt-2 border-top pt-2">
+            <i class="bi bi-calendar-check text-primary"></i> <%= @today_checkins_count %> hoje ·
+            <% if @suspicious_checkins > 0 %>
+              <i class="bi bi-exclamation-triangle-fill text-danger"></i> <%= @suspicious_checkins %> suspeitos
+            <% else %>
+              <i class="bi bi-shield-check text-success"></i> 0 suspeitos
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+      <div class="card dash-kpi shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div class="kpi-icon bg-info bg-opacity-10 text-info"><i class="bi bi-diagram-3-fill"></i></div>
+            <span class="kpi-delta text-secondary"><i class="bi bi-toggle-on"></i> <%= @rules_with_checkin %> c/ check-in</span>
+          </div>
+          <h3 class="fw-bold mb-0"><%= @distribution_rules_active %>/<%= @distribution_rules_total %></h3>
+          <div class="text-muted small">Regras de distribuição ativas</div>
+          <div class="small text-muted mt-2 border-top pt-2">
+            <i class="bi bi-people-fill text-primary"></i> <%= @brokers_active %> corretores ativos ·
+            <i class="bi bi-shop text-success"></i> <%= @stores_active_count %> lojas
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Leads Stats Row -->
+  <!-- OPERAÇÃO FIELD -->
   <div class="row g-3 mb-4">
-    <div class="col-md-3">
-      <div class="card shadow-sm border-0 bg-info bg-gradient text-white">
+    <div class="col-lg-8">
+      <div class="card dash-section-card h-100">
         <div class="card-body">
-          <div class="d-flex justify-content-between">
-            <div>
-              <p class="mb-0 opacity-75">Total de Leads</p>
-              <h3 class="mb-0"><%= @total_leads %></h3>
-            </div>
-            <i class="bi bi-person-badge text-white opacity-25" style="font-size: 2.5rem;"></i>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0"><i class="bi bi-graph-up-arrow text-primary me-2"></i>Leads — últimos 30 dias</h5>
+            <span class="badge bg-primary-subtle text-primary"><%= @leads_last_30_days %> total</span>
           </div>
-          <%= link_to admin_leads_path, class: "text-white text-decoration-none small mt-2 d-block" do %>
-            Ver todos <i class="bi bi-arrow-right ms-1"></i>
-          <% end %>
+          <canvas id="leadsChart" style="height: 260px;"></canvas>
         </div>
       </div>
     </div>
-    <div class="col-md-3">
-      <div class="card shadow-sm border-0 bg-primary bg-gradient text-white">
+
+    <div class="col-lg-4">
+      <div class="card dash-section-card h-100">
         <div class="card-body">
-          <div class="d-flex justify-content-between">
-            <div>
-              <p class="mb-0 opacity-75">Novos Leads (Pendente)</p>
-              <h3 class="mb-0"><%= @new_leads %></h3>
-            </div>
-            <i class="bi bi-bell text-white opacity-25" style="font-size: 2.5rem;"></i>
-          </div>
-          <small class="mt-2 d-block opacity-75">Aguardando atendimento</small>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card shadow-sm border-0 bg-success bg-gradient text-white">
-        <div class="card-body">
-          <div class="d-flex justify-content-between">
-            <div>
-              <p class="mb-0 opacity-75">Últimos 30 dias</p>
-              <h3 class="mb-0"><%= @leads_last_30_days %></h3>
-            </div>
-            <i class="bi bi-graph-up-arrow text-white opacity-25" style="font-size: 2.5rem;"></i>
-          </div>
-          <small class="mt-2 d-block opacity-75"><%= @leads_last_7_days %> nos últimos 7 dias</small>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card shadow-sm border-0">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="flex-shrink-0">
-              <div class="bg-primary bg-opacity-10 rounded-circle p-2">
-                <i class="bi bi-person-circle text-primary" style="font-size: 2rem;"></i>
-              </div>
-            </div>
-            <div class="ms-3">
-              <h6 class="mb-0">Bem-vindo!</h6>
-              <p class="mb-0 text-muted"><%= current_admin_user.name %></p>
-            </div>
-          </div>
+          <h5 class="fw-bold mb-3"><i class="bi bi-pie-chart-fill text-success me-2"></i>Leads por status</h5>
+          <canvas id="leadsStatusChart" style="height: 260px;"></canvas>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Sync & Performance Row -->
+  <!-- TOP LISTAS -->
   <div class="row g-3 mb-4">
-    <!-- Sync Status -->
-    <div class="col-md-6">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-header bg-transparent border-0 pt-4 d-flex justify-content-between align-items-center">
-          <h5 class="mb-0"><i class="bi bi-arrow-repeat text-info"></i> Sincronização (Vista API)</h5>
-          <% if @sync_errors_count > 0 %>
-            <span class="badge bg-danger rounded-pill"><%= @sync_errors_count %> erros</span>
-          <% end %>
-        </div>
+    <div class="col-lg-6">
+      <div class="card dash-section-card h-100">
         <div class="card-body">
-          <div class="table-responsive">
-            <table class="table table-sm table-borderless align-middle mb-0">
-              <thead class="text-muted small">
-                <tr>
-                  <th>Código</th>
-                  <th>Data/Hora</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <% @last_syncs.each do |property| %>
-                  <tr>
-                    <td><span class="fw-bold"><%= property.codigo %></span></td>
-                    <td class="small text-muted"><%= property.last_sync_at&.strftime("%d/%m %H:%M") %></td>
-                    <td>
-                      <% if property.last_sync_status == 'success' %>
-                        <span class="badge bg-success py-1 text-white">Sucesso</span>
-                      <% else %>
-                        <span class="badge bg-danger py-1 text-white" title="<%= property.last_sync_message %>">Erro</span>
-                      <% end %>
-                    </td>
-                  </tr>
-                <% end %>
-                <% if @last_syncs.empty? %>
-                  <tr><td colspan="3" class="text-center py-3 text-muted">Nenhuma sincronização recente.</td></tr>
-                <% end %>
-              </tbody>
-            </table>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0"><i class="bi bi-trophy-fill text-warning me-2"></i>Top corretores por imóveis</h5>
+            <%= link_to "Ver todos", admin_admin_users_path, class: "small text-decoration-none" %>
           </div>
-        </div>
-        <div class="card-footer bg-transparent border-0 pt-0 d-flex justify-content-between">
-          <small class="text-muted">Total sincronizado: <%= @total_synced_count %> imóveis</small>
-          <%= link_to admin_habitations_path, class: "small text-decoration-none" do %>
-            Ver todos <i class="bi bi-arrow-right"></i>
-          <% end %>
-        </div>
-      </div>
-    </div>
-
-    <!-- Leads Distribution -->
-    <div class="col-md-6">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-header bg-transparent border-0 pt-4">
-          <h5 class="mb-0"><i class="bi bi-pie-chart text-primary"></i> Distribuição de Leads</h5>
-        </div>
-        <div class="card-body">
-           <% @leads_by_status.each do |status, count| %>
-             <% 
-               badge_class = case status
-               when 'Novo' then 'bg-primary'
-               when 'Em Atendimento' then 'bg-info'
-               when 'Convertido' then 'bg-success'
-               when 'Perdido' then 'bg-secondary'
-               else 'bg-dark'
-               end
-             %>
-             <div class="d-flex justify-content-between align-items-center mb-2 pb-2 <%= 'border-bottom' unless status == @leads_by_status.keys.last %>">
-               <span><span class="badge <%= badge_class %> rounded-circle p-1 me-2" style="width: 10px; height: 10px; display: inline-block;"></span><%= status.presence || 'Não definido' %></span>
-               <span class="fw-bold"><%= count %></span>
-             </div>
-           <% end %>
-           <% if @leads_by_status.empty? %>
-             <p class="text-muted text-center py-4">Sem leads para exibir.</p>
-           <% end %>
-        </div>
-        <div class="card-footer bg-transparent border-0 pt-0 text-center">
-           <%= link_to admin_leads_path, class: "btn btn-sm btn-link text-decoration-none" do %>
-             <i class="bi bi-list-task me-1"></i> Gerenciar Funil de Vendas
-           <% end %>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Charts Row -->
-  <div class="row g-3 mb-4">
-    <!-- Top Neighborhoods (Leads) -->
-    <div class="col-md-6">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-header bg-transparent border-0 pt-4">
-          <h5 class="mb-0"><i class="bi bi-heart-fill text-danger"></i> Bairros mais buscados (Leads)</h5>
-        </div>
-        <div class="card-body">
-          <% if @top_neighborhoods.present? && @top_neighborhoods.any? %>
-            <% max_leads = @top_neighborhoods.values.max %>
-            <% @top_neighborhoods.each do |neighborhood, count| %>
+          <% if @top_brokers.any? %>
+            <% max_ct = @top_brokers.first.ct %>
+            <% @top_brokers.each do |b| %>
               <div class="mb-3">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                  <span class="text-muted small"><%= neighborhood %></span>
-                  <strong><%= count %> contatos</strong>
+                <div class="d-flex justify-content-between small mb-1">
+                  <strong><%= b.name %></strong>
+                  <span class="text-muted"><%= b.ct %> imóveis</span>
                 </div>
-                <div class="progress" style="height: 6px;">
-                  <div class="progress-bar bg-danger" role="progressbar" 
-                       style="width: <%= (count.to_f / max_leads * 100).round %>%"></div>
+                <div class="progress" style="height: 8px;">
+                  <div class="progress-bar bg-primary" style="width: <%= ((b.ct.to_f / max_ct) * 100).to_i %>%"></div>
                 </div>
               </div>
             <% end %>
           <% else %>
-            <p class="text-muted text-center py-4">Nenhum lead gerado por imóvel ainda.</p>
+            <p class="text-muted small mb-0">Nenhum imóvel vinculado a corretor ainda. Use o botão "Vincular imóveis" em Corretores.</p>
           <% end %>
         </div>
       </div>
     </div>
 
-    <!-- Quick Actions -->
-    <div class="col-md-6">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-header bg-transparent border-0 pt-4">
-          <h5 class="mb-0"><i class="bi bi-lightning-charge-fill text-warning"></i> Ações Rápidas</h5>
-        </div>
+    <div class="col-lg-6">
+      <div class="card dash-section-card h-100">
         <div class="card-body">
-          <div class="row g-2">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0"><i class="bi bi-shop-window text-success me-2"></i>Top lojas por check-ins (30d)</h5>
+            <%= link_to "Ver todas", admin_stores_path, class: "small text-decoration-none" %>
+          </div>
+          <% if @top_stores.any? %>
+            <% max_ct = @top_stores.first.ct %>
+            <% @top_stores.each do |s| %>
+              <div class="mb-3">
+                <div class="d-flex justify-content-between small mb-1">
+                  <strong><i class="bi bi-geo-alt text-success me-1"></i><%= s.name %></strong>
+                  <span class="text-muted"><%= s.ct %> check-ins</span>
+                </div>
+                <div class="progress" style="height: 8px;">
+                  <div class="progress-bar bg-success" style="width: <%= ((s.ct.to_f / max_ct) * 100).to_i %>%"></div>
+                </div>
+              </div>
+            <% end %>
+          <% else %>
+            <p class="text-muted small mb-0">Sem check-ins nos últimos 30 dias.</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ATIVIDADE RECENTE + SAÚDE DO SISTEMA -->
+  <div class="row g-3 mb-4">
+    <div class="col-lg-7">
+      <div class="card dash-section-card h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0"><i class="bi bi-clock-history text-info me-2"></i>Atividade recente</h5>
+            <%= link_to "Auditoria completa", admin_field_audit_logs_path, class: "small text-decoration-none" %>
+          </div>
+          <% if @recent_audit_logs.any? %>
+            <% @recent_audit_logs.each do |log| %>
+              <% color = case log.action
+                         when "created" then "primary"
+                         when "closed" then "secondary"
+                         when "forced_closed" then "warning"
+                         when "flagged_suspicious" then "danger"
+                         when "manual_request_approved" then "success"
+                         when "manual_request_rejected" then "dark"
+                         else "info"
+                         end %>
+              <div class="activity-item d-flex gap-3 align-items-start">
+                <span class="badge bg-<%= color %>-subtle text-<%= color %> flex-shrink-0"><%= log.action.humanize %></span>
+                <div class="flex-grow-1 small">
+                  <strong><%= log.admin_user&.name || "—" %></strong>
+                  <% if log.actor_admin_user && log.actor_admin_user != log.admin_user %>
+                    <span class="text-muted">por <%= log.actor_admin_user.name %></span>
+                  <% end %>
+                  <% if log.check_in %>
+                    <span class="text-muted">· <%= log.check_in.store.name %></span>
+                  <% end %>
+                </div>
+                <div class="text-muted small flex-shrink-0">
+                  <%= time_ago_in_words(log.created_at) %>
+                </div>
+              </div>
+            <% end %>
+          <% else %>
+            <p class="text-muted small mb-0">Nenhuma atividade no field ainda.</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card dash-section-card h-100">
+        <div class="card-body">
+          <h5 class="fw-bold mb-3"><i class="bi bi-heart-pulse-fill text-danger me-2"></i>Saúde do sistema</h5>
+
+          <div class="mb-3">
+            <div class="d-flex justify-content-between small mb-1">
+              <span>Imóveis sincronizados do Vista</span>
+              <strong><%= @total_synced_count %></strong>
+            </div>
+            <div class="progress" style="height: 6px;">
+              <%
+                pct = @properties_count > 0 ? ((@total_synced_count.to_f / @properties_count) * 100).to_i : 0
+              %>
+              <div class="progress-bar bg-success" style="width: <%= pct %>%"></div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <div class="d-flex justify-content-between small mb-1">
+              <span>Corretores com Vista</span>
+              <strong><%= @brokers_with_vista %> / <%= @brokers_active + @brokers_inactive %></strong>
+            </div>
+            <div class="progress" style="height: 6px;">
+              <%
+                total_u = @brokers_active + @brokers_inactive
+                pct2 = total_u > 0 ? ((@brokers_with_vista.to_f / total_u) * 100).to_i : 0
+              %>
+              <div class="progress-bar bg-primary" style="width: <%= pct2 %>%"></div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <div class="d-flex justify-content-between small mb-1">
+              <span>Agentes habilitados pro PWA</span>
+              <strong><%= @field_agents_count %></strong>
+            </div>
+            <div class="progress" style="height: 6px;">
+              <%
+                pct3 = @brokers_active > 0 ? ((@field_agents_count.to_f / @brokers_active) * 100).to_i : 0
+              %>
+              <div class="progress-bar bg-warning" style="width: <%= pct3 %>%"></div>
+            </div>
+          </div>
+
+          <hr>
+
+          <div class="row g-2 text-center">
             <div class="col-6">
-              <%= link_to edit_admin_home_setting_path, class: 'btn btn-outline-primary w-100 text-start btn-sm' do %>
-                <i class="bi bi-house-gear-fill me-2"></i> Configurar Home
-              <% end %>
+              <div class="border rounded p-2">
+                <div class="fw-bold fs-5 <%= @sync_errors_count > 0 ? 'text-danger' : 'text-success' %>">
+                  <%= @sync_errors_count %>
+                </div>
+                <small class="text-muted text-uppercase">Erros sync</small>
+              </div>
             </div>
             <div class="col-6">
-              <%= link_to admin_banners_path, class: 'btn btn-outline-success w-100 text-start btn-sm' do %>
-                <i class="bi bi-image me-2"></i> Gerenciar Banners
-              <% end %>
-            </div>
-            <div class="col-6">
-              <%= link_to admin_seo_settings_path, class: 'btn btn-outline-info w-100 text-start btn-sm' do %>
-                <i class="bi bi-search me-2"></i> Configurar SEO
-              <% end %>
-            </div>
-            <div class="col-6">
-              <%= link_to admin_home_sections_path, class: 'btn btn-outline-warning w-100 text-start btn-sm' do %>
-                <i class="bi bi-layout-text-sidebar me-2"></i> Seções Home
-              <% end %>
-            </div>
-            <div class="col-6">
-              <%= link_to edit_admin_contact_setting_path, class: 'btn btn-outline-dark w-100 text-start btn-sm' do %>
-                <i class="bi bi-envelope-fill me-2"></i> Contato
-              <% end %>
-            </div>
-            <div class="col-6">
-                <%= link_to edit_admin_layout_setting_path, class: "btn btn-outline-secondary w-100 btn-sm text-start" do %>
-                  <i class="bi bi-palette me-2"></i> Layout
-                <% end %>
+              <div class="border rounded p-2">
+                <div class="fw-bold fs-5 <%= @pending_manual_requests > 0 ? 'text-warning' : 'text-muted' %>">
+                  <%= @pending_manual_requests %>
+                </div>
+                <small class="text-muted text-uppercase">Pedidos manuais</small>
+              </div>
             </div>
           </div>
         </div>
@@ -378,55 +347,115 @@
     </div>
   </div>
 
-  <!-- Recent Properties Table -->
-  <div class="card shadow-sm border-0">
-    <div class="card-header bg-transparent border-0 pt-4 pb-0">
-      <h5 class="mb-0"><i class="bi bi-clock-history text-primary"></i> Imóveis Recentes</h5>
+  <!-- VALOR CATÁLOGO -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">
+      <div class="card dash-section-card text-white gradient-green h-100">
+        <div class="card-body">
+          <div class="small opacity-75 text-uppercase">Valor total do catálogo (venda)</div>
+          <h2 class="fw-bold mt-2 mb-0">
+            <%= number_to_currency(@total_sale_value, unit: "R$ ", separator: ",", delimiter: ".", precision: 0) %>
+          </h2>
+          <div class="opacity-75 small mt-2">
+            <i class="bi bi-tag-fill me-1"></i><%= @for_sale_count %> imóveis à venda
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="card-body">
-      <div class="table-responsive">
-        <table class="table table-hover align-middle">
-          <thead class="table-light">
-            <tr>
-              <th>Código</th>
-              <th>Título</th>
-              <th>Cidade</th>
-              <th>Tipo</th>
-              <th>Valor</th>
-              <th>Status</th>
-              <th width="100" class="text-center">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% @recent_properties.each do |property| %>
-              <tr>
-                <td><span class="badge bg-secondary"><%= property.codigo %></span></td>
-                <td>
-                  <strong><%= truncate(property.display_title, length: 50) %></strong>
-                  <% if property.destaque_web_flag %>
-                    <i class="bi bi-star-fill text-warning ms-1" title="Destaque"></i>
-                  <% end %>
-                </td>
-                <td><%= property.cidade %></td>
-                <td><span class="badge bg-info"><%= property.tipo %></span></td>
-                <td><strong><%= property.preco_principal %></strong></td>
-                <td>
-                  <% if property.exibir_no_site_flag %>
-                    <span class="badge bg-success">Ativo</span>
-                  <% else %>
-                    <span class="badge bg-secondary">Inativo</span>
-                  <% end %>
-                </td>
-                <td class="text-center">
-                  <%= link_to habitation_path(property), target: '_blank', class: 'btn btn-sm btn-outline-primary', title: 'Ver no site' do %>
-                    <i class="bi bi-eye"></i>
-                  <% end %>
-                </td>
-              </tr>
-            <% end %>
-          </tbody>
-        </table>
+
+    <div class="col-md-6">
+      <div class="card dash-section-card text-white gradient-purple h-100">
+        <div class="card-body">
+          <div class="small opacity-75 text-uppercase">Ticket médio</div>
+          <h2 class="fw-bold mt-2 mb-0">
+            <%= number_to_currency(@avg_sale_value, unit: "R$ ", separator: ",", delimiter: ".", precision: 0) %>
+          </h2>
+          <div class="opacity-75 small mt-2">
+            <i class="bi bi-house-door me-1"></i>Média dos imóveis à venda
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </div>
+
+<!-- Chart.js via CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  (function() {
+    // Gráfico de linha — leads por dia (últimos 30 dias)
+    const leadsPerDay = <%= raw @leads_per_day.to_json %>;
+    const labels = leadsPerDay.map(([d, _]) => {
+      const date = new Date(d);
+      return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth()+1).padStart(2, '0')}`;
+    });
+    const values = leadsPerDay.map(([_, c]) => c);
+
+    const ctx = document.getElementById('leadsChart');
+    if (ctx && window.Chart) {
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Leads',
+            data: values,
+            borderColor: '#0d6efd',
+            backgroundColor: 'rgba(13,110,253,0.1)',
+            borderWidth: 2,
+            tension: 0.35,
+            fill: true,
+            pointBackgroundColor: '#0d6efd',
+            pointRadius: 3,
+            pointHoverRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { mode: 'index', intersect: false }
+          },
+          scales: {
+            y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(0,0,0,0.04)' } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    // Doughnut — leads por status
+    const leadsByStatus = <%= raw @leads_by_status.to_json %>;
+    const statusLabels = Object.keys(leadsByStatus).map(s => (s || 'sem status').toString().replace(/_/g, ' '));
+    const statusValues = Object.values(leadsByStatus);
+    const palette = ['#0d6efd', '#198754', '#ffc107', '#fd7e14', '#6f42c1', '#dc3545', '#6c757d', '#20c997'];
+
+    const ctx2 = document.getElementById('leadsStatusChart');
+    if (ctx2 && window.Chart) {
+      new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+          labels: statusLabels,
+          datasets: [{
+            data: statusValues,
+            backgroundColor: palette.slice(0, statusLabels.length),
+            borderWidth: 2,
+            borderColor: '#fff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '60%',
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { boxWidth: 12, padding: 12, font: { size: 11 } }
+            }
+          }
+        }
+      });
+    }
+  })();
+</script>
