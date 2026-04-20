@@ -16,6 +16,7 @@ class CheckIn < ApplicationRecord
   belongs_to :admin_user
   belongs_to :store
   belongs_to :store_shift, optional: true
+  has_many :location_pings, dependent: :delete_all
 
   validates :checked_in_at, presence: true
 

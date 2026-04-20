@@ -1,4 +1,4 @@
-\restrict mcEvqdDwq5cjgSVbV7ATh1gyoknd3e7yKsi9vj5guostYciJkg9f2ehLgt5b2Kq
+\restrict pe2zWpq7qL2W6h0jNj5K5XwbzoEwpEbIYLZbrrg6d5as0nGlpeVB4Lyglmeud5I
 
 -- Dumped from database version 18.3 (Homebrew)
 -- Dumped by pg_dump version 18.3 (Homebrew)
@@ -1336,6 +1336,48 @@ ALTER SEQUENCE public.leads_id_seq OWNED BY public.leads.id;
 
 
 --
+-- Name: location_pings; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.location_pings (
+    id bigint NOT NULL,
+    check_in_id bigint NOT NULL,
+    admin_user_id bigint NOT NULL,
+    accuracy_meters integer,
+    battery_level double precision,
+    is_mock_location boolean DEFAULT false NOT NULL,
+    inside_radius boolean NOT NULL,
+    ip inet,
+    user_agent character varying,
+    recorded_at timestamp(6) without time zone NOT NULL,
+    suspicious boolean DEFAULT false NOT NULL,
+    suspicious_reasons jsonb DEFAULT '[]'::jsonb,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    location public.geography(Point,4326) NOT NULL
+);
+
+
+--
+-- Name: location_pings_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.location_pings_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: location_pings_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.location_pings_id_seq OWNED BY public.location_pings.id;
+
+
+--
 -- Name: meta_facebook_pages; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2460,6 +2502,13 @@ ALTER TABLE ONLY public.leads ALTER COLUMN id SET DEFAULT nextval('public.leads_
 
 
 --
+-- Name: location_pings id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.location_pings ALTER COLUMN id SET DEFAULT nextval('public.location_pings_id_seq'::regclass);
+
+
+--
 -- Name: meta_facebook_pages id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -2864,6 +2913,14 @@ ALTER TABLE ONLY public.lead_activities
 
 ALTER TABLE ONLY public.leads
     ADD CONSTRAINT leads_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: location_pings location_pings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.location_pings
+    ADD CONSTRAINT location_pings_pkey PRIMARY KEY (id);
 
 
 --
@@ -3754,6 +3811,34 @@ CREATE INDEX index_leads_on_shared_by_admin_user_id ON public.leads USING btree 
 
 
 --
+-- Name: index_location_pings_on_admin_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_location_pings_on_admin_user_id ON public.location_pings USING btree (admin_user_id);
+
+
+--
+-- Name: index_location_pings_on_admin_user_id_and_recorded_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_location_pings_on_admin_user_id_and_recorded_at ON public.location_pings USING btree (admin_user_id, recorded_at);
+
+
+--
+-- Name: index_location_pings_on_check_in_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_location_pings_on_check_in_id ON public.location_pings USING btree (check_in_id);
+
+
+--
+-- Name: index_location_pings_on_check_in_id_and_recorded_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_location_pings_on_check_in_id_and_recorded_at ON public.location_pings USING btree (check_in_id, recorded_at);
+
+
+--
 -- Name: index_meta_facebook_pages_on_page_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4266,6 +4351,14 @@ ALTER TABLE ONLY public.meta_facebook_pages
 
 
 --
+-- Name: location_pings fk_rails_550bb129fb; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.location_pings
+    ADD CONSTRAINT fk_rails_550bb129fb FOREIGN KEY (admin_user_id) REFERENCES public.admin_users(id);
+
+
+--
 -- Name: check_ins fk_rails_58d2ce0005; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4434,6 +4527,14 @@ ALTER TABLE ONLY public.admin_users
 
 
 --
+-- Name: location_pings fk_rails_e12dc32194; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.location_pings
+    ADD CONSTRAINT fk_rails_e12dc32194 FOREIGN KEY (check_in_id) REFERENCES public.check_ins(id);
+
+
+--
 -- Name: admin_users fk_rails_e4ce59bd8f; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4469,11 +4570,12 @@ ALTER TABLE ONLY public.store_shifts
 -- PostgreSQL database dump complete
 --
 
-\unrestrict mcEvqdDwq5cjgSVbV7ATh1gyoknd3e7yKsi9vj5guostYciJkg9f2ehLgt5b2Kq
+\unrestrict pe2zWpq7qL2W6h0jNj5K5XwbzoEwpEbIYLZbrrg6d5as0nGlpeVB4Lyglmeud5I
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260420150000'),
 ('20260420140000'),
 ('20260420130000'),
 ('20260420120000'),

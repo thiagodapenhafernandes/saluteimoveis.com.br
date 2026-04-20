@@ -113,6 +113,7 @@ Rails.application.routes.draw do
     resources :check_ins, only: [:create] do
       patch :check_out, on: :member
     end
+    resources :location_pings, only: [:create]
   end
 
   namespace :api do
