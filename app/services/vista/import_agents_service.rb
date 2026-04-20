@@ -72,6 +72,21 @@ module Vista
 
     private
 
+    # Mapeia as flags booleanas (Sim/Nao) do Vista para 1 Profile local.
+    # A Vista permite acumular cargos (ex: Gerente + Corretor); escolhemos
+    # o de maior autoridade segundo a ordem abaixo. Profile é criado on-demand
+    # com permissions vazias — o admin ajusta em /admin/profiles depois.
+    PROFILE_PRIORITY = %w[Diretor Gerente Administrativo Corretor].freeze
+
+    def resolve_profile(data)
+      name = PROFILE_PRIORITY.find { |flag| data[flag].to_s.casecmp("sim").zero? } || "Corretor"
+      Profile.where("LOWER(name) = ?", name.downcase).first ||
+        Profile.create!(name: name, permissions: {}, active: true)
+    rescue ActiveRecord::RecordInvalid => e
+      Rails.logger.warn("[Vista Import] Falha ao criar Profile '#{name}': #{e.message}")
+      nil
+    end
+
     def empty_stats
       { processed: 0, created: 0, updated: 0, errors: 0, page: 0, total_pages: 0 }
     end
@@ -83,19 +98,24 @@ module Vista
     def fetch_users(page)
       # Fields verified via 'listarcampos' and manual testing
       fields = [
-        'Codigo', 
-        'Nomecompleto', 
+        'Codigo',
+        'Nomecompleto',
         'E-mail', # Important: api uses hyphen
-        'CRECI', 
-        'Celular', 
-        'Foto', 
-        'Observacoes', 
-        'Nascimento', 
-        'Cidade', 
+        'CRECI',
+        'Celular',
+        'Foto',
+        'Observacoes',
+        'Nascimento',
+        'Cidade',
         'Sexo',
         'Inativo',
         'Atuaçãoemvenda',
-        'Atuaçãoemlocação'
+        'Atuaçãoemlocação',
+        # Flags booleanas de cargo (Sim/Nao). Usadas para mapear ao Profile.
+        'Diretor',
+        'Gerente',
+        'Administrativo',
+        'Corretor'
       ]
       
       query = {
@@ -136,9 +156,10 @@ module Vista
       user.city     = data['Cidade']
       user.active   = data['Inativo'] != 'Sim'
       
-      # Assign Profile
-      corretor_profile = Profile.find_by(name: 'Corretor')
-      user.profile = corretor_profile if corretor_profile.present? && user.profile.nil?
+      # Assign Profile derivado das flags do Vista (Diretor > Gerente >
+      # Administrativo > Corretor). Auto-cria o Profile se ele não existir.
+      assigned_profile = resolve_profile(data)
+      user.profile = assigned_profile if assigned_profile && user.profile.blank?
       
       if data['Nascimento'].present? && data['Nascimento'] != '0000-00-00'
         user.birth_date = Date.parse(data['Nascimento']) rescue nil
