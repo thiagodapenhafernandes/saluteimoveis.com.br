@@ -130,7 +130,7 @@ namespace :images do
       cycle += 1
       last_id = cursor["last_id"].to_i
 
-      scope = Habitation.where("id > ?", last_id).where.not(imovel_dwv: "Sim").order(:id)
+      scope = Habitation.where("habitations.id > ?", last_id).where.not(imovel_dwv: "Sim").order("habitations.id")
       scope = scope.where.missing(:photos_attachments) if only_without_attachments
       batch = scope.limit(batch_size).to_a
 
