@@ -51,7 +51,11 @@ Rails.application.routes.draw do
       end
       resources :home_section_items, only: [:new, :create, :edit, :update, :destroy]
     end
-    resources :admin_users, only: [:index, :new, :create, :edit, :update, :destroy]
+    resources :admin_users, only: [:index, :new, :create, :edit, :update, :destroy] do
+      collection do
+        post :sync_from_vista
+      end
+    end
     resources :habitations do
       post :sync, on: :member
       delete "purge_attachment/:association/:attachment_id", on: :member, action: :purge_attachment, as: :purge_attachment

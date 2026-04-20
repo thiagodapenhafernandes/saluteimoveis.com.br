@@ -2,6 +2,12 @@ module Admin
   class AdminUsersController < BaseController
     before_action :set_admin_user, only: %i[show edit update destroy]
 
+    def sync_from_vista
+      Vista::ImportAgentsJob.perform_later
+      redirect_to admin_admin_users_path,
+                  notice: "Sincronização de corretores do Vista iniciada em background. Reloaded em alguns minutos."
+    end
+
     def index
       @admin_users = AdminUser.includes(:profile, :manager)
 
