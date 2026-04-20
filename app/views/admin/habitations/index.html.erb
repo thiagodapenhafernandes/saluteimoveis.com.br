@@ -205,12 +205,20 @@
             </div>
           </div>
           <div class="col-md-3">
-            <label class="form-label small fw-bold text-muted text-uppercase">Captação de</label>
+            <label class="form-label small fw-bold text-muted text-uppercase">Cadastro de</label>
             <%= f.date_field :captacao_inicio, value: params[:captacao_inicio], class: "form-control" %>
           </div>
           <div class="col-md-3">
-            <label class="form-label small fw-bold text-muted text-uppercase">Captação até</label>
+            <label class="form-label small fw-bold text-muted text-uppercase">Cadastro até</label>
             <%= f.date_field :captacao_fim, value: params[:captacao_fim], class: "form-control" %>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-bold text-muted text-uppercase">Atualização de</label>
+            <%= f.date_field :atualizacao_inicio, value: params[:atualizacao_inicio], class: "form-control" %>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-bold text-muted text-uppercase">Atualização até</label>
+            <%= f.date_field :atualizacao_fim, value: params[:atualizacao_fim], class: "form-control" %>
           </div>
         </div>
 

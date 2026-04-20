@@ -59,6 +59,9 @@ module Integrations
 
       def render_feed(habitations)
         case @integration.feed_strategy
+        when "olx_xml"
+          serializer = Portal::OlxXmlSerializer.new(habitations: habitations, integration: @integration)
+          render xml: serializer.to_xml
         when "olx_json"
           serializer = Portal::OlxJsonSerializer.new(habitations: habitations, integration: @integration, portal: @portal)
           render json: serializer.as_json

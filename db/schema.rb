@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_04_19_120000) do
+ActiveRecord::Schema[7.1].define(version: 2026_04_19_230000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "unaccent"
@@ -464,6 +464,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_19_120000) do
     t.string "mostrar_mapa_imovelweb"
     t.string "tipo_publicacao_imovelweb_2"
     t.string "mostrar_mapa_imovelweb_2"
+    t.boolean "publicar_zapimoveis", default: false, null: false
     t.index ["aceita_permuta_flag"], name: "index_habitations_on_aceita_permuta_flag"
     t.index ["admin_user_id"], name: "index_habitations_on_admin_user_id"
     t.index ["area_total_m2"], name: "index_habitations_on_area_total_m2"
@@ -501,6 +502,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_19_120000) do
     t.index ["publicar_loft"], name: "index_habitations_on_publicar_loft"
     t.index ["publicar_netimoveis_2"], name: "index_habitations_on_publicar_netimoveis_2"
     t.index ["publicar_viva_real_vrsync"], name: "index_habitations_on_publicar_viva_real_vrsync"
+    t.index ["publicar_zapimoveis"], name: "index_habitations_on_publicar_zapimoveis"
     t.index ["quadra_mar_flag"], name: "index_habitations_on_quadra_mar_flag"
     t.index ["salute_rental_management_flag"], name: "index_habitations_on_salute_rental_management_flag"
     t.index ["slug"], name: "index_habitations_on_slug", unique: true

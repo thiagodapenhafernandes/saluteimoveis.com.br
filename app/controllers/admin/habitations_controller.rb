@@ -211,6 +211,27 @@ class Admin::HabitationsController < Admin::BaseController
     end
   end
 
+  # Remove um anexo individual (ficha de cadastro ou autorização) do imóvel.
+  # Restrito aos imóveis do habitation; valida o nome da associação por allowlist.
+  def purge_attachment
+    @habitation = Habitation.find(params[:id])
+    association = params[:association].to_s
+    allowed = %w[fichas_cadastro autorizacoes_venda photos]
+    unless allowed.include?(association)
+      redirect_to edit_admin_habitation_path(@habitation, anchor: "documents"), alert: "Anexo inválido."
+      return
+    end
+
+    attachment = @habitation.public_send(association).attachments.find_by(id: params[:attachment_id])
+    if attachment.nil?
+      redirect_to edit_admin_habitation_path(@habitation, anchor: "documents"), alert: "Anexo não encontrado."
+      return
+    end
+
+    attachment.purge_later
+    redirect_to edit_admin_habitation_path(@habitation, anchor: "documents"), notice: "Anexo removido."
+  end
+
   private
 
   def sort_column
@@ -401,6 +422,8 @@ class Admin::HabitationsController < Admin::BaseController
     @scope = params[:scope]
     @captacao_inicio = params[:captacao_inicio]
     @captacao_fim = params[:captacao_fim]
+    @atualizacao_inicio = params[:atualizacao_inicio]
+    @atualizacao_fim = params[:atualizacao_fim]
   end
 
   def filtered_habitations_scope
@@ -491,6 +514,15 @@ class Admin::HabitationsController < Admin::BaseController
     end
     if captacao_fim
       scope = scope.where("COALESCE(habitations.data_cadastro_crm, habitations.created_at) <= ?", captacao_fim.end_of_day)
+    end
+
+    atualizacao_inicio = parse_date_param(@atualizacao_inicio)
+    atualizacao_fim = parse_date_param(@atualizacao_fim)
+    if atualizacao_inicio
+      scope = scope.where("COALESCE(habitations.data_atualizacao_crm, habitations.updated_at) >= ?", atualizacao_inicio.beginning_of_day)
+    end
+    if atualizacao_fim
+      scope = scope.where("COALESCE(habitations.data_atualizacao_crm, habitations.updated_at) <= ?", atualizacao_fim.end_of_day)
     end
 
     area_total_min = parse_decimal_param(@area_total_min)
@@ -726,6 +758,7 @@ class Admin::HabitationsController < Admin::BaseController
       :salute_rental_management_flag, :home_corporate_flag, :home_corporate_position,
       :key_location, :key_location_notes, :ordered_photo_ids,
       videos: [], plantas: [], fotos_empreendimento: [], photos: [],
+      fichas_cadastro: [], autorizacoes_venda: [],
       meta_keywords: [],
       caracteristicas: [], infra_estrutura: [], caracteristica_unica: [],
       broker_assignments_attributes: [:id, :admin_user_id, :role, :commission_type, :commission_value, :observations, :_destroy],

@@ -116,7 +116,7 @@ class SyncPropertyService
       titulo_anuncio: hb['TituloSite'],
       categoria: categoria.presence,
       tipo: tipo,
-      status: hb['Status'],
+      status: Habitation.normalize_status(hb['Status']),
       situacao: hb['Situacao'],
       endereco: hb['Endereco'],
       numero: hb['Numero'],

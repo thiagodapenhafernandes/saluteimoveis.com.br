@@ -1,6 +1,6 @@
 class Admin::PortalIntegrationsController < Admin::BaseController
   before_action :require_admin!
-  before_action :set_portal, only: [:update, :test_feed]
+  before_action :set_portal, only: [:update, :test_feed, :preview_feed]
 
   def index
     @active_portal = normalize_portal(params[:portal])
@@ -8,7 +8,35 @@ class Admin::PortalIntegrationsController < Admin::BaseController
     @status_options = Habitation::STATUS_OPTIONS
     @business_type_options = [["Venda", "venda"], ["Aluguel", "aluguel"]]
     @previews = @integrations.transform_values { |integration| Portal::EligibilityScope.new(integration).preview }
+    @readiness = @integrations.each_with_object({}) do |(portal, integration), acc|
+      eligible = @previews.dig(portal, :eligible_count)
+      acc[portal] = {
+        status: integration.readiness_status(eligible_count: eligible),
+        checklist: integration.setup_checklist(eligible_count: eligible)
+      }
+    end
     @listing_states = PortalListingState.where(portal: @active_portal).order(last_received_at: :desc).limit(20)
+  end
+
+  def preview_feed
+    sample = Portal::EligibilityScope.new(@integration).eligible_scope.limit(3)
+
+    case @integration.feed_strategy
+    when "olx_xml"
+      serializer = Portal::OlxXmlSerializer.new(habitations: sample, integration: @integration)
+      render xml: serializer.to_xml
+    when "olx_json"
+      serializer = Portal::OlxJsonSerializer.new(habitations: sample, integration: @integration, portal: @portal)
+      render json: serializer.as_json
+    when "chaves_xml"
+      serializer = Portal::ChavesXmlSerializer.new(habitations: sample, integration: @integration)
+      render xml: serializer.to_xml
+    when "vrsync_xml"
+      serializer = Portal::VrsyncXmlSerializer.new(habitations: sample, integration: @integration)
+      render xml: serializer.to_xml
+    else
+      render plain: "Estratégia de feed desconhecida.", status: :unprocessable_entity
+    end
   end
 
   def update

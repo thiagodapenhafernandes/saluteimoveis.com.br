@@ -156,6 +156,11 @@
         </button>
       </li>
       <li class="nav-item" role="presentation">
+        <button class="nav-link border-0 bg-transparent py-2 px-1 text-muted" id="documents-tab" data-bs-toggle="tab" data-bs-target="#documents" type="button" role="tab" aria-selected="false">
+          <i class="bi bi-folder2 me-2"></i>Documentos
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
         <button class="nav-link border-0 bg-transparent py-2 px-1 text-muted" id="seo-tab" data-bs-toggle="tab" data-bs-target="#seo" type="button" role="tab" aria-selected="false">
           <i class="bi bi-google me-2"></i><%= tab_title_with_count.call(:seo) %>
         </button>
@@ -1561,6 +1566,118 @@
              </div>
           </div>
        </div>
+    </div>
+
+    <!-- Tab: Documentos (anexos internos) -->
+    <div class="tab-pane fade" id="documents" role="tabpanel" aria-labelledby="documents-tab">
+      <div class="alert alert-info border-0 small mb-4">
+        <i class="bi bi-info-circle me-1"></i>
+        Documentos internos do imóvel — visíveis apenas para a equipe administrativa. Não aparecem no site público.
+      </div>
+
+      <div class="row g-3">
+        <!-- Fichas de cadastro -->
+        <div class="col-lg-6">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-3 p-md-4">
+              <h6 class="small fw-semibold text-uppercase text-muted mb-3">
+                <i class="bi bi-file-earmark-text me-1"></i> Fichas de Cadastro
+              </h6>
+              <p class="small text-muted mb-3">
+                PDFs ou imagens da ficha física de cadastro do imóvel. Pode anexar vários arquivos.
+              </p>
+
+              <div class="mb-3">
+                <%= f.label :fichas_cadastro, "Adicionar arquivos", class: "btn btn-outline-primary btn-sm" %>
+                <%= f.file_field :fichas_cadastro, multiple: true, class: "d-none", id: "habitation_fichas_cadastro" %>
+              </div>
+
+              <% if habitation.fichas_cadastro.attached? %>
+                <ul class="list-group list-group-flush small">
+                  <% habitation.fichas_cadastro.attachments.each do |attachment| %>
+                    <% next unless attachment.persisted? && attachment.blob&.persisted? %>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                      <div class="d-flex align-items-center gap-2 flex-grow-1 text-truncate">
+                        <i class="bi bi-paperclip text-muted"></i>
+                        <%= link_to attachment.filename.to_s,
+                                    rails_blob_path(attachment, disposition: "attachment"),
+                                    target: "_blank", rel: "noopener",
+                                    class: "text-decoration-none text-truncate" %>
+                        <span class="badge bg-light text-muted border ms-1">
+                          <%= number_to_human_size(attachment.byte_size) rescue '-' %>
+                        </span>
+                      </div>
+                      <% if habitation.persisted? %>
+                        <%= button_to purge_attachment_admin_habitation_path(habitation, association: "fichas_cadastro", attachment_id: attachment.id),
+                                      method: :delete,
+                                      class: "btn btn-sm btn-link text-danger p-0 ms-2",
+                                      form: { data: { turbo_confirm: "Remover este arquivo?" } } do %>
+                          <i class="bi bi-trash"></i>
+                        <% end %>
+                      <% end %>
+                    </li>
+                  <% end %>
+                </ul>
+              <% else %>
+                <p class="small text-muted fst-italic mb-0">Nenhuma ficha anexada.</p>
+              <% end %>
+            </div>
+          </div>
+        </div>
+
+        <!-- Autorizações de venda -->
+        <div class="col-lg-6">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-3 p-md-4">
+              <h6 class="small fw-semibold text-uppercase text-muted mb-3">
+                <i class="bi bi-shield-check me-1"></i> Autorizações de Venda
+              </h6>
+              <p class="small text-muted mb-3">
+                Imagens (JPG/PNG) ou PDFs de autorizações assinadas pelo proprietário. Pode anexar várias.
+              </p>
+
+              <div class="mb-3">
+                <%= f.label :autorizacoes_venda, "Adicionar arquivos", class: "btn btn-outline-primary btn-sm" %>
+                <%= f.file_field :autorizacoes_venda, multiple: true, class: "d-none", id: "habitation_autorizacoes_venda" %>
+              </div>
+
+              <% if habitation.autorizacoes_venda.attached? %>
+                <ul class="list-group list-group-flush small">
+                  <% habitation.autorizacoes_venda.attachments.each do |attachment| %>
+                    <% next unless attachment.persisted? && attachment.blob&.persisted? %>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                      <div class="d-flex align-items-center gap-2 flex-grow-1 text-truncate">
+                        <% if attachment.image? %>
+                          <%= image_tag attachment, class: "rounded border", style: "width: 36px; height: 36px; object-fit: cover;" %>
+                        <% else %>
+                          <i class="bi bi-file-earmark-pdf text-danger fs-5"></i>
+                        <% end %>
+                        <%= link_to attachment.filename.to_s,
+                                    rails_blob_path(attachment, disposition: "attachment"),
+                                    target: "_blank", rel: "noopener",
+                                    class: "text-decoration-none text-truncate" %>
+                        <span class="badge bg-light text-muted border ms-1">
+                          <%= number_to_human_size(attachment.byte_size) rescue '-' %>
+                        </span>
+                      </div>
+                      <% if habitation.persisted? %>
+                        <%= button_to purge_attachment_admin_habitation_path(habitation, association: "autorizacoes_venda", attachment_id: attachment.id),
+                                      method: :delete,
+                                      class: "btn btn-sm btn-link text-danger p-0 ms-2",
+                                      form: { data: { turbo_confirm: "Remover este arquivo?" } } do %>
+                          <i class="bi bi-trash"></i>
+                        <% end %>
+                      <% end %>
+                    </li>
+                  <% end %>
+                </ul>
+              <% else %>
+                <p class="small text-muted fst-italic mb-0">Nenhuma autorização anexada.</p>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Tab: SEO & Controle -->

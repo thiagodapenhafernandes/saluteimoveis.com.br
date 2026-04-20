@@ -17,12 +17,42 @@ class Habitation < ApplicationRecord
   ].freeze
 
   STATUS_OPTIONS = [
-    'Venda', 'Aluguel', 'Locação', 'Diária', 'Pendente', 'Lançamento', 'Suspenso',
-    'Vendido Imobiliária', 'Vendido Terceiros', 'Alugado Imobiliária', 'Alugado Terceiros'
+    'Venda', 'Aluguel', 'Diária', 'Pendente', 'Lançamento', 'Suspenso',
+    'Alugado imobiliária', 'Alugado terceiros',
+    'Vendido imobiliária', 'Vendido terceiros'
   ].freeze
 
+  # Mapeia variações que aparecem na Vista (case mixed, sinônimos, etc.) para os
+  # valores canônicos em STATUS_OPTIONS. Usado pelo SyncPropertyService no import
+  # e pela migration de normalização.
+  STATUS_NORMALIZATION_MAP = {
+    "venda"                => "Venda",
+    "venda e aluguel"      => "Venda",
+    "aluguel"              => "Aluguel",
+    "locacao"              => "Aluguel",
+    "locação"              => "Aluguel",
+    "diaria"               => "Diária",
+    "diária"               => "Diária",
+    "pendente"             => "Pendente",
+    "lancamento"           => "Lançamento",
+    "lançamento"           => "Lançamento",
+    "suspenso"             => "Suspenso",
+    "alugado imobiliaria"  => "Alugado imobiliária",
+    "alugado imobiliária"  => "Alugado imobiliária",
+    "alugado terceiros"    => "Alugado terceiros",
+    "vendido imobiliaria"  => "Vendido imobiliária",
+    "vendido imobiliária"  => "Vendido imobiliária",
+    "vendido terceiros"    => "Vendido terceiros"
+  }.freeze
+
+  def self.normalize_status(value)
+    return nil if value.blank?
+    key = value.to_s.strip.downcase
+    STATUS_NORMALIZATION_MAP[key] || value.to_s.strip
+  end
+
   SITUATIONS = [
-    'Pré Lançamento', 'Lançamento', 'Construção', 'Pronto para Morar', 'Novo', 'Usado'
+    'Pré Lançamento', 'Lançamento', 'Construção', 'Pronto para Morar'
   ].freeze
 
   # INTERNAL_FEATURES = [ ... ] (Deprecated in favor of AttributeOption)
@@ -59,14 +89,14 @@ class Habitation < ApplicationRecord
   KEY_LOCATION_OPTIONS = ["Imobiliária", "Corretor(a)", "Proprietário", "Zelador", "Portaria", "Inquilino", "Outro"].freeze
   REGIAO_FOCO_OPTIONS = ["Centro", "Norte", "Sul", "Leste", "Oeste", "Praia", "Interior", "Sem preferência"].freeze
   PORTAL_PUBLICATION_FIELDS = {
-    "zapimoveis" => :publicar_imovelweb_2,
+    "zapimoveis" => :publicar_zapimoveis,
     "vivareal_vrsync" => :publicar_viva_real_vrsync,
     "imovelweb" => :publicar_imovelweb,
+    "imovelweb_2" => :publicar_imovelweb_2,
     "chavesnamao" => :publicar_chaves_na_mao,
     "casamineira" => :publicar_casa_mineira,
     "lais_ai" => :publicar_lais_ai,
-    "netimoveis2" => :publicar_netimoveis_2,
-    "loft_portal" => :publicar_loft
+    "netimoveis2" => :publicar_netimoveis_2
   }.freeze
 
   CHAVES_NA_MAO_DESTAQUE_OPTIONS = [["Sim", "sim"], ["Não", "nao"]].freeze
@@ -129,6 +159,19 @@ class Habitation < ApplicationRecord
   
   # Active Storage Photos (For manual upload)
   has_many_attached :photos
+
+  # Documentos internos do imóvel (só admin/editor enxergam — não vão para o site público)
+  # Após anexar, AttachmentOrganizerService move os blobs para
+  # imoveis/{codigo}/fichas-cadastro/ e imoveis/{codigo}/autorizacoes/ no DO Spaces.
+  has_many_attached :fichas_cadastro
+  has_many_attached :autorizacoes_venda
+
+  after_commit :organize_document_attachments, on: %i[create update]
+
+  def organize_document_attachments
+    return unless fichas_cadastro.attached? || autorizacoes_venda.attached?
+    Habitations::AttachmentOrganizerService.new(self).call
+  end
 
   belongs_to :admin_user, optional: true, foreign_key: 'admin_user_id'
   

@@ -52,6 +52,7 @@ Rails.application.routes.draw do
     resources :admin_users, only: [:index, :new, :create, :edit, :update, :destroy]
     resources :habitations do
       post :sync, on: :member
+      delete "purge_attachment/:association/:attachment_id", on: :member, action: :purge_attachment, as: :purge_attachment
     end
     resources :leads, only: [:index, :show, :update, :destroy]
     resources :distribution_rules do
@@ -83,6 +84,7 @@ Rails.application.routes.draw do
     end
     resources :portal_integrations, only: [:index, :update], param: :portal do
       post :test_feed, on: :member
+      get :preview_feed, on: :member
     end
     resources :landing_pages do
       get :preview, on: :collection

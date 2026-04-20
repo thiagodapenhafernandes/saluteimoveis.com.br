@@ -31,6 +31,9 @@ application.register("cep-search", CepSearchController)
 import ClickableCardController from "controllers/clickable_card_controller"
 application.register("clickable-card", ClickableCardController)
 
+import ClipboardController from "controllers/clipboard_controller"
+application.register("clipboard", ClipboardController)
+
 import CodeSearchController from "controllers/code_search_controller"
 application.register("code-search", CodeSearchController)
 
