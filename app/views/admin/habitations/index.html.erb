@@ -1,20 +1,50 @@
-<div class="d-flex justify-content-between align-items-center mb-4">
+<style>
+  /* Mobile-specific tweaks for /admin/habitations */
+  @media (max-width: 767.98px) {
+    .habitations-header { flex-direction: column !important; align-items: stretch !important; gap: .75rem; }
+    .habitations-header-actions { flex-wrap: wrap; }
+    .habitations-header-actions .btn { flex: 1 1 auto; min-width: 0; font-size: .85rem; padding: .5rem .75rem; }
+    .habitations-header h1 { font-size: 1.4rem !important; }
+
+    /* Quick scope pills: scroll horizontal em vez de quebrar linha */
+    .habitations-scopes {
+      flex-wrap: nowrap !important;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: .5rem;
+      margin-left: -.25rem; margin-right: -.25rem; padding-left: .25rem; padding-right: .25rem;
+    }
+    .habitations-scopes .btn { flex: 0 0 auto; white-space: nowrap; }
+
+    /* Results header: empilha */
+    .habitations-results-header { flex-direction: column !important; align-items: stretch !important; gap: .5rem; }
+    .habitations-results-header .text-muted { font-size: .8rem; }
+    .habitations-results-actions { flex-wrap: wrap; gap: .5rem; }
+    .habitations-results-actions .btn { font-size: .8rem; padding: .35rem .6rem; }
+
+    /* Filter card compactação */
+    .habitations-filter-card .form-label { font-size: .7rem; margin-bottom: .25rem; }
+    .habitations-filter-card .form-control,
+    .habitations-filter-card .form-select { font-size: .9rem; }
+  }
+</style>
+
+<div class="habitations-header d-flex justify-content-between align-items-center mb-4">
   <div>
     <h1 class="h3 mb-1 text-gray-800" style="color: #bfa15f !important; font-family: 'Outfit', sans-serif; font-weight: 700;">Catálogo de Imóveis</h1>
     <p class="text-muted small mb-0">Gerencie seu portfólio de imóveis com filtros avançados.</p>
   </div>
-  <div class="d-flex gap-2">
+  <div class="habitations-header-actions d-flex gap-2">
     <% if current_admin_user&.admin? %>
-      <%= link_to admin_proprietors_path, class: "btn btn-outline-primary d-flex align-items-center bg-white fw-semibold" do %>
-        <i class="bi bi-person-vcard me-2"></i> Proprietários
+      <%= link_to admin_proprietors_path, class: "btn btn-outline-primary d-flex align-items-center justify-content-center bg-white fw-semibold" do %>
+        <i class="bi bi-person-vcard me-2"></i><span class="d-none d-sm-inline">Proprietários</span>
       <% end %>
-      <div class="vr mx-1"></div>
     <% end %>
-    <button type="button" class="btn btn-white border d-flex align-items-center bg-white" data-bs-toggle="modal" data-bs-target="#habitationsExportModal">
-      <i class="bi bi-download me-2"></i> Exportar
+    <button type="button" class="btn btn-white border d-flex align-items-center justify-content-center bg-white" data-bs-toggle="modal" data-bs-target="#habitationsExportModal">
+      <i class="bi bi-download me-2"></i><span>Exportar</span>
     </button>
-    <%= link_to new_admin_habitation_path, class: "btn btn-primary d-flex align-items-center fw-bold px-4 shadow-sm" do %>
-      <i class="bi bi-plus-lg me-2"></i> Novo Imóvel
+    <%= link_to new_admin_habitation_path, class: "btn btn-primary d-flex align-items-center justify-content-center fw-bold shadow-sm" do %>
+      <i class="bi bi-plus-lg me-2"></i><span>Novo Imóvel</span>
     <% end %>
   </div>
 </div>
@@ -56,7 +86,7 @@
   clear_extras_params = request.query_parameters.except(*extra_filter_keys, "page")
 %>
 
-<div class="card shadow-sm mb-4 border-0" data-controller="collapse">
+<div class="card shadow-sm mb-4 border-0 habitations-filter-card" data-controller="collapse">
   <div class="card-body">
     <%= form_with url: admin_habitations_path, method: :get, local: true do |f| %>
       <%= hidden_field_tag :sort, params[:sort] if params[:sort].present? %>
@@ -560,7 +590,7 @@
 </div>
 
 <!-- Quick Scopes (Pills) -->
-<div class="d-flex flex-wrap gap-2 mb-4">
+<div class="habitations-scopes d-flex flex-wrap gap-2 mb-4">
   <% 
     scopes = [
       { key: 'oportunidade', label: 'Oportunidade', icon: 'lightning-fill' },
@@ -657,8 +687,8 @@
 </div>
 
 <!-- Results Header -->
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <div class="d-flex align-items-center gap-2">
+<div class="habitations-results-header d-flex justify-content-between align-items-center mb-3">
+  <div class="d-flex align-items-center gap-2 flex-wrap">
     <div class="form-check mb-0">
       <input type="checkbox" class="form-check-input"
              id="bulkPublishMaster"
@@ -668,12 +698,14 @@
         Selecionar todos
       </label>
     </div>
+    <span class="small text-muted fw-semibold">
+      <span class="text-dark fw-bold"><%= @habitations.count %></span> de <%= Habitation.count %>
+    </span>
     <% if params[:q].present? || params[:status].present? || params[:categoria].present? || params[:scope].present? || active_extra_filters_count.positive? %>
-      <span class="text-muted fw-normal small">• Filtrando resultados...</span>
+      <span class="badge bg-warning-subtle text-warning border">Filtrando</span>
     <% end %>
   </div>
-  <div class="d-flex align-items-center gap-3">
-    <span class="small text-muted fw-semibold">Mostrando <span class="text-dark"><%= @habitations.count %></span> de <%= Habitation.count %> registros.</span>
+  <div class="habitations-results-actions d-flex align-items-center gap-3">
 
     <div class="dropdown" data-controller="dropdown">
       <button class="btn btn-white btn-sm border dropdown-toggle text-muted"
