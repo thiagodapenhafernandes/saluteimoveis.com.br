@@ -148,6 +148,9 @@ application.register("field-geolocation", FieldGeolocationController)
 import FieldCheckinController from "controllers/field/checkin_controller"
 application.register("field-checkin", FieldCheckinController)
 
+import FieldPingSenderController from "controllers/field/ping_sender_controller"
+application.register("field-ping-sender", FieldPingSenderController)
+
 import TagInputController from "controllers/tag_input_controller"
 application.register("tag-input", TagInputController)
 

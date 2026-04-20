@@ -40,6 +40,7 @@ gem "omniauth-rails_csrf_protection"
 # Performance & Caching
 gem "rack-cors"
 gem "rack-attack"
+gem "maxmind-db", "~> 1.2"
 gem "dalli"
 
 # SEO & Images

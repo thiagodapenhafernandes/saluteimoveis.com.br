@@ -11,6 +11,7 @@ module AntiFraud
       SUSPICIOUS_ACCURACY_STREAK = 3
       SUSPICIOUS_ACCURACY_THRESHOLD = 5
       FINGERPRINT_WINDOW = 24.hours
+      IP_MISMATCH_THRESHOLD_KM = 500.0
 
       def self.analyze_ping(ping)
         new(ping).analyze
@@ -28,6 +29,7 @@ module AntiFraud
         reasons << "impossible_speed" if impossible_speed?
         reasons << "suspicious_accuracy_streak" if suspicious_accuracy_streak?
         reasons << "duplicate_fingerprint" if duplicate_fingerprint?
+        reasons << "ip_geo_mismatch" if ip_geo_mismatch?
 
         { suspicious: reasons.any?, reasons: reasons }
       end
@@ -70,6 +72,19 @@ module AntiFraud
                .where.not(admin_user_id: @check_in.admin_user_id)
                .where("checked_in_at >= ?", FINGERPRINT_WINDOW.ago)
                .exists?
+      end
+
+      def ip_geo_mismatch?
+        return false if @ping.ip.blank? || @ping.latitude.nil? || @ping.longitude.nil?
+
+        geo = AntiFraud::GeoIpResolver.lookup(@ping.ip.to_s)
+        return false unless geo && geo[:latitude] && geo[:longitude]
+
+        distance_km = haversine_km(
+          @ping.latitude, @ping.longitude,
+          geo[:latitude], geo[:longitude]
+        )
+        distance_km > IP_MISMATCH_THRESHOLD_KM
       end
 
       def previous_ping

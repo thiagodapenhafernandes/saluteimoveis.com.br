@@ -75,6 +75,14 @@
   <% end %>
 </div>
 
+<% if @admin_user.active_check_in.present? %>
+  <!-- Ping sender: só ativa enquanto há check-in ativo -->
+  <div data-controller="field-ping-sender"
+       data-field-ping-sender-ping-url-value="<%= field_location_pings_path %>"
+       data-field-ping-sender-csrf-value="<%= form_authenticity_token %>"
+       data-field-ping-sender-interval-ms-value="90000"></div>
+<% end %>
+
 <!-- Botão de check-in (placeholder — ativa na Fase 3) -->
 <button class="btn btn-primary big-action-btn" disabled data-field-geolocation-target="checkinButton">
   <i class="bi bi-box-arrow-in-right me-2"></i>Fazer Check-in

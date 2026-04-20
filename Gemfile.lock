@@ -278,6 +278,7 @@ GEM
       net-pop
       net-smtp
     marcel (1.0.4)
+    maxmind-db (1.4.0)
     meta-tags (2.22.2)
       actionpack (>= 6.0.0, < 8.2)
     method_source (1.1.0)
@@ -595,6 +596,7 @@ DEPENDENCIES
   importmap-rails
   koala (~> 3.0)
   lograge
+  maxmind-db (~> 1.2)
   meta-tags
   mina
   mini_magick

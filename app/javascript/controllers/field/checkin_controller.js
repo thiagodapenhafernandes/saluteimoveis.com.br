@@ -42,6 +42,7 @@ export default class extends Controller {
       lat: position.latitude,
       lng: position.longitude,
       accuracy: position.accuracy,
+      fingerprint_hash: window.__fieldFingerprint || null,
       device_info: this.collectDeviceInfo()
     }
 

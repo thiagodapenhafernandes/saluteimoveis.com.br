@@ -13,7 +13,8 @@ module Field
         lng: params[:lng],
         accuracy: params[:accuracy],
         ip: request.remote_ip,
-        device_info: device_info_from_params
+        device_info: device_info_from_params,
+        fingerprint_hash: params[:fingerprint_hash].to_s.presence
       ).call
 
       if result[:success]

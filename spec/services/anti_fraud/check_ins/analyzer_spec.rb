@@ -51,6 +51,29 @@ RSpec.describe AntiFraud::CheckIns::Analyzer do
       expect(result[:reasons]).to include("suspicious_accuracy_streak")
     end
 
+    it "sinaliza IP geograficamente distante do ping (>500km)" do
+      ping = make_ping(lat: -26.9906, lng: -48.6348, recorded_at: Time.current)
+      ping.update!(ip: "8.8.8.8")
+
+      # Mock do resolver — IP mapeado a São Francisco (~10.000km de BC)
+      allow(AntiFraud::GeoIpResolver).to receive(:lookup).with("8.8.8.8").and_return(
+        latitude: 37.7749, longitude: -122.4194, city: "San Francisco", country: "US"
+      )
+
+      result = described_class.analyze_ping(ping.reload)
+      expect(result[:reasons]).to include("ip_geo_mismatch")
+    end
+
+    it "não sinaliza quando resolver retorna nil (base ausente)" do
+      ping = make_ping(lat: -26.9906, lng: -48.6348, recorded_at: Time.current)
+      ping.update!(ip: "8.8.8.8")
+
+      allow(AntiFraud::GeoIpResolver).to receive(:lookup).and_return(nil)
+
+      result = described_class.analyze_ping(ping.reload)
+      expect(result[:reasons]).not_to include("ip_geo_mismatch")
+    end
+
     it "sinaliza fingerprint duplicado entre admin_users" do
       other_user = create(:admin_user, :field_agent)
       create(:check_in,
