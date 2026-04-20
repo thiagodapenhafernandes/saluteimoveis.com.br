@@ -64,11 +64,33 @@ class Admin::DashboardController < Admin::BaseController
     @total_synced_count   = Habitation.where.not(last_sync_at: nil).count
     @last_syncs           = Habitation.where.not(last_sync_at: nil).order(last_sync_at: :desc).limit(5)
 
+    # ================= Atividades de hoje =================
+    beginning = Date.current.beginning_of_day
+    @today_captacoes       = Captacao.where(created_at: beginning..).count
+    @today_new_habitations = Habitation.where("COALESCE(data_atualizacao_crm, created_at) >= ?", beginning).count
+    @today_audit_events    = CheckinAuditLog.where(created_at: beginning..).count
+
+    # ================= Listas recentes =================
+    @recent_habitations = Habitation
+      .where.not(data_atualizacao_crm: nil)
+      .order(data_atualizacao_crm: :desc)
+      .limit(6)
+
+    @recent_captacoes = Captacao
+      .includes(:corretor)
+      .order(updated_at: :desc)
+      .limit(5)
+
+    @drafts_count = Captacao.draft.count
+
+    # ================= Distribuição por categoria =================
+    @habitations_by_category = Habitation.active.group(:categoria).count.sort_by { |_, v| -v }.first(6)
+
     # ================= Atividade recente =================
     @recent_audit_logs = CheckinAuditLog
       .includes(:admin_user, :actor_admin_user)
       .order(created_at: :desc)
-      .limit(8)
+      .limit(6)
     @recent_leads = Lead.order(created_at: :desc).limit(6)
   end
 
