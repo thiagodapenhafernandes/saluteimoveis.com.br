@@ -38,12 +38,19 @@ module Dwv
         raise "Payload DWV incompleto para novo cadastro (id=#{dwv_id})."
       end
 
+      mapped_status = map_status(value(["status"], ["property_status"]))
+      next_sale_cents = to_cents(value(["price"], ["sale_price"], ["valor_venda"], ["unit", "price"]))
+      next_rent_cents = to_cents(value(["rent_price"], ["valor_locacao"], ["unit", "rent"]))
+      effective_sale = next_sale_cents || habitation.valor_venda_cents
+      effective_rent = next_rent_cents || habitation.valor_locacao_cents
+      inferred_status = mapped_status || infer_status_from_prices(effective_sale, effective_rent)
+
       habitation.assign_attributes(
         codigo_dwv: dwv_id,
         imovel_dwv: "Sim",
-        status: map_status(value(["status"], ["property_status"])) || habitation.status,
-        valor_venda_cents: to_cents(value(["price"], ["sale_price"], ["valor_venda"], ["unit", "price"])) || habitation.valor_venda_cents,
-        valor_locacao_cents: to_cents(value(["rent_price"], ["valor_locacao"], ["unit", "rent"])) || habitation.valor_locacao_cents,
+        status: inferred_status || habitation.status,
+        valor_venda_cents: effective_sale,
+        valor_locacao_cents: effective_rent,
         exibir_no_site_flag: active_on_site?
       )
 
@@ -175,10 +182,20 @@ module Dwv
       value = raw.to_s.strip.downcase
       return nil if value.blank?
       return "Venda" if value.include?("sale") || value.include?("venda")
-      return "Locação" if value.include?("rent") || value.include?("loca") || value.include?("alug")
+      return "Aluguel" if value.include?("rent") || value.include?("loca") || value.include?("alug")
       return "Suspenso" if value.include?("inactive") || value.include?("inativo")
+      # "active" sozinho não diz se é venda ou aluguel — quem chama infere pelo preço.
+      return nil if value == "active"
 
-      value.titleize
+      Habitation.normalize_status(raw)
+    end
+
+    # Quando o DWV retorna apenas "active" (sem indicar venda/aluguel),
+    # inferimos pelo preço informado no payload.
+    def infer_status_from_prices(sale_cents, rent_cents)
+      return "Venda"   if sale_cents.to_i.positive?
+      return "Aluguel" if rent_cents.to_i.positive?
+      nil
     end
 
     def map_situation(raw)
