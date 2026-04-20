@@ -1,4 +1,5 @@
 class Admin::FieldSettingsController < Admin::BaseController
+  before_action -> { check_permission!(:manage, :field_settings) }
   def edit
     @enabled = FieldFeatureGate.field_checkin_enabled?
   end

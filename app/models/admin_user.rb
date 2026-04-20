@@ -39,6 +39,16 @@ class AdminUser < ApplicationRecord
     profile.can?(action, resource)
   end
 
+  # "own" — só os próprios registros / "all" — tudo
+  def scope_for(resource)
+    return "all" if admin?
+    profile&.scope_for(resource) || "own"
+  end
+
+  def owns_all?(resource)
+    scope_for(resource) == "all"
+  end
+
   def subordinate_ids
     @subordinate_ids ||= [id] + subordinates.pluck(:id)
   end

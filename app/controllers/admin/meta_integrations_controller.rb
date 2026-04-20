@@ -1,4 +1,5 @@
 class Admin::MetaIntegrationsController < Admin::BaseController
+  before_action -> { check_permission!(:manage, :integracoes) }
   before_action :set_integration
   before_action :set_page, only: [:list_forms]
 

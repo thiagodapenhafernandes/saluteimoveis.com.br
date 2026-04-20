@@ -1,5 +1,7 @@
 class Admin::LeadsController < Admin::BaseController
+  before_action -> { check_permission!(:view, :leads) }
   before_action :set_lead, only: [:show, :update, :destroy]
+  before_action :authorize_lead_access!, only: [:show, :update, :destroy]
   before_action :load_origin_options, only: [:index, :show, :update]
 
   def index
@@ -7,7 +9,8 @@ class Admin::LeadsController < Admin::BaseController
     @status = params[:status]
     @origin = params[:origin]
 
-    @leads = Lead.order(created_at: :desc)
+    @leads = owns_all_resource?(:leads) ? Lead.all : Lead.where(admin_user_id: current_admin_user.id)
+    @leads = @leads.order(created_at: :desc)
     
     if @q.present?
       @leads = @leads.where("name ILIKE :q OR email ILIKE :q OR phone ILIKE :q OR origin ILIKE :q", q: "%#{@q}%")
@@ -42,6 +45,12 @@ class Admin::LeadsController < Admin::BaseController
 
   def set_lead
     @lead = Lead.find(params[:id])
+  end
+
+  def authorize_lead_access!
+    return if owns_all_resource?(:leads)
+    return if @lead.admin_user_id == current_admin_user.id
+    redirect_to admin_leads_path, alert: "Você não tem acesso a este lead."
   end
 
   def lead_params

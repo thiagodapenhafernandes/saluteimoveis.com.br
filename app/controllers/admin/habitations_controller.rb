@@ -1,4 +1,6 @@
 class Admin::HabitationsController < Admin::BaseController
+  before_action -> { check_permission!(:view, :imoveis) }
+  before_action :scope_habitations_by_permission, only: [:show, :edit, :update, :destroy, :sync, :purge_attachment]
   require "csv"
 
   REPORT_TYPES = {
@@ -329,6 +331,15 @@ class Admin::HabitationsController < Admin::BaseController
 
   private
 
+  def scope_habitations_by_permission
+    return if owns_all_resource?(:imoveis)
+    id = (params[:id] || params[:habitation_id]).to_i
+    return if id.zero?
+    unless Habitation.where(id: id, admin_user_id: current_admin_user.id).exists?
+      redirect_to admin_habitations_path, alert: "Você não tem acesso a este imóvel."
+    end
+  end
+
   def sort_column
     Habitation.column_names.include?(params[:sort]) ? params[:sort] : "data_cadastro_crm"
   end
@@ -523,6 +534,7 @@ class Admin::HabitationsController < Admin::BaseController
 
   def filtered_habitations_scope
     scope = Habitation.left_outer_joins(:address)
+    scope = scope.where(admin_user_id: current_admin_user.id) unless owns_all_resource?(:imoveis)
 
     if @q.present?
       scope = scope.where(

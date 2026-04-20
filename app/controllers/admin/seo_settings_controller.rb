@@ -1,4 +1,5 @@
 class Admin::SeoSettingsController < Admin::BaseController
+  before_action -> { check_permission!(:manage, :marketing) }
   before_action :set_seo_setting, only: [:edit, :update, :destroy]
 
   def index

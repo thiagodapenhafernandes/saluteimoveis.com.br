@@ -1,4 +1,5 @@
 class Admin::DistributionRulesController < Admin::BaseController
+  before_action -> { check_permission!(:manage, :distribution_rules) }
   before_action :set_rule, only: [:show, :edit, :update, :destroy, :toggle_active]
   before_action :load_meta_options, only: [:new, :create, :edit, :update]
   before_action :load_team_structure, only: [:new, :create, :edit, :update]

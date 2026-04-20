@@ -1,4 +1,5 @@
 class Admin::ContactSettingsController < Admin::BaseController
+  before_action -> { check_permission!(:manage, :marketing) }
   before_action :set_contact_setting
 
   def edit

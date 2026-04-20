@@ -54,6 +54,33 @@ body.admin-layout {
   gap: 12px;
 }
 
+.admin-navbar-toggle {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #374151;
+  padding: 4px 10px;
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+.admin-navbar-user-name {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.admin-sidebar-offcanvas {
+  width: 280px !important;
+}
+.admin-sidebar-offcanvas .admin-sidebar,
+.admin-sidebar-offcanvas .sidebar-menu {
+  width: 100%;
+  position: static;
+  height: auto;
+  border: none;
+  padding: 0;
+}
+
 .admin-container {
   display: flex;
   margin-top: 64px;
@@ -827,4 +854,86 @@ i.spin {
 
 .cursor-pointer {
   cursor: pointer;
+}
+
+/* ==================== RESPONSIVO MOBILE ==================== */
+@media (max-width: 767.98px) {
+  .admin-navbar {
+    padding: 8px 12px;
+  }
+  .admin-navbar-brand {
+    font-size: 16px;
+  }
+  .admin-navbar-brand-text {
+    display: none;
+  }
+  .admin-navbar-logout {
+    padding: 4px 8px;
+  }
+
+  .admin-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding: 0.875rem 0.75rem 2rem;
+  }
+
+  /* Hero do dashboard empilha */
+  .dash-hero,
+  .capt-dash-hero {
+    padding: 1rem 1rem !important;
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 0.75rem !important;
+  }
+  .dash-hero h2,
+  .capt-dash-hero h2 {
+    font-size: 1.35rem !important;
+  }
+  .dash-hero .d-flex,
+  .capt-dash-hero .d-flex {
+    flex-wrap: wrap;
+  }
+
+  /* KPI cards mais compactos */
+  .dash-kpi .kpi-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    font-size: 1rem;
+  }
+  .dash-kpi h3 {
+    font-size: 1.5rem;
+  }
+
+  /* Cards gerais: menos padding */
+  .card-body {
+    padding: 1rem;
+  }
+
+  /* Tabelas horizontalmente roláveis */
+  .table-responsive {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Form action bottom buttons viram stack */
+  .btn-group-actions,
+  .form-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  /* Filtros em linha viram empilhados */
+  .admin-filters .row {
+    row-gap: 0.5rem;
+  }
+}
+
+/* Small touch-up no tablet pra ajustar sidebar */
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .admin-sidebar {
+    width: 220px;
+  }
+  .admin-content {
+    margin-left: 220px;
+    width: calc(100% - 220px);
+  }
 }

@@ -1,4 +1,5 @@
 class Admin::HomeSettingsController < Admin::BaseController
+  before_action -> { check_permission!(:manage, :marketing) }
   before_action :set_home_setting
   
   def edit

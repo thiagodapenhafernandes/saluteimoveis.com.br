@@ -55,29 +55,44 @@
   <body class="admin-layout">
     <!-- Navbar -->
     <nav class="admin-navbar">
+      <button type="button" class="admin-navbar-toggle d-md-none" data-bs-toggle="offcanvas" data-bs-target="#adminSidebarOffcanvas" aria-label="Abrir menu">
+        <i class="bi bi-list"></i>
+      </button>
       <a href="/admin" class="admin-navbar-brand">
-        <i class="bi bi-speedometer2"></i> <%= @layout_setting&.site_name.presence || 'Salute' %> Admin
+        <i class="bi bi-speedometer2"></i>
+        <span class="admin-navbar-brand-text"><%= @layout_setting&.site_name.presence || 'Salute' %> Admin</span>
       </a>
       <div class="admin-navbar-user">
-        <span style="font-size: 14px; color: #6b7280;">
-          <i class="bi bi-person-circle"></i> <%= current_admin_user&.name || current_admin_user&.email %>
+        <span class="admin-navbar-user-name d-none d-sm-inline">
+          <i class="bi bi-person-circle"></i> <%= current_admin_user&.name.to_s.split.first || current_admin_user&.email %>
         </span>
-        <%= link_to destroy_admin_user_session_path, data: { turbo_method: :delete }, class: "btn btn-sm btn-outline-danger", style: "font-size: 13px;" do %>
-          <i class="bi bi-box-arrow-right"></i> Sair
+        <%= link_to destroy_admin_user_session_path, data: { turbo_method: :delete }, class: "btn btn-sm btn-outline-danger admin-navbar-logout" do %>
+          <i class="bi bi-box-arrow-right"></i><span class="d-none d-sm-inline ms-1">Sair</span>
         <% end %>
       </div>
     </nav>
-    
-    <div class="admin-container">
-      <!-- Sidebar -->
+
+    <!-- Sidebar desktop (>= md) -->
+    <aside class="admin-sidebar d-none d-md-block">
       <%= render 'admin/shared/sidebar' %>
-      
-      <!-- Content -->
-      <main class="admin-content">
-        <%= render 'shared/flash_messages' if flash.any? %>
-        <%= yield %>
-      </main>
+    </aside>
+
+    <!-- Sidebar mobile (offcanvas, < md) -->
+    <div class="offcanvas offcanvas-start admin-sidebar-offcanvas d-md-none" tabindex="-1" id="adminSidebarOffcanvas">
+      <div class="offcanvas-header border-bottom">
+        <span class="fw-bold text-primary"><i class="bi bi-speedometer2 me-1"></i>Menu</span>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Fechar"></button>
+      </div>
+      <div class="offcanvas-body p-0">
+        <%= render 'admin/shared/sidebar' %>
+      </div>
     </div>
+
+    <!-- Content -->
+    <main class="admin-content">
+      <%= render 'shared/flash_messages' if flash.any? %>
+      <%= yield %>
+    </main>
     
     <script>
       if ('serviceWorker' in navigator) {

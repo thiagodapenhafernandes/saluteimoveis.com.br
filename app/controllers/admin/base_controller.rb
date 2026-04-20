@@ -18,11 +18,23 @@ class Admin::BaseController < ApplicationController
 
   def check_permission!(action, resource)
     unless current_admin_user&.can?(action, resource)
-      redirect_to admin_root_path, alert: 'Você não tem permissão para acessar esta área.'
+      respond_to do |format|
+        format.html { redirect_to admin_root_path, alert: "Você não tem permissão para acessar esta área." }
+        format.json { render json: { error: "forbidden" }, status: :forbidden }
+      end
     end
   end
 
-  helper_method :can?
+  # Retorna scope do usuário para o recurso ("own" ou "all").
+  def scope_for_resource(resource)
+    current_admin_user&.scope_for(resource) || "own"
+  end
+
+  def owns_all_resource?(resource)
+    current_admin_user&.owns_all?(resource)
+  end
+
+  helper_method :can?, :scope_for_resource, :owns_all_resource?
 
   def can?(action, resource)
     current_admin_user&.can?(action, resource)

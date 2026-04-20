@@ -1,4 +1,5 @@
 class Admin::WebhookSettingsController < Admin::BaseController
+  before_action -> { check_permission!(:manage, :integracoes) }
   before_action :set_webhook_setting, only: [:edit, :update, :destroy, :test]
 
   def index

@@ -1,5 +1,6 @@
 module Admin
   class ProfilesController < BaseController
+    before_action :require_admin!
     before_action :set_profile, only: %i[show edit update destroy]
 
     def index
@@ -10,7 +11,7 @@ module Admin
     end
 
     def new
-      @profile = Profile.new
+      @profile = Profile.new(active: true, permissions: default_permissions)
     end
 
     def edit
@@ -19,23 +20,27 @@ module Admin
     def create
       @profile = Profile.new(profile_params)
       if @profile.save
-        redirect_to admin_profiles_path, notice: 'Perfil criado com sucesso.'
+        redirect_to edit_admin_profile_path(@profile), notice: "Perfil criado. Configure as permissões."
       else
         render :new, status: :unprocessable_entity
       end
     end
 
     def update
-      if @profile.update(profile_params)
-        redirect_to admin_profiles_path, notice: 'Perfil atualizado com sucesso.'
+      if @profile.update(profile_params_with_permissions)
+        redirect_to admin_profiles_path, notice: "Perfil e permissões atualizados."
       else
         render :edit, status: :unprocessable_entity
       end
     end
 
     def destroy
-      @profile.destroy
-      redirect_to admin_profiles_path, notice: 'Perfil excluído com sucesso.'
+      if @profile.admin_users.any?
+        redirect_to admin_profiles_path, alert: "Não é possível excluir: há corretores vinculados a este perfil."
+      else
+        @profile.destroy
+        redirect_to admin_profiles_path, notice: "Perfil excluído."
+      end
     end
 
     private
@@ -45,7 +50,51 @@ module Admin
     end
 
     def profile_params
-      params.require(:profile).permit(:name, :active, permissions: {})
+      params.require(:profile).permit(:name, :active)
+    end
+
+    # Normaliza a entrada da matriz de checkboxes no permissions JSONB.
+    # Estrutura esperada:
+    #   params[:profile][:permissions][:admin] = "1" | "0"
+    #   params[:profile][:permissions][:imoveis][:view] = "1"
+    #   params[:profile][:permissions][:imoveis][:scope] = "own" | "all"
+    def profile_params_with_permissions
+      base = profile_params
+
+      raw = params.dig(:profile, :permissions) || {}
+      perms = {}
+
+      perms["admin"] = truthy?(raw[:admin])
+
+      Profile::RESOURCES.each do |res|
+        key = res[:key]
+        entry = raw[key] || {}
+        res_perms = {}
+        res[:actions].each do |action|
+          res_perms[action] = truthy?(entry[action])
+        end
+        res_perms["scope"] = entry[:scope].presence_in(%w[own all]) if res[:scopeable]
+        perms[key] = res_perms
+      end
+
+      base.merge(permissions: perms)
+    end
+
+    def truthy?(value)
+      value.to_s.in?(%w[1 true on yes])
+    end
+
+    def default_permissions
+      # Corretor comum: view+manage em leads, captacoes, imoveis com scope "own";
+      # view nos dashboards. Nada mais.
+      {
+        "admin" => false,
+        "dashboard"          => { "view"    => true },
+        "imoveis"            => { "view"    => true, "manage" => false, "scope" => "own" },
+        "leads"              => { "view"    => true, "manage" => true,  "scope" => "own" },
+        "captacoes"          => { "view"    => true, "manage" => true,  "publish" => false, "scope" => "own" },
+        "captacao_dashboard" => { "view"    => true }
+      }
     end
   end
 end

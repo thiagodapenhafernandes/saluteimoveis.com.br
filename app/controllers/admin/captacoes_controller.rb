@@ -1,5 +1,6 @@
 module Admin
   class CaptacoesController < Admin::BaseController
+    before_action -> { check_permission!(:view, :captacoes) }
     before_action :set_captacao, only: [:edit, :update, :show, :destroy, :publish]
     before_action :authorize_access!, only: [:edit, :update, :show, :destroy, :publish]
 
@@ -12,7 +13,7 @@ module Admin
 
       scope = Captacao.done.where(submitted_at: @period_start.beginning_of_day..@period_end.end_of_day)
       scope = scope.where("EXTRACT(MONTH FROM submitted_at) = ?", @month_filter.to_i) if @month_filter.present?
-      scope = scope.where(corretor_id: current_admin_user.id) unless current_admin_user.admin?
+      scope = scope.where(corretor_id: current_admin_user.id) unless owns_all_resource?(:captacoes)
 
       @total_venda   = scope.venda_type.count
       @total_locacao = scope.locacao_type.count
@@ -165,17 +166,13 @@ module Admin
     end
 
     def authorize_access!
-      return if current_admin_user.admin?
+      return if owns_all_resource?(:captacoes)
       return if @captacao.corretor_id == current_admin_user.id
       redirect_to admin_captacoes_path, alert: "Você não tem acesso a esta captação."
     end
 
     def scoped_captacoes
-      if current_admin_user.admin?
-        Captacao.all
-      else
-        Captacao.where(corretor: current_admin_user)
-      end
+      owns_all_resource?(:captacoes) ? Captacao.all : Captacao.where(corretor: current_admin_user)
     end
 
     def resolve_layout

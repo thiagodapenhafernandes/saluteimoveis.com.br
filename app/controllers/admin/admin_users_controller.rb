@@ -1,5 +1,6 @@
 module Admin
   class AdminUsersController < BaseController
+    before_action -> { check_permission!(:manage, :corretores) }
     before_action :set_admin_user, only: %i[show edit update destroy]
 
     def sync_from_vista

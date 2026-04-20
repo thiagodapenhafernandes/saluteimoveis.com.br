@@ -1,5 +1,6 @@
 module Admin
   class AttributeOptionsController < Admin::BaseController
+    before_action -> { check_permission!(:manage, :catalogos) }
     before_action :set_attribute_option, only: [:update, :destroy]
 
     def index
