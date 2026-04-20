@@ -162,7 +162,9 @@
             <h5 class="fw-bold mb-0"><i class="bi bi-graph-up-arrow text-primary me-2"></i>Leads — últimos 30 dias</h5>
             <span class="badge bg-primary-subtle text-primary"><%= @leads_last_30_days %> total</span>
           </div>
-          <canvas id="leadsChart" style="height: 260px;"></canvas>
+          <div class="chart-container" style="position: relative; height: 280px; width: 100%;">
+            <canvas id="leadsChart"></canvas>
+          </div>
         </div>
       </div>
     </div>
@@ -171,7 +173,9 @@
       <div class="card dash-section-card h-100">
         <div class="card-body">
           <h5 class="fw-bold mb-3"><i class="bi bi-pie-chart-fill text-success me-2"></i>Leads por status</h5>
-          <canvas id="leadsStatusChart" style="height: 260px;"></canvas>
+          <div class="chart-container" style="position: relative; height: 280px; width: 100%;">
+            <canvas id="leadsStatusChart"></canvas>
+          </div>
         </div>
       </div>
     </div>
@@ -382,8 +386,15 @@
 <!-- Chart.js via CDN -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
-  (function() {
-    // Gráfico de linha — leads por dia (últimos 30 dias)
+  // Guarda referências das instâncias na janela para destruir antes de recriar
+  // em navegação Turbo (senão cada visita duplica listeners de resize e o
+  // chart cresce sem parar).
+  window.__dashCharts = window.__dashCharts || {};
+
+  function renderDashCharts() {
+    if (!window.Chart) return;
+
+    // === Leads por dia ===
     const leadsPerDay = <%= raw @leads_per_day.to_json %>;
     const labels = leadsPerDay.map(([d, _]) => {
       const date = new Date(d);
@@ -392,11 +403,12 @@
     const values = leadsPerDay.map(([_, c]) => c);
 
     const ctx = document.getElementById('leadsChart');
-    if (ctx && window.Chart) {
-      new Chart(ctx, {
+    if (ctx) {
+      if (window.__dashCharts.leads) { window.__dashCharts.leads.destroy(); }
+      window.__dashCharts.leads = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: labels,
+          labels,
           datasets: [{
             label: 'Leads',
             data: values,
@@ -413,6 +425,8 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          resizeDelay: 150,
+          animation: { duration: 300 },
           plugins: {
             legend: { display: false },
             tooltip: { mode: 'index', intersect: false }
@@ -425,15 +439,16 @@
       });
     }
 
-    // Doughnut — leads por status
+    // === Leads por status ===
     const leadsByStatus = <%= raw @leads_by_status.to_json %>;
     const statusLabels = Object.keys(leadsByStatus).map(s => (s || 'sem status').toString().replace(/_/g, ' '));
     const statusValues = Object.values(leadsByStatus);
     const palette = ['#0d6efd', '#198754', '#ffc107', '#fd7e14', '#6f42c1', '#dc3545', '#6c757d', '#20c997'];
 
     const ctx2 = document.getElementById('leadsStatusChart');
-    if (ctx2 && window.Chart) {
-      new Chart(ctx2, {
+    if (ctx2) {
+      if (window.__dashCharts.status) { window.__dashCharts.status.destroy(); }
+      window.__dashCharts.status = new Chart(ctx2, {
         type: 'doughnut',
         data: {
           labels: statusLabels,
@@ -447,6 +462,8 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          resizeDelay: 150,
+          animation: { duration: 300 },
           cutout: '60%',
           plugins: {
             legend: {
@@ -457,5 +474,16 @@
         }
       });
     }
-  })();
+  }
+
+  function destroyDashCharts() {
+    Object.values(window.__dashCharts).forEach(c => { try { c.destroy(); } catch (e) {} });
+    window.__dashCharts = {};
+  }
+
+  document.addEventListener('turbo:load', renderDashCharts);
+  document.addEventListener('turbo:before-cache', destroyDashCharts);
+  // Fallback caso Turbo não esteja ativo na rota:
+  if (document.readyState === 'complete') { renderDashCharts(); }
+  else { window.addEventListener('load', renderDashCharts, { once: true }); }
 </script>
