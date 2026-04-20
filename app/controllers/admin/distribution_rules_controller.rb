@@ -111,7 +111,7 @@ class Admin::DistributionRulesController < Admin::BaseController
       :min_price, :max_price,
       :notify_whatsapp, :notify_email, :notify_webhook,
       :webhook_url,
-      :require_active_checkin, :require_inside_radius, :exclude_suspicious_checkins, :checkin_store_id,
+      :require_active_checkin, :require_inside_radius, :require_active_shift, :exclude_suspicious_checkins, :checkin_store_id,
       admin_user_ids: [],
       meta_forms: [],
       meta_page_ids: [],

@@ -1,4 +1,4 @@
-\restrict k8Unq82ApyDbPLlZmmI9Eu1769fId0bUAmErIVbw2pGcetbqlsItS9Tji10WjBd
+\restrict VARdzrR8E0UzCMOFfQv08Lc3vNUxGPNOcFKTLqviFFW3ZLr67orQ2M4tfbworna
 
 -- Dumped from database version 18.3 (Homebrew)
 -- Dumped by pg_dump version 18.3 (Homebrew)
@@ -592,7 +592,8 @@ CREATE TABLE public.distribution_rules (
     require_active_checkin boolean DEFAULT false NOT NULL,
     require_inside_radius boolean DEFAULT false NOT NULL,
     exclude_suspicious_checkins boolean DEFAULT true NOT NULL,
-    checkin_store_id bigint
+    checkin_store_id bigint,
+    require_active_shift boolean DEFAULT false NOT NULL
 );
 
 
@@ -4854,11 +4855,12 @@ ALTER TABLE ONLY public.store_shifts
 -- PostgreSQL database dump complete
 --
 
-\unrestrict k8Unq82ApyDbPLlZmmI9Eu1769fId0bUAmErIVbw2pGcetbqlsItS9Tji10WjBd
+\unrestrict VARdzrR8E0UzCMOFfQv08Lc3vNUxGPNOcFKTLqviFFW3ZLr67orQ2M4tfbworna
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260420180000'),
 ('20260420170000'),
 ('20260420160000'),
 ('20260420150000'),

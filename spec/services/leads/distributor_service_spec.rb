@@ -90,5 +90,83 @@ RSpec.describe Leads::DistributorService do
 
       expect(rule.candidates_filtered_by_checkin.pluck(:id)).to eq([dra1.id])
     end
+
+    context "require_inside_radius" do
+      it "exclui check-ins com out_of_radius_since setado" do
+        # O check-in de agent_with_checkin saiu do raio (ainda não foi auto-checkout)
+        agent_with_checkin.active_check_in.update_column(:out_of_radius_since, 30.seconds.ago)
+        rule = create(:distribution_rule, require_active_checkin: true, require_inside_radius: true)
+        create(:distribution_rule_agent, distribution_rule: rule, admin_user: agent_with_checkin)
+
+        expect(rule.candidates_filtered_by_checkin).to be_empty
+      end
+
+      it "inclui check-ins sem saída de raio registrada" do
+        rule = create(:distribution_rule, require_active_checkin: true, require_inside_radius: true)
+        dra = create(:distribution_rule_agent, distribution_rule: rule, admin_user: agent_with_checkin)
+
+        expect(rule.candidates_filtered_by_checkin.pluck(:id)).to eq([dra.id])
+      end
+    end
+
+    context "require_active_shift" do
+      let(:today_wday) { Time.current.in_time_zone("America/Sao_Paulo").wday }
+
+      it "inclui quando turno vinculado está ativo agora" do
+        shift = create(:store_shift,
+                       admin_user: agent_with_checkin,
+                       store: store,
+                       day_of_week: today_wday,
+                       start_time: 1.hour.ago.strftime("%H:%M"),
+                       end_time: 2.hours.from_now.strftime("%H:%M"))
+        agent_with_checkin.active_check_in.update!(store_shift: shift)
+
+        rule = create(:distribution_rule, require_active_checkin: true, require_active_shift: true)
+        dra = create(:distribution_rule_agent, distribution_rule: rule, admin_user: agent_with_checkin)
+
+        expect(rule.candidates_filtered_by_checkin.pluck(:id)).to eq([dra.id])
+      end
+
+      it "exclui quando turno vinculado já terminou (janela até auto_checkout_after_minutes)" do
+        # Turno começou há 3h e terminou há 1h, mas auto-checkout cron só fechou em até 60min
+        shift = create(:store_shift,
+                       admin_user: agent_with_checkin,
+                       store: store,
+                       day_of_week: today_wday,
+                       start_time: 3.hours.ago.strftime("%H:%M"),
+                       end_time: 1.hour.ago.strftime("%H:%M"))
+        agent_with_checkin.active_check_in.update!(store_shift: shift)
+
+        rule = create(:distribution_rule, require_active_checkin: true, require_active_shift: true)
+        create(:distribution_rule_agent, distribution_rule: rule, admin_user: agent_with_checkin)
+
+        expect(rule.candidates_filtered_by_checkin).to be_empty
+      end
+
+      it "para check-in manual (sem store_shift), busca turno ativo do corretor na loja" do
+        # Check-in manual → store_shift_id = nil
+        agent_with_checkin.active_check_in.update!(store_shift: nil)
+        create(:store_shift,
+               admin_user: agent_with_checkin,
+               store: store,
+               day_of_week: today_wday,
+               start_time: 1.hour.ago.strftime("%H:%M"),
+               end_time: 2.hours.from_now.strftime("%H:%M"))
+
+        rule = create(:distribution_rule, require_active_checkin: true, require_active_shift: true)
+        dra = create(:distribution_rule_agent, distribution_rule: rule, admin_user: agent_with_checkin)
+
+        expect(rule.candidates_filtered_by_checkin.pluck(:id)).to eq([dra.id])
+      end
+
+      it "exclui manual sem nenhum turno ativo agora" do
+        agent_with_checkin.active_check_in.update!(store_shift: nil)
+        # Sem nenhum store_shift criado → nenhum turno ativo
+        rule = create(:distribution_rule, require_active_checkin: true, require_active_shift: true)
+        create(:distribution_rule_agent, distribution_rule: rule, admin_user: agent_with_checkin)
+
+        expect(rule.candidates_filtered_by_checkin).to be_empty
+      end
+    end
   end
 end

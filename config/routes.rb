@@ -95,6 +95,9 @@ Rails.application.routes.draw do
     # === Lojas físicas (módulo field) ===
     resources :stores
 
+    # === Field settings (toggle da feature flag) ===
+    resource :field_settings, only: [:edit, :update]
+
     # === Field (check-in geolocalizado de corretores) ===
     namespace :field do
       resources :check_ins, only: [:index, :show] do

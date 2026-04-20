@@ -31,15 +31,28 @@ class DistributionRule < ApplicationRecord
 
   # Filtra candidatos pelas regras de check-in geolocalizado (Fase 5).
   # Com flags default false, retorna a relation original (retrocompatibilidade total).
+  #
+  # Flags aplicadas (em cascata):
+  #   require_active_checkin      — precisa ter CheckIn com status=active
+  #   checkin_store_id (opcional) — restringe à loja específica
+  #   exclude_suspicious_checkins — pula check-ins flaggeados pelo antifraude
+  #   require_inside_radius       — precisa estar dentro do raio AGORA
+  #                                 (out_of_radius_since IS NULL)
+  #   require_active_shift        — turno vinculado ao check-in precisa estar ativo
+  #                                 AGORA; se check-in manual sem turno, exige um
+  #                                 turno ativo do corretor naquela loja.
   def candidates_filtered_by_checkin
     return distribution_rule_agents unless require_active_checkin?
 
-    active_checkin_scope = CheckIn.where(status: :active)
-    active_checkin_scope = active_checkin_scope.where(store_id: checkin_store_id) if checkin_store_id.present?
-    active_checkin_scope = active_checkin_scope.where(suspicious: false) if exclude_suspicious_checkins?
+    scope = CheckIn.where(status: :active)
+    scope = scope.where(store_id: checkin_store_id) if checkin_store_id.present?
+    scope = scope.where(suspicious: false) if exclude_suspicious_checkins?
+    scope = scope.where(out_of_radius_since: nil) if require_inside_radius?
 
-    user_ids_with_checkin = active_checkin_scope.pluck(:admin_user_id)
-    distribution_rule_agents.where(admin_user_id: user_ids_with_checkin)
+    scope = scope.includes(:store_shift, :admin_user)
+
+    eligible_user_ids = scope.select { |ci| shift_ok?(ci) }.map(&:admin_user_id)
+    distribution_rule_agents.where(admin_user_id: eligible_user_ids)
   end
 
   def rotate_queue!(just_served_admin_user_id)
@@ -67,6 +80,21 @@ class DistributionRule < ApplicationRecord
     self.custom_filters ||= []
     self.meta_forms ||= []
     ensure_full_schedule
+  end
+
+  def shift_ok?(check_in)
+    return true unless require_active_shift?
+
+    if check_in.store_shift_id.present?
+      check_in.store_shift&.active_at?(Time.current)
+    else
+      # Check-in manual (sem turno vinculado) — busca qualquer turno ativo
+      # do corretor naquela loja, dia e horário atuais.
+      now_store_tz = Time.current.in_time_zone(check_in.store.timezone_obj)
+      check_in.admin_user.store_shifts
+              .where(store_id: check_in.store_id, active: true, day_of_week: now_store_tz.wday)
+              .any? { |s| s.active_at?(Time.current) }
+    end
   end
 
   def max_price_greater_than_min_price

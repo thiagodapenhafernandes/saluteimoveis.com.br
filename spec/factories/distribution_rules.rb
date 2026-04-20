@@ -12,6 +12,7 @@ FactoryBot.define do
     represamento_active { false }
     require_active_checkin { false }
     require_inside_radius { false }
+    require_active_shift { false }
     exclude_suspicious_checkins { true }
   end
 

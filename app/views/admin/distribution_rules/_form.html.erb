@@ -334,7 +334,12 @@
 
           <div class="form-check form-switch mb-2">
             <%= f.check_box :require_inside_radius, class: "form-check-input" %>
-            <%= f.label :require_inside_radius, "Exigir corretor dentro do raio da loja", class: "form-check-label small" %>
+            <%= f.label :require_inside_radius, "Exigir corretor dentro do raio da loja agora", class: "form-check-label small" %>
+          </div>
+
+          <div class="form-check form-switch mb-2">
+            <%= f.check_box :require_active_shift, class: "form-check-input" %>
+            <%= f.label :require_active_shift, "Exigir turno ativo no momento", class: "form-check-label small" %>
           </div>
 
           <div class="form-check form-switch mb-3">
