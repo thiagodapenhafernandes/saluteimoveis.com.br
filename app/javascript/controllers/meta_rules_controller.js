@@ -11,9 +11,20 @@ export default class extends Controller {
     this.initFormSelect()
   }
 
+  disconnect() {
+    if (this.formSelectInstance && this.formSelectInstance.destroy) {
+      try { this.formSelectInstance.destroy() } catch (e) {}
+    }
+    this.formSelectInstance = null
+  }
+
   initFormSelect() {
     if (!this.hasFormSelectTarget) return
     if (this.formSelectInstance) return
+    if (this.formSelectTarget.tomselect) {
+      this.formSelectInstance = this.formSelectTarget.tomselect
+      return
+    }
 
     this.formSelectInstance = new TomSelect(this.formSelectTarget, {
       plugins: ['remove_button'],

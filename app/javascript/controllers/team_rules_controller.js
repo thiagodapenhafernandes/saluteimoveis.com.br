@@ -14,9 +14,21 @@ export default class extends Controller {
     this.initAgentSelect()
   }
 
+  disconnect() {
+    if (this.agentSelectInstance && this.agentSelectInstance.destroy) {
+      try { this.agentSelectInstance.destroy() } catch (e) {}
+    }
+    this.agentSelectInstance = null
+  }
+
   initAgentSelect() {
     if (!this.hasAgentSelectTarget) return
     if (this.agentSelectInstance) return
+    // Elemento pode já ter TomSelect (ex: Turbo restaurando página cacheada)
+    if (this.agentSelectTarget.tomselect) {
+      this.agentSelectInstance = this.agentSelectTarget.tomselect
+      return
+    }
 
     this.agentSelectInstance = new TomSelect(this.agentSelectTarget, {
       plugins: ['remove_button'],
