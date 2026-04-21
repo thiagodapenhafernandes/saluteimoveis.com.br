@@ -20,7 +20,16 @@
       </li>
     <% end %>
 
-    <!-- 3. Leads -->
+    <!-- 3. Proprietários -->
+    <% if can?(:view, :proprietarios) %>
+      <li class="sidebar-menu-item">
+        <%= link_to admin_proprietors_path, class: controller_name == 'proprietors' ? 'active' : '' do %>
+          <i class="bi bi-person-vcard"></i><span>Proprietários</span>
+        <% end %>
+      </li>
+    <% end %>
+
+    <!-- 4. Leads -->
     <% if can?(:view, :leads) %>
       <li class="sidebar-menu-item">
         <%= link_to admin_leads_path, class: controller_name == 'leads' ? 'active' : '' do %>
@@ -60,15 +69,6 @@
       <li class="sidebar-menu-item">
         <%= link_to dashboard_admin_captacoes_path, class: (controller_name == 'captacoes' && action_name == 'dashboard') ? 'active' : '' do %>
           <i class="bi bi-bullseye"></i><span>Dashboard Captação</span>
-        <% end %>
-      </li>
-    <% end %>
-
-    <!-- Proprietários -->
-    <% if can?(:view, :proprietarios) %>
-      <li class="sidebar-menu-item">
-        <%= link_to admin_proprietors_path, class: controller_name == 'proprietors' ? 'active' : '' do %>
-          <i class="bi bi-person-vcard"></i><span>Proprietários</span>
         <% end %>
       </li>
     <% end %>
