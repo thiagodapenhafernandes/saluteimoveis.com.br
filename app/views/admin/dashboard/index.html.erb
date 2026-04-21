@@ -55,12 +55,12 @@
       <p class="opacity-75 mb-0">
         <% if @is_admin_view %>
           <% if @field_feature_enabled %>
-            <i class="bi bi-broadcast-pin me-1"></i>Feature Field ativa —
+            <i class="bi bi-broadcast-pin me-1"></i>Módulo Campo ativo —
             <strong><%= @active_checkins_count %></strong> check-ins agora,
             <strong><%= @leads_today %></strong> leads hoje.
           <% else %>
-            <i class="bi bi-pause-circle me-1"></i>Feature Field desativada.
-            <%= link_to "Ativar em Field Settings", edit_admin_field_settings_path, class: "text-white text-decoration-underline" %>
+            <i class="bi bi-pause-circle me-1"></i>Módulo Campo desativado.
+            <%= link_to "Ativar em Configurações de Campo", edit_admin_field_settings_path, class: "text-white text-decoration-underline" %>
           <% end %>
         <% else %>
           <i class="bi bi-person-badge me-1"></i>Painel pessoal —
@@ -297,7 +297,7 @@
               </div>
             <% end %>
           <% else %>
-            <p class="text-muted small mb-0">Nenhuma atividade no field ainda.</p>
+            <p class="text-muted small mb-0">Nenhuma atividade em campo ainda.</p>
           <% end %>
         </div>
       </div>

@@ -82,11 +82,11 @@
       </li>
     <% end %>
 
-    <!-- Field: check-ins, pedidos manuais, auditoria, settings -->
+    <!-- Campo: check-ins, pedidos manuais, auditoria, settings -->
     <% if can?(:view, :field_checkins) %>
       <li class="sidebar-menu-item">
         <%= link_to admin_field_check_ins_path, class: (controller_path == 'admin/field/check_ins') ? 'active' : '' do %>
-          <i class="bi bi-geo-fill"></i><span>Check-ins em campo</span>
+          <i class="bi bi-geo-fill"></i><span>Check-ins em Campo</span>
         <% end %>
       </li>
     <% end %>
@@ -102,7 +102,7 @@
     <% if can?(:view, :field_audit) %>
       <li class="sidebar-menu-item">
         <%= link_to admin_field_audit_logs_path, class: (controller_path == 'admin/field/audit_logs') ? 'active' : '' do %>
-          <i class="bi bi-shield-lock-fill"></i><span>Auditoria field</span>
+          <i class="bi bi-shield-lock-fill"></i><span>Auditoria de Campo</span>
         <% end %>
       </li>
     <% end %>
@@ -110,7 +110,7 @@
     <% if can?(:manage, :field_settings) %>
       <li class="sidebar-menu-item">
         <%= link_to edit_admin_field_settings_path, class: (controller_path == 'admin/field_settings') ? 'active' : '' do %>
-          <i class="bi bi-toggles2"></i><span>Ativar/desativar field</span>
+          <i class="bi bi-toggles2"></i><span>Ativar/desativar Campo</span>
         <% end %>
       </li>
     <% end %>
