@@ -43,9 +43,9 @@ RSpec.describe Leads::DistributorService do
       expect(lead.reload.admin_user_id).to eq(agent_with_checkin.id)
     end
 
-    it "filtra por checkin_store_id quando setado" do
+    it "filtra por checkin_store_ids quando setado" do
       outra_loja = create(:store, name: "Outra")
-      rule = create(:distribution_rule, require_active_checkin: true, checkin_store_id: outra_loja.id)
+      rule = create(:distribution_rule, require_active_checkin: true, checkin_store_ids: [outra_loja.id])
       create(:distribution_rule_agent, distribution_rule: rule, admin_user: agent_with_checkin)
 
       lead = build_lead
@@ -53,6 +53,14 @@ RSpec.describe Leads::DistributorService do
 
       # agent_with_checkin está na loja `store`, não em `outra_loja` → não elegível
       expect(lead.reload.admin_user_id).to be_nil
+    end
+
+    it "aceita múltiplas lojas em checkin_store_ids" do
+      loja_b = create(:store, name: "Loja B")
+      rule = create(:distribution_rule, require_active_checkin: true, checkin_store_ids: [store.id, loja_b.id])
+      dra = create(:distribution_rule_agent, distribution_rule: rule, admin_user: agent_with_checkin)
+
+      expect(rule.candidates_filtered_by_checkin.pluck(:id)).to eq([dra.id])
     end
 
     context "sem candidatos elegíveis + represamento_active" do

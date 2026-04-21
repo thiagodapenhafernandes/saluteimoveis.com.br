@@ -349,12 +349,18 @@
 
           <div class="mb-0">
             <label class="form-label small text-muted text-uppercase fw-bold">
-              <i class="bi bi-shop me-1 text-primary"></i>Limitar à loja específica
+              <i class="bi bi-shop me-1 text-primary"></i>Limitar a uma ou mais lojas
             </label>
-            <%= f.collection_select :checkin_store_id, Store.order(:name), :id, :name,
-                                    { include_blank: "— Qualquer loja —" },
-                                    class: "form-select form-select-sm" %>
-            <div class="form-text small">Se preenchido, apenas check-ins nesta loja contam.</div>
+            <%= f.collection_select :checkin_store_ids,
+                                    Store.active.order(:name),
+                                    :id, :name,
+                                    {},
+                                    multiple: true,
+                                    class: "form-select form-select-sm",
+                                    data: { controller: "tom-select", placeholder: "Selecione uma ou mais lojas (vazio = todas)" } %>
+            <div class="form-text small">
+              Vazio = check-ins em qualquer loja contam. Selecione 1 ou mais para restringir.
+            </div>
           </div>
         </div>
       </div>

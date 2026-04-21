@@ -5,7 +5,7 @@ class DistributionRule < ApplicationRecord
   has_many :admin_users, through: :distribution_rule_agents
   accepts_nested_attributes_for :distribution_rule_agents, allow_destroy: true
 
-  belongs_to :checkin_store, class_name: "Store", optional: true
+  belongs_to :checkin_store, class_name: "Store", optional: true # legado — mantido pra retrocompat de URL/relatórios
 
   enum :business_type, { venda: 0, locacao: 1, ambos: 2 }, suffix: true
   enum :distribution_mode, { rotary: 0, performance: 1, shark_tank: 2 }
@@ -29,12 +29,20 @@ class DistributionRule < ApplicationRecord
     end
   end
 
-  # Filtra candidatos pelas regras de check-in geolocalizado (Fase 5).
+  # Lista consolidada de IDs de loja para o filtro de check-in.
+  # Aceita o array novo (checkin_store_ids) e o legado (checkin_store_id).
+  def checkin_store_id_list
+    ids = Array(checkin_store_ids).compact.reject { |i| i.to_i.zero? }
+    ids << checkin_store_id if checkin_store_id.present? && ids.exclude?(checkin_store_id)
+    ids.map(&:to_i).uniq
+  end
+
+  # Filtra candidatos pelas regras de check-in geolocalizado.
   # Com flags default false, retorna a relation original (retrocompatibilidade total).
   #
   # Flags aplicadas (em cascata):
   #   require_active_checkin      — precisa ter CheckIn com status=active
-  #   checkin_store_id (opcional) — restringe à loja específica
+  #   checkin_store_ids (opcional) — restringe a uma ou mais lojas
   #   exclude_suspicious_checkins — pula check-ins flaggeados pelo antifraude
   #   require_inside_radius       — precisa estar dentro do raio AGORA
   #                                 (out_of_radius_since IS NULL)
@@ -45,7 +53,8 @@ class DistributionRule < ApplicationRecord
     return distribution_rule_agents unless require_active_checkin?
 
     scope = CheckIn.where(status: :active)
-    scope = scope.where(store_id: checkin_store_id) if checkin_store_id.present?
+    store_ids = checkin_store_id_list
+    scope = scope.where(store_id: store_ids) if store_ids.any?
     scope = scope.where(suspicious: false) if exclude_suspicious_checkins?
     scope = scope.where(out_of_radius_since: nil) if require_inside_radius?
 

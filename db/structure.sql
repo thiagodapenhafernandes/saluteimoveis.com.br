@@ -1,4 +1,4 @@
-\restrict 7VfSFus2orO49iFKp5PBDRTRJ6QMOERWhzvNACK7sKsNemhfLZADKugMlAdbbKd
+\restrict ZCHLAs9qRlhNGv8vWMyUgusRvDWSCJ33EDoqM40qz9cKsKdBKtqmxDKB3TJvYKC
 
 -- Dumped from database version 18.3 (Homebrew)
 -- Dumped by pg_dump version 18.3 (Homebrew)
@@ -718,7 +718,8 @@ CREATE TABLE public.distribution_rules (
     require_inside_radius boolean DEFAULT false NOT NULL,
     exclude_suspicious_checkins boolean DEFAULT true NOT NULL,
     checkin_store_id bigint,
-    require_active_shift boolean DEFAULT false NOT NULL
+    require_active_shift boolean DEFAULT false NOT NULL,
+    checkin_store_ids bigint[] DEFAULT '{}'::bigint[] NOT NULL
 );
 
 
@@ -3783,6 +3784,13 @@ CREATE INDEX index_distribution_rules_on_checkin_store_id ON public.distribution
 
 
 --
+-- Name: index_distribution_rules_on_checkin_store_ids; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_distribution_rules_on_checkin_store_ids ON public.distribution_rules USING gin (checkin_store_ids);
+
+
+--
 -- Name: index_featured_properties_view_on_categoria; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -5090,11 +5098,12 @@ ALTER TABLE ONLY public.store_shifts
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 7VfSFus2orO49iFKp5PBDRTRJ6QMOERWhzvNACK7sKsNemhfLZADKugMlAdbbKd
+\unrestrict ZCHLAs9qRlhNGv8vWMyUgusRvDWSCJ33EDoqM40qz9cKsKdBKtqmxDKB3TJvYKC
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260420230000'),
 ('20260420220001'),
 ('20260420220000'),
 ('20260420210000'),
