@@ -209,18 +209,22 @@
                 include_blank: "Todos os Corretores", class: "form-select", data: { action: "change->team-rules#filterAgents" } %>
           </div>
 
-            <!-- Add Agent Select -->
-            <div class="row align-items-end mb-3">
-              <div class="col-md-9">
-                <label class="form-label fw-bold small text-muted text-uppercase">Adicionar Corretor</label>
-                <%= select_tag :agent_select, options_from_collection_for_select(AdminUser.all, :id, :name), 
-                    include_blank: "Selecione para adicionar...", class: "form-select", 
-                    data: { team_rules_target: "agentSelect" } %>
-              </div>
-              <div class="col-md-3">
-                <button type="button" class="btn btn-primary w-100" data-action="click->team-rules#addAgent">
-                  <i class="bi bi-plus-lg me-1"></i> Adicionar
-                </button>
+            <!-- Corretores da regra (adição automática ao selecionar) -->
+            <div class="mb-3">
+              <label class="form-label fw-bold small text-muted text-uppercase">Corretores na regra</label>
+              <%
+                preselected_agent_ids = Array(distribution_rule.distribution_rule_agents)
+                                          .reject { |a| a.marked_for_destruction? }
+                                          .map(&:admin_user_id).compact
+              %>
+              <%= select_tag :agent_select,
+                             options_from_collection_for_select(AdminUser.active.order(:name), :id, :name, preselected_agent_ids),
+                             multiple: true,
+                             class: "form-select",
+                             data: { team_rules_target: "agentSelect" } %>
+              <div class="form-text extra-small mt-1">
+                <i class="bi bi-info-circle me-1"></i>
+                Selecione corretores — eles aparecem automaticamente na fila abaixo. Remova o chip para tirar da regra.
               </div>
             </div>
 
