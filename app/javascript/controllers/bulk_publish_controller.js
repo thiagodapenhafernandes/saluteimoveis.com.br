@@ -14,46 +14,130 @@ export default class extends Controller {
     "modal", "modalCount", "form",
     "channelSelect", "actionRadio",
     "channelOptionsWrapper",
-    "eligTotal", "eligCount"
+    "eligTotal", "eligCount",
+    "selectAllBanner", "selectAllBannerText", "totalFiltered",
+    "allFilteredBadge", "allFilteredCount"
   ]
   static values = {
     url: String,
     csrf: String,
-    eligibilityUrl: String
+    eligibilityUrl: String,
+    filteredTotal: Number,
+    filtersJson: String
   }
 
   connect() {
+    this._selectAllFiltered = false
     this.updateToolbar()
   }
 
   // --- Seleção ---
 
   toggleOne() {
+    // Usuário mexeu manualmente → cancela o modo "todos filtrados"
+    this._selectAllFiltered = false
+    this.hideAllFilteredBadge()
     this.updateToolbar()
     this.syncMaster()
+    this.maybeShowSelectAllBanner()
   }
 
   toggleAll(event) {
     const checked = event.currentTarget.checked
     this.itemTargets.forEach((el) => { el.checked = checked })
+    this._selectAllFiltered = false
+    this.hideAllFilteredBadge()
+    this.updateToolbar()
+    this.maybeShowSelectAllBanner()
+  }
+
+  maybeShowSelectAllBanner() {
+    if (!this.hasSelectAllBannerTarget) return
+
+    const totalVisible = this.itemTargets.length
+    const selectedVisible = this.selectedVisibleIds().length
+    const allVisibleSelected = totalVisible > 0 && selectedVisible === totalVisible
+    const filtered = this.hasFilteredTotalValue ? this.filteredTotalValue : 0
+    const hasMoreThanVisible = filtered > totalVisible
+
+    const shouldShow = allVisibleSelected && hasMoreThanVisible && !this._selectAllFiltered
+
+    if (shouldShow) {
+      if (this.hasSelectAllBannerTextTarget) {
+        this.selectAllBannerTextTarget.innerHTML =
+          `Os <strong>${totalVisible}</strong> imóveis desta página estão selecionados.`
+      }
+      if (this.hasTotalFilteredTarget) {
+        this.totalFilteredTarget.textContent = filtered
+      }
+      this.selectAllBannerTarget.style.display = "block"
+    } else {
+      this.selectAllBannerTarget.style.display = "none"
+    }
+  }
+
+  selectAllFiltered(event) {
+    if (event) event.preventDefault()
+    this._selectAllFiltered = true
+    // Marca todos os checkboxes visíveis
+    this.itemTargets.forEach((el) => { el.checked = true })
+    if (this.hasMasterTarget) this.masterTarget.checked = true
+
+    this.hideSelectAllBanner()
+    this.showAllFilteredBadge()
     this.updateToolbar()
   }
 
+  dismissSelectAllBanner(event) {
+    if (event) event.preventDefault()
+    this.hideSelectAllBanner()
+  }
+
+  hideSelectAllBanner() {
+    if (this.hasSelectAllBannerTarget) {
+      this.selectAllBannerTarget.style.display = "none"
+    }
+  }
+
+  showAllFilteredBadge() {
+    if (!this.hasAllFilteredBadgeTarget) return
+    if (this.hasAllFilteredCountTarget) {
+      this.allFilteredCountTarget.textContent = this.filteredTotalValue || "—"
+    }
+    this.allFilteredBadgeTarget.style.display = "flex"
+  }
+
+  hideAllFilteredBadge() {
+    if (this.hasAllFilteredBadgeTarget) {
+      this.allFilteredBadgeTarget.style.display = "none"
+    }
+  }
+
   clearSelection() {
+    this._selectAllFiltered = false
     this.itemTargets.forEach((el) => { el.checked = false })
     if (this.hasMasterTarget) {
       this.masterTarget.checked = false
       this.masterTarget.indeterminate = false
     }
+    this.hideSelectAllBanner()
+    this.hideAllFilteredBadge()
     this.updateToolbar()
   }
 
-  selectedIds() {
+  selectedVisibleIds() {
     return this.itemTargets.filter((el) => el.checked).map((el) => el.dataset.id)
   }
 
+  effectiveCount() {
+    if (this._selectAllFiltered && this.hasFilteredTotalValue) {
+      return this.filteredTotalValue
+    }
+    return this.selectedVisibleIds().length
+  }
+
   updateToolbar() {
-    const count = this.selectedIds().length
+    const count = this.effectiveCount()
     if (this.hasCountTarget) this.countTarget.textContent = count
     if (this.hasToolbarTarget) {
       this.toolbarTarget.classList.toggle("d-none", count === 0)
@@ -63,7 +147,7 @@ export default class extends Controller {
   syncMaster() {
     if (!this.hasMasterTarget) return
     const total = this.itemTargets.length
-    const selected = this.selectedIds().length
+    const selected = this.selectedVisibleIds().length
     this.masterTarget.checked = total > 0 && selected === total
     this.masterTarget.indeterminate = selected > 0 && selected < total
   }
@@ -71,14 +155,14 @@ export default class extends Controller {
   // --- Modal ---
 
   openModal() {
-    const ids = this.selectedIds()
-    if (ids.length === 0) {
+    const count = this.effectiveCount()
+    if (count === 0) {
       alert("Selecione ao menos um imóvel.")
       return
     }
 
-    if (this.hasModalCountTarget) this.modalCountTarget.textContent = ids.length
-    if (this.hasEligTotalTarget) this.eligTotalTarget.textContent = ids.length
+    if (this.hasModalCountTarget) this.modalCountTarget.textContent = count
+    if (this.hasEligTotalTarget) this.eligTotalTarget.textContent = count
     if (this.hasEligCountTarget) this.eligCountTarget.textContent = "—"
 
     this.resetForm()
@@ -131,14 +215,34 @@ export default class extends Controller {
     })
   }
 
+  appendBulkParams(formData) {
+    if (this._selectAllFiltered) {
+      formData.append("select_all_filtered", "true")
+      // Manda os filtros originais pra o backend reaplicar o scope
+      try {
+        const filters = JSON.parse(this.filtersJsonValue || "{}")
+        Object.entries(filters).forEach(([key, value]) => {
+          if (Array.isArray(value)) {
+            value.forEach((v) => formData.append(`filters[${key}][]`, v))
+          } else if (value != null && value !== "") {
+            formData.append(`filters[${key}]`, value)
+          }
+        })
+      } catch (e) { /* ignore */ }
+    } else {
+      const ids = this.selectedVisibleIds()
+      ids.forEach((id) => formData.append("selected_ids[]", id))
+    }
+  }
+
   async fetchEligibility() {
     if (!this.hasEligCountTarget) return
 
     const channel = this.currentChannel()
     const action = this.currentActionType()
-    const ids = this.selectedIds()
+    const count = this.effectiveCount()
 
-    if (!channel || ids.length === 0) {
+    if (!channel || count === 0) {
       this.eligCountTarget.textContent = "—"
       return
     }
@@ -146,7 +250,7 @@ export default class extends Controller {
     this.eligCountTarget.textContent = "…"
 
     const formData = new FormData()
-    ids.forEach((id) => formData.append("selected_ids[]", id))
+    this.appendBulkParams(formData)
     formData.append("channel", channel)
     formData.append("action_type", action)
 
@@ -176,8 +280,8 @@ export default class extends Controller {
   async submit(event) {
     event.preventDefault()
 
-    const ids = this.selectedIds()
-    if (ids.length === 0) {
+    const count = this.effectiveCount()
+    if (count === 0) {
       alert("Selecione ao menos um imóvel.")
       return
     }
@@ -192,10 +296,9 @@ export default class extends Controller {
     if (!form) return
 
     const formData = new FormData(form)
-    // Converte `channel` single-select em `channels[]` esperado pelo backend
     formData.delete("channel")
     formData.append("channels[]", channel)
-    ids.forEach((id) => formData.append("selected_ids[]", id))
+    this.appendBulkParams(formData)
 
     const button = event.currentTarget
     const originalHTML = button.innerHTML
@@ -219,7 +322,7 @@ export default class extends Controller {
         const modalEl = document.getElementById("bulkPublishModal")
         const modal = window.bootstrap.Modal.getOrCreateInstance(modalEl)
         modal.hide()
-        alert(`${data.updated || ids.length} imóvel(is) atualizado(s) com sucesso.`)
+        alert(`${data.updated || count} imóvel(is) atualizado(s) com sucesso.`)
         window.location.reload()
       } else {
         alert(`Erro: ${data.error || "Falha na requisição."}`)

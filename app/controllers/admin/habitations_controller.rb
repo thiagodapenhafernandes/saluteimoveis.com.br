@@ -173,7 +173,7 @@ class Admin::HabitationsController < Admin::BaseController
   }.freeze
 
   def bulk_publish
-    ids = sanitized_selected_ids
+    ids = resolve_bulk_ids
     action_type = params[:action_type].to_s
     channels = Array(params[:channels]).map(&:to_s) & BULK_PUBLISH_CHANNELS.keys
 
@@ -239,7 +239,7 @@ class Admin::HabitationsController < Admin::BaseController
   end
 
   def bulk_publish_eligibility
-    ids = sanitized_selected_ids
+    ids = resolve_bulk_ids
     channel = params[:channel].to_s
     action_type = params[:action_type].to_s
     config = BULK_PUBLISH_CHANNELS[channel]
@@ -685,6 +685,30 @@ class Admin::HabitationsController < Admin::BaseController
     values = params[:selected_ids]
     array = values.is_a?(String) ? values.split(",") : Array(values)
     array.map(&:to_i).select(&:positive?)
+  end
+
+  # Retorna os IDs alvos do bulk. Se o usuário marcou \"selecionar tudo\",
+  # reconstruímos a base filtrada (respeitando filtros ativos) e pegamos
+  # todos os IDs. Caso contrário, usa só os IDs marcados individualmente.
+  def resolve_bulk_ids
+    if ActiveModel::Type::Boolean.new.cast(params[:select_all_filtered])
+      # Reaplica os mesmos filtros da listagem — params[:filters] vem como hash
+      # das query params originais.
+      reapply_filter_params!
+      load_index_filters
+      filtered_habitations_scope.reorder(nil).pluck(:id)
+    else
+      sanitized_selected_ids
+    end
+  end
+
+  def reapply_filter_params!
+    filters = params[:filters]
+    return unless filters.respond_to?(:each)
+    filters.each do |key, value|
+      next if params.key?(key)  # não sobrescreve params já setados
+      params[key] = value
+    end
   end
 
   def sanitized_export_fields
