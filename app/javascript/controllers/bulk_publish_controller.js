@@ -14,9 +14,7 @@ export default class extends Controller {
     "modal", "modalCount", "form",
     "channelSelect", "actionRadio",
     "channelOptionsWrapper",
-    "eligTotal", "eligCount",
-    "selectAllBanner", "selectAllBannerText", "totalFiltered",
-    "allFilteredBadge", "allFilteredCount"
+    "eligTotal", "eligCount"
   ]
   static values = {
     url: String,
@@ -33,84 +31,20 @@ export default class extends Controller {
 
   // --- Seleção ---
 
+  // Checkbox individual alterado manualmente
   toggleOne() {
-    // Usuário mexeu manualmente → cancela o modo "todos filtrados"
+    // Sai do modo "todos filtrados" porque o usuário quer seleção pontual
     this._selectAllFiltered = false
-    this.hideAllFilteredBadge()
     this.updateToolbar()
     this.syncMaster()
-    this.maybeShowSelectAllBanner()
   }
 
+  // Master checkbox alterado — marca TODOS os filtrados
   toggleAll(event) {
     const checked = event.currentTarget.checked
     this.itemTargets.forEach((el) => { el.checked = checked })
-    this._selectAllFiltered = false
-    this.hideAllFilteredBadge()
+    this._selectAllFiltered = checked
     this.updateToolbar()
-    this.maybeShowSelectAllBanner()
-  }
-
-  maybeShowSelectAllBanner() {
-    if (!this.hasSelectAllBannerTarget) return
-
-    const totalVisible = this.itemTargets.length
-    const selectedVisible = this.selectedVisibleIds().length
-    const allVisibleSelected = totalVisible > 0 && selectedVisible === totalVisible
-    const filtered = this.hasFilteredTotalValue ? this.filteredTotalValue : 0
-    const hasMoreThanVisible = filtered > totalVisible
-
-    const shouldShow = allVisibleSelected && hasMoreThanVisible && !this._selectAllFiltered
-
-    if (shouldShow) {
-      if (this.hasSelectAllBannerTextTarget) {
-        this.selectAllBannerTextTarget.innerHTML =
-          `Os <strong>${totalVisible}</strong> imóveis desta página estão selecionados.`
-      }
-      if (this.hasTotalFilteredTarget) {
-        this.totalFilteredTarget.textContent = filtered
-      }
-      this.selectAllBannerTarget.style.display = "block"
-    } else {
-      this.selectAllBannerTarget.style.display = "none"
-    }
-  }
-
-  selectAllFiltered(event) {
-    if (event) event.preventDefault()
-    this._selectAllFiltered = true
-    // Marca todos os checkboxes visíveis
-    this.itemTargets.forEach((el) => { el.checked = true })
-    if (this.hasMasterTarget) this.masterTarget.checked = true
-
-    this.hideSelectAllBanner()
-    this.showAllFilteredBadge()
-    this.updateToolbar()
-  }
-
-  dismissSelectAllBanner(event) {
-    if (event) event.preventDefault()
-    this.hideSelectAllBanner()
-  }
-
-  hideSelectAllBanner() {
-    if (this.hasSelectAllBannerTarget) {
-      this.selectAllBannerTarget.style.display = "none"
-    }
-  }
-
-  showAllFilteredBadge() {
-    if (!this.hasAllFilteredBadgeTarget) return
-    if (this.hasAllFilteredCountTarget) {
-      this.allFilteredCountTarget.textContent = this.filteredTotalValue || "—"
-    }
-    this.allFilteredBadgeTarget.style.display = "flex"
-  }
-
-  hideAllFilteredBadge() {
-    if (this.hasAllFilteredBadgeTarget) {
-      this.allFilteredBadgeTarget.style.display = "none"
-    }
   }
 
   clearSelection() {
@@ -120,8 +54,6 @@ export default class extends Controller {
       this.masterTarget.checked = false
       this.masterTarget.indeterminate = false
     }
-    this.hideSelectAllBanner()
-    this.hideAllFilteredBadge()
     this.updateToolbar()
   }
 
@@ -218,7 +150,6 @@ export default class extends Controller {
   appendBulkParams(formData) {
     if (this._selectAllFiltered) {
       formData.append("select_all_filtered", "true")
-      // Manda os filtros originais pra o backend reaplicar o scope
       try {
         const filters = JSON.parse(this.filtersJsonValue || "{}")
         Object.entries(filters).forEach(([key, value]) => {

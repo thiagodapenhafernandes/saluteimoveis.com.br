@@ -693,39 +693,6 @@
   </div>
 </div>
 
-<!-- Banner "Selecionar todos os filtrados" -->
-<div data-bulk-publish-target="selectAllBanner"
-     class="alert alert-info border-0 shadow-sm mb-3"
-     style="display: none;">
-  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-    <div>
-      <i class="bi bi-info-circle-fill me-1"></i>
-      <span data-bulk-publish-target="selectAllBannerText">Os <strong>20</strong> imóveis desta página estão selecionados.</span>
-    </div>
-    <div class="d-flex gap-2">
-      <button type="button" class="btn btn-sm btn-primary" data-action="click->bulk-publish#selectAllFiltered">
-        <i class="bi bi-check2-all me-1"></i>
-        Selecionar todos os <strong data-bulk-publish-target="totalFiltered"><%= @filtered_count %></strong> imóveis filtrados
-      </button>
-      <button type="button" class="btn btn-sm btn-link text-muted" data-action="click->bulk-publish#dismissSelectAllBanner">
-        Manter só esta página
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- Indicador "todos filtrados selecionados" -->
-<div data-bulk-publish-target="allFilteredBadge"
-     class="alert alert-success border-0 shadow-sm mb-3 d-flex align-items-center justify-content-between"
-     style="display: none;">
-  <span>
-    <i class="bi bi-check2-all me-1"></i>
-    Você selecionou todos os <strong data-bulk-publish-target="allFilteredCount"></strong> imóveis do filtro atual.
-  </span>
-  <button type="button" class="btn btn-sm btn-link text-muted" data-action="click->bulk-publish#clearSelection">
-    Desmarcar tudo
-  </button>
-</div>
 <% end %>
 
 <!-- Results Header -->
