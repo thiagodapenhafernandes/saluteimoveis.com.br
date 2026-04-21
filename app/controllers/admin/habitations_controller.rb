@@ -663,14 +663,35 @@ class Admin::HabitationsController < Admin::BaseController
     scope = apply_boolean_filter(scope, @tem_placa, :tem_placa_flag)
     scope = apply_boolean_filter(scope, @exclusivo, :exclusivo_flag)
 
+    # Vista popula `caracteristicas` JSONB no formato {"Mobiliado" => "Mobiliado", ...}.
+    # Os filtros pill consideram tanto os flags legados quanto o JSONB.
     case @scope
-    when "oportunidade" then scope = scope.opportunity
-    when "frente_mar" then scope = scope.where(frente_mar_avenida_atlantica_flag: true).or(scope.where(vista_frente_mar_flag: true))
-    when "lancamento" then scope = scope.where(lancamento_flag: true)
-    when "na_planta" then scope = scope.where("situacao ILIKE ?", "%Planta%")
-    when "mobiliado" then scope = scope.where(mobiliado_flag: true)
-    when "sacada" then scope = scope.where(varanda_gourmet_flag: true)
-    when "decorado" then scope = scope.where(decorado_flag: true)
+    when "oportunidade"
+      scope = scope.opportunity
+    when "frente_mar"
+      scope = scope.where(
+        "frente_mar_avenida_atlantica_flag = true OR vista_frente_mar_flag = true OR " \
+        "EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) WHERE value ILIKE '%vista mar%' OR value ILIKE '%frente mar%')"
+      )
+    when "lancamento"
+      scope = scope.where(lancamento_flag: true)
+    when "na_planta"
+      scope = scope.where("situacao ILIKE ? OR situacao = ?", "%Planta%", "Construção")
+    when "mobiliado"
+      scope = scope.where(
+        "mobiliado_flag = true OR " \
+        "EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) WHERE value ILIKE '%mobiliado%')"
+      )
+    when "sacada"
+      scope = scope.where(
+        "varanda_gourmet_flag = true OR " \
+        "EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) WHERE value ILIKE '%sacada%' OR value ILIKE '%varanda%')"
+      )
+    when "decorado"
+      scope = scope.where(
+        "decorado_flag = true OR " \
+        "EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) WHERE value ILIKE '%decorad%')"
+      )
     end
 
     scope
