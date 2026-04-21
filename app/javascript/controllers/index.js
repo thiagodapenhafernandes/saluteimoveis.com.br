@@ -157,6 +157,9 @@ application.register("vista-sync-status", VistaSyncStatusController)
 import OptionPickerController from "controllers/option_picker_controller"
 application.register("option-picker", OptionPickerController)
 
+import CollapsibleCountController from "controllers/collapsible_count_controller"
+application.register("collapsible-count", CollapsibleCountController)
+
 import TagInputController from "controllers/tag_input_controller"
 application.register("tag-input", TagInputController)
 

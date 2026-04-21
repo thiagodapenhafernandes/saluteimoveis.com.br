@@ -64,10 +64,47 @@
                         { multiple: true, class: "form-select", data: { action: "change->meta-rules#updateForms", controller: "tom-select", tom_select_create_value: "false" } } %>
                   </div>
 
-                  <div class="mb-4">
-                    <label class="form-label fw-bold small text-muted text-uppercase">Formulários Específicos</label>
-                    <%= f.select :meta_forms, options_for_select(@all_form_options || [], distribution_rule.meta_forms), {}, 
-                        { multiple: true, class: "form-select", data: { meta_rules_target: "formSelect" } } %>
+                  <% selected_forms_count = Array(distribution_rule.meta_forms).compact_blank.size %>
+                  <div class="mb-4" data-controller="collapsible-count">
+                    <label class="form-label fw-bold small text-muted text-uppercase d-block">Formulários Específicos</label>
+
+                    <details class="border rounded-3 bg-light-subtle"
+                             <%= 'open' if distribution_rule.new_record? && selected_forms_count.zero? %>
+                             data-collapsible-count-target="details">
+                      <summary class="px-3 py-2 d-flex justify-content-between align-items-center" style="cursor: pointer; list-style: none;">
+                        <span class="fw-semibold small">
+                          <i class="bi bi-list-check text-primary me-1"></i>
+                          <span data-collapsible-count-target="label">
+                            <% if selected_forms_count.zero? %>
+                              Nenhum formulário selecionado
+                            <% else %>
+                              <strong><%= selected_forms_count %></strong>
+                              <%= "formulário".pluralize(selected_forms_count).capitalize.sub(/^./, &:downcase) %>
+                              selecionado<%= "s" if selected_forms_count != 1 %>
+                            <% end %>
+                          </span>
+                        </span>
+                        <span class="small text-muted">
+                          <i class="bi bi-chevron-down"></i>
+                          <span class="ms-1">Abrir/Fechar</span>
+                        </span>
+                      </summary>
+                      <div class="px-3 pb-3 pt-1 border-top">
+                        <%= f.select :meta_forms,
+                                     options_for_select(@all_form_options || [], distribution_rule.meta_forms), {},
+                                     { multiple: true,
+                                       class: "form-select",
+                                       data: {
+                                         meta_rules_target: "formSelect",
+                                         controller: "tom-select",
+                                         action: "change->collapsible-count#recount",
+                                         placeholder: "Busque ou selecione formulários"
+                                       } } %>
+                        <div class="form-text small mt-2">
+                          Use a busca pra filtrar — o resumo lá em cima atualiza conforme você marca/desmarca.
+                        </div>
+                      </div>
+                    </details>
                   </div>
 
                   <div class="card border shadow-none bg-white">
