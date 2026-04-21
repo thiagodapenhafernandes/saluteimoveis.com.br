@@ -175,3 +175,30 @@ self.addEventListener("message", (event) => {
     event.waitUntil(drainPingQueue());
   }
 });
+
+// ---------- Push Notifications ----------
+self.addEventListener("push", (event) => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch (e) {}
+  const title = data.title || "Salute Campo";
+  const options = {
+    body:  data.body || "Nova atualização",
+    icon:  data.icon || "/field-icons/icon-192.png",
+    badge: "/field-icons/icon-192.png",
+    data:  { url: data.url || "/field" }
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = event.notification.data?.url || "/field";
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+      for (const c of list) {
+        if (c.url.includes(target) && "focus" in c) return c.focus();
+      }
+      if (clients.openWindow) return clients.openWindow(target);
+    })
+  );
+});

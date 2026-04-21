@@ -110,7 +110,7 @@ class Admin::DistributionRulesController < Admin::BaseController
       :pocket_active, :pocket_time,
       :represamento_active, :auto_add_forms,
       :min_price, :max_price,
-      :notify_whatsapp, :notify_email, :notify_webhook,
+      :notify_whatsapp, :notify_email, :notify_webhook, :notify_push,
       :webhook_url,
       :require_active_checkin, :require_inside_radius, :require_active_shift, :exclude_suspicious_checkins,
       admin_user_ids: [],
@@ -120,7 +120,10 @@ class Admin::DistributionRulesController < Admin::BaseController
       neighborhoods: [],
       checkin_store_ids: [],
       represamento_schedule: {},
-      custom_filters: {}
+      custom_filters: {},
+      distribution_rule_agents_attributes: [
+        :id, :admin_user_id, :weight, :position, :last_lead_received_at, :_destroy
+      ]
     ).tap do |perms|
       # Filtra IDs vazios e converte pra inteiros (Rails manda "" no início se include_blank)
       if perms[:checkin_store_ids].is_a?(Array)

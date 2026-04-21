@@ -1,4 +1,4 @@
-\restrict ZCHLAs9qRlhNGv8vWMyUgusRvDWSCJ33EDoqM40qz9cKsKdBKtqmxDKB3TJvYKC
+\restrict RAtWPYTguaKZqNmMSPcqa93IOK29BU6AH4EWL0yu2bOJIZmHKHOXAeWkmqyGRcV
 
 -- Dumped from database version 18.3 (Homebrew)
 -- Dumped by pg_dump version 18.3 (Homebrew)
@@ -719,7 +719,8 @@ CREATE TABLE public.distribution_rules (
     exclude_suspicious_checkins boolean DEFAULT true NOT NULL,
     checkin_store_id bigint,
     require_active_shift boolean DEFAULT false NOT NULL,
-    checkin_store_ids bigint[] DEFAULT '{}'::bigint[] NOT NULL
+    checkin_store_ids bigint[] DEFAULT '{}'::bigint[] NOT NULL,
+    notify_push boolean DEFAULT false NOT NULL
 );
 
 
@@ -1921,6 +1922,44 @@ ALTER SEQUENCE public.proprietors_id_seq OWNED BY public.proprietors.id;
 
 
 --
+-- Name: push_subscriptions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.push_subscriptions (
+    id bigint NOT NULL,
+    admin_user_id bigint NOT NULL,
+    endpoint character varying NOT NULL,
+    p256dh character varying NOT NULL,
+    auth character varying NOT NULL,
+    platform character varying,
+    user_agent character varying,
+    last_seen_at timestamp(6) without time zone,
+    active boolean DEFAULT true NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: push_subscriptions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.push_subscriptions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: push_subscriptions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.push_subscriptions_id_seq OWNED BY public.push_subscriptions.id;
+
+
+--
 -- Name: schema_migrations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2814,6 +2853,13 @@ ALTER TABLE ONLY public.proprietors ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
+-- Name: push_subscriptions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.push_subscriptions ALTER COLUMN id SET DEFAULT nextval('public.push_subscriptions_id_seq'::regclass);
+
+
+--
 -- Name: seo_settings id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -3266,6 +3312,14 @@ ALTER TABLE ONLY public.property_pages
 
 ALTER TABLE ONLY public.proprietors
     ADD CONSTRAINT proprietors_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: push_subscriptions push_subscriptions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.push_subscriptions
+    ADD CONSTRAINT push_subscriptions_pkey PRIMARY KEY (id);
 
 
 --
@@ -4421,6 +4475,27 @@ CREATE INDEX index_proprietors_on_vista_code ON public.proprietors USING btree (
 
 
 --
+-- Name: index_push_subscriptions_on_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_push_subscriptions_on_active ON public.push_subscriptions USING btree (active);
+
+
+--
+-- Name: index_push_subscriptions_on_admin_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_push_subscriptions_on_admin_user_id ON public.push_subscriptions USING btree (admin_user_id);
+
+
+--
+-- Name: index_push_subscriptions_on_admin_user_id_and_endpoint; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_push_subscriptions_on_admin_user_id_and_endpoint ON public.push_subscriptions USING btree (admin_user_id, endpoint);
+
+
+--
 -- Name: index_settings_on_key_unique; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -5095,14 +5170,23 @@ ALTER TABLE ONLY public.store_shifts
 
 
 --
+-- Name: push_subscriptions fk_rails_fe18a5fba2; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.push_subscriptions
+    ADD CONSTRAINT fk_rails_fe18a5fba2 FOREIGN KEY (admin_user_id) REFERENCES public.admin_users(id);
+
+
+--
 -- PostgreSQL database dump complete
 --
 
-\unrestrict ZCHLAs9qRlhNGv8vWMyUgusRvDWSCJ33EDoqM40qz9cKsKdBKtqmxDKB3TJvYKC
+\unrestrict RAtWPYTguaKZqNmMSPcqa93IOK29BU6AH4EWL0yu2bOJIZmHKHOXAeWkmqyGRcV
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260420240000'),
 ('20260420230000'),
 ('20260420220001'),
 ('20260420220000'),

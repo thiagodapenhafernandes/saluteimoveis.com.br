@@ -50,6 +50,14 @@ module Leads
       end
 
       rule.rotate_queue!(agent.admin_user_id)
+
+      # Dispara notificações conforme as flags da regra (push/whatsapp/email/webhook)
+      begin
+        Leads::NotificationDispatcher.deliver(@lead.reload)
+      rescue => e
+        Rails.logger.warn("[DistributorService] notificação falhou pro lead #{@lead.id}: #{e.message}")
+      end
+
       rule
     rescue => e
       Rails.logger.error "[DistributorService] Erro ao distribuir lead #{@lead.id}: #{e.message}"

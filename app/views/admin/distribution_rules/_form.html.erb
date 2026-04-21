@@ -413,15 +413,27 @@
         <div class="card-body">
           <div class="form-check mb-2">
             <%= f.check_box :notify_whatsapp, class: "form-check-input" %>
-            <%= f.label :notify_whatsapp, "WhatsApp (Corretor)", class: "form-check-label small" %>
+            <%= f.label :notify_whatsapp, class: "form-check-label small" do %>
+              <i class="bi bi-whatsapp text-success me-1"></i>WhatsApp <span class="text-muted">(via webhook configurado em Integrações)</span>
+            <% end %>
           </div>
           <div class="form-check mb-2">
             <%= f.check_box :notify_email, class: "form-check-input" %>
-            <%= f.label :notify_email, "E-mail (Corretor)", class: "form-check-label small" %>
+            <%= f.label :notify_email, class: "form-check-label small" do %>
+              <i class="bi bi-envelope text-primary me-1"></i>E-mail ao corretor
+            <% end %>
+          </div>
+          <div class="form-check mb-2">
+            <%= f.check_box :notify_push, class: "form-check-input" %>
+            <%= f.label :notify_push, class: "form-check-label small" do %>
+              <i class="bi bi-phone-vibrate text-info me-1"></i>Push no PWA <span class="text-muted">(se o corretor autorizou notificações no celular)</span>
+            <% end %>
           </div>
           <div class="form-check mb-0">
             <%= f.check_box :notify_webhook, class: "form-check-input" %>
-            <%= f.label :notify_webhook, "Webhook Externo", class: "form-check-label small" %>
+            <%= f.label :notify_webhook, class: "form-check-label small" do %>
+              <i class="bi bi-broadcast text-secondary me-1"></i>Webhook Externo
+            <% end %>
           </div>
         </div>
       </div>

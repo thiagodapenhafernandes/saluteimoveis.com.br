@@ -26,9 +26,62 @@
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", function () {
           navigator.serviceWorker.register("/field-service-worker.js", { scope: "/field/" })
-            .then(function (reg) { console.log("[field SW] registered, scope:", reg.scope); })
+            .then(function (reg) {
+              console.log("[field SW] registered, scope:", reg.scope);
+              // Tenta assinar push notifications automaticamente se permissão concedida
+              subscribeToPush(reg);
+            })
             .catch(function (err) { console.warn("[field SW] registration failed:", err); });
         });
+      }
+
+      // Web Push subscription. Só dispara prompt de permissão uma vez; nas
+      // próximas visitas, se já aceito, revalida/renova subscription silenciosamente.
+      async function subscribeToPush(registration) {
+        if (!("PushManager" in window)) return;
+        const alreadyAsked = localStorage.getItem("field_push_asked");
+        if (Notification.permission === "default" && alreadyAsked) return;
+
+        try {
+          let permission = Notification.permission;
+          if (permission === "default") {
+            localStorage.setItem("field_push_asked", "1");
+            permission = await Notification.requestPermission();
+          }
+          if (permission !== "granted") return;
+
+          // Busca a VAPID public key do servidor
+          const keyResp = await fetch("/field/push_subscriptions/vapid_key", { credentials: "same-origin" });
+          if (!keyResp.ok) return;
+          const { public_key } = await keyResp.json();
+          if (!public_key) return;
+
+          const sub = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(public_key)
+          });
+
+          const csrfToken = document.querySelector("[name=csrf-token]")?.content;
+          await fetch("/field/push_subscriptions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRF-Token": csrfToken || "",
+              "Accept": "application/json"
+            },
+            credentials: "same-origin",
+            body: JSON.stringify({ subscription: sub.toJSON() })
+          });
+        } catch (e) {
+          console.warn("[push] subscribe failed:", e);
+        }
+      }
+
+      function urlBase64ToUint8Array(base64) {
+        const padding = "=".repeat((4 - base64.length % 4) % 4);
+        const base = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");
+        const raw = atob(base);
+        return Uint8Array.from(raw, c => c.charCodeAt(0));
       }
     </script>
 

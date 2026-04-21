@@ -140,6 +140,9 @@ Rails.application.routes.draw do
     end
     resources :location_pings, only: [:create]
     resources :manual_checkin_requests, only: [:new, :create]
+    resources :push_subscriptions, only: [:create, :destroy] do
+      collection { get :vapid_key }
+    end
   end
 
   namespace :api do

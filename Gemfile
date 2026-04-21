@@ -41,6 +41,7 @@ gem "omniauth-rails_csrf_protection"
 gem "rack-cors"
 gem "rack-attack"
 gem "maxmind-db", "~> 1.2"
+gem "web-push", "~> 3.0"
 gem "dalli"
 
 # SEO & Images
