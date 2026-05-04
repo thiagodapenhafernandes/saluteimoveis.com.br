@@ -3,7 +3,7 @@
   <head>
     <title>Salute Imóveis — Campo</title>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#0d6efd">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -11,6 +11,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
+    <%= render 'layouts/no_zoom' %>
 
     <link rel="manifest" href="<%= field_manifest_path(format: :json) %>">
     <link rel="apple-touch-icon" href="/field-icons/icon-192.png">
