@@ -1,7 +1,7 @@
           <!-- Tipo com Autocomplete -->
-          <div class="relative min-w-[200px]" 
-               data-controller="autocomplete" 
-               data-autocomplete-options-value='<%= (@property_types || Habitation.active.distinct.pluck(:tipo).compact.sort).to_json %>'>
+          <div class="relative min-w-[200px]"
+               data-controller="autocomplete"
+               data-autocomplete-options-value='<%= (@property_types || Habitation::CATEGORIES).to_json %>'>
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
               <i class="bi bi-building text-gray-400"></i>
             </div>

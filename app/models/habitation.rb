@@ -386,6 +386,42 @@ class Habitation < ApplicationRecord
   def has_available_units?
     empreendimento? && available_units_count > 0
   end
+
+  # --- Helpers para o card público ---
+  # Para empreendimentos, agregam min..max das unidades disponíveis.
+  # Para imóveis avulsos/unidades, retornam o valor próprio.
+
+  def card_dormitorios_text
+    if empreendimento?
+      values = development_units.where("dormitorios_qtd > 0").pluck(:dormitorios_qtd).compact.uniq.sort
+      return nil if values.empty?
+      values.size == 1 ? values.first.to_s : "#{values.min} a #{values.max}"
+    else
+      dormitorios_qtd.to_i.positive? ? dormitorios_qtd.to_s : nil
+    end
+  end
+
+  def card_vagas_text
+    if empreendimento?
+      values = development_units.where("vagas_qtd > 0").pluck(:vagas_qtd).compact.uniq.sort
+      return nil if values.empty?
+      values.size == 1 ? values.first.to_s : "#{values.min} a #{values.max}"
+    else
+      vagas_qtd.to_i.positive? ? vagas_qtd.to_s : nil
+    end
+  end
+
+  def card_area_text
+    if empreendimento?
+      values = development_units.where("area_privativa_m2 > 0").pluck(:area_privativa_m2).compact
+      return nil if values.empty?
+      min = values.min.to_i
+      max = values.max.to_i
+      min == max ? "#{min} m²" : "#{min} a #{max} m²"
+    else
+      area_privativa_m2.to_f.positive? ? "#{area_privativa_m2.to_i} m²" : nil
+    end
+  end
   
   # Retorna o título para exibição
   def display_title
