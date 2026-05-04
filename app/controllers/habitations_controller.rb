@@ -223,21 +223,27 @@ class HabitationsController < ApplicationController
   private
   
   def set_habitation
-    # Tentar encontrar como empreendimento primeiro (sem restrições de preço/status)
-    @habitation = Habitation
-      .where(exibir_no_site_flag: true)
-      .friendly
-      .find(params[:id])
-    
-    # Se não for empreendimento, validar que passa pelos filtros do scope active
+    # Site público é livre acesso: não restringimos aqui por exibir_no_site_flag
+    # (o filtro do flag é responsabilidade do scope active no listing).
+    # 1) tenta slug via friendly_id; 2) fallback por codigo (número final do slug).
+    begin
+      @habitation = Habitation.friendly.find(params[:id])
+    rescue ActiveRecord::RecordNotFound
+      trailing = params[:id].to_s[/(\d+)\z/, 1]
+      @habitation = Habitation.find_by(codigo: trailing) if trailing.present?
+      raise ActiveRecord::RecordNotFound if @habitation.blank?
+    end
+
+    # Para imóveis avulsos (não-empreendimento), o show só faz sentido quando há
+    # foto e preço — sem isso a página fica capenga. Empreendimento é exceção
+    # porque muitas vezes os preços estão nas unidades.
     if @habitation && !@habitation.empreendimento?
-      # Para imóveis normais, validar que tem fotos e preço
-      unless @habitation.pictures.present? && 
+      unless @habitation.pictures.present? &&
              (@habitation.valor_venda_cents.to_i > 0 || @habitation.valor_locacao_cents.to_i > 0)
         raise ActiveRecord::RecordNotFound
       end
     end
-    
+
   rescue ActiveRecord::RecordNotFound
     redirect_to habitations_path, alert: 'Imóvel não encontrado ou indisponível no momento.'
   end
