@@ -12,9 +12,24 @@ module Habitation::SearchScopes
     # IMPORTANTE: Apenas imóveis com status válido para exibição pública
     scope :active, -> { 
       where(exibir_no_site_flag: true)
-        .where(status: ['Venda', 'Aluguel', 'Locação', 'Locacao'])
+        .where(status: Habitation::PUBLIC_STATUSES)
         .with_photos
-        .with_price 
+        .where(
+          "(habitations.tipo = 'Empreendimento' AND EXISTS (" \
+          "SELECT 1 FROM habitations units " \
+          "WHERE units.codigo_empreendimento = habitations.codigo " \
+          "AND units.exibir_no_site_flag = TRUE " \
+          "AND units.status IN (?) " \
+          "AND (units.valor_venda_cents > 0 OR units.valor_locacao_cents > 0) " \
+          "AND (" \
+          "  (jsonb_typeof(units.pictures) = 'array' AND jsonb_array_length(units.pictures) > 0) OR " \
+          "  (jsonb_typeof(units.fotos_empreendimento) = 'array' AND jsonb_array_length(units.fotos_empreendimento) > 0) OR " \
+          "  EXISTS (SELECT 1 FROM active_storage_attachments WHERE active_storage_attachments.record_id = units.id AND active_storage_attachments.record_type = 'Habitation')" \
+          ")" \
+          ")) OR " \
+          "(COALESCE(habitations.tipo, '') <> 'Empreendimento' AND (habitations.valor_venda_cents > 0 OR habitations.valor_locacao_cents > 0))",
+          Habitation::PUBLIC_STATUSES
+        )
     }
     scope :featured, -> { where(destaque_web_flag: true) }
     scope :home_corporate, -> {
@@ -56,7 +71,11 @@ module Habitation::SearchScopes
     
     # Scope para imóveis com fotos (verifica se é array e tem elementos OU se tem fotos anexadas)
     scope :with_photos, -> { 
-      where("(jsonb_typeof(pictures) = 'array' AND jsonb_array_length(pictures) > 0) OR (EXISTS (SELECT 1 FROM active_storage_attachments WHERE active_storage_attachments.record_id = habitations.id AND active_storage_attachments.record_type = 'Habitation'))") 
+      where(
+        "(jsonb_typeof(pictures) = 'array' AND jsonb_array_length(pictures) > 0) OR " \
+        "(jsonb_typeof(fotos_empreendimento) = 'array' AND jsonb_array_length(fotos_empreendimento) > 0) OR " \
+        "(EXISTS (SELECT 1 FROM active_storage_attachments WHERE active_storage_attachments.record_id = habitations.id AND active_storage_attachments.record_type = 'Habitation'))"
+      ) 
     }
     
     # Scope para imóveis com preço (venda ou locação)
@@ -71,12 +90,26 @@ module Habitation::SearchScopes
       if category.is_a?(Array)
         clean = category.reject(&:blank?)
         if clean.any?
-          where("unaccent(categoria) IN (SELECT unaccent(n) FROM unnest(ARRAY[?]) AS n)", clean)
+          if clean.any? { |item| item.to_s.casecmp("Empreendimento").zero? }
+            regular_categories = clean.reject { |item| item.to_s.casecmp("Empreendimento").zero? }
+            relation = where(tipo: "Empreendimento")
+            if regular_categories.any?
+              relation.or(where("unaccent(categoria) IN (SELECT unaccent(n) FROM unnest(ARRAY[?]) AS n)", regular_categories))
+            else
+              relation
+            end
+          else
+            where("unaccent(categoria) IN (SELECT unaccent(n) FROM unnest(ARRAY[?]) AS n)", clean)
+          end
         else
           all
         end
       elsif category.present?
-        where("unaccent(categoria) ILIKE unaccent(?)", category)
+        if category.to_s.casecmp("Empreendimento").zero?
+          where(tipo: "Empreendimento")
+        else
+          where("unaccent(categoria) ILIKE unaccent(?)", category)
+        end
       else
         all
       end
@@ -357,11 +390,15 @@ module Habitation::SearchScopes
         "SELECT 1 FROM habitations units " \
         "WHERE units.codigo_empreendimento = habitations.codigo " \
         "AND units.exibir_no_site_flag = TRUE " \
-        "AND units.status IN ('Venda', 'Locação', 'Aluguel', 'Locacao') " \
+        "AND units.status IN (?) " \
         "AND (units.valor_venda_cents > 0 OR units.valor_locacao_cents > 0) " \
-        "AND jsonb_typeof(units.pictures) = 'array' " \
-        "AND jsonb_array_length(units.pictures) > 0" \
-        ")"
+        "AND (" \
+        "  (jsonb_typeof(units.pictures) = 'array' AND jsonb_array_length(units.pictures) > 0) OR " \
+        "  (jsonb_typeof(units.fotos_empreendimento) = 'array' AND jsonb_array_length(units.fotos_empreendimento) > 0) OR " \
+        "  EXISTS (SELECT 1 FROM active_storage_attachments WHERE active_storage_attachments.record_id = units.id AND active_storage_attachments.record_type = 'Habitation')" \
+        ")" \
+        ")",
+        Habitation::PUBLIC_STATUSES
       )
     }
     scope :unidades, -> { where.not(codigo_empreendimento: nil) }

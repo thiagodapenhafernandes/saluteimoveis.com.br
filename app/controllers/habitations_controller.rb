@@ -1,8 +1,7 @@
 class HabitationsController < ApplicationController
   include HabitationCaching
   include ActionView::Helpers::NumberHelper
-  before_action :set_habitation, only: [:show]
-  before_action :set_habitation, only: [:share_link]
+  before_action :set_habitation, only: [:show, :schedule_visit, :share_link]
   before_action :authenticate_admin_user!, only: [:share_link]
   
   # GET /habitations
@@ -55,9 +54,9 @@ class HabitationsController < ApplicationController
       return
     end
     
-    property = Habitation.active.find_by(codigo: code)
+    property = Habitation.find_by(codigo: code)
     
-    if property
+    if property&.publicly_viewable?
       redirect_to habitation_path(property), notice: "Imóvel ##{code} encontrado!"
     else
       redirect_to habitations_path(search: code), 
@@ -67,8 +66,6 @@ class HabitationsController < ApplicationController
   
   # POST /imoveis/:id/schedule_visit
   def schedule_visit
-    @habitation = Habitation.friendly.find(params[:id])
-    
     # Enviar webhook com dados do formulário + código do imóvel
     webhook_data = visit_params.to_h.merge(
       property_code: @habitation.codigo,
@@ -223,29 +220,35 @@ class HabitationsController < ApplicationController
   private
   
   def set_habitation
-    # Site público é livre acesso: não restringimos aqui por exibir_no_site_flag
-    # (o filtro do flag é responsabilidade do scope active no listing).
-    # 1) tenta slug via friendly_id; 2) fallback por codigo (número final do slug).
-    begin
-      @habitation = Habitation.friendly.find(params[:id])
-    rescue ActiveRecord::RecordNotFound
-      trailing = params[:id].to_s[/(\d+)\z/, 1]
-      @habitation = Habitation.find_by(codigo: trailing) if trailing.present?
-      raise ActiveRecord::RecordNotFound if @habitation.blank?
-    end
+    @habitation = find_public_habitation(params[:id])
+    return if @habitation&.publicly_viewable?
 
-    # Para imóveis avulsos (não-empreendimento), o show só faz sentido quando há
-    # foto e preço — sem isso a página fica capenga. Empreendimento é exceção
-    # porque muitas vezes os preços estão nas unidades.
-    if @habitation && !@habitation.empreendimento?
-      unless @habitation.pictures.present? &&
-             (@habitation.valor_venda_cents.to_i > 0 || @habitation.valor_locacao_cents.to_i > 0)
-        raise ActiveRecord::RecordNotFound
-      end
-    end
-
-  rescue ActiveRecord::RecordNotFound
+    reason = @habitation&.public_unavailable_reason || "nao encontrado"
+    Rails.logger.info("[HabitationPublicShow] id=#{params[:id].inspect} indisponivel: #{reason}")
     redirect_to habitations_path, alert: 'Imóvel não encontrado ou indisponível no momento.'
+  end
+
+  def find_public_habitation(identifier)
+    identifier = identifier.to_s.strip
+    return nil if identifier.blank?
+
+    Habitation.find_by(slug: identifier) ||
+      Habitation.find_by(codigo: identifier) ||
+      find_habitation_by_trailing_code(identifier) ||
+      find_habitation_by_friendly_id(identifier)
+  end
+
+  def find_habitation_by_trailing_code(identifier)
+    trailing_code = identifier[/(\d+)\z/, 1]
+    return nil if trailing_code.blank? || trailing_code == identifier
+
+    Habitation.find_by(codigo: trailing_code)
+  end
+
+  def find_habitation_by_friendly_id(identifier)
+    Habitation.friendly.find(identifier)
+  rescue ActiveRecord::RecordNotFound
+    nil
   end
   
   def search_params

@@ -117,18 +117,16 @@
       function loadDeferredAssets() {
         // jQuery precisa carregar antes do select2 (e de qualquer onload que use $).
         // Os demais scripts são independentes e podem ser baixados em paralelo depois.
-        var jq = document.createElement('script');
-        jq.src = 'https://code.jquery.com/jquery-3.7.1.min.js';
-        jq.async = false;
-        jq.onload = function() {
+        var loadExtras = function() {
           var scripts = [
             'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js',
-            'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js',
             'https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js',
             'https://unpkg.com/aos@2.3.1/dist/aos.js'
           ];
 
           scripts.forEach(function(src) {
+            if (document.querySelector('script[src="' + src + '"]')) return;
+
             var s = document.createElement('script');
             s.src = src;
             s.async = true;
@@ -136,7 +134,7 @@
               s.onload = function() { AOS.init({ duration: 800, once: true }); };
             }
             if (src.includes('fancybox')) {
-              s.onload = function() { Fancybox.bind("[data-fancybox]", {}); };
+              s.onload = function() {};
             }
             if (src.includes('select2.min.js')) {
               s.onload = function() {
@@ -151,6 +149,17 @@
             document.body.appendChild(s);
           });
         };
+
+        var jquerySrc = 'https://code.jquery.com/jquery-3.7.1.min.js';
+        if (window.jQuery || document.querySelector('script[src="' + jquerySrc + '"]')) {
+          loadExtras();
+          return;
+        }
+
+        var jq = document.createElement('script');
+        jq.src = jquerySrc;
+        jq.async = false;
+        jq.onload = loadExtras;
         document.body.appendChild(jq);
       }
 

@@ -61,6 +61,9 @@ application.register("dynamic-list", DynamicListController)
 import FavoritesController from "controllers/favorites_controller"
 application.register("favorites", FavoritesController)
 
+import FancyboxGalleryController from "controllers/fancybox_gallery_controller"
+application.register("fancybox-gallery", FancyboxGalleryController)
+
 import FiltersController from "controllers/filters_controller"
 application.register("filters", FiltersController)
 
