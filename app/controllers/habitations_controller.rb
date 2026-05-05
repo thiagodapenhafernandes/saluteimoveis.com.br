@@ -24,6 +24,7 @@ class HabitationsController < ApplicationController
 
     @habitations = Habitation
       .active
+      .without_developments
       .advanced_search(search_params)
       .includes(:constructor, empreendimento: :constructor)
       .paginate(page: params[:page], per_page: 12)
