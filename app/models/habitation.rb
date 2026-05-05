@@ -45,6 +45,8 @@ class Habitation < ApplicationRecord
     "vendido terceiros"    => "Vendido terceiros"
   }.freeze
 
+  PUBLIC_STATUSES = ['Venda', 'Aluguel', 'Locação', 'Locacao'].freeze
+
   def self.normalize_status(value)
     return nil if value.blank?
     key = value.to_s.strip.downcase
@@ -363,6 +365,24 @@ class Habitation < ApplicationRecord
   def dwv_property?
     imovel_dwv.to_s.strip.casecmp("sim").zero?
   end
+
+  def publicly_viewable?
+    return false unless exibir_no_site_flag?
+    return false unless PUBLIC_STATUSES.include?(status)
+    return true if empreendimento?
+
+    has_public_photo? && has_public_price?
+  end
+
+  def public_unavailable_reason
+    return "exibir_no_site_flag=false" unless exibir_no_site_flag?
+    return "status=#{status.inspect}" unless PUBLIC_STATUSES.include?(status)
+    return nil if empreendimento?
+    return "sem fotos" unless has_public_photo?
+    return "sem preco" unless has_public_price?
+
+    nil
+  end
   
   # Verifica se é uma unidade de empreendimento
   def unidade?
@@ -649,6 +669,14 @@ class Habitation < ApplicationRecord
   end
   
   private
+
+  def has_public_photo?
+    (pictures.is_a?(Array) && pictures.any?) || photos.attached?
+  end
+
+  def has_public_price?
+    valor_venda_cents.to_i.positive? || valor_locacao_cents.to_i.positive?
+  end
   
   def clear_cache
     Rails.cache.delete(cache_key)

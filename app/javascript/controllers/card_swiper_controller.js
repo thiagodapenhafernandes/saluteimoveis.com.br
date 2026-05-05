@@ -1,18 +1,13 @@
 import { Controller } from "@hotwired/stimulus"
+import Swiper from "swiper/bundle"
 
 export default class extends Controller {
   connect() {
-    // Wait for Swiper to be loaded and DOM to be ready
     this.initializeSwiper();
   }
 
   initializeSwiper() {
-    // Check if Swiper is available
-    if (typeof Swiper === 'undefined') {
-      // Swiper is loaded asynchronously, so we wait for it to be available
-      setTimeout(() => this.initializeSwiper(), 100);
-      return;
-    }
+    if (this.swiper) return;
 
     try {
       this.swiper = new Swiper(this.element, {

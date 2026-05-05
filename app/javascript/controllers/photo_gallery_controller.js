@@ -1,20 +1,15 @@
 import { Controller } from "@hotwired/stimulus"
+import Swiper from "swiper/bundle"
 
 export default class extends Controller {
   connect() {
-    // Aguardar Swiper estar disponível
-    setTimeout(() => {
-      if (typeof Swiper === 'undefined') {
-        console.error('Swiper não está carregado')
-        return
-      }
-
-      this.initSwiper()
-      this.initFancybox()
-    }, 100)
+    this.initSwiper()
+    this.initFancybox()
   }
 
   initSwiper() {
+    if (this.swiper) return
+
     // Elementos de navegação
     const nextEl = this.element.querySelector('.swiper-button-next')
     const prevEl = this.element.querySelector('.swiper-button-prev')

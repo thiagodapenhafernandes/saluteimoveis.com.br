@@ -1,19 +1,14 @@
 import { Controller } from "@hotwired/stimulus"
+import Swiper from "swiper/bundle"
 
 export default class extends Controller {
   connect() {
-    // Aguardar Swiper e DOM estarem prontos
-    setTimeout(() => {
-      if (typeof Swiper === 'undefined') {
-        console.error('Swiper não está carregado')
-        return
-      }
-
-      this.initSwiper()
-    }, 100)
+    this.initSwiper()
   }
 
   initSwiper() {
+    if (this.swiper) return
+
     // Encontrar wrapper pai
     const wrapper = this.element.closest('.property-carousel-wrapper')
 
@@ -26,13 +21,6 @@ export default class extends Controller {
     const nextEl = wrapper.querySelector('.property-carousel-next')
     const prevEl = wrapper.querySelector('.property-carousel-prev')
     const paginationEl = wrapper.querySelector('.swiper-pagination')
-
-    console.log('Property Carousel Init:', {
-      hasWrapper: !!wrapper,
-      hasNext: !!nextEl,
-      hasPrev: !!prevEl,
-      hasPagination: !!paginationEl
-    })
 
     this.swiper = new Swiper(this.element, {
       // Mobile first (1 slide)
@@ -92,15 +80,7 @@ export default class extends Controller {
       // Só considera como clique se não houver movimento
       touchMoveStopPropagation: true,
 
-      // Eventos para debug
-      on: {
-        init: function () {
-          console.log('Swiper initialized with', this.slides.length, 'slides')
-        },
-        slideChange: function () {
-          console.log('Slide changed to', this.activeIndex)
-        }
-      }
+      on: {}
     })
   }
 
