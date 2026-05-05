@@ -1,7 +1,8 @@
 <% return unless shared_broker.present? %>
 
 <div class="bg-gradient-to-br from-blue-50 to-white border border-blue-100 rounded-xl p-5 shadow-sm">
-  <p class="text-xs uppercase tracking-wide text-blue-three font-semibold mb-3">Atendimento com corretor responsável</p>
+  <% attendant_label = habitation.rental_intake? ? "atendente" : "corretor" %>
+  <p class="text-xs uppercase tracking-wide text-blue-three font-semibold mb-3">Atendimento com <%= attendant_label %> responsável</p>
 
   <div class="flex items-center gap-3">
     <div class="w-14 h-14 rounded-full overflow-hidden bg-white border border-blue-100 flex items-center justify-center">
@@ -45,7 +46,7 @@
             data-share-token="<%= share_token %>"
             data-whatsapp-message="Olá, quero falar com <%= shared_broker.name %> sobre o imóvel <%= habitation.display_title %> (Cód: <%= habitation.codigo %>).">
       <i class="bi bi-chat-dots"></i>
-      Falar com corretor
+      Falar com <%= attendant_label %>
     </button>
   </div>
 </div>

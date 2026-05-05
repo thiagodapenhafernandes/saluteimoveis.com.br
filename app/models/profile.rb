@@ -8,8 +8,9 @@ class Profile < ApplicationRecord
   RESOURCES = [
     { key: "imoveis",            label: "Imóveis",                icon: "bi-houses",           actions: %w[view manage],       scopeable: true,  description: "Catálogo de imóveis (Habitations)" },
     { key: "leads",              label: "Leads",                  icon: "bi-megaphone",        actions: %w[view manage],       scopeable: true,  description: "Atendimento e gestão de leads" },
-    { key: "captacoes",          label: "Captações",              icon: "bi-journal-plus",     actions: %w[view manage publish], scopeable: true, description: "Intake de imóveis em campo" },
+    { key: "captacoes",          label: "Captações",              icon: "bi-journal-plus",     actions: %w[view manage review publish], scopeable: true, description: "Intake de imóveis em campo" },
     { key: "captacao_dashboard", label: "Dashboard Captação",     icon: "bi-bullseye",         actions: %w[view],              scopeable: false, description: "Métricas e gauges de captação" },
+    { key: "agenda_fotografia",  label: "Agenda de fotografia",   icon: "bi-camera",           actions: %w[view manage],       scopeable: false, description: "Agenda e imóveis pendentes de fotografia" },
     { key: "distribution_rules", label: "Regras de distribuição", icon: "bi-diagram-3",        actions: %w[view manage],       scopeable: false, description: "Distribuição automática de leads" },
     { key: "lojas",              label: "Lojas",                  icon: "bi-shop",             actions: %w[view manage],       scopeable: false, description: "Cadastro de lojas físicas" },
     { key: "field_checkins",     label: "Check-ins em Campo",     icon: "bi-geo-fill",         actions: %w[view manage],       scopeable: false, description: "Monitorar check-ins de corretores em plantão" },
@@ -30,6 +31,7 @@ class Profile < ApplicationRecord
   ACTION_LABELS = {
     "view"    => "Visualizar",
     "manage"  => "Gerenciar",
+    "review"  => "Aprovar",
     "publish" => "Publicar",
     "sync"    => "Sincronizar"
   }.freeze

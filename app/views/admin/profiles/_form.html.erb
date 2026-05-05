@@ -49,7 +49,7 @@
         <thead class="bg-light small text-uppercase fw-bold text-muted">
           <tr>
             <th class="px-3" style="min-width: 240px;">Recurso</th>
-            <% all_actions = %w[view manage publish sync] %>
+            <% all_actions = %w[view manage review publish sync] %>
             <% all_actions.each do |a| %>
               <th class="text-center" style="min-width: 90px;"><%= Profile::ACTION_LABELS[a] || a.humanize %></th>
             <% end %>

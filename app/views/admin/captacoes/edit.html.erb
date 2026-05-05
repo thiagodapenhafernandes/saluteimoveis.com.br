@@ -12,6 +12,9 @@
   current_idx = Captacao::STEPS.index(@step)
   total_steps = @captacao.skip_visitas? ? Captacao::STEPS.size - 1 : Captacao::STEPS.size
   shown_idx   = @captacao.skip_visitas? && current_idx >= Captacao::STEPS.index("visitas") ? current_idx : current_idx
+  invalid_fields = @invalid_fields || {}
+  field_state = ->(field, base = "form-control") { [base, ("is-invalid" if invalid_fields[field.to_sym])].compact.join(" ") }
+  field_invalid = ->(field) { invalid_fields[field.to_sym] }
 %>
 
 <!-- Top bar com progress -->
@@ -47,7 +50,7 @@
   <%= form_with model: @captacao, url: admin_captacao_path(@captacao), method: :patch, multipart: true, local: true, html: { id: "wizard-form" } do |f| %>
     <%= hidden_field_tag :current_step, @step %>
 
-    <%= render "admin/captacoes/steps/#{@step}", f: f %>
+    <%= render "admin/captacoes/steps/#{@step}", f: f, field_state: field_state, field_invalid: field_invalid %>
 
     <div class="wizard-bottom-nav">
       <div class="wizard-shell d-flex gap-2">

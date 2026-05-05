@@ -115,6 +115,41 @@
   </div>
 </div>
 
+<div class="row g-3 mb-3">
+  <div class="col-md-3 col-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="small text-muted text-uppercase fw-semibold">Pré-cadastros</div>
+        <div class="display-6 fw-bold text-primary"><%= @pre_cadastro_total %></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="small text-muted text-uppercase fw-semibold">Rascunho/devolvido</div>
+        <div class="display-6 fw-bold text-warning"><%= @pre_cadastro_draft %></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="small text-muted text-uppercase fw-semibold">Em aprovação</div>
+        <div class="display-6 fw-bold text-info"><%= @pre_cadastro_review %></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="small text-muted text-uppercase fw-semibold">Liberados site</div>
+        <div class="display-6 fw-bold text-success"><%= @pre_cadastro_published %></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Tabs -->
 <ul class="nav nav-tabs mb-3" id="captTabs" role="tablist">
   <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-geral" type="button">Geral</button></li>

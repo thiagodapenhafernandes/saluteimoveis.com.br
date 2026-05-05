@@ -1,9 +1,21 @@
 <aside class="admin-sidebar">
-  <% vista_soft_context = controller_name == 'habitations' && params[:sort] == 'last_sync_at' %>
+  <%
+    vista_soft_context = controller_name == 'habitations' && params[:sort] == 'last_sync_at'
+    can_access = lambda do |action, resource|
+      if respond_to?(:can?)
+        can?(action, resource)
+      else
+        user = respond_to?(:current_admin_user) ? current_admin_user : nil
+        user&.can?(action, resource)
+      end
+    rescue Devise::MissingWarden
+      false
+    end
+  %>
   <ul class="sidebar-menu">
 
     <!-- 1. Dashboard -->
-    <% if can?(:view, :dashboard) %>
+    <% if can_access.call(:view, :dashboard) %>
       <li class="sidebar-menu-item">
         <%= link_to admin_root_path, class: request.path == admin_root_path ? 'active' : '' do %>
           <i class="bi bi-speedometer2"></i><span>Dashboard</span>
@@ -12,7 +24,7 @@
     <% end %>
 
     <!-- 2. Imóveis -->
-    <% if can?(:view, :imoveis) %>
+    <% if can_access.call(:view, :imoveis) %>
       <li class="sidebar-menu-item">
         <%= link_to admin_habitations_path, class: controller_name == 'habitations' ? 'active' : '' do %>
           <i class="bi bi-houses"></i><span>Imóveis</span>
@@ -21,7 +33,7 @@
     <% end %>
 
     <!-- 3. Proprietários -->
-    <% if can?(:view, :proprietarios) %>
+    <% if can_access.call(:view, :proprietarios) %>
       <li class="sidebar-menu-item">
         <%= link_to admin_proprietors_path, class: controller_name == 'proprietors' ? 'active' : '' do %>
           <i class="bi bi-person-vcard"></i><span>Proprietários</span>
@@ -30,7 +42,7 @@
     <% end %>
 
     <!-- 4. Leads -->
-    <% if can?(:view, :leads) %>
+    <% if can_access.call(:view, :leads) %>
       <li class="sidebar-menu-item">
         <%= link_to admin_leads_path, class: controller_name == 'leads' ? 'active' : '' do %>
           <i class="bi bi-person-badge"></i><span>Leads</span>
@@ -39,7 +51,7 @@
     <% end %>
 
     <!-- 4. Distribuição de Leads -->
-    <% if can?(:view, :distribution_rules) || can?(:manage, :distribution_rules) %>
+    <% if can_access.call(:view, :distribution_rules) || can_access.call(:manage, :distribution_rules) %>
       <li class="sidebar-menu-item">
         <%= link_to admin_distribution_rules_path, class: controller_name == 'distribution_rules' ? 'active' : '' do %>
           <i class="bi bi-diagram-3"></i><span>Distribuição de Leads</span>
@@ -48,7 +60,7 @@
     <% end %>
 
     <!-- 5. Lojas -->
-    <% if can?(:view, :lojas) || can?(:manage, :lojas) %>
+    <% if can_access.call(:view, :lojas) || can_access.call(:manage, :lojas) %>
       <li class="sidebar-menu-item">
         <%= link_to admin_stores_path, class: controller_name == 'stores' ? 'active' : '' do %>
           <i class="bi bi-shop"></i><span>Lojas</span>
@@ -57,7 +69,7 @@
     <% end %>
 
     <!-- Captações -->
-    <% if can?(:view, :captacoes) %>
+    <% if can_access.call(:view, :captacoes) %>
       <li class="sidebar-menu-item">
         <%= link_to admin_captacoes_path, class: ((controller_name == 'captacoes' && action_name != 'dashboard') || controller_name == 'captacao_goals') ? 'active' : '' do %>
           <i class="bi bi-journal-plus"></i><span>Captações</span>
@@ -65,7 +77,7 @@
       </li>
     <% end %>
 
-    <% if can?(:view, :captacao_dashboard) %>
+    <% if can_access.call(:view, :captacao_dashboard) %>
       <li class="sidebar-menu-item">
         <%= link_to dashboard_admin_captacoes_path, class: (controller_name == 'captacoes' && action_name == 'dashboard') ? 'active' : '' do %>
           <i class="bi bi-bullseye"></i><span>Dashboard Captação</span>
@@ -73,17 +85,8 @@
       </li>
     <% end %>
 
-    <!-- Catálogos Dinâmicos -->
-    <% if can?(:view, :catalogos) %>
-      <li class="sidebar-menu-item">
-        <%= link_to admin_attribute_options_path, class: controller_name == 'attribute_options' ? 'active' : '' do %>
-          <i class="bi bi-tags"></i><span>Catálogos Dinâmicos</span>
-        <% end %>
-      </li>
-    <% end %>
-
     <!-- Campo: check-ins, pedidos manuais, auditoria, settings -->
-    <% if can?(:view, :field_checkins) %>
+    <% if can_access.call(:view, :field_checkins) %>
       <li class="sidebar-menu-item">
         <%= link_to admin_field_check_ins_path, class: (controller_path == 'admin/field/check_ins') ? 'active' : '' do %>
           <i class="bi bi-geo-fill"></i><span>Check-ins em Campo</span>
@@ -91,7 +94,7 @@
       </li>
     <% end %>
 
-    <% if can?(:view, :field_manual) %>
+    <% if can_access.call(:view, :field_manual) %>
       <li class="sidebar-menu-item">
         <%= link_to admin_field_manual_checkin_requests_path, class: (controller_path == 'admin/field/manual_checkin_requests') ? 'active' : '' do %>
           <i class="bi bi-hand-index-thumb-fill"></i><span>Pedidos manuais</span>
@@ -99,7 +102,7 @@
       </li>
     <% end %>
 
-    <% if can?(:view, :field_audit) %>
+    <% if can_access.call(:view, :field_audit) %>
       <li class="sidebar-menu-item">
         <%= link_to admin_field_audit_logs_path, class: (controller_path == 'admin/field/audit_logs') ? 'active' : '' do %>
           <i class="bi bi-shield-lock-fill"></i><span>Auditoria de Campo</span>
@@ -107,7 +110,7 @@
       </li>
     <% end %>
 
-    <% if can?(:manage, :field_settings) %>
+    <% if can_access.call(:manage, :field_settings) %>
       <li class="sidebar-menu-item">
         <%= link_to edit_admin_field_settings_path, class: (controller_path == 'admin/field_settings') ? 'active' : '' do %>
           <i class="bi bi-toggles2"></i><span>Ativar/desativar Campo</span>
@@ -116,7 +119,7 @@
     <% end %>
 
     <!-- Marketing -->
-    <% if can?(:manage, :marketing) %>
+    <% if can_access.call(:manage, :marketing) %>
       <li class="sidebar-menu-item">
         <a href="#submenu-marketing" data-bs-toggle="collapse" class="d-flex justify-content-between align-items-center <%= ['landing_pages', 'seo_settings', 'banners', 'home_sections', 'contact_settings', 'layout_settings', 'footer_settings', 'home_settings'].include?(controller_name) ? '' : 'collapsed' %>">
           <span><i class="bi bi-megaphone"></i><span class="ms-2">Marketing e Conteúdo</span></span>
@@ -138,42 +141,53 @@
     <% end %>
 
     <!-- Integrações -->
-    <% if can?(:manage, :integracoes) %>
+    <% schedule_context = can_access.call(:view, :agenda_fotografia) || can_access.call(:manage, :agenda_fotografia) || can_access.call(:manage, :integracoes) %>
+    <% if can_access.call(:manage, :integracoes) || schedule_context %>
       <li class="sidebar-menu-item">
-        <a href="#submenu-integracoes" data-bs-toggle="collapse" class="d-flex justify-content-between align-items-center <%= (['meta_integrations', 'webhook_settings', 'dwv_integrations', 'loft_integrations', 'portal_integrations'].include?(controller_name) || vista_soft_context) ? '' : 'collapsed' %>">
+        <a href="#submenu-integracoes" data-bs-toggle="collapse" class="d-flex justify-content-between align-items-center <%= (['meta_integrations', 'webhook_settings', 'dwv_integrations', 'loft_integrations', 'portal_integrations', 'scheduling_integrations'].include?(controller_name) || vista_soft_context) ? '' : 'collapsed' %>">
           <span><i class="bi bi-plug"></i><span class="ms-2">Integrações</span></span>
           <i class="bi bi-chevron-down small"></i>
         </a>
-        <div class="collapse <%= (['meta_integrations', 'webhook_settings', 'dwv_integrations', 'loft_integrations', 'portal_integrations'].include?(controller_name) || vista_soft_context) ? 'show' : '' %>" id="submenu-integracoes">
+        <div class="collapse <%= (['meta_integrations', 'webhook_settings', 'dwv_integrations', 'loft_integrations', 'portal_integrations', 'scheduling_integrations'].include?(controller_name) || vista_soft_context) ? 'show' : '' %>" id="submenu-integracoes">
           <ul class="sidebar-menu ps-3 mt-1 bg-light rounded">
-            <li class="sidebar-menu-item"><%= link_to admin_portal_integrations_path, class: controller_name == 'portal_integrations' ? 'active' : '' do %><i class="bi bi-building"></i><span>Portais</span><% end %></li>
-            <li class="sidebar-menu-item"><%= link_to admin_loft_integrations_path, class: controller_name == 'loft_integrations' ? 'active' : '' do %><i class="bi bi-hdd-rack"></i><span>Loft Soft</span><% end %></li>
-            <li class="sidebar-menu-item"><%= link_to admin_dwv_integrations_path, class: controller_name == 'dwv_integrations' ? 'active' : '' do %><i class="bi bi-hdd-network"></i><span>DWV</span><% end %></li>
-            <li class="sidebar-menu-item"><%= link_to admin_meta_integrations_path, class: controller_name == 'meta_integrations' ? 'active' : '' do %><i class="bi bi-meta"></i><span>Meta Leads</span><% end %></li>
-            <li class="sidebar-menu-item"><%= link_to admin_webhook_settings_path, class: controller_name == 'webhook_settings' ? 'active' : '' do %><i class="bi bi-broadcast"></i><span>Webhooks</span><% end %></li>
-            <li class="sidebar-menu-item"><%= link_to admin_habitations_path(sort: "last_sync_at", direction: "desc"), class: vista_soft_context ? 'active' : '' do %><i class="bi bi-arrow-repeat"></i><span>Vista Soft</span><% end %></li>
+            <% if can_access.call(:manage, :integracoes) %>
+              <li class="sidebar-menu-item"><%= link_to admin_portal_integrations_path, class: controller_name == 'portal_integrations' ? 'active' : '' do %><i class="bi bi-building"></i><span>Portais</span><% end %></li>
+              <li class="sidebar-menu-item"><%= link_to admin_loft_integrations_path, class: controller_name == 'loft_integrations' ? 'active' : '' do %><i class="bi bi-hdd-rack"></i><span>Loft Soft</span><% end %></li>
+              <li class="sidebar-menu-item"><%= link_to admin_dwv_integrations_path, class: controller_name == 'dwv_integrations' ? 'active' : '' do %><i class="bi bi-hdd-network"></i><span>DWV</span><% end %></li>
+              <li class="sidebar-menu-item"><%= link_to admin_meta_integrations_path, class: controller_name == 'meta_integrations' ? 'active' : '' do %><i class="bi bi-meta"></i><span>Meta Leads</span><% end %></li>
+            <% end %>
+            <% if schedule_context %>
+              <li class="sidebar-menu-item"><%= link_to admin_scheduling_integration_path, class: controller_name == 'scheduling_integrations' ? 'active' : '' do %><i class="bi bi-calendar2-check"></i><span>Agendamento</span><% end %></li>
+            <% end %>
+            <% if can_access.call(:manage, :integracoes) %>
+              <li class="sidebar-menu-item"><%= link_to admin_webhook_settings_path, class: controller_name == 'webhook_settings' ? 'active' : '' do %><i class="bi bi-broadcast"></i><span>Webhooks</span><% end %></li>
+              <li class="sidebar-menu-item"><%= link_to admin_habitations_path(sort: "last_sync_at", direction: "desc"), class: vista_soft_context ? 'active' : '' do %><i class="bi bi-arrow-repeat"></i><span>Vista Soft</span><% end %></li>
+            <% end %>
           </ul>
         </div>
       </li>
     <% end %>
 
     <!-- Administração -->
-    <% if can?(:view, :corretores) || can?(:manage, :perfis) || can?(:view, :metas_captacao) %>
+    <% if can_access.call(:view, :corretores) || can_access.call(:manage, :perfis) || can_access.call(:view, :metas_captacao) || can_access.call(:view, :catalogos) %>
       <li class="sidebar-menu-item">
-        <a href="#submenu-admin" data-bs-toggle="collapse" class="d-flex justify-content-between align-items-center <%= ['admin_users', 'profiles', 'captacao_goals'].include?(controller_name) ? '' : 'collapsed' %>">
+        <a href="#submenu-admin" data-bs-toggle="collapse" class="d-flex justify-content-between align-items-center <%= ['admin_users', 'profiles', 'captacao_goals', 'attribute_options'].include?(controller_name) ? '' : 'collapsed' %>">
           <span><i class="bi bi-shield-lock-fill"></i><span class="ms-2">Administração</span></span>
           <i class="bi bi-chevron-down small"></i>
         </a>
-        <div class="collapse <%= ['admin_users', 'profiles', 'captacao_goals'].include?(controller_name) ? 'show' : '' %>" id="submenu-admin">
+        <div class="collapse <%= ['admin_users', 'profiles', 'captacao_goals', 'attribute_options'].include?(controller_name) ? 'show' : '' %>" id="submenu-admin">
           <ul class="sidebar-menu ps-3 mt-1 bg-light rounded">
-            <% if can?(:view, :corretores) %>
+            <% if can_access.call(:view, :corretores) %>
               <li class="sidebar-menu-item"><%= link_to admin_admin_users_path, class: controller_name == 'admin_users' ? 'active' : '' do %><i class="bi bi-people"></i><span>Corretores</span><% end %></li>
             <% end %>
-            <% if can?(:manage, :perfis) %>
+            <% if can_access.call(:manage, :perfis) %>
               <li class="sidebar-menu-item"><%= link_to admin_profiles_path, class: controller_name == 'profiles' ? 'active' : '' do %><i class="bi bi-shield-lock"></i><span>Perfis</span><% end %></li>
             <% end %>
-            <% if can?(:view, :metas_captacao) %>
+            <% if can_access.call(:view, :metas_captacao) %>
               <li class="sidebar-menu-item"><%= link_to admin_captacao_goals_path, class: controller_name == 'captacao_goals' ? 'active' : '' do %><i class="bi bi-bullseye"></i><span>Metas de Captação</span><% end %></li>
+            <% end %>
+            <% if can_access.call(:view, :catalogos) %>
+              <li class="sidebar-menu-item"><%= link_to admin_attribute_options_path, class: controller_name == 'attribute_options' ? 'active' : '' do %><i class="bi bi-tags"></i><span>Catálogos Dinâmicos</span><% end %></li>
             <% end %>
           </ul>
         </div>

@@ -123,12 +123,14 @@
       </div>
     </div>
 
-    <% if @captacao.autorizacao_pdf.attached? %>
+    <% authorization_attachments = @captacao.respond_to?(:autorizacoes_venda) ? @captacao.autorizacoes_venda : @captacao.autorizacao_pdf %>
+    <% if authorization_attachments.attached? %>
       <div class="card shadow-sm border-0 mb-3">
         <div class="card-body">
           <h6 class="fw-bold text-uppercase small text-muted mb-2"><i class="bi bi-file-earmark-pdf me-1"></i>Autorização</h6>
-          <%= link_to rails_blob_path(@captacao.autorizacao_pdf, disposition: "inline"), target: "_blank", class: "btn btn-sm btn-outline-primary w-100" do %>
-            <i class="bi bi-download me-1"></i><%= @captacao.autorizacao_pdf.filename %>
+          <% first_authorization = authorization_attachments.respond_to?(:first) ? authorization_attachments.first : authorization_attachments %>
+          <%= link_to rails_blob_path(first_authorization, disposition: "inline"), target: "_blank", class: "btn btn-sm btn-outline-primary w-100" do %>
+            <i class="bi bi-download me-1"></i>Ver autorização
           <% end %>
         </div>
       </div>
@@ -136,12 +138,13 @@
   </div>
 </div>
 
-<% if @captacao.fotos.attached? %>
+<% photos_attachment = @captacao.respond_to?(:photos) ? @captacao.photos : @captacao.fotos %>
+<% if photos_attachment.attached? %>
   <div class="card shadow-sm border-0 mb-3">
     <div class="card-body">
-      <h6 class="fw-bold text-uppercase small text-muted mb-3"><i class="bi bi-images me-1"></i>Fotos (<%= @captacao.fotos.count %>)</h6>
+      <h6 class="fw-bold text-uppercase small text-muted mb-3"><i class="bi bi-images me-1"></i>Fotos (<%= photos_attachment.count %>)</h6>
       <div class="row g-2">
-        <% @captacao.fotos.each do |photo| %>
+        <% photos_attachment.each do |photo| %>
           <div class="col-6 col-md-3">
             <%= link_to rails_blob_path(photo, disposition: "inline"), target: "_blank" do %>
               <%= image_tag photo.representation(resize_to_limit: [400, 400]), class: "w-100 rounded", style: "height: 160px; object-fit: cover;", loading: "lazy" %>

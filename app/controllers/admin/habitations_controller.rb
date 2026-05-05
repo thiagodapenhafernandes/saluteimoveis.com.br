@@ -63,6 +63,7 @@ class Admin::HabitationsController < Admin::BaseController
   before_action :set_habitation, only: [:edit, :update, :destroy]
 
   before_action :load_autocomplete_data, only: [:new, :edit, :create, :update]
+  helper_method :can_view_proprietor_data?
 
   def index
     load_index_filters
@@ -535,7 +536,6 @@ class Admin::HabitationsController < Admin::BaseController
 
   def filtered_habitations_scope
     scope = Habitation.left_outer_joins(:address)
-    scope = scope.where(admin_user_id: current_admin_user.id) unless owns_all_resource?(:imoveis)
 
     if @q.present?
       scope = scope.where(
@@ -768,11 +768,17 @@ class Admin::HabitationsController < Admin::BaseController
       when "area_total_m2" then habitation.area_total_m2
       when "valor_por_m2" then habitation.valor_por_m2_formatted
       when "corretor_nome" then habitation.corretor_nome
-      when "proprietario" then habitation.proprietario
+      when "proprietario" then can_view_proprietor_data?(habitation) ? habitation.proprietario : "Captador: #{habitation.admin_user&.name || habitation.corretor_nome}"
       when "codigo_empreendimento" then habitation.codigo_empreendimento
       else habitation.public_send(field)
       end
     end
+  end
+
+  def can_view_proprietor_data?(habitation)
+    return true if current_admin_user&.admin? || owns_all_resource?(:imoveis)
+    return true if habitation.admin_user_id == current_admin_user&.id
+    habitation.broker_assignments.loaded? ? habitation.broker_assignments.any? { |assignment| assignment.admin_user_id == current_admin_user&.id } : habitation.broker_assignments.exists?(admin_user_id: current_admin_user&.id)
   end
 
   def apply_boolean_filter(scope, raw_param, column_name)
