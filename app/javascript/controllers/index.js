@@ -25,6 +25,9 @@ application.register("bulk-publish", BulkPublishController)
 import CategoryFilterController from "controllers/category_filter_controller"
 application.register("category-filter", CategoryFilterController)
 
+import CaptacaoPhotosController from "controllers/captacao_photos_controller"
+application.register("captacao-photos", CaptacaoPhotosController)
+
 import CepLookupController from "controllers/cep_lookup_controller"
 application.register("cep-lookup", CepLookupController)
 

@@ -57,6 +57,28 @@ class Habitation < ApplicationRecord
     'Pré Lançamento', 'Lançamento', 'Construção', 'Pronto para Morar'
   ].freeze
 
+  INTAKE_ORIGIN_BROKER = "broker_intake".freeze
+  INTAKE_STATUSES = {
+    "draft" => "Rascunho",
+    "submitted_for_admin_review" => "Em revisão administrativa",
+    "admin_approved" => "Liberado pelo administrativo",
+    "returned_to_broker" => "Devolvido ao corretor",
+    "published" => "Liberado para site"
+  }.freeze
+  PHOTO_FLOW_CHOICES = {
+    "upload" => "Enviar fotos",
+    "schedule" => "Agendar fotógrafo"
+  }.freeze
+  YES_NO_ANSWERS = {
+    "sim" => "Sim",
+    "nao" => "Não"
+  }.freeze
+  PHOTO_SCHEDULE_URL = "https://calendly.com/fotografias-saluteimoveis/30min".freeze
+
+  def self.photography_schedule_url
+    Setting.get("photography_schedule_url", "").to_s.strip
+  end
+
   # INTERNAL_FEATURES = [ ... ] (Deprecated in favor of AttributeOption)
   def self.internal_features
     AttributeOption.where(context: 'habitation', category: 'feature').order(name: :asc).pluck(:name)
@@ -153,6 +175,7 @@ class Habitation < ApplicationRecord
   
   belongs_to :constructor, optional: true
   belongs_to :proprietor, optional: true
+  belongs_to :admin_reviewed_by, class_name: "AdminUser", optional: true
   
   has_many :units, 
     class_name: 'Habitation',
@@ -206,8 +229,225 @@ class Habitation < ApplicationRecord
   before_validation :sync_construtora_from_constructor
   before_validation :sanitize_fields
   before_save :sync_flags_from_features
+  before_save :sync_intake_answers
   after_save :clear_cache
   after_destroy :clear_cache
+
+  scope :broker_intakes, -> { where(intake_origin: INTAKE_ORIGIN_BROKER) }
+
+  def step
+    intake_step.presence || "intro"
+  end
+
+  def completed?
+    intake_status.in?(%w[submitted_for_admin_review admin_approved published])
+  end
+
+  def published_on_site?
+    exibir_no_site_flag?
+  end
+
+  def submitted_at
+    submitted_for_review_at
+  end
+
+  def corretor
+    admin_user
+  end
+
+  def property_kind
+    return "terreno" if categoria.to_s.match?(/terreno/i)
+    return "sala_comercial" if categoria.to_s.match?(/sala|loja|comercial/i)
+    "residencial"
+  end
+
+  def property_kind=(value)
+    self.categoria = case value
+                     when "sala_comercial" then "Sala Comercial"
+                     when "terreno" then "Terreno"
+                     else "Apartamento"
+                     end
+  end
+
+  def property_kind_residencial?
+    property_kind == "residencial"
+  end
+
+  def property_kind_sala_comercial?
+    property_kind == "sala_comercial"
+  end
+
+  def property_kind_terreno?
+    property_kind == "terreno"
+  end
+
+  def modalidade
+    if valor_venda_cents.to_i.positive? && valor_locacao_cents.to_i.positive?
+      "ambos"
+    elsif rental_intake?
+      "locacao_anual"
+    else
+      "venda"
+    end
+  end
+
+  def modalidade=(value)
+    self.status = value.to_s.in?(%w[locacao_anual locacao_diaria]) ? "Aluguel" : "Venda"
+  end
+
+  def requires_sale_price?
+    modalidade.in?(%w[venda ambos])
+  end
+
+  def requires_rent_price?
+    modalidade.in?(%w[locacao_anual locacao_diaria ambos])
+  end
+
+  def skip_visitas?
+    property_kind_terreno?
+  end
+
+  def progress_percentage
+    total = Captacao::STEPS.size
+    current = Captacao::STEPS.index(step).to_i + 1
+    ((current.to_f / total) * 100).round
+  end
+
+  def previous_step
+    idx = Captacao::STEPS.index(step)
+    return nil if idx.blank? || idx.zero?
+    Captacao::STEPS[idx - 1]
+  end
+
+  def next_step
+    idx = Captacao::STEPS.index(step).to_i
+    Captacao::STEPS[[idx + 1, Captacao::STEPS.size - 1].min]
+  end
+
+  def zip_code = cep
+  def street = logradouro
+  def street_number = numero
+  def neighborhood = bairro
+  def city = cidade
+  def state = uf
+
+  def edificio_nome = nome_empreendimento
+  def unidade_numero = bloco
+
+  def proprietario_nome = proprietario
+  def proprietario_telefone = proprietario_celular
+  def proprietario_cpf_cnpj = proprietario_codigo
+  def proprietario_cidade = nil
+  def proprietario_cidade=(_value); end
+
+  def area_total = area_total_m2
+  def area_privativa = area_privativa_m2
+  def dormitorios = dormitorios_qtd
+  def suites = suites_qtd
+  def demi_suites = demi_suites_qtd
+  def banheiros = banheiros_qtd
+  def vagas_garagem = vagas_qtd
+  def salas = nil
+  def salas=(_value); end
+
+  def valor_venda = valor_venda_cents.to_i.positive? ? valor_venda_cents / 100.0 : nil
+  def valor_locacao = valor_locacao_cents.to_i.positive? ? valor_locacao_cents / 100.0 : nil
+  def valor_condominio = valor_condominio_cents.to_i.positive? ? valor_condominio_cents / 100.0 : nil
+  def valor_iptu = valor_iptu_cents.to_i.positive? ? valor_iptu_cents / 100.0 : nil
+  def saldo_devedor = saldo_devedor_cents.to_i.positive? ? saldo_devedor_cents / 100.0 : nil
+
+  def caracteristicas_imovel = caracteristicas || []
+  def caracteristicas_predio = infra_estrutura || []
+  def aceita_permuta
+    aceita_permuta_answer == "sim" || aceita_permuta_flag? ? ["Sim"] : []
+  end
+  def aceita_parcelamento = aceita_parcelamento_flag? ? "sim" : "nao"
+  def outras_taxas = []
+  def outras_taxas=(_value); end
+  def dias_visitas = []
+  def dias_visitas=(_value); end
+  def extras = {}
+  def extras=(_value); end
+  def chaves_com = nil
+  def chaves_com=(_value); end
+  def senha_imovel = nil
+  def senha_imovel=(_value); end
+  def senha_portaria = nil
+  def senha_portaria=(_value); end
+  def ocupacao = ocupacao_status
+  def estado_imovel = estado_conservacao
+  def situacao_imovel = situacao
+  def sacada = false
+  def sacada=(_value); end
+  def terraco = false
+  def terraco=(_value); end
+  def dependencia_empregada = false
+  def dependencia_empregada=(_value); end
+  def precisa_reforma = false
+  def precisa_reforma=(_value); end
+  def andares_total = andares_qtd
+  def aptos_por_andar = aptos_andar
+  def distancia_praia = nil
+  def distancia_praia=(_value); end
+  def cidade_permuta = permuta_localizacao
+  def fotos = photos
+  def autorizacao_pdf = autorizacoes_venda.attachments.first
+
+  {
+    zip_code: [:address, :cep],
+    street: [:address, :logradouro],
+    street_number: [:address, :numero],
+    neighborhood: [:address, :bairro],
+    city: [:address, :cidade],
+    state: [:address, :uf],
+    edificio_nome: [:self, :nome_empreendimento],
+    unidade_numero: [:self, :bloco],
+    proprietario_nome: [:self, :proprietario],
+    proprietario_telefone: [:self, :proprietario_celular],
+    proprietario_cpf_cnpj: [:self, :proprietario_codigo],
+    area_total: [:self, :area_total_m2],
+    area_privativa: [:self, :area_privativa_m2],
+    dormitorios: [:self, :dormitorios_qtd],
+    suites: [:self, :suites_qtd],
+    demi_suites: [:self, :demi_suites_qtd],
+    banheiros: [:self, :banheiros_qtd],
+    vagas_garagem: [:self, :vagas_qtd],
+    caracteristicas_imovel: [:self, :caracteristicas],
+    caracteristicas_predio: [:self, :infra_estrutura],
+    ocupacao: [:self, :ocupacao_status],
+    estado_imovel: [:self, :estado_conservacao],
+    situacao_imovel: [:self, :situacao],
+    andares_total: [:self, :andares_qtd],
+    aptos_por_andar: [:self, :aptos_andar],
+    cidade_permuta: [:self, :permuta_localizacao]
+  }.each do |method_name, (target, attribute)|
+    define_method("#{method_name}=") do |value|
+      receiver = target == :address ? ensure_address : self
+      receiver.public_send("#{attribute}=", value)
+    end
+  end
+
+  {
+    valor_venda: :valor_venda_formatted,
+    valor_locacao: :valor_locacao_formatted,
+    valor_condominio: :valor_condominio_formatted,
+    valor_iptu: :valor_iptu_formatted,
+    saldo_devedor: :saldo_devedor_formatted
+  }.each do |method_name, formatted_attribute|
+    define_method("#{method_name}=") { |value| public_send("#{formatted_attribute}=", value) }
+  end
+
+  def aceita_permuta=(value)
+    self.aceita_permuta_answer = Array(value).include?("Sim") ? "sim" : "nao"
+  end
+
+  def aceita_parcelamento=(value)
+    self.aceita_parcelamento_flag = value != "nao"
+  end
+
+  def ensure_address
+    address || build_address
+  end
 
   def preco_principal
     if valor_venda_cents.to_i > 0
@@ -229,6 +469,75 @@ class Habitation < ApplicationRecord
 
   def self.portal_publication_column_for(portal_key)
     PORTAL_PUBLICATION_FIELDS[portal_key.to_s]
+  end
+
+  def broker_intake?
+    intake_origin == INTAKE_ORIGIN_BROKER
+  end
+
+  def intake_status_label
+    INTAKE_STATUSES[intake_status] || intake_status.to_s.humanize
+  end
+
+  def intake_draft?
+    intake_status.blank? || intake_status == "draft"
+  end
+
+  def intake_submitted_for_admin_review?
+    intake_status == "submitted_for_admin_review"
+  end
+
+  def intake_admin_approved?
+    intake_status == "admin_approved"
+  end
+
+  def intake_published?
+    intake_status == "published"
+  end
+
+  def has_any_photo?
+    photos.attached? || image_urls.any?
+  end
+
+  def hidden_from_site_with_photos?
+    has_any_photo? && !exibir_no_site_flag?
+  end
+
+  def rental_intake?
+    status.to_s.downcase.match?(/aluguel|loca/)
+  end
+
+  def sale_intake?
+    !rental_intake?
+  end
+
+  def intake_missing_requirements
+    missing = []
+    missing << "Dados do proprietário" if proprietario.blank? || (proprietario_celular.blank? && proprietario_email.blank?)
+    missing << "Valor de venda ou locação" if valor_venda_cents.to_i <= 0 && valor_locacao_cents.to_i <= 0
+    missing << "Definições básicas" if categoria.blank? || status.blank?
+    missing << "Nome do condomínio/empreendimento" if nome_empreendimento.blank?
+    missing << "Endereço e localização" if address.blank? || cep.blank? || logradouro.blank? || bairro.blank? || cidade.blank? || uf.blank?
+    missing << "Dimensões e estrutura física" if area_privativa_m2.to_f <= 0 && area_total_m2.to_f <= 0 && dormitorios_qtd.to_i <= 0 && suites_qtd.to_i <= 0 && vagas_qtd.to_i <= 0
+    missing << "Financeiro e valores" if valor_condominio_cents.blank? && valor_iptu_cents.blank?
+    missing << "Mais características" if caracteristicas.blank?
+    missing << "Infraestrutura & Lazer" if infra_estrutura.blank?
+    missing << "Administração de locação feita pela Salute" if rental_intake? && salute_rental_management_answer.blank?
+    missing << "Aceita permuta" if sale_intake? && aceita_permuta_answer.blank?
+    missing << "Quantidade de parcelas" if aceita_parcelamento_flag? && numero_prestacoes.blank?
+    missing << "Fotos ou agenda com fotógrafo" if photo_flow_choice == "upload" && !has_any_photo?
+    missing << "Agenda com fotógrafo" if photo_flow_choice == "schedule" && photo_session_requested_at.blank?
+    missing << "Fotos ou agenda com fotógrafo" if photo_flow_choice.blank? && !has_any_photo?
+    missing << "Anexo da autorização do proprietário" unless autorizacoes_venda.attached?
+    missing
+  end
+
+  def intake_ready_for_admin_review?
+    intake_missing_requirements.empty?
+  end
+
+  def broker_can_release_to_site?
+    intake_admin_approved? && intake_ready_for_admin_review?
   end
   
   # Retorna a URL da imagem principal
@@ -311,6 +620,12 @@ class Habitation < ApplicationRecord
       idx = photo_ids_order.index(photo.id)
       idx || 999999 # Place unordered photos at the end
     end
+  end
+
+  def sync_intake_answers
+    self.aceita_permuta_flag = aceita_permuta_answer == "sim" if aceita_permuta_answer.present?
+    self.salute_rental_management_flag = salute_rental_management_answer == "sim" if salute_rental_management_answer.present?
+    self.photo_session_url = self.class.photography_schedule_url if photo_flow_choice == "schedule" && photo_session_url.blank?
   end
 
   # Dynamic Field Setters (Array handling)
@@ -449,6 +764,16 @@ class Habitation < ApplicationRecord
       values.size == 1 ? values.first.to_s : "#{values.min} a #{values.max}"
     else
       vagas_qtd.to_i.positive? ? vagas_qtd.to_s : nil
+    end
+  end
+
+  def card_suites_text
+    if empreendimento?
+      values = development_units.where("suites_qtd > 0").pluck(:suites_qtd).compact.uniq.sort
+      return nil if values.empty?
+      values.size == 1 ? values.first.to_s : "#{values.min} a #{values.max}"
+    else
+      suites_qtd.to_i.positive? ? suites_qtd.to_s : nil
     end
   end
 

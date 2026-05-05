@@ -1,4 +1,4 @@
-\restrict RAtWPYTguaKZqNmMSPcqa93IOK29BU6AH4EWL0yu2bOJIZmHKHOXAeWkmqyGRcV
+\restrict 834Jz65QbA1NM6cmxR1KHSyzheikhIB6DnHnorod3AjMhueyq4TvdLrmfGuXB09
 
 -- Dumped from database version 18.3 (Homebrew)
 -- Dumped by pg_dump version 18.3 (Homebrew)
@@ -939,7 +939,22 @@ CREATE TABLE public.habitations (
     mostrar_mapa_imovelweb character varying,
     tipo_publicacao_imovelweb_2 character varying,
     mostrar_mapa_imovelweb_2 character varying,
-    publicar_zapimoveis boolean DEFAULT false NOT NULL
+    publicar_zapimoveis boolean DEFAULT false NOT NULL,
+    intake_origin character varying,
+    intake_status character varying,
+    submitted_for_review_at timestamp(6) without time zone,
+    admin_reviewed_by_id bigint,
+    admin_reviewed_at timestamp(6) without time zone,
+    admin_review_notes text,
+    broker_released_at timestamp(6) without time zone,
+    photo_flow_choice character varying,
+    photo_session_requested_at timestamp(6) without time zone,
+    photo_session_url character varying,
+    aceita_parcelamento_flag boolean DEFAULT false NOT NULL,
+    salute_rental_management_answer character varying,
+    aceita_permuta_answer character varying,
+    intake_step character varying DEFAULT 'intro'::character varying NOT NULL,
+    motivo_venda character varying
 );
 
 
@@ -1666,6 +1681,39 @@ CREATE SEQUENCE public.meta_lead_forms_id_seq
 --
 
 ALTER SEQUENCE public.meta_lead_forms_id_seq OWNED BY public.meta_lead_forms.id;
+
+
+--
+-- Name: photography_schedule_blocks; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.photography_schedule_blocks (
+    id bigint NOT NULL,
+    date date NOT NULL,
+    reason character varying,
+    created_by_id bigint,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: photography_schedule_blocks_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.photography_schedule_blocks_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: photography_schedule_blocks_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.photography_schedule_blocks_id_seq OWNED BY public.photography_schedule_blocks.id;
 
 
 --
@@ -2811,6 +2859,13 @@ ALTER TABLE ONLY public.meta_lead_forms ALTER COLUMN id SET DEFAULT nextval('pub
 
 
 --
+-- Name: photography_schedule_blocks id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.photography_schedule_blocks ALTER COLUMN id SET DEFAULT nextval('public.photography_schedule_blocks_id_seq'::regclass);
+
+
+--
 -- Name: portal_integration_events id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -3264,6 +3319,14 @@ ALTER TABLE ONLY public.meta_facebook_pages
 
 ALTER TABLE ONLY public.meta_lead_forms
     ADD CONSTRAINT meta_lead_forms_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: photography_schedule_blocks photography_schedule_blocks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.photography_schedule_blocks
+    ADD CONSTRAINT photography_schedule_blocks_pkey PRIMARY KEY (id);
 
 
 --
@@ -3950,6 +4013,13 @@ CREATE INDEX index_habitations_on_aceita_permuta_flag ON public.habitations USIN
 
 
 --
+-- Name: index_habitations_on_admin_reviewed_by_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_admin_reviewed_by_id ON public.habitations USING btree (admin_reviewed_by_id);
+
+
+--
 -- Name: index_habitations_on_admin_user_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4059,6 +4129,27 @@ CREATE INDEX index_habitations_on_home_corporate_flag ON public.habitations USIN
 --
 
 CREATE INDEX index_habitations_on_infra_estrutura ON public.habitations USING gin (infra_estrutura);
+
+
+--
+-- Name: index_habitations_on_intake_origin; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_intake_origin ON public.habitations USING btree (intake_origin);
+
+
+--
+-- Name: index_habitations_on_intake_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_intake_status ON public.habitations USING btree (intake_status);
+
+
+--
+-- Name: index_habitations_on_intake_step; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_intake_step ON public.habitations USING btree (intake_step);
 
 
 --
@@ -4367,6 +4458,20 @@ CREATE UNIQUE INDEX index_meta_lead_forms_on_form_id ON public.meta_lead_forms U
 --
 
 CREATE INDEX index_meta_lead_forms_on_meta_facebook_page_id ON public.meta_lead_forms USING btree (meta_facebook_page_id);
+
+
+--
+-- Name: index_photography_schedule_blocks_on_created_by_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_photography_schedule_blocks_on_created_by_id ON public.photography_schedule_blocks USING btree (created_by_id);
+
+
+--
+-- Name: index_photography_schedule_blocks_on_date; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_photography_schedule_blocks_on_date ON public.photography_schedule_blocks USING btree (date);
 
 
 --
@@ -5050,6 +5155,14 @@ ALTER TABLE ONLY public.stores
 
 
 --
+-- Name: habitations fk_rails_b0b092703f; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.habitations
+    ADD CONSTRAINT fk_rails_b0b092703f FOREIGN KEY (admin_reviewed_by_id) REFERENCES public.admin_users(id);
+
+
+--
 -- Name: user_meta_integrations fk_rails_b1764c6b36; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5063,6 +5176,14 @@ ALTER TABLE ONLY public.user_meta_integrations
 
 ALTER TABLE ONLY public.meta_lead_forms
     ADD CONSTRAINT fk_rails_b4b9beb161 FOREIGN KEY (meta_facebook_page_id) REFERENCES public.meta_facebook_pages(id);
+
+
+--
+-- Name: photography_schedule_blocks fk_rails_b567a6e52d; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.photography_schedule_blocks
+    ADD CONSTRAINT fk_rails_b567a6e52d FOREIGN KEY (created_by_id) REFERENCES public.admin_users(id);
 
 
 --
@@ -5181,11 +5302,15 @@ ALTER TABLE ONLY public.push_subscriptions
 -- PostgreSQL database dump complete
 --
 
-\unrestrict RAtWPYTguaKZqNmMSPcqa93IOK29BU6AH4EWL0yu2bOJIZmHKHOXAeWkmqyGRcV
+\unrestrict 834Jz65QbA1NM6cmxR1KHSyzheikhIB6DnHnorod3AjMhueyq4TvdLrmfGuXB09
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260505152000'),
+('20260505143000'),
+('20260505113000'),
+('20260505110000'),
 ('20260420240000'),
 ('20260420230000'),
 ('20260420220001'),

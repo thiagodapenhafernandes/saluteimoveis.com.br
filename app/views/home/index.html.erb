@@ -67,7 +67,7 @@
     
   <% when 'developments' %>
     <% if @recent_properties.present? %>
-      <% cache ['developments_v1', @recent_properties.map(&:id), @recent_properties.map(&:updated_at).max] do %>
+      <% cache ['developments_v2', @recent_properties.map(&:id), @recent_properties.map(&:updated_at).max] do %>
         <section class="py-16 <%= bg_class %>">
           <div class="container-custom">
             <div class="text-center mb-12">

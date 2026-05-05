@@ -95,6 +95,11 @@ Rails.application.routes.draw do
       post :test_feed, on: :member
       get :preview_feed, on: :member
     end
+    resource :scheduling_integration, only: [:show, :update] do
+      get "pendentes/:id", action: :pending_property, as: :pending_property
+      post :block_day
+      delete "block_days/:id", action: :unblock_day, as: :unblock_day
+    end
     resources :landing_pages do
       get :preview, on: :collection
     end
@@ -103,9 +108,15 @@ Rails.application.routes.draw do
     resources :stores
 
     # === Captação (wizard + dashboard) ===
-    resources :captacoes do
-      member      { post :publish }
-      collection  { get :dashboard }
+    resources :captacoes, controller: "habitation_intakes" do
+      collection { get :dashboard, to: "captacoes#dashboard" }
+      member do
+        post :publish
+        post :submit_for_review
+        post :approve
+        post :return_to_broker
+        post :release_to_site
+      end
     end
     resources :captacao_goals
 

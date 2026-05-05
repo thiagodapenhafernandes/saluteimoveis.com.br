@@ -31,14 +31,16 @@
     <div class="wizard-field-group">
       <%= f.label :area_total, "Área total (m²)", class: "form-label" %>
       <span class="required-star">*</span>
-      <%= f.number_field :area_total, step: 0.01, inputmode: "decimal", class: "form-control" %>
+      <%= f.number_field :area_total, step: 0.01, inputmode: "decimal", class: field_state.call(:area_total) %>
+      <% if field_invalid.call(:area_total) %><div class="invalid-feedback d-block">Informe a área total maior que zero.</div><% end %>
     </div>
   </div>
   <% unless @captacao.property_kind_terreno? %>
     <div class="col-6">
       <div class="wizard-field-group">
         <%= f.label :area_privativa, "Área privativa (m²)", class: "form-label" %>
-        <%= f.number_field :area_privativa, step: 0.01, inputmode: "decimal", class: "form-control" %>
+        <%= f.number_field :area_privativa, step: 0.01, inputmode: "decimal", class: field_state.call(:area_privativa) %>
+        <% if field_invalid.call(:area_privativa) %><div class="invalid-feedback d-block">Informe a área privativa maior que zero.</div><% end %>
       </div>
     </div>
   <% end %>
@@ -51,7 +53,8 @@
         <div class="wizard-field-group">
           <%= f.label field, label, class: "form-label" %>
           <% if req %><span class="required-star">*</span><% end %>
-          <%= f.number_field field, min: 0, inputmode: "numeric", class: "form-control" %>
+          <%= f.number_field field, min: 0, inputmode: "numeric", class: field_state.call(field) %>
+          <% if field_invalid.call(field) %><div class="invalid-feedback d-block">Campo obrigatório.</div><% end %>
         </div>
       </div>
     <% end %>
@@ -62,7 +65,8 @@
       <div class="wizard-field-group">
         <%= f.label :banheiros, "Banheiros", class: "form-label" %>
         <span class="required-star">*</span>
-        <%= f.number_field :banheiros, min: 0, inputmode: "numeric", class: "form-control" %>
+        <%= f.number_field :banheiros, min: 0, inputmode: "numeric", class: field_state.call(:banheiros) %>
+        <% if field_invalid.call(:banheiros) %><div class="invalid-feedback d-block">Informe a quantidade de banheiros.</div><% end %>
       </div>
     </div>
     <div class="col-4">
@@ -74,7 +78,8 @@
     <div class="col-4">
       <div class="wizard-field-group">
         <%= f.label :salas, "Salas", class: "form-label" %>
-        <%= f.number_field :salas, min: 0, inputmode: "numeric", class: "form-control" %>
+        <%= f.number_field :salas, min: 0, inputmode: "numeric", class: field_state.call(:salas) %>
+        <% if field_invalid.call(:salas) %><div class="invalid-feedback d-block">Informe a quantidade de salas/ambientes.</div><% end %>
       </div>
     </div>
   </div>
@@ -116,7 +121,6 @@
     <div class="col-4">
       <div class="wizard-field-group">
         <%= f.label :salas, "Salas/Ambientes", class: "form-label" %>
-        <span class="required-star">*</span>
         <%= f.number_field :salas, min: 0, inputmode: "numeric", class: "form-control" %>
       </div>
     </div>
@@ -198,7 +202,7 @@
   <hr class="my-3">
   <div class="wizard-field-group">
     <label class="form-label">Características do imóvel</label>
-    <div>
+    <div class="<%= 'wizard-invalid-choice' if field_invalid.call(:caracteristicas_imovel) %>">
       <% features_imovel.each do |feat| %>
         <% selected = Array(@captacao.caracteristicas_imovel).include?(feat) %>
         <label class="wizard-feature-chip <%= 'selected' if selected %>">
@@ -207,13 +211,14 @@
         </label>
       <% end %>
     </div>
+    <% if field_invalid.call(:caracteristicas_imovel) %><div class="invalid-feedback d-block">Marque ao menos uma característica.</div><% end %>
   </div>
 <% end %>
 
 <% if features_predio.any? %>
   <div class="wizard-field-group">
     <label class="form-label">Características do edifício</label>
-    <div>
+    <div class="<%= 'wizard-invalid-choice' if field_invalid.call(:caracteristicas_predio) %>">
       <% features_predio.each do |feat| %>
         <% selected = Array(@captacao.caracteristicas_predio).include?(feat) %>
         <label class="wizard-feature-chip <%= 'selected' if selected %>">
@@ -222,5 +227,6 @@
         </label>
       <% end %>
     </div>
+    <% if field_invalid.call(:caracteristicas_predio) %><div class="invalid-feedback d-block">Marque ao menos uma característica do edifício.</div><% end %>
   </div>
 <% end %>

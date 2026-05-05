@@ -829,11 +829,12 @@
 <div class="row g-3">
   <% if @habitations.any? %>
     <% @habitations.each do |imovel| %>
+      <% can_manage_this_property = owns_all_resource?(:imoveis) || imovel.admin_user_id == current_admin_user&.id %>
       <div class="col-12">
         <div class="card shadow-sm border-0 overflow-hidden property-card-horizontal"
              style="height: 240px; cursor: pointer;"
              data-controller="clickable-card"
-             data-clickable-card-url-value="<%= edit_admin_habitation_path(imovel) %>">
+             data-clickable-card-url-value="<%= can_manage_this_property ? edit_admin_habitation_path(imovel) : habitation_path(imovel) %>">
           <div class="row g-0 h-100">
             <!-- Image Column -->
             <div class="col-md-4 col-lg-3 position-relative h-100">
@@ -862,6 +863,11 @@
                  <span class="badge bg-white text-dark shadow-sm uppercase-badge fw-bold"><%= imovel.status %></span>
                  <% if imovel.destaque_web_flag %>
                     <span class="badge bg-warning text-dark shadow-sm ms-1"><i class="bi bi-star-fill"></i></span>
+                 <% end %>
+                 <% if !imovel.has_any_photo? %>
+                    <span class="badge bg-danger shadow-sm ms-1">SEM FOTOS</span>
+                 <% elsif imovel.hidden_from_site_with_photos? %>
+                    <span class="badge bg-danger shadow-sm ms-1">FORA SITE</span>
                  <% end %>
               </div>
               
@@ -910,7 +916,9 @@
                               data-dropdown-target="menu"
                               style="right: 0; left: auto;">
                             <li><%= link_to "Ver no Site", habitation_path(imovel), target: "_blank", class: "dropdown-item small" %></li>
-                            <li><%= link_to "Editar", edit_admin_habitation_path(imovel), class: "dropdown-item small" %></li>
+                            <% if can_manage_this_property %>
+                              <li><%= link_to "Editar", edit_admin_habitation_path(imovel), class: "dropdown-item small" %></li>
+                            <% end %>
                             <% if current_admin_user&.admin? %>
                               <li><hr class="dropdown-divider"></li>
                               <li>

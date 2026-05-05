@@ -3,10 +3,19 @@
   <head>
     <title>Captação — Salute Imóveis</title>
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+    <meta name="theme-color" content="#0d6efd">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Salute Campo">
+    <meta name="mobile-web-app-capable" content="yes">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
     <%= render 'layouts/no_zoom' %>
-    <%= render 'layouts/pwa_meta' %>
+
+    <link rel="manifest" href="/captacao-manifest.json">
+    <link rel="apple-touch-icon" href="/field-icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/field-icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/field-icons/icon-512.png">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -24,9 +33,12 @@
         background: #f6f7f9;
         font-family: Inter, -apple-system, sans-serif;
         padding-bottom: calc(90px + env(safe-area-inset-bottom, 0));
+        min-height: 100vh;
+        min-height: 100dvh;
+        padding-top: env(safe-area-inset-top, 0);
       }
       .wizard-shell {
-        max-width: 720px;
+        max-width: 480px;
         margin: 0 auto;
       }
       .wizard-top-bar {
@@ -54,7 +66,7 @@
 
       .wizard-option-card {
         display: block;
-        min-height: 110px;
+        min-height: 116px;
         border: 2px solid #e5e7eb;
         border-radius: 14px;
         padding: 1rem;
@@ -81,7 +93,7 @@
       }
       .wizard-field-group .form-control,
       .wizard-field-group .form-select {
-        min-height: 48px;
+        min-height: 50px;
         font-size: 1rem;
       }
       .wizard-field-group .required-star { color: #dc3545; }
@@ -116,6 +128,12 @@
         color: #fff;
         border-color: #0d6efd;
       }
+      .wizard-invalid-choice {
+        border: 1px solid #dc3545;
+        border-radius: 12px;
+        padding: .45rem;
+        background: rgba(220, 53, 69, .04);
+      }
 
       .wizard-photo-grid img {
         width: 100%;
@@ -124,14 +142,136 @@
         border-radius: 8px;
       }
 
+      .captacao-photo-list {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        padding: .85rem;
+      }
+      .captacao-photo-empty {
+        border: 1px dashed #cbd5e1;
+        border-radius: 12px;
+        color: #64748b;
+        padding: .8rem;
+        text-align: center;
+        font-size: .9rem;
+      }
+      .captacao-photo-row {
+        display: grid;
+        grid-template-columns: 34px 68px 1fr;
+        gap: .7rem;
+        align-items: center;
+        padding: .7rem 0;
+        border-bottom: 1px solid #eef2f7;
+      }
+      .captacao-photo-row:last-child { border-bottom: 0; }
+      .captacao-photo-index {
+        width: 28px;
+        height: 28px;
+        border-radius: 999px;
+        background: #eef4ff;
+        color: #0d6efd;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: .85rem;
+      }
+      .captacao-photo-thumb {
+        width: 64px;
+        height: 64px;
+        border-radius: 10px;
+        object-fit: cover;
+        border: 1px solid #e5e7eb;
+        background: #f8fafc;
+      }
+      .captacao-photo-meta {
+        min-width: 0;
+      }
+      .captacao-photo-meta strong,
+      .captacao-photo-meta small {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .captacao-photo-meta strong {
+        color: #111827;
+        font-size: .9rem;
+      }
+      .captacao-photo-meta small {
+        color: #64748b;
+        font-size: .78rem;
+      }
+      .captacao-highlight-choice {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        margin-top: .35rem;
+        font-size: .82rem;
+        font-weight: 600;
+        color: #374151;
+      }
+      .captacao-photo-actions {
+        grid-column: 2 / 4;
+        display: flex;
+        gap: .4rem;
+      }
+      .captacao-photo-actions .btn {
+        min-width: 40px;
+      }
+      .captacao-schedule-box {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .75rem;
+        background: #fff;
+        border: 1px solid #dbeafe;
+        border-radius: 14px;
+        padding: .85rem;
+      }
+      .captacao-calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: .5rem;
+      }
+      .captacao-calendar-day {
+        border: 1px solid #dbe4f0;
+        border-radius: 12px;
+        background: #fff;
+        color: #334155;
+        font-weight: 700;
+        min-height: 48px;
+      }
+      .captacao-calendar-day.active {
+        background: #0d6efd;
+        border-color: #0d6efd;
+        color: #fff;
+      }
+      .captacao-slot-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: .5rem;
+      }
+      .captacao-time-slot {
+        min-height: 46px;
+        font-weight: 700;
+      }
+
       @media (min-width: 768px) {
         body { padding-bottom: 0; }
         .wizard-bottom-nav {
           position: static;
-          max-width: 720px;
+          max-width: 480px;
           margin: 1rem auto 2rem;
           border-radius: 14px;
           border: 1px solid #e5e7eb;
+        }
+        .captacao-photo-row {
+          grid-template-columns: 34px 76px 1fr auto;
+        }
+        .captacao-photo-actions {
+          grid-column: auto;
         }
       }
     </style>

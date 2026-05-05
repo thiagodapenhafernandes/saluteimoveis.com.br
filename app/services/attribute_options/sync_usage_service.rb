@@ -17,6 +17,7 @@ module AttributeOptions
       when ["habitation", "infrastructure"] then sync_habitation_infrastructure
       when ["habitation", "unique_feature"] then sync_habitation_unique_features
       when ["habitation", "imediacoes"] then sync_habitation_surroundings
+      when ["habitation", "sale_reason"] then sync_habitation_sale_reasons
       end
     end
 
@@ -130,6 +131,17 @@ module AttributeOptions
         next if normalized == current
 
         address.update_columns(imediacoes: normalized, updated_at: Time.current)
+      end
+    end
+
+    def sync_habitation_sale_reasons
+      return unless Habitation.column_names.include?("motivo_venda")
+
+      if rename?
+        return if @new_name.blank? || @new_name == @old_name
+        Habitation.where(motivo_venda: @old_name).update_all(motivo_venda: @new_name, updated_at: Time.current)
+      elsif delete?
+        Habitation.where(motivo_venda: @old_name).update_all(motivo_venda: nil, updated_at: Time.current)
       end
     end
 

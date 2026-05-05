@@ -47,6 +47,16 @@ module Admin
       @goal_venda_obj   = CaptacaoGoal.current_foco(year: @period_end.year, kind: :venda)
       @goal_locacao_obj = CaptacaoGoal.current_foco(year: @period_end.year, kind: :locacao)
 
+      intake_scope = Habitation.broker_intakes.where(created_at: @period_start.beginning_of_day..@period_end.end_of_day)
+      intake_scope = intake_scope.where("EXTRACT(MONTH FROM habitations.created_at) = ?", @month_filter.to_i) if @month_filter.present?
+      intake_scope = intake_scope.where(admin_user_id: current_admin_user.id) unless owns_all_resource?(:pre_cadastros) || can?(:review, :pre_cadastros)
+
+      @pre_cadastro_total = intake_scope.count
+      @pre_cadastro_draft = intake_scope.where(intake_status: [nil, "draft", "returned_to_broker"]).count
+      @pre_cadastro_review = intake_scope.where(intake_status: "submitted_for_admin_review").count
+      @pre_cadastro_admin_approved = intake_scope.where(intake_status: "admin_approved").count
+      @pre_cadastro_published = intake_scope.where(intake_status: "published").count
+
       build_leads_heatmap
     end
 

@@ -1,5 +1,6 @@
 const CACHE = "salute-admin-cache-v2";
 const offlineFallbackPage = "/admin";
+const fieldFallbackPage = "/field";
 
 self.addEventListener("install", function (event) {
   console.log("[ServiceWorker] Install");
@@ -8,7 +9,7 @@ self.addEventListener("install", function (event) {
   event.waitUntil(
     caches.open(CACHE).then(function (cache) {
       console.log("[ServiceWorker] Caching offline page");
-      return cache.add(offlineFallbackPage);
+      return cache.addAll([offlineFallbackPage, fieldFallbackPage]);
     })
   );
 });
@@ -24,7 +25,8 @@ self.addEventListener("fetch", function (event) {
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request).catch(function () {
-        return caches.match(offlineFallbackPage);
+        const fallback = event.request.url.includes("/admin/captacoes") ? fieldFallbackPage : offlineFallbackPage;
+        return caches.match(fallback);
       })
     );
   }

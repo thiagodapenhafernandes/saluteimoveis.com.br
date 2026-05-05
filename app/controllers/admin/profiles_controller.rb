@@ -92,7 +92,8 @@ module Admin
         "dashboard"          => { "view"    => true },
         "imoveis"            => { "view"    => true, "manage" => false, "scope" => "own" },
         "leads"              => { "view"    => true, "manage" => true,  "scope" => "own" },
-        "captacoes"          => { "view"    => true, "manage" => true,  "publish" => false, "scope" => "own" },
+        "captacoes"          => { "view"    => true, "manage" => true, "review" => false, "publish" => false, "scope" => "own" },
+        "agenda_fotografia"  => { "view"    => false, "manage" => false },
         "captacao_dashboard" => { "view"    => true }
       }
     end

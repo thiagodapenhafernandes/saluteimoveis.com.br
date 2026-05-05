@@ -18,7 +18,10 @@ module Field
 
       # Stats rápidas do dia
       @my_leads_today       = Lead.where(admin_user_id: @admin_user.id, created_at: Date.current.beginning_of_day..).count
-      @my_active_captacoes  = Captacao.where(corretor: @admin_user, completed: false).count
+      @my_active_captacoes  = Habitation.broker_intakes
+                                        .where(admin_user_id: @admin_user.id)
+                                        .where(intake_status: [nil, "draft", "returned_to_broker"])
+                                        .count
       @my_total_habitations = Habitation.where(admin_user_id: @admin_user.id).count
       @recent_my_leads      = Lead.where(admin_user_id: @admin_user.id).order(created_at: :desc).limit(3)
     end
