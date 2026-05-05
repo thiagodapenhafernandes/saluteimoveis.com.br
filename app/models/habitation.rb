@@ -374,6 +374,27 @@ class Habitation < ApplicationRecord
     has_public_photo? && has_public_price?
   end
 
+  def delivery_date_visible?(today = Date.current)
+    data_entrega.present? && data_entrega >= today
+  end
+
+  def ready_to_move?
+    readiness_values = [situacao, estado_conservacao, unique_features]
+
+    if caracteristicas.is_a?(Hash)
+      readiness_values << caracteristicas.select { |_key, value| ActiveModel::Type::Boolean.new.cast(value) }.keys
+      readiness_values << caracteristicas.values
+    end
+
+    if infra_estrutura.is_a?(Array)
+      readiness_values << infra_estrutura
+    end
+
+    readiness_values.flatten.compact.any? do |value|
+      value.to_s.parameterize.include?("pronto")
+    end
+  end
+
   def public_unavailable_reason
     return "exibir_no_site_flag=false" unless exibir_no_site_flag?
     return "status=#{status.inspect}" unless PUBLIC_STATUSES.include?(status)

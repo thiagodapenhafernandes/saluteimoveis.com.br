@@ -383,10 +383,15 @@
                 </div>
               <% end %>
               
-              <% if @habitation.data_entrega.present? %>
+              <% if @habitation.delivery_date_visible? %>
                 <div class="flex justify-between py-2 border-b border-gray-100">
-                  <span class="text-gray-500">Previsão Entrega:</span>
-                  <span class="font-semibold text-gray-900"><%= l(@habitation.data_entrega, format: :short) %></span>
+                  <span class="text-gray-500">Previsão de entrega:</span>
+                  <span class="font-semibold text-gray-900"><%= l(@habitation.data_entrega, format: :long) %></span>
+                </div>
+              <% elsif @habitation.data_entrega.present? && @habitation.ready_to_move? %>
+                <div class="flex justify-between py-2 border-b border-gray-100">
+                  <span class="text-gray-500">Situação:</span>
+                  <span class="font-semibold text-gray-900">Pronto para morar</span>
                 </div>
               <% end %>
               
