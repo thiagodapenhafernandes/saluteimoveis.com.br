@@ -32,7 +32,10 @@ module Habitation::SearchScopes
         )
     }
     scope :without_developments, -> {
-      where("COALESCE(habitations.tipo, '') <> 'Empreendimento'")
+      where(
+        "COALESCE(habitations.tipo, '') <> 'Empreendimento' " \
+        "AND COALESCE(habitations.imovel_dwv, '') <> 'Sim'"
+      )
     }
     scope :featured, -> { where(destaque_web_flag: true) }
     scope :home_corporate, -> {

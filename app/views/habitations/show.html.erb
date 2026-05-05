@@ -293,10 +293,15 @@
                 <p class="font-bold text-gray-900"><%= @habitation.unique_features.join(", ") %></p>
               </div>
             <% end %>
-            <% if @habitation.data_entrega.present? %>
+            <% if @habitation.delivery_date_visible? %>
               <div>
-                <p class="text-gray-500">Entrega</p>
-                <p class="font-bold text-gray-900"><%= l(@habitation.data_entrega, format: :short) %></p>
+                <p class="text-gray-500">Previsão de entrega</p>
+                <p class="font-bold text-gray-900"><%= l(@habitation.data_entrega, format: :long) %></p>
+              </div>
+            <% elsif @habitation.data_entrega.present? && @habitation.ready_to_move? %>
+              <div>
+                <p class="text-gray-500">Situação</p>
+                <p class="font-bold text-gray-900">Pronto para morar</p>
               </div>
             <% end %>
             <% if @habitation.nome_empreendimento.present? %>
