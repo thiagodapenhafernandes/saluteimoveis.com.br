@@ -31,6 +31,9 @@ module Habitation::SearchScopes
           Habitation::PUBLIC_STATUSES
         )
     }
+    scope :without_developments, -> {
+      where("COALESCE(habitations.tipo, '') <> 'Empreendimento'")
+    }
     scope :featured, -> { where(destaque_web_flag: true) }
     scope :home_corporate, -> {
       where(home_corporate_flag: true)

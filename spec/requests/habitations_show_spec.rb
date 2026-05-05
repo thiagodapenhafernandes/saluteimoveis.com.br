@@ -44,7 +44,7 @@ RSpec.describe "Habitation details", type: :request do
   end
 
   describe "GET /imoveis" do
-    it "lists public developments even when the parent does not have its own price" do
+    it "does not list developments" do
       development = create(
         :habitation,
         codigo: "9001",
@@ -61,10 +61,11 @@ RSpec.describe "Habitation details", type: :request do
 
       expect(response).to have_http_status(:ok)
       codes = JSON.parse(response.body).map { |item| item.fetch("codigo") }
-      expect(codes).to include("9001")
+      expect(codes).to include("9002")
+      expect(codes).not_to include("9001")
     end
 
-    it "filters developments by category=Empreendimento" do
+    it "does not return developments even with category=Empreendimento" do
       development = create(
         :habitation,
         codigo: "9001",
@@ -81,7 +82,7 @@ RSpec.describe "Habitation details", type: :request do
 
       expect(response).to have_http_status(:ok)
       codes = JSON.parse(response.body).map { |item| item.fetch("codigo") }
-      expect(codes).to eq(["9001"])
+      expect(codes).to be_empty
     end
   end
 end
