@@ -1,4 +1,4 @@
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+<div class="captacoes-header d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
   <div>
     <h1 class="h3 mb-1"><i class="bi bi-journal-plus text-primary me-2"></i>Captações</h1>
     <p class="text-muted small mb-0">
@@ -38,7 +38,83 @@
 </div>
 
 <% if @captacoes.any? %>
-  <div class="card shadow-sm border-0">
+  <div class="captacao-mobile-list d-md-none">
+    <% @captacoes.each do |c| %>
+      <div class="captacao-mobile-card">
+        <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+          <div class="min-w-0">
+            <div class="fw-bold captacao-mobile-title"><%= c.display_title %></div>
+            <div class="small text-muted">
+              <% if c.city.present? %><i class="bi bi-geo-alt me-1"></i><%= c.city %><% else %>Sem cidade<% end %>
+            </div>
+          </div>
+          <% if c.published_on_site? %>
+            <span class="badge bg-success flex-shrink-0"><i class="bi bi-globe me-1"></i>Publicada</span>
+          <% elsif c.completed? %>
+            <span class="badge bg-primary flex-shrink-0">Finalizada</span>
+          <% else %>
+            <span class="badge bg-warning text-dark flex-shrink-0">Rascunho</span>
+          <% end %>
+        </div>
+
+        <div class="captacao-mobile-grid mb-3">
+          <div>
+            <span>Tipo</span>
+            <strong><%= c.property_kind.humanize %></strong>
+          </div>
+          <div>
+            <span>Modalidade</span>
+            <strong>
+              <% case c.modalidade
+                 when "venda" %>Venda
+              <% when "locacao_anual" %>Locação
+              <% when "ambos" %>Ambos
+              <% when "locacao_diaria" %>Temporada
+              <% else %>—
+              <% end %>
+            </strong>
+          </div>
+          <div>
+            <span>Valor</span>
+            <strong>
+              <% if c.valor_venda.present? %>
+                <%= number_to_currency(c.valor_venda, unit: "R$ ", precision: 0) %>
+              <% elsif c.valor_locacao.present? %>
+                <%= number_to_currency(c.valor_locacao, unit: "R$ ", precision: 0) %>/mês
+              <% else %>—
+              <% end %>
+            </strong>
+          </div>
+          <div>
+            <span>Atualizada</span>
+            <strong><%= time_ago_in_words(c.updated_at) %> atrás</strong>
+          </div>
+          <% if current_admin_user.admin? %>
+            <div class="captacao-mobile-grid-full">
+              <span>Corretor</span>
+              <strong><%= c.corretor.name %></strong>
+            </div>
+          <% end %>
+        </div>
+
+        <% if c.completed? %>
+          <%= link_to admin_captacao_path(c), class: "btn btn-outline-primary w-100 fw-semibold" do %>
+            <i class="bi bi-eye me-1"></i>Ver captação
+          <% end %>
+        <% else %>
+          <%= link_to edit_admin_captacao_path(c), class: "btn btn-primary w-100 fw-semibold" do %>
+            <i class="bi bi-pencil me-1"></i>Continuar cadastro
+          <% end %>
+        <% end %>
+      </div>
+    <% end %>
+
+    <div class="d-flex justify-content-center mt-3">
+      <%= will_paginate @captacoes, renderer: WillPaginate::ActionView::BootstrapLinkRenderer %>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0 d-none d-md-block">
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
         <thead class="bg-light text-muted small text-uppercase fw-bold">

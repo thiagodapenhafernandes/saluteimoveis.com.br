@@ -1,5 +1,10 @@
 class Admin::DashboardController < Admin::BaseController
   def index
+    unless current_admin_user.admin?
+      redirect_to field_root_path
+      return
+    end
+
     @is_admin_view = current_admin_user.admin?
 
     # Scopes: admin vê tudo, corretor vê só o que é dele.

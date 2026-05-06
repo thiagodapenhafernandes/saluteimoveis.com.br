@@ -57,10 +57,10 @@
       <button type="button" class="admin-navbar-toggle d-md-none" data-bs-toggle="offcanvas" data-bs-target="#adminSidebarOffcanvas" aria-label="Abrir menu">
         <i class="bi bi-list"></i>
       </button>
-      <a href="/admin" class="admin-navbar-brand">
+      <%= link_to((current_admin_user&.admin? ? admin_root_path : field_root_path), class: "admin-navbar-brand") do %>
         <i class="bi bi-speedometer2"></i>
         <span class="admin-navbar-brand-text"><%= @layout_setting&.site_name.presence || 'Salute' %> Admin</span>
-      </a>
+      <% end %>
       <div class="admin-navbar-user">
         <span class="admin-navbar-user-name d-none d-sm-inline">
           <i class="bi bi-person-circle"></i> <%= current_admin_user&.name.to_s.split.first || current_admin_user&.email %>
