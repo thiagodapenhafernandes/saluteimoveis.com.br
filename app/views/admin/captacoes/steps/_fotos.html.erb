@@ -22,15 +22,30 @@
 
   <div class="wizard-field-group d-none" data-captacao-photos-target="uploadPanel">
     <label class="form-label">Fotos do imóvel</label>
-    <%= f.file_field (@captacao.is_a?(Habitation) ? :photos : :fotos),
-                     multiple: true,
-                     accept: "image/*",
-                     capture: "environment",
-                     class: field_state.call(:photos),
-                     direct_upload: true,
-                     data: { captacao_photos_target: "input", action: "change->captacao-photos#filesChanged" } %>
+    <div class="captacao-photo-picker-actions">
+      <label class="btn btn-primary captacao-photo-picker-button mb-0">
+        <i class="bi bi-images me-1"></i>
+        Selecionar da galeria
+        <%= f.file_field (@captacao.is_a?(Habitation) ? :photos : :fotos),
+                         multiple: true,
+                         accept: "image/*",
+                         class: "visually-hidden #{'is-invalid' if field_invalid.call(:photos)}",
+                         direct_upload: true,
+                         data: { captacao_photos_target: "input", action: "change->captacao-photos#filesChanged" } %>
+      </label>
+      <label class="btn btn-outline-primary captacao-photo-picker-button mb-0">
+        <i class="bi bi-camera me-1"></i>
+        Tirar foto
+        <input type="file"
+               accept="image/*"
+               capture="environment"
+               class="visually-hidden"
+               data-action="change->captacao-photos#filesChanged"
+               data-captacao-photos-append="true">
+      </label>
+    </div>
     <% if field_invalid.call(:photos) %><div class="invalid-feedback d-block">Envie ao menos uma foto do imóvel.</div><% end %>
-    <small class="text-muted">Você pode selecionar várias fotos, reordenar e definir a primeira imagem do anúncio.</small>
+    <small class="text-muted">Use a galeria para enviar 20 a 30 fotos de uma vez, ou tire uma foto por vez e vá acrescentando na lista.</small>
   </div>
 
   <div class="captacao-photo-list mb-4 d-none" data-captacao-photos-target="newPhotosPanel">

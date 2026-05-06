@@ -35,7 +35,14 @@ export default class extends Controller {
   }
 
   filesChanged(event) {
-    this.selectedFiles = Array.from(event.target.files || [])
+    const incomingFiles = Array.from(event.target.files || [])
+    if (event.currentTarget.dataset.captacaoPhotosAppend === "true") {
+      this.selectedFiles = this.selectedFiles.concat(incomingFiles)
+      event.currentTarget.value = ""
+      this.syncInputFiles()
+    } else {
+      this.selectedFiles = incomingFiles
+    }
     this.renderNewFiles()
   }
 

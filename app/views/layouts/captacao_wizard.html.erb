@@ -36,16 +36,21 @@
         min-height: 100vh;
         min-height: 100dvh;
         padding-top: env(safe-area-inset-top, 0);
+        overflow-x: hidden;
+        width: 100%;
+        max-width: 100%;
       }
+      html { overflow-x: hidden; }
       .wizard-shell {
         max-width: 480px;
         margin: 0 auto;
+        width: 100%;
       }
       .wizard-top-bar {
-        position: sticky; top: 0; z-index: 1020;
+        position: sticky; top: env(safe-area-inset-top, 0); z-index: 1020;
         background: #fff;
         border-bottom: 1px solid #e5e7eb;
-        padding: .75rem 1rem;
+        padding: .75rem calc(1rem + env(safe-area-inset-right, 0)) .75rem calc(1rem + env(safe-area-inset-left, 0));
       }
       .wizard-progress { height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden; }
       .wizard-progress-bar {
@@ -60,7 +65,7 @@
         position: fixed; bottom: 0; left: 0; right: 0; z-index: 1020;
         background: #fff;
         border-top: 1px solid #e5e7eb;
-        padding: .75rem 1rem calc(.75rem + env(safe-area-inset-bottom, 0));
+        padding: .75rem calc(1rem + env(safe-area-inset-right, 0)) calc(.75rem + env(safe-area-inset-bottom, 0)) calc(1rem + env(safe-area-inset-left, 0));
       }
       .wizard-bottom-nav .btn { min-height: 48px; font-weight: 600; }
 
@@ -140,6 +145,20 @@
         height: 110px;
         object-fit: cover;
         border-radius: 8px;
+      }
+
+      .captacao-photo-picker-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: .65rem;
+      }
+      .captacao-photo-picker-button {
+        min-height: 50px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        white-space: normal;
       }
 
       .captacao-photo-list {
@@ -272,6 +291,21 @@
         }
         .captacao-photo-actions {
           grid-column: auto;
+        }
+      }
+      @media (max-width: 420px) {
+        .captacao-photo-picker-actions {
+          grid-template-columns: 1fr;
+        }
+      }
+      @supports (-webkit-touch-callout: none) {
+        @media (max-width: 767.98px) {
+          body {
+            padding-top: max(env(safe-area-inset-top, 0), 44px);
+          }
+          .wizard-top-bar {
+            top: max(env(safe-area-inset-top, 0), 44px);
+          }
         }
       }
     </style>
