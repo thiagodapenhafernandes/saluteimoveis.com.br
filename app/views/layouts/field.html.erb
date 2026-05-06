@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#0d6efd">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Salute Campo">
     <meta name="mobile-web-app-capable" content="yes">
     <%= csrf_meta_tags %>
@@ -106,12 +106,17 @@
         background: #f8f9fa;
         min-height: 100vh;
         min-height: 100dvh;
-        padding-top: env(safe-area-inset-top, 0px);
+        padding-top: 54px;
       }
       .field-layout {
         max-width: 480px;
         margin: 0 auto;
         padding: 1rem 1rem 5rem;
+      }
+      @supports (-webkit-touch-callout: none) {
+        @media (max-width: 767.98px) {
+          html, body { padding-top: 58px; }
+        }
       }
       .field-card {
         background: white;
