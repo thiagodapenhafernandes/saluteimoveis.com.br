@@ -57,9 +57,29 @@
           <div class="d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center gap-2 flex-wrap">
               <%= f.label :status, "Status:", class: "mb-0" %>
-              <%= f.select :status, Lead.statuses.keys.map { |s| [I18n.t("activerecord.attributes.lead.statuses.#{s}"), s] }, {}, class: "form-select form-select-sm", style: "width: auto;" %>
+              <%= f.select :status, @status_options, {}, class: "form-select form-select-sm", style: "width: auto;", id: "lead_status" %>
+              <% if defined?(can?) && can?(:manage, :catalogos) %>
+                <button type="button" class="btn btn-sm btn-outline-primary"
+                        data-attribute-manager-context-value="lead"
+                        data-attribute-manager-category-value="status"
+                        data-attribute-manager-field-name-value="lead[status]"
+                        data-attribute-manager-modal-id-value="attributeManagerModalLead"
+                        data-action="click->attribute-manager#open"
+                        data-title="Gerenciar Status de Lead"
+                        data-select-id="lead_status">
+                  <i class="bi bi-sliders me-1"></i>Status
+                </button>
+              <% end %>
               <%= f.label :origin, "Origem:", class: "mb-0 ms-2" %>
               <%= f.select :origin, @origin_options, { include_blank: "Selecione..." }, class: "form-select form-select-sm", style: "width: auto; min-width: 180px;", data: { controller: "tom-select", tom_select_create_value: true }, id: "lead_origin" %>
+              <% if can?(:manage, :leads) || owns_all_resource?(:leads) %>
+                <%= f.label :admin_user_id, "Corretor:", class: "mb-0 ms-2" %>
+                <%= f.select :admin_user_id, @broker_options, { include_blank: "Sem corretor" }, class: "form-select form-select-sm", style: "width: auto; min-width: 220px;" %>
+              <% else %>
+                <span class="small text-muted ms-2">
+                  <i class="bi bi-person-badge me-1"></i><%= @lead.admin_user&.name.presence || "Sem corretor atribuído" %>
+                </span>
+              <% end %>
               <button type="button" class="btn btn-sm btn-outline-primary"
                       data-attribute-manager-context-value="lead"
                       data-attribute-manager-category-value="source"

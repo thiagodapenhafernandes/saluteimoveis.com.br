@@ -22,16 +22,22 @@ class Admin::HabitationsController < Admin::BaseController
     "property_list_by_broker" => 14
   }.freeze
   REPORT_MAX_PAGES = 100
+  CUSTOM_FEATURE_OPTIONS = [
+    "Cozinha gourmet com churrasqueira",
+    "Sol da manhã",
+    "Sol da tarde",
+    "Sol o dia todo"
+  ].freeze
   AMENITY_FILTER_OPTIONS = [
     "Aquecimento Central", "Ar Central", "Ar Condicionado", "Área de Serviço", "Armários Embutidos",
     "Bicicletário", "Churrasqueira", "Churrasqueira Coletiva", "Condomínio Fechado", "Cozinha Americana",
-    "Cozinha Planejada", "Diferenciado", "Dormitório com Armários", "Elevador", "Estacionamento",
+    "Cozinha gourmet com churrasqueira", "Cozinha Planejada", "Diferenciado", "Dormitório com Armários", "Elevador", "Estacionamento",
     "Frente Mar", "Gás Central", "Guarita", "Hidromassagem", "Jardim", "Mobiliado", "Piscina",
     "Piscina Coletiva", "Playground", "Portaria", "Porteiro Eletrônico", "Quadra mar",
     "Quadra de Esportes", "Quintal", "Sacada", "Sacada com Churrasqueira", "Sala com Armários",
     "Sala de Jantar", "Sala Fitness", "Salão de Festas", "Salão Imobiliário", "Sauna", "Segurança",
     "Semi Mobiliado", "Terraço", "Vigilância 24h", "Vista Panorâmica", "Vista para o Mar",
-    "Vista frente para o Mar", "Zelador"
+    "Vista frente para o Mar", *CUSTOM_FEATURE_OPTIONS, "Zelador"
   ].freeze
   EXPORT_FIELDS = {
     "codigo" => "Referencia",
@@ -385,7 +391,7 @@ class Admin::HabitationsController < Admin::BaseController
           .sort,
         badges: AttributeOption.where(context: 'habitation', category: 'unique_feature').order(name: :asc).pluck(:name),
         imediacoes_options: AttributeOption.where(context: 'habitation', category: 'imediacoes').order(name: :asc).pluck(:name),
-        internal_features: AttributeOption.where(context: 'habitation', category: 'feature').order(name: :asc).pluck(:name),
+        internal_features: (AttributeOption.where(context: 'habitation', category: 'feature').order(name: :asc).pluck(:name) + CUSTOM_FEATURE_OPTIONS).uniq.sort,
         external_features: AttributeOption.where(context: 'habitation', category: 'infrastructure').order(name: :asc).pluck(:name)
       }
     end
@@ -528,6 +534,7 @@ class Admin::HabitationsController < Admin::BaseController
     @max_price = params[:max_price].to_s.gsub(/[^\d]/, '').to_i
     @permuta_min_value = params[:permuta_min_value].to_s.gsub(/[^\d]/, '').to_i
     @scope = params[:scope]
+    @ownership_scope = params[:ownership].presence_in(%w[mine all]) || (current_admin_user&.admin? ? "all" : "mine")
     @captacao_inicio = params[:captacao_inicio]
     @captacao_fim = params[:captacao_fim]
     @atualizacao_inicio = params[:atualizacao_inicio]
@@ -536,6 +543,7 @@ class Admin::HabitationsController < Admin::BaseController
 
   def filtered_habitations_scope
     scope = Habitation.left_outer_joins(:address)
+    scope = apply_ownership_scope(scope)
 
     if @q.present?
       scope = scope.where(
@@ -687,6 +695,16 @@ class Admin::HabitationsController < Admin::BaseController
         "varanda_gourmet_flag = true OR " \
         "EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) WHERE value ILIKE '%sacada%' OR value ILIKE '%varanda%')"
       )
+    when "dependencia_empregada"
+      scope = scope.dependencia_empregada
+    when "cozinha_gourmet_churrasqueira"
+      scope = scope.cozinha_gourmet_churrasqueira
+    when "sol_manha"
+      scope = scope.sol_manha
+    when "sol_tarde"
+      scope = scope.sol_tarde
+    when "sol_dia_todo"
+      scope = scope.sol_dia_todo
     when "decorado"
       scope = scope.where(
         "decorado_flag = true OR " \
@@ -695,6 +713,21 @@ class Admin::HabitationsController < Admin::BaseController
     end
 
     scope
+  end
+
+  def apply_ownership_scope(scope)
+    return scope if @ownership_scope == "all"
+    return scope unless current_admin_user
+
+    broker_name = current_admin_user.name.to_s.strip
+    broker_name_condition = broker_name.present? ? " OR habitations.corretor_nome ILIKE :name" : ""
+    scope.left_outer_joins(:broker_assignments)
+         .where(
+           "habitations.admin_user_id = :id OR habitation_broker_assignments.admin_user_id = :id#{broker_name_condition}",
+           id: current_admin_user.id,
+           name: "%#{broker_name}%"
+         )
+         .distinct
   end
 
   def normalized_report_type
@@ -821,6 +854,14 @@ class Admin::HabitationsController < Admin::BaseController
       scope.where("mobiliado_flag = true OR " \
                   "(jsonb_typeof(caracteristicas) = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(caracteristicas) value WHERE unaccent(lower(value)) ILIKE unaccent('%mobiliado%'))) OR " \
                   "(jsonb_typeof(caracteristicas) = 'object' AND EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) kv WHERE unaccent(lower(kv.key)) ILIKE unaccent('%mobiliado%') OR unaccent(lower(kv.value)) ILIKE unaccent('%mobiliado%')))")
+    when /cozinha.*gourmet.*churrasqueir/
+      scope.cozinha_gourmet_churrasqueira
+    when /sol.*manha/
+      scope.sol_manha
+    when /sol.*tarde/
+      scope.sol_tarde
+    when /sol.*dia.*todo/
+      scope.sol_dia_todo
     else
       scope.where(
         "(jsonb_typeof(caracteristicas) = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(caracteristicas) value WHERE unaccent(lower(value)) ILIKE unaccent(:pattern))) OR " \

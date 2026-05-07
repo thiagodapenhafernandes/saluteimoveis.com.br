@@ -8,18 +8,32 @@ class Admin::LeadsController < Admin::BaseController
     @q = params[:q]
     @status = params[:status]
     @origin = params[:origin]
+    @view_mode = params[:view].presence_in(%w[kanban list]) || "kanban"
 
-    @leads = owns_all_resource?(:leads) ? Lead.all : Lead.where(admin_user_id: current_admin_user.id)
-    @leads = @leads.order(created_at: :desc)
+    lead_scope = owns_all_resource?(:leads) ? Lead.all : Lead.where(admin_user_id: current_admin_user.id)
     
     if @q.present?
-      @leads = @leads.where("name ILIKE :q OR email ILIKE :q OR phone ILIKE :q OR origin ILIKE :q", q: "%#{@q}%")
+      lead_scope = lead_scope.where("name ILIKE :q OR email ILIKE :q OR phone ILIKE :q OR origin ILIKE :q", q: "%#{@q}%")
     end
     
-    @leads = @leads.where(status: @status) if @status.present?
-    @leads = @leads.by_origin(@origin)
+    lead_scope = lead_scope.where(status: Lead.status_value(@status)) if @status.present?
+    lead_scope = lead_scope.by_origin(@origin)
+    lead_scope = lead_scope.includes(:admin_user).order(created_at: :desc)
 
-    @leads = @leads.paginate(page: params[:page], per_page: 20)
+    @lead_statuses = if @status.present?
+                        [Lead.status_value(@status)]
+                      else
+                        (Lead.status_options + lead_scope.reorder(nil).distinct.pluck(:status).compact).uniq
+                      end
+    @leads_by_status = @lead_statuses.index_with { |status| [] }
+    @kanban_leads = lead_scope.to_a
+    @kanban_leads.each do |lead|
+      @leads_by_status[Lead.status_value(lead.status)] ||= []
+      @leads_by_status[Lead.status_value(lead.status)] << lead
+    end
+    @lead_counts_by_status = @leads_by_status.transform_values(&:size)
+    @properties_by_id = Habitation.where(id: @kanban_leads.filter_map(&:property_id).uniq).index_by(&:id)
+    @leads = lead_scope.paginate(page: params[:page], per_page: 20)
     @page_title = "Gerenciar Leads"
   end
 
@@ -30,9 +44,15 @@ class Admin::LeadsController < Admin::BaseController
 
   def update
     if @lead.update(lead_params)
-      redirect_to admin_lead_path(@lead), notice: "Lead atualizado com sucesso."
+      respond_to do |format|
+        format.html { redirect_to admin_lead_path(@lead), notice: "Lead atualizado com sucesso." }
+        format.json { render json: { id: @lead.id, status: @lead.status, badge_class: Lead.status_badge_class(@lead.status) } }
+      end
     else
-      render :show, status: :unprocessable_entity
+      respond_to do |format|
+        format.html { render :show, status: :unprocessable_entity }
+        format.json { render json: { errors: @lead.errors.full_messages }, status: :unprocessable_entity }
+      end
     end
   end
 
@@ -54,10 +74,14 @@ class Admin::LeadsController < Admin::BaseController
   end
 
   def lead_params
-    params.require(:lead).permit(:status, :notes, :origin)
+    permitted = [:status, :notes, :origin]
+    permitted << :admin_user_id if can?(:manage, :leads) || owns_all_resource?(:leads)
+    params.require(:lead).permit(permitted)
   end
 
   def load_origin_options
     @origin_options = Lead.origin_options
+    @status_options = Lead.status_options
+    @broker_options = AdminUser.active.order(:name).pluck(:name, :id)
   end
 end

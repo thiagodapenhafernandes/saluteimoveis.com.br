@@ -88,6 +88,9 @@ application.register("image-preview", ImagePreviewController)
 import LeadCaptureController from "controllers/lead_capture_controller"
 application.register("lead-capture", LeadCaptureController)
 
+import LeadKanbanController from "controllers/lead_kanban_controller"
+application.register("lead-kanban", LeadKanbanController)
+
 import LocationFilterController from "controllers/location_filter_controller"
 application.register("location-filter", LocationFilterController)
 

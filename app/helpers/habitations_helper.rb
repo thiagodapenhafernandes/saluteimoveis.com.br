@@ -8,6 +8,7 @@ module HabitationsHelper
     'quadra_mar' => { label: 'Quadra Mar', icon: 'bi-building' },
     'vista_mar' => { label: 'Vista Mar', icon: 'bi-eye' },
     'churrasqueira' => { label: 'Churrasqueira', icon: 'bi-fire' },
+    'cozinha_gourmet_churrasqueira' => { label: 'Cozinha gourmet com churrasqueira', icon: 'bi-fire' },
     'mobiliado' => { label: 'Mobiliado', icon: 'bi-house-heart' },
     'sacada' => { label: 'Sacada', icon: 'bi-door-open' },
     'decorado' => { label: 'Decorado', icon: 'bi-palette' },
@@ -15,10 +16,14 @@ module HabitationsHelper
     'semi_mobiliado' => { label: 'Semi Mobiliado', icon: 'bi-house' },
     'lavabo' => { label: 'Lavabo', icon: 'bi-droplet' },
     'lavanderia' => { label: 'Lavanderia', icon: 'bi-basket' },
+    'dependencia_empregada' => { label: 'Dependência de empregada', icon: 'bi-door-closed' },
     'hidromassagem' => { label: 'Hidromassagem', icon: 'bi-moisture' },
     'piscina' => { label: 'Piscina', icon: 'bi-water' },
     'sala_estar' => { label: 'Sala de Estar', icon: 'bi-tv' },
     'sala_jantar' => { label: 'Sala de Jantar', icon: 'bi-egg-fried' },
+    'sol_manha' => { label: 'Sol da manhã', icon: 'bi-sunrise' },
+    'sol_tarde' => { label: 'Sol da tarde', icon: 'bi-sunset' },
+    'sol_dia_todo' => { label: 'Sol o dia todo', icon: 'bi-sun' },
     'varanda' => { label: 'Varanda', icon: 'bi-door-open' }
   }.freeze
   
@@ -71,10 +76,27 @@ module HabitationsHelper
     when 'churrasqueira'
       check_jsonb_text(property.caracteristicas, 'churrasqueira') ||
         check_jsonb_array(property.infra_estrutura, 'churrasqueira')
+    when 'cozinha_gourmet_churrasqueira'
+      (check_jsonb_text(property.caracteristicas, 'cozinha', 'gourmet') ||
+        check_jsonb_text(property.caracteristicas, 'gourmet')) &&
+        property_has_characteristic?(property, 'churrasqueira')
     when 'mobiliado'
       property.mobiliado_flag == true
     when 'decorado'
       check_jsonb_text(property.caracteristicas, 'decorado')
+    when 'dependencia_empregada'
+      check_jsonb_text(property.caracteristicas, 'depend', 'empreg') ||
+        check_jsonb_text(property.caracteristicas, 'dep', 'empreg') ||
+        check_jsonb_text(property.caracteristicas, 'quarto', 'empreg')
+    when 'sol_manha'
+      %w[leste nordeste sudeste].include?(I18n.transliterate(property.face.to_s).downcase) ||
+        check_jsonb_text(property.caracteristicas, 'sol', 'manha')
+    when 'sol_tarde'
+      %w[oeste noroeste sudoeste].include?(I18n.transliterate(property.face.to_s).downcase) ||
+        check_jsonb_text(property.caracteristicas, 'sol', 'tarde')
+    when 'sol_dia_todo'
+      I18n.transliterate(property.face.to_s).downcase == 'norte' ||
+        check_jsonb_text(property.caracteristicas, 'sol', 'dia', 'todo')
     when 'piscina'
       property.piscina_flag == true ||
         check_jsonb_text(property.caracteristicas, 'piscina') ||

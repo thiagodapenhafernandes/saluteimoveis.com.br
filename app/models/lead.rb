@@ -1,4 +1,17 @@
 class Lead < ApplicationRecord
+  DEFAULT_STATUS = "Novo".freeze
+  LEGACY_STATUSES = ["Novo", "Em Atendimento", "Aguardando Aceite", "Represado", "Descartado", "Concluido"].freeze
+  STATUS_ALIASES = {
+    "novo" => "Novo",
+    "em_atendimento" => "Em Atendimento",
+    "waiting_acceptance" => "Aguardando Aceite",
+    "aguardando_aceite" => "Aguardando Aceite",
+    "represado" => "Represado",
+    "descartado" => "Descartado",
+    "concluido" => "Concluido",
+    "received" => "Novo"
+  }.freeze
+
   belongs_to :admin_user, optional: true
   belongs_to :shared_by_admin_user, class_name: "AdminUser", optional: true
   belongs_to :distribution_rule, optional: true
@@ -6,16 +19,15 @@ class Lead < ApplicationRecord
   
   after_create_commit :route_lead
 
-  enum :status, {
-    novo: 'Novo',
-    em_atendimento: 'Em Atendimento',
-    waiting_acceptance: 'Aguardando Aceite',
-    represado: 'Represado',
-    descartado: 'Descartado',
-    concluido: 'Concluido'
-  }, default: :novo
+  before_validation :normalize_status
 
-  scope :holding, -> { where(status: :represado) }
+  scope :novo, -> { where(status: status_value(:novo)) }
+  scope :em_atendimento, -> { where(status: status_value(:em_atendimento)) }
+  scope :waiting_acceptance, -> { where(status: status_value(:waiting_acceptance)) }
+  scope :represado, -> { where(status: status_value(:represado)) }
+  scope :descartado, -> { where(status: status_value(:descartado)) }
+  scope :concluido, -> { where(status: status_value(:concluido)) }
+  scope :holding, -> { represado }
   scope :by_origin, ->(origin) { where(origin: origin) if origin.present? }
 
   validates :name, :phone, presence: true
@@ -65,7 +77,45 @@ class Lead < ApplicationRecord
     AttributeOption.where(context: "lead", category: "source").order(name: :asc).pluck(:name)
   end
 
+  def self.status_options
+    catalog_statuses = AttributeOption.where(context: "lead", category: "status").order(name: :asc).pluck(:name)
+    return LEGACY_STATUSES if catalog_statuses.blank?
+
+    legacy_in_catalog = LEGACY_STATUSES.select { |status| catalog_statuses.include?(status) }
+    custom_statuses = catalog_statuses.reject { |status| LEGACY_STATUSES.include?(status) }.sort
+    legacy_in_catalog + custom_statuses
+  end
+
+  def self.status_value(value)
+    raw = value.to_s.strip
+    return default_status if raw.blank?
+
+    STATUS_ALIASES[raw] || STATUS_ALIASES[raw.downcase] || raw
+  end
+
+  def self.default_status
+    status_options.first || DEFAULT_STATUS
+  rescue ActiveRecord::StatementInvalid, ActiveRecord::NoDatabaseError
+    DEFAULT_STATUS
+  end
+
+  def self.status_badge_class(status)
+    case status_value(status)
+    when "Novo" then "info"
+    when "Em Atendimento" then "primary"
+    when "Aguardando Aceite" then "warning"
+    when "Represado" then "secondary"
+    when "Descartado" then "danger"
+    when "Concluido" then "success"
+    else "dark"
+    end
+  end
+
   private
+
+  def normalize_status
+    self.status = self.class.status_value(status)
+  end
 
   def route_lead
     Leads::RoutingService.route!(self)

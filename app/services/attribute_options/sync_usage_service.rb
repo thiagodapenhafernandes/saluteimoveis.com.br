@@ -13,6 +13,7 @@ module AttributeOptions
 
       case [@context, @category]
       when ["lead", "source"] then sync_lead_sources
+      when ["lead", "status"] then sync_lead_statuses
       when ["habitation", "feature"] then sync_habitation_features
       when ["habitation", "infrastructure"] then sync_habitation_infrastructure
       when ["habitation", "unique_feature"] then sync_habitation_unique_features
@@ -37,6 +38,16 @@ module AttributeOptions
         Lead.where(origin: @old_name).update_all(origin: @new_name)
       elsif delete?
         Lead.where(origin: @old_name).update_all(origin: nil)
+      end
+    end
+
+    def sync_lead_statuses
+      if rename?
+        return if @new_name.blank? || @new_name == @old_name
+        Lead.where(status: @old_name).update_all(status: @new_name, updated_at: Time.current)
+      elsif delete?
+        fallback_status = AttributeOption.where(context: "lead", category: "status").where.not(name: @old_name).order(name: :asc).pick(:name) || Lead::DEFAULT_STATUS
+        Lead.where(status: @old_name).update_all(status: fallback_status, updated_at: Time.current)
       end
     end
 

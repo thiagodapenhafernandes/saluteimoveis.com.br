@@ -17,7 +17,7 @@
         <span class="small">Você tem <%= @holding_leads_count %> leads aguardando distribuição no bolsão.</span>
       </div>
     </div>
-    <%= link_to "Ver Leads", admin_leads_path(status: :represado), class: "btn btn-sm btn-warning fw-bold" %>
+    <%= link_to "Ver Leads", admin_leads_path(status: Lead.status_value(:represado)), class: "btn btn-sm btn-warning fw-bold" %>
   </div>
 <% end %>
 

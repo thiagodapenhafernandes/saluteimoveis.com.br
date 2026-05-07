@@ -1,6 +1,6 @@
 class AttributeOption < ApplicationRecord
   CONTEXTS = %w[habitation lead].freeze
-  CATEGORIES = %w[feature infrastructure unique_feature source imediacoes sale_reason].freeze
+  CATEGORIES = %w[feature infrastructure unique_feature source status imediacoes sale_reason].freeze
 
   before_validation :normalize_fields
   after_update_commit :sync_usage_on_rename, if: :saved_change_to_name?

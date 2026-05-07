@@ -27,7 +27,7 @@ RSpec.describe Leads::DistributorService do
       described_class.find_and_distribute(lead)
 
       expect(lead.reload.admin_user_id).to eq(agent_without_checkin.id)
-      expect(lead.status).to eq("waiting_acceptance")
+      expect(lead.status).to eq("Aguardando Aceite")
     end
   end
 
@@ -74,7 +74,7 @@ RSpec.describe Leads::DistributorService do
         described_class.find_and_distribute(lead)
 
         lead.reload
-        expect(lead.status).to eq("represado")
+        expect(lead.status).to eq("Represado")
         activity = lead.activities.where(kind: "dammed").last
         expect(activity).to be_present
         expect(activity.metadata["reason"]).to eq("no_eligible_agent_with_checkin")
