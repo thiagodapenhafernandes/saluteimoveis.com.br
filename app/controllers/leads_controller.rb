@@ -36,12 +36,13 @@ class LeadsController < ApplicationController
   end
 
   def apply_share_attribution(lead)
-    token = lead.share_token.to_s.strip
+    token = lead.share_token.to_s.strip.presence || cookies.signed[HabitationShareLink::COOKIE_KEY].to_s.strip
     return if token.blank? || lead.property_id.blank?
 
     share_link = HabitationShareLink.active.find_by(token: token, habitation_id: lead.property_id)
     return unless share_link
 
+    lead.share_token = share_link.token
     lead.admin_user_id = share_link.admin_user_id
     lead.shared_by_admin_user_id = share_link.admin_user_id
     lead.origin = "Compartilhamento Corretor" if lead.origin.blank?
