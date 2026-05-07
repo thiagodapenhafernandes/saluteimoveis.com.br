@@ -92,6 +92,38 @@ html:has(body.admin-layout) {
   padding: 0;
 }
 
+.admin-ptr {
+  position: fixed;
+  top: env(safe-area-inset-top, 0px);
+  left: 50%;
+  transform: translate(-50%, -80px);
+  z-index: 1030;
+  transition: transform .2s ease;
+  pointer-events: none;
+}
+
+.admin-ptr-pill {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .08);
+  color: #0f172a;
+  display: flex;
+  font-size: .85rem;
+  gap: .5rem;
+  padding: .5rem 1rem;
+}
+
+#admin-ptr-icon {
+  transition: transform .2s;
+}
+
+@keyframes admin-ptr-spin {
+  from { transform: rotate(0); }
+  to { transform: rotate(360deg); }
+}
+
 .admin-container {
   display: flex;
   margin-top: 64px;
@@ -878,9 +910,9 @@ i.spin {
   }
 
   .admin-navbar {
-    padding: 58px calc(12px + env(safe-area-inset-right, 0px)) 10px calc(12px + env(safe-area-inset-left, 0px)) !important;
-    min-height: 112px !important;
-    align-items: flex-start;
+    padding: 10px calc(12px + env(safe-area-inset-right, 0px)) 10px calc(12px + env(safe-area-inset-left, 0px)) !important;
+    min-height: 64px !important;
+    align-items: center;
   }
   .admin-navbar-brand {
     font-size: 16px;
@@ -898,6 +930,10 @@ i.spin {
     max-width: 100vw !important;
     padding: 0.875rem calc(0.75rem + env(safe-area-inset-right, 0px)) calc(2rem + env(safe-area-inset-bottom, 0px)) calc(0.75rem + env(safe-area-inset-left, 0px));
     overflow-x: clip;
+  }
+
+  .admin-dashboard-page {
+    padding-top: 0.25rem !important;
   }
 
   .admin-content > .row,
@@ -1109,8 +1145,8 @@ i.spin {
 @supports (-webkit-touch-callout: none) {
   @media (max-width: 767.98px) {
     .admin-navbar {
-      padding-top: 58px !important;
-      min-height: 112px !important;
+      padding-top: 10px !important;
+      min-height: 64px !important;
     }
   }
 }

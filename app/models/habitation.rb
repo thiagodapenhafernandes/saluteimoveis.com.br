@@ -356,8 +356,8 @@ class Habitation < ApplicationRecord
   def valor_iptu = valor_iptu_cents.to_i.positive? ? valor_iptu_cents / 100.0 : nil
   def saldo_devedor = saldo_devedor_cents.to_i.positive? ? saldo_devedor_cents / 100.0 : nil
 
-  def caracteristicas_imovel = caracteristicas || []
-  def caracteristicas_predio = infra_estrutura || []
+  def caracteristicas_imovel = normalize_captacao_list(caracteristicas)
+  def caracteristicas_predio = normalize_captacao_list(infra_estrutura)
   def aceita_permuta
     aceita_permuta_answer == "sim" || aceita_permuta_flag? ? ["Sim"] : []
   end
@@ -1051,6 +1051,18 @@ class Habitation < ApplicationRecord
     end
       .map { |item| item.to_s.strip }
       .reject { |item| item.blank? || item == "." }
+      .uniq
+  end
+
+  def normalize_captacao_list(source)
+    case source
+    when String
+      source.split(",")
+    else
+      normalize_feature_values(source)
+    end
+      .map { |item| item.to_s.strip }
+      .reject(&:blank?)
       .uniq
   end
 

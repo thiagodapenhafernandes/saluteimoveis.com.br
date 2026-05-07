@@ -7,6 +7,8 @@ class HabitationsController < ApplicationController
   # GET /habitations
   # GET /imoveis
   def index
+    load_filter_options
+
     # Handle Target Price (Approximate Search ±20%)
     if params[:target_price].present?
       # Remove non-digits to get raw integer value
@@ -255,8 +257,11 @@ class HabitationsController < ApplicationController
   def search_params
     permitted = params.permit(
       :transaction_type,
+      :finalidade,
       :category,
+      :tipo,
       :city,
+      :cidade,
       :neighborhood,
       :state,
       :min_bedrooms,
@@ -268,6 +273,7 @@ class HabitationsController < ApplicationController
       :min_price,
       :max_price,
       :target_price,
+      :price_range,
       :furnished,
       :accepts_exchange,
       :accepts_financing,
@@ -278,15 +284,90 @@ class HabitationsController < ApplicationController
       characteristics: []
     )
 
-    category_values = Array(permitted[:category]).reject(&:blank?)
-    category_values = [permitted[:category]].reject(&:blank?) if category_values.empty? && permitted[:category].is_a?(String)
+    permitted[:transaction_type] = normalize_transaction_type(permitted[:transaction_type].presence || permitted[:finalidade])
+    permitted[:category] = permitted[:category].presence || permitted[:tipo]
+    permitted[:city] = permitted[:city].presence || permitted[:cidade]
+    apply_price_range_params(permitted)
+
+    category_values = normalize_filter_values(permitted[:category])
     permitted[:category] = category_values if category_values.any?
 
-    city_values = Array(permitted[:city]).reject(&:blank?)
-    city_values = [permitted[:city]].reject(&:blank?) if city_values.empty? && permitted[:city].is_a?(String)
+    city_values = normalize_filter_values(permitted[:city])
     permitted[:city] = city_values if city_values.any?
 
     permitted
+  end
+
+  def apply_price_range_params(permitted)
+    return if permitted[:price_range].blank?
+
+    min_price, max_price = permitted[:price_range].to_s.split("-", 2)
+    permitted[:min_price] = min_price if min_price.present? && min_price.to_i.positive?
+    permitted[:max_price] = max_price if max_price.present? && max_price.to_i.positive?
+    permitted[:target_price] = nil
+  end
+
+  def normalize_transaction_type(value)
+    case value.to_s.downcase
+    when "venda", "comprar"
+      "venda"
+    when "aluguel", "locacao", "locação", "alugar"
+      "aluguel"
+    else
+      value
+    end
+  end
+
+  def normalize_filter_values(value)
+    case value
+    when Array
+      value.flat_map { |item| normalize_filter_values(item) }.reject(&:blank?).uniq
+    when String
+      stripped = value.strip
+      return [] if stripped.blank?
+
+      if stripped.start_with?("[") && stripped.end_with?("]")
+        parsed = JSON.parse(stripped) rescue nil
+        return normalize_filter_values(parsed) if parsed
+      end
+
+      [stripped]
+    else
+      Array(value).reject(&:blank?)
+    end
+  end
+
+  def load_filter_options
+    @selected_categories = normalize_filter_values(params[:category])
+    @selected_locations = normalize_filter_values(params[:city])
+
+    @property_types = Rails.cache.fetch("habitations_property_types_v1", expires_in: 12.hours) do
+      Habitation.where(exibir_no_site_flag: true).distinct.pluck(:categoria).compact.sort
+    end
+
+    @location_options = Rails.cache.fetch("habitations_location_options_v1", expires_in: 6.hours) do
+      cities = Habitation.active
+        .left_outer_joins(:address)
+        .where("COALESCE(addresses.cidade, habitations.cidade) IS NOT NULL")
+        .distinct
+        .order(Arel.sql("COALESCE(addresses.cidade, habitations.cidade) ASC"))
+        .pluck(Arel.sql("COALESCE(addresses.cidade, habitations.cidade)"))
+        .map { |city| { type: "city", label: city, value: city } }
+
+      neighborhoods = Habitation.active
+        .left_outer_joins(:address)
+        .where("COALESCE(addresses.bairro, habitations.bairro) IS NOT NULL")
+        .where("COALESCE(addresses.cidade, habitations.cidade) IS NOT NULL")
+        .select("COALESCE(addresses.bairro, habitations.bairro) AS bairro_nome, COALESCE(addresses.cidade, habitations.cidade) AS cidade_nome")
+        .distinct
+        .order("bairro_nome ASC, cidade_nome ASC")
+        .map do |h|
+          label = "#{h.bairro_nome} - #{h.cidade_nome}"
+          { type: "neighborhood", label: label, value: label }
+        end
+
+      (cities + neighborhoods).uniq { |item| item[:value] }
+    end
   end
 
   def load_share_context

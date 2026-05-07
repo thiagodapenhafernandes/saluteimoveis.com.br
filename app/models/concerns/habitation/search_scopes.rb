@@ -315,6 +315,23 @@ module Habitation::SearchScopes
       where("EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) WHERE unaccent(lower(value)) ILIKE '%churrasqueira%') OR " \
             "(jsonb_typeof(infra_estrutura) = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(infra_estrutura) WHERE unaccent(lower(value)) ILIKE '%churrasqueira%'))")
     }
+
+    scope :cozinha_gourmet_churrasqueira, -> {
+      where(
+        "(" \
+        "EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) kv WHERE unaccent(lower(kv.key)) ILIKE unaccent('%cozinha%churrasqueir%') OR unaccent(lower(kv.value)) ILIKE unaccent('%cozinha%churrasqueir%')) OR " \
+        "EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) kv WHERE unaccent(lower(kv.key)) ILIKE unaccent('%cozinha%gourmet%churrasqueir%') OR unaccent(lower(kv.value)) ILIKE unaccent('%cozinha%gourmet%churrasqueir%')) OR " \
+        "((" \
+        "EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) kv WHERE unaccent(lower(kv.key)) ILIKE unaccent('%cozinha%gourmet%') OR unaccent(lower(kv.value)) ILIKE unaccent('%cozinha%gourmet%') OR unaccent(lower(kv.key)) ILIKE unaccent('%gourmet%') OR unaccent(lower(kv.value)) ILIKE unaccent('%gourmet%'))" \
+        ") AND (" \
+        "EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) kv WHERE unaccent(lower(kv.key)) ILIKE unaccent('%churrasqueir%') OR unaccent(lower(kv.value)) ILIKE unaccent('%churrasqueir%')) OR " \
+        "(jsonb_typeof(infra_estrutura) = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(infra_estrutura) value WHERE unaccent(lower(value)) ILIKE unaccent('%churrasqueir%')))" \
+        ")) OR " \
+        "unaccent(lower(COALESCE(descricao_web, ''))) ILIKE unaccent('%cozinha%churrasqueir%') OR " \
+        "unaccent(lower(COALESCE(descricao_web, ''))) ILIKE unaccent('%gourmet%churrasqueir%')" \
+        ")"
+      )
+    }
     
     scope :sacada, -> {
       where("EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) WHERE unaccent(lower(value)) ILIKE '%sacada%')")
@@ -343,6 +360,45 @@ module Habitation::SearchScopes
     
     scope :lavanderia, -> {
       where("EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) WHERE unaccent(lower(value)) ILIKE '%lavanderia%')")
+    }
+
+    scope :sol_manha, -> {
+      where(
+        "unaccent(lower(COALESCE(face, ''))) IN ('leste', 'nordeste', 'sudeste') OR " \
+        "EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) kv WHERE unaccent(lower(kv.key)) ILIKE unaccent('%sol%manha%') OR unaccent(lower(kv.value)) ILIKE unaccent('%sol%manha%') OR unaccent(lower(kv.key)) ILIKE unaccent('%sol%matinal%') OR unaccent(lower(kv.value)) ILIKE unaccent('%sol%matinal%')) OR " \
+        "unaccent(lower(COALESCE(descricao_web, ''))) ILIKE unaccent('%sol%manha%')"
+      )
+    }
+
+    scope :sol_tarde, -> {
+      where(
+        "unaccent(lower(COALESCE(face, ''))) IN ('oeste', 'noroeste', 'sudoeste') OR " \
+        "EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) kv WHERE unaccent(lower(kv.key)) ILIKE unaccent('%sol%tarde%') OR unaccent(lower(kv.value)) ILIKE unaccent('%sol%tarde%')) OR " \
+        "unaccent(lower(COALESCE(descricao_web, ''))) ILIKE unaccent('%sol%tarde%')"
+      )
+    }
+
+    scope :sol_dia_todo, -> {
+      where(
+        "unaccent(lower(COALESCE(face, ''))) = 'norte' OR " \
+        "EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) kv WHERE unaccent(lower(kv.key)) ILIKE unaccent('%sol%dia%todo%') OR unaccent(lower(kv.value)) ILIKE unaccent('%sol%dia%todo%') OR unaccent(lower(kv.key)) ILIKE unaccent('%sol%manha%tarde%') OR unaccent(lower(kv.value)) ILIKE unaccent('%sol%manha%tarde%')) OR " \
+        "unaccent(lower(COALESCE(descricao_web, ''))) ILIKE unaccent('%sol%dia%todo%') OR " \
+        "unaccent(lower(COALESCE(descricao_web, ''))) ILIKE unaccent('%sol%manha%tarde%')"
+      )
+    }
+
+    scope :dependencia_empregada, -> {
+      where(
+        "EXISTS (" \
+        "SELECT 1 FROM jsonb_each_text(caracteristicas) kv " \
+        "WHERE unaccent(lower(kv.key)) ILIKE unaccent('%depend%empreg%') " \
+        "OR unaccent(lower(kv.value)) ILIKE unaccent('%depend%empreg%') " \
+        "OR unaccent(lower(kv.key)) ILIKE unaccent('%dep%empreg%') " \
+        "OR unaccent(lower(kv.value)) ILIKE unaccent('%dep%empreg%') " \
+        "OR unaccent(lower(kv.key)) ILIKE unaccent('%quarto%empreg%') " \
+        "OR unaccent(lower(kv.value)) ILIKE unaccent('%quarto%empreg%')" \
+        ")"
+      )
     }
     
     scope :hidromassagem, -> {
@@ -441,6 +497,7 @@ module Habitation::SearchScopes
           query = query.left_outer_joins(:address).where(
             "unaccent(COALESCE(addresses.cidade, habitations.cidade)) ILIKE unaccent(:term) OR " \
             "unaccent(COALESCE(addresses.bairro, habitations.bairro)) ILIKE unaccent(:term) OR " \
+            "unaccent((COALESCE(addresses.bairro, habitations.bairro) || ' - ' || COALESCE(addresses.cidade, habitations.cidade))) ILIKE unaccent(:term) OR " \
             "unaccent(nome_empreendimento) ILIKE unaccent(:term)",
             term: "%#{city_term}%"
           )
@@ -539,6 +596,7 @@ module Habitation::SearchScopes
           when 'quadra_mar' then char_conditions = char_conditions.or(Habitation.quadra_mar)
           when 'vista_mar' then char_conditions = char_conditions.or(Habitation.vista_mar)
           when 'churrasqueira' then char_conditions = char_conditions.or(Habitation.churrasqueira)
+          when 'cozinha_gourmet_churrasqueira' then char_conditions = char_conditions.or(Habitation.cozinha_gourmet_churrasqueira)
           when 'mobiliado' then char_conditions = char_conditions.or(Habitation.mobiliado)
           when 'sacada' then char_conditions = char_conditions.or(Habitation.sacada)
           when 'decorado' then char_conditions = char_conditions.or(Habitation.decorado)
@@ -546,6 +604,10 @@ module Habitation::SearchScopes
           when 'semi_mobiliado' then char_conditions = char_conditions.or(Habitation.semi_mobiliado)
           when 'lavabo' then char_conditions = char_conditions.or(Habitation.lavabo)
           when 'lavanderia' then char_conditions = char_conditions.or(Habitation.lavanderia)
+          when 'dependencia_empregada' then char_conditions = char_conditions.or(Habitation.dependencia_empregada)
+          when 'sol_manha' then char_conditions = char_conditions.or(Habitation.sol_manha)
+          when 'sol_tarde' then char_conditions = char_conditions.or(Habitation.sol_tarde)
+          when 'sol_dia_todo' then char_conditions = char_conditions.or(Habitation.sol_dia_todo)
           when 'hidromassagem' then char_conditions = char_conditions.or(Habitation.hidromassagem)
           when 'piscina' then char_conditions = char_conditions.or(Habitation.piscina)
           when 'sala_estar' then char_conditions = char_conditions.or(Habitation.sala_estar)

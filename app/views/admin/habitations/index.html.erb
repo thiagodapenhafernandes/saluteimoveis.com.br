@@ -92,6 +92,7 @@
       <%= hidden_field_tag :sort, params[:sort] if params[:sort].present? %>
       <%= hidden_field_tag :direction, params[:direction] if params[:direction].present? %>
       <%= hidden_field_tag :scope, params[:scope] if params[:scope].present? %>
+      <%= hidden_field_tag :ownership, @ownership_scope if @ownership_scope.present? %>
 
       <div class="row g-3 align-items-end">
         <div class="col-lg-5 col-md-12">
@@ -590,6 +591,25 @@
 </div>
 
 <!-- Quick Scopes (Pills) -->
+<%
+  ownership_base_params = request.query_parameters.except("ownership", "page")
+  mine_active = @ownership_scope == "mine"
+  all_active = @ownership_scope == "all"
+%>
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+  <div class="btn-group ownership-toggle" role="group" aria-label="Escopo dos imóveis">
+    <%= link_to admin_habitations_path(ownership_base_params.merge(ownership: "mine")), class: "btn btn-sm #{mine_active ? 'btn-primary' : 'btn-white bg-white border text-muted'} fw-semibold" do %>
+      <i class="bi bi-person-check me-1"></i> Meus imóveis
+    <% end %>
+    <%= link_to admin_habitations_path(ownership_base_params.merge(ownership: "all")), class: "btn btn-sm #{all_active ? 'btn-primary' : 'btn-white bg-white border text-muted'} fw-semibold" do %>
+      <i class="bi bi-collection me-1"></i> Todos
+    <% end %>
+  </div>
+  <% if mine_active %>
+    <span class="small text-muted">Mostrando imóveis vinculados ao corretor logado.</span>
+  <% end %>
+</div>
+
 <div class="habitations-scopes d-flex flex-wrap gap-2 mb-4">
   <% 
     scopes = [
@@ -599,16 +619,21 @@
       { key: 'na_planta', label: 'Na Planta', icon: 'rulers' },
       { key: 'mobiliado', label: 'Mobiliado', icon: 'sofa' },
       { key: 'sacada', label: 'Sacada', icon: 'layout-sidebar' },
+      { key: 'dependencia_empregada', label: 'Dependência', icon: 'door-closed' },
+      { key: 'cozinha_gourmet_churrasqueira', label: 'Cozinha gourmet', icon: 'fire' },
+      { key: 'sol_manha', label: 'Sol manhã', icon: 'sunrise' },
+      { key: 'sol_tarde', label: 'Sol tarde', icon: 'sunset' },
+      { key: 'sol_dia_todo', label: 'Sol dia todo', icon: 'sun' },
       { key: 'decorado', label: 'Decorado', icon: 'palette' }
     ]
   %>
   <% scopes.each do |scope| %>
-    <%= link_to admin_habitations_path(scope: scope[:key]), class: "btn btn-sm rounded-pill fw-semibold px-3 py-2 #{params[:scope] == scope[:key] ? 'btn-primary shadow-sm' : 'btn-white bg-white border text-muted shadow-sm hover-shadow'}" do %>
+    <%= link_to admin_habitations_path(request.query_parameters.except("page").merge(scope: scope[:key])), class: "btn btn-sm rounded-pill fw-semibold px-3 py-2 #{params[:scope] == scope[:key] ? 'btn-primary shadow-sm' : 'btn-white bg-white border text-muted shadow-sm hover-shadow'}" do %>
        <i class="bi bi-<%= scope[:icon] %> me-1"></i> <%= scope[:label] %>
     <% end %>
   <% end %>
   <% if params[:scope].present? %>
-    <%= link_to admin_habitations_path, class: "btn btn-sm btn-link text-muted text-decoration-none d-flex align-items-center" do %>
+    <%= link_to admin_habitations_path(request.query_parameters.except("scope", "page")), class: "btn btn-sm btn-link text-muted text-decoration-none d-flex align-items-center" do %>
       <i class="bi bi-x-lg me-1"></i>
     <% end %>
   <% end %>
@@ -712,7 +737,7 @@
     <span class="small text-muted fw-semibold">
       <span class="text-dark fw-bold"><%= @habitations.count %></span> de <%= Habitation.count %>
     </span>
-    <% if params[:q].present? || params[:status].present? || params[:categoria].present? || params[:scope].present? || active_extra_filters_count.positive? %>
+    <% if params[:q].present? || params[:status].present? || params[:categoria].present? || params[:scope].present? || @ownership_scope == "mine" || active_extra_filters_count.positive? %>
       <span class="badge bg-warning-subtle text-warning border">Filtrando</span>
     <% end %>
   </div>
@@ -812,6 +837,7 @@
   active_filter_chips << "Corretor: #{params[:corretor_id]}" if params[:corretor_id].present?
   active_filter_chips << "Proprietário: #{params[:proprietor_id]}" if current_admin_user&.admin? && params[:proprietor_id].present?
   active_filter_chips << "Região foco: #{params[:regiao_foco]}" if params[:regiao_foco].present?
+  active_filter_chips << "Meus imóveis" if @ownership_scope == "mine"
   active_filter_chips << "Captação de: #{params[:captacao_inicio]}" if params[:captacao_inicio].present?
   active_filter_chips << "Captação até: #{params[:captacao_fim]}" if params[:captacao_fim].present?
   active_filter_chips << "Escopo: #{params[:scope]}" if params[:scope].present?
@@ -858,6 +884,40 @@
                   </label>
                 </div>
               <% end %>
+
+              <div class="mobile-property-actions d-md-none position-absolute end-0 p-2 d-flex flex-column gap-2"
+                   style="top: <%= bulk_actions_allowed ? '38px' : '0' %>; z-index: 6;"
+                   onclick="event.stopPropagation();">
+                <%= render "shared/broker_share_menu", property: imovel %>
+
+                <div class="dropdown" data-controller="dropdown">
+                  <button class="btn btn-light btn-sm rounded-circle dropdown-toggle no-caret mobile-property-action-button"
+                          type="button"
+                          aria-expanded="false"
+                          data-action="click->dropdown#toggle"
+                          title="Ações do imóvel">
+                    <i class="bi bi-three-dots-vertical"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mobile-property-actions-menu"
+                      data-dropdown-target="menu"
+                      style="right: 0; left: auto;">
+                    <li><%= link_to "Detalhes", admin_habitation_path(imovel), class: "dropdown-item small" %></li>
+                    <li><%= link_to "Ver no Site", habitation_path(imovel), target: "_blank", class: "dropdown-item small" %></li>
+                    <% if can_manage_this_property %>
+                      <li><%= link_to "Editar", edit_admin_habitation_path(imovel), class: "dropdown-item small" %></li>
+                    <% end %>
+                    <% if current_admin_user&.admin? %>
+                      <li><hr class="dropdown-divider"></li>
+                      <li>
+                        <%= button_to admin_habitation_path(imovel), method: :delete, class: "dropdown-item small text-danger", data: { confirm: "Tem certeza?" } do %>
+                          Excluir
+                        <% end %>
+                      </li>
+                    <% end %>
+                  </ul>
+                </div>
+              </div>
+
               <!-- Badges -->
               <div class="position-absolute top-0 start-0 p-3">
                  <span class="badge bg-white text-dark shadow-sm uppercase-badge fw-bold"><%= imovel.status %></span>
@@ -903,7 +963,7 @@
                           <span class="text-muted ms-1">• <%= imovel.categoria %></span>
                        </div>
                     </div>
-                    <div class="d-flex align-items-start gap-2">
+                    <div class="d-none d-md-flex align-items-start gap-2">
                       <%= render "shared/broker_share_menu", property: imovel %>
 
                       <div class="dropdown" data-controller="dropdown">
@@ -915,6 +975,7 @@
                           <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" 
                               data-dropdown-target="menu"
                               style="right: 0; left: auto;">
+                            <li><%= link_to "Detalhes", admin_habitation_path(imovel), class: "dropdown-item small" %></li>
                             <li><%= link_to "Ver no Site", habitation_path(imovel), target: "_blank", class: "dropdown-item small" %></li>
                             <% if can_manage_this_property %>
                               <li><%= link_to "Editar", edit_admin_habitation_path(imovel), class: "dropdown-item small" %></li>
@@ -1199,5 +1260,31 @@
   }
   .dropdown-toggle.no-caret::after {
     display: none !important;
+  }
+  .mobile-property-action-button {
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+  }
+  .mobile-property-actions-menu {
+    min-width: 150px;
+    z-index: 1080;
+  }
+  @media (max-width: 767.98px) {
+    .ownership-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      width: 100%;
+    }
+    .ownership-toggle .btn {
+      min-height: 38px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
   }
 </style>

@@ -69,11 +69,11 @@ class Admin::DashboardController < Admin::BaseController
 
     # ================= Leads =================
     @total_leads          = lead_scope.count
-    @new_leads            = lead_scope.where(status: ['Novo', 'novo', nil]).count
+    @new_leads            = lead_scope.where(status: [Lead.default_status, nil]).count
     @leads_today          = lead_scope.where("created_at >= ?", Date.current.beginning_of_day).count
     @leads_last_7_days    = lead_scope.where("created_at >= ?", 7.days.ago).count
     @leads_last_30_days   = lead_scope.where("created_at >= ?", 30.days.ago).count
-    @holding_leads        = @is_admin_view ? Lead.where(status: :represado).count : 0
+    @holding_leads        = @is_admin_view ? Lead.holding.count : 0
     @leads_by_status      = lead_scope.group(:status).count
     @leads_per_day        = leads_time_series(30, lead_scope)
 

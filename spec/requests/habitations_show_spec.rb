@@ -151,5 +151,92 @@ RSpec.describe "Habitation details", type: :request do
       codes = JSON.parse(response.body).map { |item| item.fetch("codigo") }
       expect(codes).not_to include("DWV-625786")
     end
+
+    it "filters listing requests with array params sent by the home search" do
+      matching = create(
+        :habitation,
+        codigo: "9101",
+        categoria: "Apartamento",
+        cidade: "Balneário Camboriú",
+        bairro: "Centro",
+        valor_venda_cents: 1_000_000_00,
+        valor_locacao_cents: 0
+      )
+      create(
+        :habitation,
+        codigo: "9102",
+        categoria: "Casa",
+        cidade: "Balneário Camboriú",
+        bairro: "Centro",
+        valor_venda_cents: 1_000_000_00,
+        valor_locacao_cents: 0
+      )
+      create(
+        :habitation,
+        codigo: "9103",
+        categoria: "Apartamento",
+        cidade: "Itajaí",
+        bairro: "Centro",
+        valor_venda_cents: 1_000_000_00,
+        valor_locacao_cents: 0
+      )
+
+      get habitations_path(
+        category: ["Apartamento"],
+        city: ["Centro - Balneário Camboriú"],
+        transaction_type: "venda",
+        format: :json
+      )
+
+      expect(response).to have_http_status(:ok)
+      codes = JSON.parse(response.body).map { |item| item.fetch("codigo") }
+      expect(codes).to include(matching.codigo)
+      expect(codes).not_to include("9102", "9103")
+    end
+
+    it "accepts legacy home search param names" do
+      matching = create(
+        :habitation,
+        codigo: "9201",
+        categoria: "Apartamento",
+        cidade: "Balneário Camboriú",
+        bairro: "Centro",
+        valor_venda_cents: 1_000_000_00,
+        valor_locacao_cents: 0
+      )
+      create(
+        :habitation,
+        codigo: "9202",
+        categoria: "Apartamento",
+        cidade: "Balneário Camboriú",
+        bairro: "Centro",
+        valor_venda_cents: 0,
+        valor_locacao_cents: 4_000_00
+      )
+
+      get habitations_path(
+        finalidade: "Venda",
+        tipo: "Apartamento",
+        cidade: "Centro - Balneário Camboriú",
+        format: :json
+      )
+
+      expect(response).to have_http_status(:ok)
+      codes = JSON.parse(response.body).map { |item| item.fetch("codigo") }
+      expect(codes).to include(matching.codigo)
+      expect(codes).not_to include("9202")
+    end
+
+    it "filters by fixed price ranges" do
+      matching = create(:habitation, codigo: "9301", valor_venda_cents: 1_500_000_00)
+      create(:habitation, codigo: "9302", valor_venda_cents: 3_500_000_00)
+
+      get habitations_path(price_range: "1000000-2000000", transaction_type: "venda", format: :json)
+
+      expect(response).to have_http_status(:ok)
+      codes = JSON.parse(response.body).map { |item| item.fetch("codigo") }
+      expect(codes).to include(matching.codigo)
+      expect(codes).not_to include("9302")
+    end
   end
 end

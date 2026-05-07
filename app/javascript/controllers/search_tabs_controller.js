@@ -1,11 +1,12 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["tab", "input"]
+  static targets = ["tab", "input", "advancedPanel", "advancedLabel", "advancedIcon"]
 
   connect() {
     // Set initial state based on input value or default
     this.updateTabs(this.inputTarget.value || 'venda')
+    this.advancedOpen = false
   }
 
   switch(event) {
@@ -24,6 +25,25 @@ export default class extends Controller {
         tab.classList.remove('bg-hero-button', 'text-hero-button-text', 'shadow-sm')
       }
     })
+  }
+
+  toggleAdvanced(event) {
+    event.preventDefault()
+    this.advancedOpen = !this.advancedOpen
+
+    if (this.advancedOpen) {
+      this.advancedPanelTarget.classList.remove("max-h-0", "opacity-0", "pointer-events-none")
+      this.advancedPanelTarget.classList.add("max-h-[900px]", "opacity-100")
+      this.advancedLabelTarget.textContent = "Simples"
+      this.advancedIconTarget.classList.remove("bi-list")
+      this.advancedIconTarget.classList.add("bi-chevron-up")
+    } else {
+      this.advancedPanelTarget.classList.add("max-h-0", "opacity-0", "pointer-events-none")
+      this.advancedPanelTarget.classList.remove("max-h-[900px]", "opacity-100")
+      this.advancedLabelTarget.textContent = "Avançado"
+      this.advancedIconTarget.classList.add("bi-list")
+      this.advancedIconTarget.classList.remove("bi-chevron-up")
+    }
   }
 
   openAdvanced() {
