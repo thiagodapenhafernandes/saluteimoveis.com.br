@@ -8,6 +8,8 @@ export default class extends Controller {
 
   connect() {
     this.index = 0
+    if (this.slideTargets.length <= 1) return
+
     this.startInterval()
   }
 
@@ -26,6 +28,8 @@ export default class extends Controller {
   }
 
   next() {
+    if (this.slideTargets.length <= 1) return
+
     this.slideTargets[this.index].classList.remove("active")
     this.index = (this.index + 1) % this.slideTargets.length
     this.slideTargets[this.index].classList.add("active")

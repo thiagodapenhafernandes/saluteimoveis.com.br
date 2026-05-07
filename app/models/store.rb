@@ -93,6 +93,15 @@ class Store < ApplicationRecord
     slug.blank? || name_changed?
   end
 
+  def footer_address_line
+    street_line = [address.presence, number.presence].compact.join(", ")
+    [street_line.presence, neighborhood.presence].compact.join(" - ")
+  end
+
+  def footer_city_line
+    [city.presence, state.presence].compact.join(" - ")
+  end
+
   private
 
   def valid_timezone

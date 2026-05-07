@@ -11,23 +11,27 @@
   
   <!-- Cinematic Slider Container -->
   <div class="hero-slider-container">
-    <%# Tentamos carregar múltiplas imagens se disponíveis, senão usamos a padrão %>
     <% hero_images = [] %>
-    
-    <% if @home_setting.hero_background_desktop.attached? %>
-      <% hero_images << url_for(@home_setting.hero_background_desktop) %>
+
+    <% @home_setting.active_hero_slides.each do |slide| %>
+      <% hero_images << { url: url_for(slide.image), alt: slide.alt_text.presence || "Salute Imóveis - Luxo e Exclusividade" } if slide.image.attached? %>
+    <% end %>
+
+    <% if hero_images.empty? && @home_setting.hero_background_desktop.attached? %>
+      <% legacy_hero_image = @home_setting.hero_background_desktop.variant(resize_to_limit: [1920, 1080], saver: { quality: 82, strip: true, interlace: "JPEG" }) %>
+      <% hero_images << { url: url_for(legacy_hero_image), alt: "Salute Imóveis - Luxo e Exclusividade" } %>
     <% end %>
     
     <%# Fallback assets %>
     <% ['hero_05.jpeg'].each do |img| %>
-      <% hero_images << asset_path(img) if hero_images.size < 3 %>
+      <% hero_images << { url: asset_path(img), alt: "Salute Imóveis - Luxo e Exclusividade" } if hero_images.empty? %>
     <% end %>
 
-    <% hero_images.uniq.each_with_index do |img_url, index| %>
+    <% hero_images.each_with_index do |image, index| %>
       <div class="hero-slide <%= 'active' if index == 0 %>" data-hero-slider-target="slide">
-        <%= image_tag img_url, 
+        <%= image_tag image[:url],
                       class: "hero-image", 
-                      alt: "Salute Imóveis - Luxo e Exclusividade",
+                      alt: image[:alt],
                       fetchpriority: index == 0 ? "high" : "low",
                       loading: index == 0 ? "eager" : "lazy" %>
       </div>
@@ -40,10 +44,12 @@
   <!-- Content -->
   <div class="container-custom hero-content-wrapper w-full">
     <div class="text-center mb-6 md:mb-10 max-w-4xl mx-auto">
-      <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold text-white mb-3 sm:mb-6 tracking-tight leading-tight px-2 break-words">
+      <h1 class="font-bold text-white mb-3 sm:mb-6 tracking-tight leading-tight px-2 break-words"
+          style="font-size: clamp(2rem, <%= @home_setting.hero_title_font_size_value %>px, 9vw);">
         <%= @home_setting.hero_title || "Encontre o imóvel dos seus sonhos" %>
       </h1>
-      <p class="text-sm sm:text-lg md:text-xl text-white/90 max-w-2xl mx-auto font-medium px-4">
+      <p class="text-white/90 max-w-2xl mx-auto font-medium px-4"
+         style="font-size: clamp(0.875rem, <%= @home_setting.hero_subtitle_font_size_value %>px, 4vw);">
         <%= @home_setting.hero_subtitle || "As melhores oportunidades em Balneário Camboriú e região" %>
       </p>
     </div>

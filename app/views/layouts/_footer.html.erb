@@ -42,13 +42,18 @@
         <% if @footer_stores.any? %>
           <% @footer_stores.each do |store| %>
             <div class="mb-6 last:mb-0">
-              <h4 class="font-bold text-white mb-2"><%= store.name %></h4>
+              <h4 class="font-bold text-white mb-1"><%= store.name %></h4>
               <ul class="space-y-1 text-sm text-white/80">
-                <% if store.address.present? %><li><%= store.address %></li><% end %>
+                <% if store.respond_to?(:footer_address_line) %>
+                  <% if store.footer_address_line.present? %><li><%= store.footer_address_line %></li><% end %>
+                  <% if store.footer_city_line.present? %><li><%= store.footer_city_line %></li><% end %>
+                <% elsif store.address.present? %>
+                  <li><%= store.address %></li>
+                <% end %>
                 <% if store.zip_code.present? %><li><strong>CEP:</strong> <%= store.zip_code %></li><% end %>
                 <% if store.creci.present? %><li><strong>CRECI:</strong> <%= store.creci %></li><% end %>
                 <% if store.phone.present? %>
-                  <li><strong>Tel:</strong> <a href="tel:+55<%= store.phone.gsub(/\D/, '') %>" class="hover:text-golden-one transition-colors"><%= store.phone %></a></li>
+                  <li><strong>Tel:</strong> <a href="tel:+55<%= store.phone.gsub(/\D/, '') %>" class="text-golden-one hover:text-white transition-colors"><%= store.phone %></a></li>
                 <% end %>
               </ul>
             </div>
