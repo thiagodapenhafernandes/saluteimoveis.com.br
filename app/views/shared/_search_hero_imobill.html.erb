@@ -1,9 +1,22 @@
 <!-- Imobill-Style Search Component (Tabs Outside) -->
+<% search_filter_style = [
+  "--search-filter-bg: #{@home_setting.search_filter_background_rgba}",
+  "--search-filter-border: #{@home_setting.search_filter_border_style}",
+  "--search-filter-text: #{@home_setting.search_filter_text_color_value}",
+  "--search-filter-field-bg: #{@home_setting.search_filter_field_background_rgba}",
+  "--search-filter-blur: #{@home_setting.search_filter_backdrop_blur_value}px",
+  "--search-filter-radius: #{@home_setting.search_filter_border_radius_value}px"
+].join("; ") %>
+<% search_filter_field_style = "background-color: var(--search-filter-field-bg); border: var(--search-filter-border);" %>
+<% search_filter_divider_style = "border-top: var(--search-filter-border);" %>
+<% search_filter_right_border_style = "border-right: var(--search-filter-border);" %>
+<% search_filter_chip_border_style = "border: var(--search-filter-border);" %>
+
 <div class="w-full max-w-5xl mx-auto mt-4 md:mt-8 relative z-20" data-controller="search-tabs">
 
   <!-- Tabs (Comprar / Alugar) - Outside and Centered -->
   <div class="flex justify-center mb-3 md:mb-4">
-    <div class="bg-white/90 backdrop-blur-sm p-1.5 rounded-full inline-flex shadow-lg border border-white/20">
+    <div class="inline-flex rounded-full border border-white/40 bg-white/85 p-1.5 shadow-[0_12px_34px_rgba(8,31,48,0.18)] backdrop-blur-xl">
       <button type="button"
               class="px-6 sm:px-8 py-2 rounded-full text-sm font-bold text-hero-button-text bg-hero-button shadow-sm transition-all active-tab"
               data-search-tabs-target="tab"
@@ -22,8 +35,9 @@
   </div>
 
   <!-- Search Form Container -->
-  <div class="bg-white rounded-2xl shadow-xl border border-gray-100">
-    <%= form_with url: habitations_path, method: :get, class: "p-4 sm:p-6 lg:p-8" do |f| %>
+  <div class="shadow-[0_24px_80px_rgba(8,31,48,0.24)]"
+       style="<%= search_filter_style %>; background-color: var(--search-filter-bg); border: var(--search-filter-border); border-radius: var(--search-filter-radius); color: var(--search-filter-text); backdrop-filter: blur(var(--search-filter-blur)); -webkit-backdrop-filter: blur(var(--search-filter-blur));">
+    <%= form_with url: habitations_path, method: :get, class: "p-3 sm:p-4" do |f| %>
 
       <input type="hidden" name="transaction_type" id="transaction_type_input" value="<%= params[:transaction_type] || 'venda' %>" data-search-tabs-target="input">
       <% selected_characteristics = Array(params[:characteristics]).map(&:to_s) %>
@@ -37,20 +51,21 @@
         ["a partir de R$10.000.000", "10000000-"]
       ] %>
 
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-4 items-end">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-4 items-center">
         
         <!-- Tipo de Imóvel (Checklist Dropdown) -->
         <div class="md:col-span-3" data-controller="category-filter">
-          <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Tipos de imóveis</label>
+          <label class="sr-only">Tipos de imóveis</label>
           <% selected_categories = Array(params[:category]).reject(&:blank?) %>
           <div class="relative">
             <button type="button"
-                    class="w-full pl-10 pr-10 py-3 bg-white border border-gray-200 rounded-lg focus:ring-1 focus:ring-blue-three focus:border-blue-three text-gray-700 text-sm font-medium text-left"
+                    class="w-full min-h-[48px] rounded-full border border-gray-200/80 bg-white/85 pl-10 pr-10 py-3 text-left text-sm font-medium text-gray-700 shadow-sm transition-colors focus:border-blue-three focus:ring-1 focus:ring-blue-three"
+                    style="<%= search_filter_field_style %>"
                     data-category-filter-target="trigger"
                     data-action="click->category-filter#toggle">
-              <i class="bi bi-building absolute left-3 top-3 text-gray-400"></i>
+              <i class="bi bi-building absolute left-3 top-3 text-current opacity-45"></i>
               <span data-category-filter-target="summary">Tipos de imóveis</span>
-              <i class="bi bi-chevron-down absolute right-3 top-3 text-gray-400"></i>
+              <i class="bi bi-chevron-down absolute right-3 top-3 text-current opacity-45"></i>
             </button>
 
             <div class="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-[300px] overflow-y-auto overscroll-contain p-2"
@@ -85,16 +100,17 @@
         
         <!-- Localização (Checklist Multiseleção) -->
         <div class="md:col-span-4" data-controller="location-filter">
-          <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Localização</label>
+          <label class="sr-only">Localização</label>
           <% selected_locations = Array(params[:city]).reject(&:blank?) %>
           <div class="relative">
             <button type="button"
-                    class="w-full pl-10 pr-10 py-3 bg-white border border-gray-200 rounded-lg focus:ring-1 focus:ring-blue-three focus:border-blue-three text-gray-700 text-sm font-medium text-left"
+                    class="w-full min-h-[48px] rounded-full border border-gray-200/80 bg-white/85 pl-10 pr-10 py-3 text-left text-sm font-medium text-gray-700 shadow-sm transition-colors focus:border-blue-three focus:ring-1 focus:ring-blue-three"
+                    style="<%= search_filter_field_style %>"
                     data-location-filter-target="trigger"
                     data-action="click->location-filter#toggle">
-              <i class="bi bi-geo-alt absolute left-3 top-3 text-gray-400"></i>
+              <i class="bi bi-geo-alt absolute left-3 top-3 text-current opacity-45"></i>
               <span data-location-filter-target="summary">Selecione bairros ou cidades</span>
-              <i class="bi bi-chevron-down absolute right-3 top-3 text-gray-400"></i>
+              <i class="bi bi-chevron-down absolute right-3 top-3 text-current opacity-45"></i>
             </button>
 
             <div class="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-[320px] overflow-y-auto overscroll-contain p-2"
@@ -150,18 +166,19 @@
         
         <!-- Valores -->
         <div class="md:col-span-2">
-          <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Valores</label>
+          <label class="sr-only">Valores</label>
           <div class="relative">
-            <i class="bi bi-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none"></i>
+            <i class="bi bi-chevron-down absolute right-3 top-3 text-current opacity-45 pointer-events-none"></i>
             <%= f.select :price_range,
                 options_for_select(price_range_options, params[:price_range]),
                 {},
-                class: "w-full appearance-none px-4 pr-10 py-3 bg-white border border-gray-200 rounded-lg focus:ring-1 focus:ring-blue-three focus:border-blue-three text-gray-700 text-sm font-medium" %>
+                class: "w-full min-h-[48px] appearance-none rounded-full border border-gray-200/80 bg-white/85 px-4 pr-10 py-3 text-sm font-medium text-gray-700 shadow-sm transition-colors focus:border-blue-three focus:ring-1 focus:ring-blue-three",
+                style: search_filter_field_style %>
           </div>
         </div>
 
         <div class="md:col-span-3">
-          <%= button_tag type: 'submit', name: nil, class: "w-full py-3 bg-hero-button hover:opacity-90 text-hero-button-text font-bold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 uppercase tracking-wide text-sm" do %>
+          <%= button_tag type: 'submit', name: nil, class: "flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-hero-button py-3 text-sm font-bold uppercase tracking-wide text-hero-button-text shadow-[0_10px_24px_rgba(190,139,38,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:opacity-95 hover:shadow-[0_14px_30px_rgba(190,139,38,0.34)]" do %>
             <i class="bi bi-search"></i>
             <%= @home_setting.hero_cta_text.presence || "Buscar" %>
           <% end %>
@@ -171,7 +188,7 @@
 
       <div class="overflow-hidden max-h-0 opacity-0 pointer-events-none transition-all duration-500 ease-out"
            data-search-tabs-target="advancedPanel">
-        <div class="mt-5 border-t border-gray-100 pt-5">
+        <div class="mt-5 pt-5" style="<%= search_filter_divider_style %>">
           <% metric_groups = [
             [:min_bedrooms, "Quartos", [["1", "1"], ["2", "2"], ["3", "3"], ["4+", "4"]]],
             [:min_suites, "Suítes", [["1+", "1"], ["2+", "2"], ["3+", "3"], ["4+", "4"]]],
@@ -182,10 +199,10 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <% metric_groups.each do |field, label, options| %>
               <div>
-                <div class="mb-1 text-xs font-bold uppercase tracking-wide text-gray-500"><%= label %></div>
-                <div class="grid grid-cols-4 overflow-hidden rounded-lg border border-gray-200 bg-white">
+                <div class="mb-1 text-xs font-bold uppercase tracking-wide text-current opacity-70"><%= label %></div>
+                <div class="grid grid-cols-4 overflow-hidden rounded-lg bg-white" style="<%= search_filter_field_style %>">
                   <% options.each do |text, value| %>
-                    <label class="cursor-pointer border-r border-gray-200 last:border-r-0">
+                    <label class="cursor-pointer last:border-r-0" style="<%= search_filter_right_border_style unless options.last == [text, value] %>">
                       <%= radio_button_tag field, value, params[field].to_s == value, class: "peer sr-only" %>
                       <span class="flex h-9 items-center justify-center text-xs font-semibold text-gray-600 transition-colors peer-checked:bg-blue-three peer-checked:text-white hover:bg-gray-50">
                         <%= text %>
@@ -199,7 +216,7 @@
 
           <div class="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-2">
             <div>
-              <div class="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">Buscas rápidas</div>
+              <div class="mb-2 text-xs font-bold uppercase tracking-wide text-current opacity-70">Buscas rápidas</div>
               <% quick_filters = [
                 ['frente_mar', 'Frente Mar', 'bi-water'],
                 ['quadra_mar', 'Quadra Mar', 'bi-building'],
@@ -215,7 +232,7 @@
                 <% quick_filters.each do |value, label, icon| %>
                   <label class="cursor-pointer">
                     <%= check_box_tag "characteristics[]", value, selected_characteristics.include?(value), class: "peer sr-only" %>
-                    <span class="inline-flex h-9 items-center gap-2 rounded-full border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-600 transition-all peer-checked:border-blue-three peer-checked:bg-blue-three peer-checked:text-white hover:border-blue-three hover:text-blue-three">
+                    <span class="inline-flex h-9 items-center gap-2 rounded-full bg-white px-3 text-xs font-semibold text-gray-600 transition-all peer-checked:bg-blue-three peer-checked:text-white hover:text-blue-three" style="<%= search_filter_chip_border_style %>">
                       <i class="bi <%= icon %>"></i>
                       <%= label %>
                     </span>
@@ -224,7 +241,7 @@
 
                 <label class="cursor-pointer">
                   <%= check_box_tag :accepts_exchange, "1", params[:accepts_exchange].to_s == "1", class: "peer sr-only" %>
-                  <span class="inline-flex h-9 items-center gap-2 rounded-full border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-600 transition-all peer-checked:border-blue-three peer-checked:bg-blue-three peer-checked:text-white hover:border-blue-three hover:text-blue-three">
+                  <span class="inline-flex h-9 items-center gap-2 rounded-full bg-white px-3 text-xs font-semibold text-gray-600 transition-all peer-checked:bg-blue-three peer-checked:text-white hover:text-blue-three" style="<%= search_filter_chip_border_style %>">
                     <i class="bi bi-arrow-left-right"></i>
                     Permuta
                   </span>
@@ -233,7 +250,7 @@
             </div>
 
             <div>
-              <div class="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">Mais características</div>
+              <div class="mb-2 text-xs font-bold uppercase tracking-wide text-current opacity-70">Mais características</div>
               <% extra_filters = [
                 ['cozinha_gourmet_churrasqueira', 'Cozinha gourmet com churrasqueira', 'bi-fire'],
                 ['dependencia_empregada', 'Dependência', 'bi-door-closed'],
@@ -245,7 +262,7 @@
                 <% extra_filters.each do |value, label, icon| %>
                   <label class="cursor-pointer">
                     <%= check_box_tag "characteristics[]", value, selected_characteristics.include?(value), class: "peer sr-only" %>
-                    <span class="inline-flex h-9 items-center gap-2 rounded-full border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-600 transition-all peer-checked:border-golden-one peer-checked:bg-golden-one peer-checked:text-blue-three hover:border-golden-one hover:text-blue-three">
+                    <span class="inline-flex h-9 items-center gap-2 rounded-full bg-white px-3 text-xs font-semibold text-gray-600 transition-all peer-checked:bg-golden-one peer-checked:text-blue-three hover:text-blue-three" style="<%= search_filter_chip_border_style %>">
                       <i class="bi <%= icon %>"></i>
                       <%= label %>
                     </span>
@@ -257,26 +274,30 @@
         </div>
       </div>
 
-      <div class="mt-4 flex flex-wrap items-center justify-between gap-x-[0.2rem] gap-y-2 text-center text-sm font-bold text-blue-three">
-        <button type="button"
-                class="inline-flex items-center justify-center gap-1 text-blue-three transition-colors hover:text-golden-one"
-                data-action="click->search-tabs#toggleAdvanced">
-          <i class="bi bi-list" data-search-tabs-target="advancedIcon"></i>
-          <span data-search-tabs-target="advancedLabel">Avançado</span>
-        </button>
-
-        <button type="button"
-                onclick="document.dispatchEvent(new CustomEvent('open-code-search'))"
-                class="inline-flex items-center justify-center gap-1 text-blue-three transition-colors hover:text-golden-one">
-          <i class="bi bi-upc-scan"></i>
-          Por código
-        </button>
-
-        <%= link_to empreendimentos_path, class: "inline-flex items-center justify-center gap-1 text-blue-three transition-colors hover:text-golden-one" do %>
-          <i class="bi bi-buildings"></i>
-          Empreendimentos
-        <% end %>
-      </div>
     <% end %>
+  </div>
+
+  <div class="mt-3 flex justify-center">
+    <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 px-4 py-2 text-center text-xs font-semibold text-current shadow-[0_12px_34px_rgba(8,31,48,0.16)] sm:text-sm"
+         style="<%= search_filter_style %>; background-color: var(--search-filter-bg); border: var(--search-filter-border); border-radius: var(--search-filter-radius); color: var(--search-filter-text); backdrop-filter: blur(var(--search-filter-blur)); -webkit-backdrop-filter: blur(var(--search-filter-blur));">
+      <button type="button"
+              class="inline-flex items-center justify-center gap-1.5 transition-colors hover:text-golden-one"
+              data-action="click->search-tabs#toggleAdvanced">
+        <i class="bi bi-list text-[0.95em]" data-search-tabs-target="advancedIcon"></i>
+        <span data-search-tabs-target="advancedLabel">Avançado</span>
+      </button>
+
+      <button type="button"
+              onclick="document.dispatchEvent(new CustomEvent('open-code-search'))"
+              class="inline-flex items-center justify-center gap-1.5 transition-colors hover:text-golden-one">
+        <i class="bi bi-upc-scan text-[0.95em]"></i>
+        Por código
+      </button>
+
+      <%= link_to empreendimentos_path, class: "inline-flex items-center justify-center gap-1.5 transition-colors hover:text-golden-one" do %>
+        <i class="bi bi-buildings text-[0.95em]"></i>
+        Empreendimentos
+      <% end %>
+    </div>
   </div>
 </div>

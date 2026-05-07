@@ -8,7 +8,7 @@
     <%= link_to 'Voltar', admin_root_path, class: 'btn btn-outline-secondary' %>
   </div>
 
-  <%= form_with(model: @home_setting, url: admin_home_setting_path, local: true) do |f| %>
+  <%= form_with(model: @home_setting, url: admin_home_setting_path, local: true, html: { multipart: true }) do |f| %>
     <% if @home_setting.errors.any? %>
       <div class="alert alert-danger alert-dismissible fade show" role="alert">
         <h5 class="alert-heading"><i class="bi bi-exclamation-triangle-fill me-2"></i><%= pluralize(@home_setting.errors.count, "erro") %> encontrado:</h5>
@@ -59,6 +59,23 @@
                   <small class="text-muted">Texto principal que aparece no topo da home</small>
                 </div>
 
+                <div class="row g-3 mb-3">
+                  <div class="col-md-6">
+                    <%= f.label :hero_title_font_size, "Tamanho do título", class: "form-label fw-bold" %>
+                    <div class="input-group">
+                      <%= f.number_field :hero_title_font_size, value: @home_setting.hero_title_font_size || 72, min: 24, max: 96, step: 1, class: "form-control" %>
+                      <span class="input-group-text">px</span>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <%= f.label :hero_subtitle_font_size, "Tamanho do subtítulo", class: "form-label fw-bold" %>
+                    <div class="input-group">
+                      <%= f.number_field :hero_subtitle_font_size, value: @home_setting.hero_subtitle_font_size || 20, min: 12, max: 36, step: 1, class: "form-control" %>
+                      <span class="input-group-text">px</span>
+                    </div>
+                  </div>
+                </div>
+
                 <div class="mb-0">
                   <%= f.label :hero_subtitle, "Subtítulo", class: "form-label fw-bold" %>
                   <%= f.text_area :hero_subtitle, rows: 2, class: "form-control", placeholder: "Aqui o lar é o centro das grandes histórias da vida." %>
@@ -75,21 +92,69 @@
                 <h5 class="mb-0 text-success"><i class="bi bi-laptop me-2"></i>Imagem Desktop</h5>
               </div>
               <div class="card-body">
-                <%= f.label :hero_background_desktop, "Imagem de Fundo (Desktop)", class: "form-label fw-bold" %>
-                <%= f.file_field :hero_background_desktop, class: "form-control mb-3", accept: "image/*" %>
-                <small class="text-muted d-block mb-3">Recomendado: 1920x1080px</small>
-                
-                <% if @home_setting.hero_background_desktop.attached? %>
+                <label class="form-label fw-bold">Slides do Hero (Desktop)</label>
+                <%= file_field_tag "home_setting[hero_slide_images][]",
+                                   multiple: true,
+                                   class: "form-control mb-2",
+                                   accept: "image/*" %>
+                <small class="text-muted d-block mb-3">Você pode enviar uma ou mais imagens. Elas serão redimensionadas para até 1920x1080px e otimizadas para web no upload.</small>
+
+                <% if @home_setting.hero_slides.any? %>
+                  <div class="d-flex flex-column gap-2"
+                       data-controller="sortable"
+                       data-sortable-handle-value=".hero-slide-drag-handle">
+                    <%= f.fields_for :hero_slides, @home_setting.hero_slides do |slide_f| %>
+                      <% slide = slide_f.object %>
+                      <div class="nested-form-wrapper">
+                        <div class="border rounded-3 bg-white p-2">
+                          <div class="d-flex align-items-center gap-3">
+                            <button type="button" class="btn btn-sm btn-light border hero-slide-drag-handle flex-shrink-0" title="Arrastar para ordenar">
+                              <i class="bi bi-arrows-move"></i>
+                            </button>
+
+                            <span class="badge bg-dark flex-shrink-0">
+                              #<span class="position-display"><%= slide.position %></span>
+                            </span>
+
+                            <div class="position-relative overflow-hidden rounded bg-light flex-shrink-0" style="width: 150px;">
+                            <% if slide.image.attached? %>
+                              <%= image_tag slide.image.variant(resize_to_limit: [300, 170]), class: "img-fluid w-100", style: "aspect-ratio: 16 / 9; object-fit: cover;" %>
+                            <% end %>
+                            </div>
+
+                            <%= slide_f.hidden_field :position, class: "position-field" %>
+
+                            <div class="flex-grow-1">
+                              <%= slide_f.label :alt_text, "Texto alternativo", class: "form-label small fw-semibold mb-1" %>
+                              <%= slide_f.text_field :alt_text, class: "form-control form-control-sm" %>
+                            </div>
+
+                            <div class="d-flex align-items-center gap-3 flex-shrink-0">
+                              <div class="form-check form-switch mb-0">
+                                <%= slide_f.check_box :active, class: "form-check-input" %>
+                                <%= slide_f.label :active, "Ativo", class: "form-check-label small" %>
+                              </div>
+                              <div class="form-check mb-0">
+                                <%= slide_f.check_box :_destroy, class: "form-check-input" %>
+                                <%= slide_f.label :_destroy, "Remover", class: "form-check-label small text-danger" %>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    <% end %>
+                  </div>
+                <% elsif @home_setting.hero_background_desktop.attached? %>
                   <div class="position-relative overflow-hidden rounded shadow-sm">
-                    <%= image_tag @home_setting.hero_background_desktop, class: "img-fluid w-100", id: "hero-desktop-image" %>
-                    <div id="hero-overlay-preview" 
-                         style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-                                background-color: <%= @home_setting.overlay_color || '#000000' %>; 
-                                opacity: <%= @home_setting.overlay_opacity || 0.7 %>; 
+                    <%= image_tag @home_setting.hero_background_desktop.variant(resize_to_limit: [960, 540]), class: "img-fluid w-100", id: "hero-desktop-image" %>
+                    <div id="hero-overlay-preview"
+                         style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+                                background-color: <%= @home_setting.overlay_color || '#000000' %>;
+                                opacity: <%= @home_setting.overlay_opacity || 0.7 %>;
                                 pointer-events: none; transition: all 0.2s ease;">
                     </div>
-                    <span class="badge bg-success position-absolute top-0 start-0 m-2" style="z-index: 5;">
-                      <i class="bi bi-check-circle me-1"></i>Imagem Atual
+                    <span class="badge bg-secondary position-absolute top-0 start-0 m-2" style="z-index: 5;">
+                      <i class="bi bi-image me-1"></i>Imagem atual antiga
                     </span>
                   </div>
                 <% else %>
@@ -192,6 +257,99 @@
                           <%= f.text_field :hero_cta_link, class: "form-control", placeholder: "/imoveis" %>
                         </div>
                       <% end %>
+                    </div>
+                  </div>
+
+                  <!-- Search Filter Block -->
+                  <div class="col-12 mt-4">
+                    <h6 class="text-uppercase text-muted fw-bold small mb-3 border-bottom pb-2">Personalização do Filtro de Busca</h6>
+                    <div class="row">
+                      <div class="col-md-4 mb-3">
+                        <%= f.label :search_filter_background_color, "Cor do Fundo do Filtro", class: "form-label fw-bold" %>
+                        <div class="d-flex gap-2 align-items-center">
+                          <%= f.color_field :search_filter_background_color, value: @home_setting.search_filter_background_color || '#FFFFFF', class: "form-control form-control-color", style: "width: 80px; height: 48px;", oninput: "syncColorField(this, 'search-filter-background')" %>
+                          <%= f.text_field :search_filter_background_color, value: @home_setting.search_filter_background_color || '#FFFFFF', class: "form-control", id: "search-filter-background-text", oninput: "syncColorText(this, 'search-filter-background')" %>
+                        </div>
+                      </div>
+
+                      <div class="col-md-4 mb-3">
+                        <%= f.label :search_filter_background_opacity, class: "form-label fw-bold" do %>
+                          Opacidade do Fundo <span class="badge bg-secondary">0.0 - 1.0</span>
+                        <% end %>
+                        <div class="input-group">
+                          <%= f.number_field :search_filter_background_opacity, value: @home_setting.search_filter_background_opacity || 0.9, step: 0.05, min: 0, max: 1, class: "form-control", placeholder: "0.9" %>
+                          <span class="input-group-text"><i class="bi bi-opacity"></i></span>
+                        </div>
+                      </div>
+
+                      <div class="col-md-4 mb-3">
+                        <%= f.label :search_filter_backdrop_blur, "Translucidez / Desfoque", class: "form-label fw-bold" %>
+                        <div class="input-group">
+                          <%= f.number_field :search_filter_backdrop_blur, value: @home_setting.search_filter_backdrop_blur || 16, min: 0, max: 40, step: 1, class: "form-control", placeholder: "16" %>
+                          <span class="input-group-text">px</span>
+                        </div>
+                        <small class="text-muted">Quanto maior, mais efeito de vidro.</small>
+                      </div>
+
+                      <div class="col-md-4 mb-3">
+                        <%= f.label :search_filter_border_radius, "Radius do Filtro", class: "form-label fw-bold" %>
+                        <div class="input-group">
+                          <%= f.number_field :search_filter_border_radius, value: @home_setting.search_filter_border_radius || 22, min: 0, max: 40, step: 1, class: "form-control", placeholder: "22" %>
+                          <span class="input-group-text">px</span>
+                        </div>
+                      </div>
+
+                      <div class="col-md-4 mb-3">
+                        <%= f.label :search_filter_field_background_color, "Cor dos Campos", class: "form-label fw-bold" %>
+                        <div class="d-flex gap-2 align-items-center">
+                          <%= f.color_field :search_filter_field_background_color, value: @home_setting.search_filter_field_background_color || '#FFFFFF', class: "form-control form-control-color", style: "width: 80px; height: 48px;", oninput: "syncColorField(this, 'search-filter-field-background')" %>
+                          <%= f.text_field :search_filter_field_background_color, value: @home_setting.search_filter_field_background_color || '#FFFFFF', class: "form-control", id: "search-filter-field-background-text", oninput: "syncColorText(this, 'search-filter-field-background')" %>
+                        </div>
+                      </div>
+
+                      <div class="col-md-4 mb-3">
+                        <%= f.label :search_filter_field_background_opacity, class: "form-label fw-bold" do %>
+                          Opacidade dos Campos <span class="badge bg-secondary">0.0 - 1.0</span>
+                        <% end %>
+                        <div class="input-group">
+                          <%= f.number_field :search_filter_field_background_opacity, value: @home_setting.search_filter_field_background_opacity || 0.85, step: 0.05, min: 0, max: 1, class: "form-control", placeholder: "0.85" %>
+                          <span class="input-group-text"><i class="bi bi-opacity"></i></span>
+                        </div>
+                      </div>
+
+                      <div class="col-md-4 mb-3">
+                        <%= f.label :search_filter_text_color, "Cor dos Textos/Links", class: "form-label fw-bold" %>
+                        <div class="d-flex gap-2 align-items-center">
+                          <%= f.color_field :search_filter_text_color, value: @home_setting.search_filter_text_color || '#022B3A', class: "form-control form-control-color", style: "width: 80px; height: 48px;", oninput: "syncColorField(this, 'search-filter-text')" %>
+                          <%= f.text_field :search_filter_text_color, value: @home_setting.search_filter_text_color || '#022B3A', class: "form-control", id: "search-filter-text-text", oninput: "syncColorText(this, 'search-filter-text')" %>
+                        </div>
+                      </div>
+
+                      <div class="col-md-4 mb-3">
+                        <%= f.label :search_filter_border_enabled, "Borda do Filtro", class: "form-label fw-bold" %>
+                        <div class="form-check form-switch mt-2">
+                          <%= f.check_box :search_filter_border_enabled, class: "form-check-input", role: "switch" %>
+                          <%= f.label :search_filter_border_enabled, "Ativar borda", class: "form-check-label" %>
+                        </div>
+                      </div>
+
+                      <div class="col-md-4 mb-3">
+                        <%= f.label :search_filter_border_color, "Cor da Borda", class: "form-label fw-bold" %>
+                        <div class="d-flex gap-2 align-items-center">
+                          <%= f.color_field :search_filter_border_color, value: @home_setting.search_filter_border_color || '#FFFFFF', class: "form-control form-control-color", style: "width: 80px; height: 48px;", oninput: "syncColorField(this, 'search-filter-border')" %>
+                          <%= f.text_field :search_filter_border_color, value: @home_setting.search_filter_border_color || '#FFFFFF', class: "form-control", id: "search-filter-border-text", oninput: "syncColorText(this, 'search-filter-border')" %>
+                        </div>
+                      </div>
+
+                      <div class="col-md-4 mb-0">
+                        <%= f.label :search_filter_border_opacity, class: "form-label fw-bold" do %>
+                          Opacidade da Borda <span class="badge bg-secondary">0.0 - 1.0</span>
+                        <% end %>
+                        <div class="input-group">
+                          <%= f.number_field :search_filter_border_opacity, value: @home_setting.search_filter_border_opacity || 0.45, step: 0.05, min: 0, max: 1, class: "form-control", placeholder: "0.45" %>
+                          <span class="input-group-text"><i class="bi bi-opacity"></i></span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -333,5 +491,21 @@
       }
     }
     updateOverlayPreview();
+  }
+
+  function syncColorField(input, fieldId) {
+    const text = document.getElementById(`${fieldId}-text`);
+
+    if (text) {
+      text.value = input.value;
+    }
+  }
+
+  function syncColorText(input, fieldId) {
+    const picker = input.previousElementSibling;
+
+    if (picker && /^#[0-9A-F]{6}$/i.test(input.value)) {
+      picker.value = input.value;
+    }
   }
 </script>

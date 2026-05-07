@@ -1,4 +1,4 @@
-\restrict AtQzsvd8Oy3OlgYNGYKwvRPQsEAM6dgqDRlOFddH58CuWq7YV5Tbh3f7fZLk7bJ
+\restrict rMlXJa2ZP3y1lnF3UTB1yJF80SaIKzFrHUEKORRKhUinrQmIHRzmRBBdbSoMjHu
 
 -- Dumped from database version 18.3 (Homebrew)
 -- Dumped by pg_dump version 18.3 (Homebrew)
@@ -1259,6 +1259,40 @@ ALTER SEQUENCE public.habitations_id_seq OWNED BY public.habitations.id;
 
 
 --
+-- Name: home_hero_slides; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.home_hero_slides (
+    id bigint NOT NULL,
+    home_setting_id bigint NOT NULL,
+    "position" integer DEFAULT 0 NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    alt_text character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: home_hero_slides_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.home_hero_slides_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: home_hero_slides_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.home_hero_slides_id_seq OWNED BY public.home_hero_slides.id;
+
+
+--
 -- Name: home_section_items; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1349,7 +1383,19 @@ CREATE TABLE public.home_settings (
     overlay_opacity numeric,
     overlay_color character varying,
     hero_button_color character varying,
-    hero_button_text_color character varying
+    hero_button_text_color character varying,
+    search_filter_background_color character varying,
+    search_filter_background_opacity numeric(3,2),
+    search_filter_border_color character varying,
+    search_filter_text_color character varying,
+    search_filter_field_background_color character varying,
+    search_filter_field_background_opacity numeric(3,2),
+    search_filter_backdrop_blur integer,
+    search_filter_border_enabled boolean DEFAULT true NOT NULL,
+    search_filter_border_opacity numeric(3,2),
+    search_filter_border_radius integer,
+    hero_title_font_size integer,
+    hero_subtitle_font_size integer
 );
 
 
@@ -2782,6 +2828,13 @@ ALTER TABLE ONLY public.habitations ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
+-- Name: home_hero_slides id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.home_hero_slides ALTER COLUMN id SET DEFAULT nextval('public.home_hero_slides_id_seq'::regclass);
+
+
+--
 -- Name: home_section_items id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -3231,6 +3284,14 @@ ALTER TABLE ONLY public.habitation_share_links
 
 ALTER TABLE ONLY public.habitations
     ADD CONSTRAINT habitations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: home_hero_slides home_hero_slides_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.home_hero_slides
+    ADD CONSTRAINT home_hero_slides_pkey PRIMARY KEY (id);
 
 
 --
@@ -4314,6 +4375,20 @@ CREATE INDEX index_habitations_on_valor_venda_cents ON public.habitations USING 
 
 
 --
+-- Name: index_home_hero_slides_on_home_setting_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_home_hero_slides_on_home_setting_id ON public.home_hero_slides USING btree (home_setting_id);
+
+
+--
+-- Name: index_home_hero_slides_on_home_setting_id_and_position; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_home_hero_slides_on_home_setting_id_and_position ON public.home_hero_slides USING btree (home_setting_id, "position");
+
+
+--
 -- Name: index_home_section_items_on_home_section_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -5043,6 +5118,14 @@ ALTER TABLE ONLY public.home_section_items
 
 
 --
+-- Name: home_hero_slides fk_rails_612e24602a; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.home_hero_slides
+    ADD CONSTRAINT fk_rails_612e24602a FOREIGN KEY (home_setting_id) REFERENCES public.home_settings(id);
+
+
+--
 -- Name: checkin_audit_logs fk_rails_6ab3e3b6ba; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5302,11 +5385,16 @@ ALTER TABLE ONLY public.push_subscriptions
 -- PostgreSQL database dump complete
 --
 
-\unrestrict AtQzsvd8Oy3OlgYNGYKwvRPQsEAM6dgqDRlOFddH58CuWq7YV5Tbh3f7fZLk7bJ
+\unrestrict rMlXJa2ZP3y1lnF3UTB1yJF80SaIKzFrHUEKORRKhUinrQmIHRzmRBBdbSoMjHu
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260507124000'),
+('20260507123000'),
+('20260507122000'),
+('20260507121000'),
+('20260507120000'),
 ('20260506100000'),
 ('20260505152000'),
 ('20260505143000'),
