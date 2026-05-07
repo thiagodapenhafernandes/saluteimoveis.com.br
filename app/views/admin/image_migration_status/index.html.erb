@@ -1,0 +1,158 @@
+<% worker = @status[:worker] %>
+
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+      <h1 class="mb-1"><i class="bi bi-images me-2"></i>Migração de Imagens</h1>
+      <p class="text-muted mb-0">Acompanhe a cópia das fotos antigas dos imóveis para a nossa base.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <%= link_to admin_image_migration_status_path, class: "btn btn-outline-primary" do %>
+        <i class="bi bi-arrow-clockwise me-2"></i>Atualizar
+      <% end %>
+      <%= link_to admin_habitations_path(sort: "last_sync_at", direction: "desc"), class: "btn btn-outline-secondary" do %>
+        <i class="bi bi-arrow-left me-2"></i>Vista Soft
+      <% end %>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-xl-3 col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="text-muted small text-uppercase fw-bold mb-2">Progresso por imóvel</div>
+          <div class="display-6 fw-bold mb-1"><%= number_to_percentage(@status[:property_progress], precision: 2) %></div>
+          <div class="text-muted small">
+            <strong><%= number_with_delimiter(@status[:properties_with_photos]) %></strong> concluídos de
+            <strong><%= number_with_delimiter(@status[:total_properties]) %></strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="text-muted small text-uppercase fw-bold mb-2">Ainda falta</div>
+          <div class="display-6 fw-bold mb-1"><%= number_with_delimiter(@status[:pending_properties]) %></div>
+          <div class="text-muted small">Imóveis com imagens antigas e nenhuma foto migrada.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="text-muted small text-uppercase fw-bold mb-2">Fotos anexadas</div>
+          <div class="display-6 fw-bold mb-1"><%= number_with_delimiter(@status[:migrated_images]) %></div>
+          <div class="text-muted small">
+            Estimativa: <%= number_to_percentage(@status[:image_progress], precision: 2) %> das imagens de origem.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="text-muted small text-uppercase fw-bold mb-2">Processo</div>
+          <div class="h3 fw-bold mb-1">
+            <span class="badge <%= worker[:running] ? "bg-success" : "bg-danger" %>">
+              <%= worker[:status] %>
+            </span>
+          </div>
+          <div class="text-muted small">
+            <% if worker[:pid].present? %>
+              PID <code><%= worker[:pid] %></code>
+            <% else %>
+              Sem PID registrado
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+      <div class="d-flex justify-content-between small mb-2">
+        <span>Imóveis concluídos</span>
+        <strong><%= number_to_percentage(@status[:property_progress], precision: 2) %></strong>
+      </div>
+      <div class="progress mb-4" style="height: 12px;">
+        <div class="progress-bar bg-success"
+             role="progressbar"
+             style="width: <%= @status[:property_progress] %>%"
+             aria-valuenow="<%= @status[:property_progress] %>"
+             aria-valuemin="0"
+             aria-valuemax="100"></div>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-lg-6">
+          <h6 class="fw-bold mb-3"><i class="bi bi-list-check me-2 text-primary"></i>Resumo</h6>
+          <ul class="list-unstyled small mb-0">
+            <li class="d-flex justify-content-between py-2 border-bottom">
+              <span>Total de imóveis com imagens antigas</span>
+              <strong><%= number_with_delimiter(@status[:total_properties]) %></strong>
+            </li>
+            <li class="d-flex justify-content-between py-2 border-bottom">
+              <span>Imóveis já com fotos na nossa base</span>
+              <strong><%= number_with_delimiter(@status[:properties_with_photos]) %></strong>
+            </li>
+            <li class="d-flex justify-content-between py-2 border-bottom">
+              <span>Imóveis pendentes</span>
+              <strong><%= number_with_delimiter(@status[:pending_properties]) %></strong>
+            </li>
+            <li class="d-flex justify-content-between py-2 border-bottom">
+              <span>Pendentes públicos de venda/aluguel</span>
+              <strong><%= number_with_delimiter(@status[:public_pending_properties]) %></strong>
+            </li>
+            <li class="d-flex justify-content-between py-2">
+              <span>Total estimado de imagens de origem</span>
+              <strong><%= number_with_delimiter(@status[:total_source_images]) %></strong>
+            </li>
+          </ul>
+        </div>
+
+        <div class="col-lg-6">
+          <h6 class="fw-bold mb-3"><i class="bi bi-activity me-2 text-success"></i>Execução</h6>
+          <ul class="list-unstyled small mb-0">
+            <li class="d-flex justify-content-between py-2 border-bottom">
+              <span>Último ID processado</span>
+              <strong><%= @status[:cursor_last_id].presence || "N/D" %></strong>
+            </li>
+            <li class="d-flex justify-content-between py-2 border-bottom">
+              <span>Imóveis com falha registrados</span>
+              <strong><%= number_with_delimiter(@status[:failed_properties]) %></strong>
+            </li>
+            <li class="d-flex justify-content-between py-2 border-bottom">
+              <span>Última foto anexada</span>
+              <strong><%= @status[:latest_attachment_at].present? ? l(@status[:latest_attachment_at], format: :short) : "N/D" %></strong>
+            </li>
+            <li class="py-2">
+              <span class="text-muted d-block mb-1">Log no servidor</span>
+              <code class="small"><%= @status[:paths][:log] %></code>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <% if @status[:failed_properties].positive? %>
+    <div class="alert alert-warning">
+      <div class="fw-bold mb-1"><i class="bi bi-exclamation-triangle me-2"></i>Há imóveis para revisar depois</div>
+      <div class="small">
+        Alguns downloads retornaram erro na origem. Amostra de IDs:
+        <code><%= @status[:failed_sample].join(", ") %></code>.
+        Eles ficam salvos em <code><%= @status[:paths][:failed] %></code> para retry ou análise.
+      </div>
+    </div>
+  <% end %>
+
+  <div class="alert alert-info mb-0">
+    <i class="bi bi-info-circle me-2"></i>
+    Esta tela mede imóveis que já possuem pelo menos uma foto anexada no Active Storage. A porcentagem por imagem é uma estimativa baseada no total de URLs antigas versus anexos de fotos atuais.
+  </div>
+</div>

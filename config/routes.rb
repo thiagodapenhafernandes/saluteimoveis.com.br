@@ -41,6 +41,7 @@ Rails.application.routes.draw do
       post :test, on: :member
       patch :share_tracking, on: :collection
     end
+    get :image_migration_status, to: "image_migration_status#index"
     resources :seo_settings
     resources :banners
     resources :home_sections do
