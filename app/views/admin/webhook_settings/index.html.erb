@@ -15,6 +15,34 @@
     </div>
   </div>
 
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-primary bg-opacity-10 border-0">
+      <h5 class="mb-0 text-primary">
+        <i class="bi bi-share-fill me-2"></i>Compartilhamento de corretores
+      </h5>
+    </div>
+    <div class="card-body">
+      <%= form_with url: share_tracking_admin_webhook_settings_path, method: :patch, local: true, class: "row g-3 align-items-end" do %>
+        <div class="col-md-4">
+          <%= label_tag :lead_share_tracking_days, "Validade do cookie/link (dias)", class: "form-label fw-bold" %>
+          <%= number_field_tag :lead_share_tracking_days,
+                               @lead_share_tracking_days,
+                               min: HabitationShareLink::MIN_EXPIRATION_DAYS,
+                               max: HabitationShareLink::MAX_EXPIRATION_DAYS,
+                               class: "form-control" %>
+        </div>
+        <div class="col-md-5">
+          <p class="text-muted small mb-0">
+            Quando um visitante abre um link compartilhado por corretor, o site mantém essa atribuição por este período e novos leads do mesmo imóvel ficam com o corretor.
+          </p>
+        </div>
+        <div class="col-md-3 text-md-end">
+          <%= submit_tag "Salvar validade", class: "btn btn-primary" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
   <% if @webhook_settings.any? %>
     <div class="card shadow-sm border-0">
       <div class="card-body p-0">

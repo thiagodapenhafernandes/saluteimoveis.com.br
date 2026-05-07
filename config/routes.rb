@@ -39,6 +39,7 @@ Rails.application.routes.draw do
     resource :footer_setting, only: [:edit, :update]
     resources :webhook_settings do
       post :test, on: :member
+      patch :share_tracking, on: :collection
     end
     resources :seo_settings
     resources :banners

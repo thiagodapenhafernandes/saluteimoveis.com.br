@@ -4,6 +4,7 @@ class Admin::WebhookSettingsController < Admin::BaseController
 
   def index
     @webhook_settings = WebhookSetting.all.order(created_at: :desc)
+    @lead_share_tracking_days = HabitationShareLink.expiration_days
   end
 
   def new
@@ -42,6 +43,22 @@ class Admin::WebhookSettingsController < Admin::BaseController
     else
       redirect_to admin_webhook_settings_path, alert: 'Falha ao enviar webhook de teste. Verifique a URL e tente novamente.'
     end
+  end
+
+  def share_tracking
+    raw_days = params[:lead_share_tracking_days].presence || HabitationShareLink::DEFAULT_EXPIRATION_DAYS
+    days = raw_days.to_i.clamp(
+      HabitationShareLink::MIN_EXPIRATION_DAYS,
+      HabitationShareLink::MAX_EXPIRATION_DAYS
+    )
+
+    Setting.set(
+      HabitationShareLink::EXPIRATION_SETTING_KEY,
+      days.to_s,
+      "Dias de validade do cookie/link de compartilhamento de corretor"
+    )
+
+    redirect_to admin_webhook_settings_path, notice: "Validade do compartilhamento atualizada para #{days} dias."
   end
   
   private

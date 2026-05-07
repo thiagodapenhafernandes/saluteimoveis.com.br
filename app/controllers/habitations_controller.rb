@@ -374,17 +374,31 @@ class HabitationsController < ApplicationController
     return unless @habitation
 
     @lead_share_token = nil
-    return if params[:share_token].blank?
+    token = params[:share_token].presence || cookies.signed[HabitationShareLink::COOKIE_KEY].presence
+    return if token.blank?
 
     link = HabitationShareLink.active
                               .includes(:admin_user)
-                              .find_by(token: params[:share_token], habitation_id: @habitation.id)
-    return unless link
+                              .find_by(token: token, habitation_id: @habitation.id)
+    unless link
+      cookies.delete(HabitationShareLink::COOKIE_KEY)
+      return
+    end
 
     @share_link = link
     @shared_broker = link.admin_user
     @lead_share_token = link.token
+    remember_share_link(link)
     link.register_click!
+  end
+
+  def remember_share_link(link)
+    cookies.signed[HabitationShareLink::COOKIE_KEY] = {
+      value: link.token,
+      expires: HabitationShareLink.expiration_period.from_now,
+      same_site: :lax,
+      httponly: true
+    }
   end
   
   def visit_params
