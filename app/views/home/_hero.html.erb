@@ -18,7 +18,7 @@
     <% end %>
 
     <% if hero_images.empty? && @home_setting.hero_background_desktop.attached? %>
-      <% legacy_hero_image = @home_setting.hero_background_desktop.variant(resize_to_limit: [1920, 1080], saver: { quality: 82, strip: true, interlace: "JPEG" }) %>
+      <% legacy_hero_image = @home_setting.hero_background_desktop.variant(resize_to_limit: [1920, 1080]) %>
       <% hero_images << { url: url_for(legacy_hero_image), alt: "Salute Imóveis - Luxo e Exclusividade" } %>
     <% end %>
     
