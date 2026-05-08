@@ -29,6 +29,7 @@ class HabitationsController < ApplicationController
       .active
       .without_developments
       .advanced_search(search_params)
+      .with_attached_photos
       .includes(:constructor, empreendimento: :constructor)
       .paginate(page: params[:page], per_page: 12)
     
@@ -188,6 +189,7 @@ class HabitationsController < ApplicationController
         @related_properties = Habitation
           .active
           .with_photos  # Apenas com fotos
+          .with_attached_photos
           .left_outer_joins(:address)
           .where("COALESCE(addresses.cidade, habitations.cidade) = ?", @habitation.cidade) # Mesma cidade
           .where(dormitorios_qtd: @habitation.dormitorios_qtd)  # Mesmos quartos
@@ -241,21 +243,25 @@ class HabitationsController < ApplicationController
     identifier = identifier.to_s.strip
     return nil if identifier.blank?
 
-    Habitation.find_by(slug: identifier) ||
-      Habitation.find_by(codigo: identifier) ||
+    public_habitation_scope.find_by(slug: identifier) ||
+      public_habitation_scope.find_by(codigo: identifier) ||
       find_habitation_by_trailing_code(identifier) ||
       find_habitation_by_friendly_id(identifier)
+  end
+
+  def public_habitation_scope
+    Habitation.with_attached_photos
   end
 
   def find_habitation_by_trailing_code(identifier)
     trailing_code = identifier[/(\d+)\z/, 1]
     return nil if trailing_code.blank? || trailing_code == identifier
 
-    Habitation.find_by(codigo: trailing_code)
+    public_habitation_scope.find_by(codigo: trailing_code)
   end
 
   def find_habitation_by_friendly_id(identifier)
-    Habitation.friendly.find(identifier)
+    public_habitation_scope.friendly.find(identifier)
   rescue ActiveRecord::RecordNotFound
     nil
   end

@@ -8,12 +8,13 @@ class HomeController < ApplicationController
     
     # Carrossel de Destaques - 12 imóveis (only if section is active)
     if @sections_map['featured_properties']&.active?
-      @featured_properties = Habitation.active.featured.newest_first.limit(12)
+      @featured_properties = Habitation.active.featured.with_attached_photos.newest_first.limit(12)
     end
     
     # Carrossel de Oportunidades - 12 imóveis com desconto (only if section is active)
     if @sections_map['opportunities']&.active?
       @opportunity_properties = Habitation.active
+        .with_attached_photos
         .where('valor_venda_anterior_cents > valor_venda_cents AND valor_venda_cents > 0')
         .newest_first
         .limit(12)
@@ -23,6 +24,7 @@ class HomeController < ApplicationController
     if @sections_map['developments']&.active?
       all_developments = Habitation
         .empreendimentos_publicos
+        .with_attached_photos
         .where.not(codigo: nil)
         .newest_first
         .limit(20)
@@ -45,8 +47,8 @@ class HomeController < ApplicationController
     
     # Imóveis para Locação (only if section is active)
     if @sections_map['rentals']&.active?
-      @rental_properties = Habitation.active.for_rent.newest_first.limit(6)
-      @corporate_properties = Habitation.active.home_corporate.limit(3)
+      @rental_properties = Habitation.active.for_rent.with_attached_photos.newest_first.limit(6)
+      @corporate_properties = Habitation.active.home_corporate.with_attached_photos.limit(3)
     end
     
     # Tipos de imóveis disponíveis (para o formulário de busca) - CACHED
@@ -81,6 +83,9 @@ class HomeController < ApplicationController
     
     # Home settings
     @home_setting = HomeSetting.instance
+    @hero_images = build_hero_images(@home_setting)
+    @hero_preload_source = @hero_images.first&.fetch(:source, nil)
+    @hero_preload_mobile_source = @hero_images.first&.fetch(:mobile_source, nil)
     
     # SEO
     @page_name = 'home'
@@ -101,5 +106,30 @@ class HomeController < ApplicationController
     @page_name = 'contato'
     @page_title = 'Contato | Salute Imóveis'
     @page_description = 'Entre em contato com a Salute Imóveis. Estamos prontos para ajudar você.'
+  end
+
+  private
+
+  def build_hero_images(home_setting)
+    images = home_setting.active_hero_slides.with_attached_image.filter_map do |slide|
+      next unless slide.image.attached?
+
+      {
+        source: slide.image.variant(resize_to_limit: [1920, 1080], saver: { quality: 82 }),
+        mobile_source: slide.image.variant(resize_to_limit: [900, 1200], saver: { quality: 80 }),
+        alt: slide.alt_text.presence || "Salute Imóveis - Luxo e Exclusividade"
+      }
+    end
+
+    if images.empty? && home_setting.hero_background_desktop.attached?
+      images << {
+        source: home_setting.hero_background_desktop.variant(resize_to_limit: [1920, 1080], saver: { quality: 82 }),
+        mobile_source: (home_setting.hero_background_mobile.attached? ? home_setting.hero_background_mobile : home_setting.hero_background_desktop).variant(resize_to_limit: [900, 1200], saver: { quality: 80 }),
+        alt: "Salute Imóveis - Luxo e Exclusividade"
+      }
+    end
+
+    fallback = helpers.asset_path("hero_05.jpeg")
+    images.presence || [{ source: fallback, mobile_source: fallback, alt: "Salute Imóveis - Luxo e Exclusividade" }]
   end
 end

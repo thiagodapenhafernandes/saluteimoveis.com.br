@@ -1,4 +1,3 @@
-<% @home_setting = HomeSetting.instance %>
 <% overlay_color = @home_setting.overlay_color || '#000000' %>
 <% overlay_opacity = @home_setting.overlay_opacity || 0.7 %>
 
@@ -11,29 +10,16 @@
   
   <!-- Cinematic Slider Container -->
   <div class="hero-slider-container">
-    <% hero_images = [] %>
-
-    <% @home_setting.active_hero_slides.each do |slide| %>
-      <% hero_images << { url: url_for(slide.image), alt: slide.alt_text.presence || "Salute Imóveis - Luxo e Exclusividade" } if slide.image.attached? %>
-    <% end %>
-
-    <% if hero_images.empty? && @home_setting.hero_background_desktop.attached? %>
-      <% legacy_hero_image = @home_setting.hero_background_desktop.variant(resize_to_limit: [1920, 1080]) %>
-      <% hero_images << { url: url_for(legacy_hero_image), alt: "Salute Imóveis - Luxo e Exclusividade" } %>
-    <% end %>
-    
-    <%# Fallback assets %>
-    <% ['hero_05.jpeg'].each do |img| %>
-      <% hero_images << { url: asset_path(img), alt: "Salute Imóveis - Luxo e Exclusividade" } if hero_images.empty? %>
-    <% end %>
-
-    <% hero_images.each_with_index do |image, index| %>
+    <% (@hero_images.presence || [{ source: asset_path("hero_05.jpeg"), alt: "Salute Imóveis - Luxo e Exclusividade" }]).each_with_index do |image, index| %>
       <div class="hero-slide <%= 'active' if index == 0 %>" data-hero-slider-target="slide">
-        <%= image_tag image[:url],
+        <%= image_tag image[:source],
                       class: "hero-image", 
                       alt: image[:alt],
+                      srcset: "#{url_for(image[:mobile_source] || image[:source])} 900w, #{url_for(image[:source])} 1920w",
+                      sizes: "100vw",
                       fetchpriority: index == 0 ? "high" : "low",
-                      loading: index == 0 ? "eager" : "lazy" %>
+                      loading: index == 0 ? "eager" : "lazy",
+                      decoding: "async" %>
       </div>
     <% end %>
   </div>
