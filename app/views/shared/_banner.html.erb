@@ -6,21 +6,38 @@
     force_mobile = options[:force_mobile] == true
   %>
   
-  <div class="<%= container_class %>">
-    <%= link_to banner.link_url.presence || '#', target: '_blank', class: 'block' do %>
-      <% if force_mobile && banner.image_mobile.attached? %>
-        <%= image_tag url_for(banner.image_mobile), 
-                      alt: banner.title,
-                      class: 'w-full rounded-lg shadow-md hover:shadow-xl transition-shadow' %>
+  <% desktop_image = banner.image_desktop.attached? ? banner.image_desktop : banner.image_mobile %>
+  <% mobile_image = banner.image_mobile.attached? ? banner.image_mobile : desktop_image %>
+  <% image_classes = "w-full rounded-lg shadow-md hover:shadow-xl transition-shadow" %>
+  <% banner_body = capture do %>
+    <% if desktop_image&.attached? %>
+      <% if force_mobile %>
+        <%= image_tag url_for(mobile_image), alt: banner.title, class: image_classes %>
       <% else %>
         <picture>
-          <source media="(max-width: 768px)" 
-                  srcset="<%= banner.image_mobile.attached? ? url_for(banner.image_mobile) : '' %>">
-          <%= image_tag (banner.image_desktop.attached? ? url_for(banner.image_desktop) : ''), 
-                        alt: banner.title,
-                        class: 'w-full rounded-lg shadow-md hover:shadow-xl transition-shadow' %>
+          <% if mobile_image&.attached? %>
+            <source media="(max-width: 768px)" srcset="<%= url_for(mobile_image) %>">
+          <% end %>
+          <%= image_tag url_for(desktop_image), alt: banner.title, class: image_classes, loading: "lazy" %>
         </picture>
       <% end %>
+    <% else %>
+      <div class="rounded-lg shadow-md bg-blue-three text-white p-6 md:p-8">
+        <h2 class="text-xl md:text-2xl font-bold mb-2"><%= banner.title %></h2>
+        <% if banner.description.present? %>
+          <p class="text-white/80 mb-0"><%= banner.description %></p>
+        <% end %>
+      </div>
+    <% end %>
+  <% end %>
+
+  <div class="<%= container_class %>">
+    <% if banner.link_url.present? %>
+      <%= link_to banner.link_url, target: '_blank', rel: "noopener", class: 'block' do %>
+        <%= banner_body %>
+      <% end %>
+    <% else %>
+      <%= banner_body %>
     <% end %>
   </div>
 <% end %>

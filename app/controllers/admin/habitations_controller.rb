@@ -360,10 +360,16 @@ class Admin::HabitationsController < Admin::BaseController
     suggestion = @habitation.ai_property_suggestions.pending.find(params[:suggestion_id])
     Ai::PropertyContentService.new(@habitation, admin_user: current_admin_user).apply!(suggestion)
 
+    return render_ai_content_preview(suggestion: nil, message: "Sugestão aplicada ao título, descrição e SEO do imóvel.", message_type: "success") if turbo_frame_request?
+
     redirect_to edit_admin_habitation_path(@habitation, anchor: "features"), notice: "Sugestão aplicada ao título, descrição e SEO do imóvel."
   rescue ActiveRecord::RecordNotFound
+    return render_ai_content_preview(message: "Sugestão não encontrada ou já aplicada.", message_type: "warning") if turbo_frame_request?
+
     redirect_to edit_admin_habitation_path(@habitation, anchor: "features"), alert: "Sugestão não encontrada ou já aplicada."
   rescue => e
+    return render_ai_content_preview(message: "Erro ao aplicar sugestão: #{e.message}", message_type: "danger") if turbo_frame_request?
+
     redirect_to edit_admin_habitation_path(@habitation, anchor: "features"), alert: "Erro ao aplicar sugestão: #{e.message}"
   end
 
