@@ -25,9 +25,20 @@ export default class extends Controller {
   }
 
   connect() {
+    this.activateTabFromHash()
     this.applyCadastroType()
     this.syncFromDevelopmentSelection()
     this.applyServerValidationErrors()
+  }
+
+  activateTabFromHash() {
+    const tabId = window.location.hash?.replace("#", "")
+    if (!tabId) return
+
+    const trigger = document.querySelector(`[data-bs-target="#${CSS.escape(tabId)}"]`)
+    if (trigger && window.bootstrap?.Tab) {
+      window.bootstrap.Tab.getOrCreateInstance(trigger).show()
+    }
   }
 
   applyServerValidationErrors() {

@@ -144,11 +144,11 @@
     <% schedule_context = can_access.call(:view, :agenda_fotografia) || can_access.call(:manage, :agenda_fotografia) || can_access.call(:manage, :integracoes) %>
     <% if can_access.call(:manage, :integracoes) || schedule_context %>
       <li class="sidebar-menu-item">
-        <a href="#submenu-integracoes" data-bs-toggle="collapse" class="d-flex justify-content-between align-items-center <%= (['meta_integrations', 'webhook_settings', 'dwv_integrations', 'loft_integrations', 'portal_integrations', 'scheduling_integrations', 'image_migration_status'].include?(controller_name) || vista_soft_context) ? '' : 'collapsed' %>">
+        <a href="#submenu-integracoes" data-bs-toggle="collapse" class="d-flex justify-content-between align-items-center <%= (['meta_integrations', 'webhook_settings', 'dwv_integrations', 'loft_integrations', 'portal_integrations', 'scheduling_integrations', 'image_migration_status', 'ai_integrations'].include?(controller_name) || vista_soft_context) ? '' : 'collapsed' %>">
           <span><i class="bi bi-plug"></i><span class="ms-2">Integrações</span></span>
           <i class="bi bi-chevron-down small"></i>
         </a>
-        <div class="collapse <%= (['meta_integrations', 'webhook_settings', 'dwv_integrations', 'loft_integrations', 'portal_integrations', 'scheduling_integrations', 'image_migration_status'].include?(controller_name) || vista_soft_context) ? 'show' : '' %>" id="submenu-integracoes">
+        <div class="collapse <%= (['meta_integrations', 'webhook_settings', 'dwv_integrations', 'loft_integrations', 'portal_integrations', 'scheduling_integrations', 'image_migration_status', 'ai_integrations'].include?(controller_name) || vista_soft_context) ? 'show' : '' %>" id="submenu-integracoes">
           <ul class="sidebar-menu ps-3 mt-1 bg-light rounded">
             <% if can_access.call(:manage, :integracoes) %>
               <li class="sidebar-menu-item"><%= link_to admin_portal_integrations_path, class: controller_name == 'portal_integrations' ? 'active' : '' do %><i class="bi bi-building"></i><span>Portais</span><% end %></li>
@@ -161,6 +161,7 @@
             <% end %>
             <% if can_access.call(:manage, :integracoes) %>
               <li class="sidebar-menu-item"><%= link_to admin_webhook_settings_path, class: controller_name == 'webhook_settings' ? 'active' : '' do %><i class="bi bi-broadcast"></i><span>Webhooks</span><% end %></li>
+              <li class="sidebar-menu-item"><%= link_to admin_ai_integration_path, class: controller_name == 'ai_integrations' ? 'active' : '' do %><i class="bi bi-stars"></i><span>IA</span><% end %></li>
               <li class="sidebar-menu-item"><%= link_to admin_habitations_path(sort: "last_sync_at", direction: "desc"), class: vista_soft_context ? 'active' : '' do %><i class="bi bi-arrow-repeat"></i><span>Vista Soft</span><% end %></li>
               <li class="sidebar-menu-item"><%= link_to admin_image_migration_status_path, class: controller_name == 'image_migration_status' ? 'active' : '' do %><i class="bi bi-images"></i><span>Migração de Imagens</span><% end %></li>
             <% end %>

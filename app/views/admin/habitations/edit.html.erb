@@ -51,42 +51,44 @@
   }
 </style>
 
-<div class="habitation-edit-header d-flex justify-content-between align-items-center gap-3 flex-wrap">
-  <div class="flex-grow-1" style="min-width: 0;">
-    <div class="codigo">
-      <i class="bi bi-hash"></i><%= @habitation.codigo %>
-      <% if @habitation.status.present? %>
-        · <span class="badge bg-light text-dark border fw-normal"><%= @habitation.status %></span>
-      <% end %>
-    </div>
-    <div class="title text-truncate">
-      <%= @habitation.titulo_anuncio.presence || @habitation.display_title || "Editar Imóvel" %>
-    </div>
-    <% if (@habitation.respond_to?(:endereco) && @habitation.endereco.present?) || @habitation.bairro.present? %>
-      <div class="subtitle text-truncate">
-        <i class="bi bi-geo-alt"></i>
-        <%= [@habitation.endereco, @habitation.bairro, @habitation.cidade].compact_blank.join(" · ") %>
+<div class="habitation-form-page">
+  <div class="habitation-edit-header d-flex justify-content-between align-items-center gap-3 flex-wrap">
+    <div class="flex-grow-1" style="min-width: 0;">
+      <div class="codigo">
+        <i class="bi bi-hash"></i><%= @habitation.codigo %>
+        <% if @habitation.status.present? %>
+          · <span class="badge bg-light text-dark border fw-normal"><%= @habitation.status %></span>
+        <% end %>
       </div>
-    <% end %>
-  </div>
-  <div class="actions d-flex gap-2">
-    <%= link_to admin_habitations_path, class: "btn btn-outline-secondary btn-sm" do %>
-      <i class="bi bi-arrow-left"></i><span class="ms-1">Voltar</span>
-    <% end %>
-    <%= link_to habitation_path(@habitation), target: "_blank", rel: "noopener", class: "btn btn-primary btn-sm" do %>
-      <i class="bi bi-eye"></i><span class="ms-1">Ver no site</span>
-    <% end %>
-    <% if current_admin_user&.admin? %>
-      <%= button_to admin_habitation_path(@habitation),
-          method: :delete,
-          class: "btn btn-outline-danger btn-sm",
-          form: { class: "d-inline" },
-          data: { turbo_confirm: "Tem certeza que deseja excluir este imóvel? Esta ação não pode ser desfeita." },
-          title: "Excluir imóvel" do %>
-        <i class="bi bi-trash"></i><span class="ms-1 d-none d-sm-inline">Excluir</span>
+      <div class="title text-truncate">
+        <%= @habitation.titulo_anuncio.presence || @habitation.display_title || "Editar Imóvel" %>
+      </div>
+      <% if (@habitation.respond_to?(:endereco) && @habitation.endereco.present?) || @habitation.bairro.present? %>
+        <div class="subtitle text-truncate">
+          <i class="bi bi-geo-alt"></i>
+          <%= [@habitation.endereco, @habitation.bairro, @habitation.cidade].compact_blank.join(" · ") %>
+        </div>
       <% end %>
-    <% end %>
+    </div>
+    <div class="actions d-flex gap-2">
+      <%= link_to admin_habitations_path, class: "btn btn-outline-secondary btn-sm" do %>
+        <i class="bi bi-arrow-left"></i><span class="ms-1">Voltar</span>
+      <% end %>
+      <%= link_to habitation_path(@habitation), target: "_blank", rel: "noopener", class: "btn btn-primary btn-sm" do %>
+        <i class="bi bi-eye"></i><span class="ms-1">Ver no site</span>
+      <% end %>
+      <% if current_admin_user&.admin? %>
+        <%= button_to admin_habitation_path(@habitation),
+            method: :delete,
+            class: "btn btn-outline-danger btn-sm",
+            form: { class: "d-inline" },
+            data: { turbo_confirm: "Tem certeza que deseja excluir este imóvel? Esta ação não pode ser desfeita." },
+            title: "Excluir imóvel" do %>
+          <i class="bi bi-trash"></i><span class="ms-1 d-none d-sm-inline">Excluir</span>
+        <% end %>
+      <% end %>
+    </div>
   </div>
-</div>
 
-<%= render 'form', habitation: @habitation %>
+  <%= render 'form', habitation: @habitation %>
+</div>

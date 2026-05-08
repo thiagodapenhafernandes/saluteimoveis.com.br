@@ -1,7 +1,7 @@
 class Admin::HabitationsController < Admin::BaseController
   before_action -> { check_permission!(:view, :imoveis) }
   before_action :require_admin!, only: [:bulk_publish, :bulk_publish_eligibility]
-  before_action :scope_habitations_by_permission, only: [:edit, :update, :destroy, :sync, :purge_attachment]
+  before_action :scope_habitations_by_permission, only: [:edit, :update, :destroy, :sync, :purge_attachment, :generate_ai_preview, :format_ai_suggestion, :apply_ai_suggestion]
   require "csv"
 
   REPORT_TYPES = {
@@ -66,7 +66,7 @@ class Admin::HabitationsController < Admin::BaseController
     "codigo_empreendimento" => "Cod empreendimento"
   }.freeze
 
-  before_action :set_habitation, only: [:edit, :update, :destroy]
+  before_action :set_habitation, only: [:edit, :update, :destroy, :generate_ai_preview, :format_ai_suggestion, :apply_ai_suggestion]
 
   before_action :load_autocomplete_data, only: [:new, :edit, :create, :update]
   helper_method :can_view_proprietor_data?
@@ -283,6 +283,7 @@ class Admin::HabitationsController < Admin::BaseController
 
   def edit
     @page_title = "Editar Imóvel: #{@habitation.codigo}"
+    load_ai_suggestion
   end
 
   def update
@@ -314,6 +315,56 @@ class Admin::HabitationsController < Admin::BaseController
     else
       redirect_to edit_admin_habitation_path(@habitation), alert: "Erro na sincronização: #{result[:error]}"
     end
+  end
+
+  def generate_ai_preview
+    unless Ai::PropertyContentService.connected?
+      if turbo_frame_request?
+        return render_ai_content_preview(message: "Configure o token da OpenAI em Integrações > IA antes de gerar a sugestão.", message_type: "warning")
+      end
+
+      return redirect_to edit_admin_habitation_path(@habitation, anchor: "features"), alert: "Configure o token da OpenAI em Integrações > IA antes de gerar a sugestão."
+    end
+
+    suggestion = Ai::PropertyContentService.new(@habitation, admin_user: current_admin_user).generate_suggestion!
+    return render_ai_content_preview(suggestion: suggestion, message: "Sugestão com IA gerada para revisão.", message_type: "success") if turbo_frame_request?
+
+    redirect_to edit_admin_habitation_path(@habitation, anchor: "features"), notice: "Sugestão com IA gerada para revisão."
+  rescue => e
+    return render_ai_content_preview(message: "Erro ao gerar sugestão com IA: #{e.message}", message_type: "danger") if turbo_frame_request?
+
+    redirect_to edit_admin_habitation_path(@habitation, anchor: "features"), alert: "Erro ao gerar sugestão com IA: #{e.message}"
+  end
+
+  def format_ai_suggestion
+    suggestion = @habitation.ai_property_suggestions.pending.find(params[:suggestion_id])
+    suggestion.update!(
+      generated_title: suggestion.generated_title.to_s.squish,
+      generated_description: Ai::PropertyTextFormatter.call(suggestion.generated_description)
+    )
+
+    return render_ai_content_preview(suggestion: suggestion, message: "Texto formatado para revisão.", message_type: "success") if turbo_frame_request?
+
+    redirect_to edit_admin_habitation_path(@habitation, anchor: "features"), notice: "Texto formatado para revisão."
+  rescue ActiveRecord::RecordNotFound
+    return render_ai_content_preview(message: "Sugestão não encontrada ou já aplicada.", message_type: "warning") if turbo_frame_request?
+
+    redirect_to edit_admin_habitation_path(@habitation, anchor: "features"), alert: "Sugestão não encontrada ou já aplicada."
+  rescue => e
+    return render_ai_content_preview(message: "Erro ao formatar texto: #{e.message}", message_type: "danger") if turbo_frame_request?
+
+    redirect_to edit_admin_habitation_path(@habitation, anchor: "features"), alert: "Erro ao formatar texto: #{e.message}"
+  end
+
+  def apply_ai_suggestion
+    suggestion = @habitation.ai_property_suggestions.pending.find(params[:suggestion_id])
+    Ai::PropertyContentService.new(@habitation, admin_user: current_admin_user).apply!(suggestion)
+
+    redirect_to edit_admin_habitation_path(@habitation, anchor: "features"), notice: "Sugestão aplicada ao título, descrição e SEO do imóvel."
+  rescue ActiveRecord::RecordNotFound
+    redirect_to edit_admin_habitation_path(@habitation, anchor: "features"), alert: "Sugestão não encontrada ou já aplicada."
+  rescue => e
+    redirect_to edit_admin_habitation_path(@habitation, anchor: "features"), alert: "Erro ao aplicar sugestão: #{e.message}"
   end
 
   # Remove um anexo individual (ficha de cadastro ou autorização) do imóvel.
@@ -360,6 +411,22 @@ class Admin::HabitationsController < Admin::BaseController
   def set_habitation
     @habitation = Habitation.find(params[:id])
     @habitation.build_address if @habitation.address.nil?
+  end
+
+  def load_ai_suggestion
+    @ai_property_suggestion = @habitation.ai_property_suggestions.pending.latest_first.first
+    @ai_failed_suggestion = @habitation.ai_property_suggestions.where(status: "failed").latest_first.first
+  end
+
+  def render_ai_content_preview(suggestion: nil, message: nil, message_type: "info")
+    render partial: "ai_content_preview",
+           locals: {
+             habitation: @habitation,
+             suggestion: suggestion || @habitation.ai_property_suggestions.pending.latest_first.first,
+             failed_suggestion: @habitation.ai_property_suggestions.where(status: "failed").latest_first.first,
+             message: message,
+             message_type: message_type
+           }
   end
 
   def load_autocomplete_data

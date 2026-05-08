@@ -7,6 +7,9 @@ import { application } from "controllers/application"
 import AdvancedFiltersController from "controllers/advanced_filters_controller"
 application.register("advanced-filters", AdvancedFiltersController)
 
+import AiPreviewController from "controllers/ai_preview_controller"
+application.register("ai-preview", AiPreviewController)
+
 import AttributeManagerController from "controllers/attribute_manager_controller"
 application.register("attribute-manager", AttributeManagerController)
 

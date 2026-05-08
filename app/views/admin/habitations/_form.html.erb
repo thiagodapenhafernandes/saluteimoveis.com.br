@@ -968,6 +968,13 @@
               </div>
             </div>
             <div class="col-md-9">
+              <% if f.object.persisted? %>
+                <%= render "ai_content_preview",
+                    habitation: f.object,
+                    suggestion: @ai_property_suggestion,
+                    failed_suggestion: @ai_failed_suggestion %>
+              <% end %>
+
               <div class="border rounded p-3 mb-3">
                 <%= f.label :titulo_anuncio, "Título do anúncio (sites e portais):", class: "form-label small fw-bold mb-1" %>
                 <%= f.text_field :titulo_anuncio, class: "form-control form-control-sm" %>

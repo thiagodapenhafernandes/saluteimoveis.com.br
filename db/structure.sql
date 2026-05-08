@@ -1,4 +1,4 @@
-\restrict rMlXJa2ZP3y1lnF3UTB1yJF80SaIKzFrHUEKORRKhUinrQmIHRzmRBBdbSoMjHu
+\restrict 6SGiM8RdlpRTProni9g1MKOvBcmys6zdBWaWqiOcG3Y0n0Rwfns9gjlZraUDGKz
 
 -- Dumped from database version 18.3 (Homebrew)
 -- Dumped by pg_dump version 18.3 (Homebrew)
@@ -284,6 +284,45 @@ CREATE SEQUENCE public.admin_users_id_seq
 --
 
 ALTER SEQUENCE public.admin_users_id_seq OWNED BY public.admin_users.id;
+
+
+--
+-- Name: ai_property_suggestions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ai_property_suggestions (
+    id bigint NOT NULL,
+    habitation_id bigint NOT NULL,
+    admin_user_id bigint,
+    status character varying DEFAULT 'pending'::character varying NOT NULL,
+    generated_title character varying,
+    generated_description text,
+    generated_seo_keywords text,
+    raw_response text,
+    error_message text,
+    applied_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: ai_property_suggestions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.ai_property_suggestions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: ai_property_suggestions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.ai_property_suggestions_id_seq OWNED BY public.ai_property_suggestions.id;
 
 
 --
@@ -2075,7 +2114,29 @@ CREATE TABLE public.seo_settings (
     og_image character varying,
     canonical_url character varying,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    canonical_key character varying NOT NULL,
+    page_type character varying,
+    controller_name character varying,
+    action_name character varying,
+    canonical_path character varying,
+    normalized_params jsonb DEFAULT '{}'::jsonb NOT NULL,
+    og_title character varying,
+    og_description text,
+    robots_index boolean DEFAULT true NOT NULL,
+    robots_follow boolean DEFAULT true NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    apply_to_public boolean DEFAULT true NOT NULL,
+    manual_mode boolean DEFAULT false NOT NULL,
+    auto_discovered boolean DEFAULT false NOT NULL,
+    ai_status character varying DEFAULT 'pending'::character varying NOT NULL,
+    ai_generated_at timestamp(6) without time zone,
+    ai_error_message text,
+    ai_insights text,
+    seo_score integer DEFAULT 0 NOT NULL,
+    access_count integer DEFAULT 0 NOT NULL,
+    last_accessed_at timestamp(6) without time zone,
+    last_generated_from_path character varying
 );
 
 
@@ -2702,6 +2763,13 @@ ALTER TABLE ONLY public.admin_users ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
+-- Name: ai_property_suggestions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_property_suggestions ALTER COLUMN id SET DEFAULT nextval('public.ai_property_suggestions_id_seq'::regclass);
+
+
+--
 -- Name: attribute_options id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -3132,6 +3200,14 @@ ALTER TABLE ONLY public.addresses
 
 ALTER TABLE ONLY public.admin_users
     ADD CONSTRAINT admin_users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ai_property_suggestions ai_property_suggestions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_property_suggestions
+    ADD CONSTRAINT ai_property_suggestions_pkey PRIMARY KEY (id);
 
 
 --
@@ -3784,6 +3860,27 @@ CREATE UNIQUE INDEX index_admin_users_on_reset_password_token ON public.admin_us
 --
 
 CREATE INDEX index_admin_users_on_vista_id ON public.admin_users USING btree (vista_id);
+
+
+--
+-- Name: index_ai_property_suggestions_on_admin_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_property_suggestions_on_admin_user_id ON public.ai_property_suggestions USING btree (admin_user_id);
+
+
+--
+-- Name: index_ai_property_suggestions_on_habitation_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_property_suggestions_on_habitation_id ON public.ai_property_suggestions USING btree (habitation_id);
+
+
+--
+-- Name: index_ai_property_suggestions_on_habitation_id_and_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_property_suggestions_on_habitation_id_and_status ON public.ai_property_suggestions USING btree (habitation_id, status);
 
 
 --
@@ -4676,6 +4773,34 @@ CREATE UNIQUE INDEX index_push_subscriptions_on_admin_user_id_and_endpoint ON pu
 
 
 --
+-- Name: index_seo_settings_on_canonical_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_seo_settings_on_canonical_key ON public.seo_settings USING btree (canonical_key);
+
+
+--
+-- Name: index_seo_settings_on_last_accessed_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_seo_settings_on_last_accessed_at ON public.seo_settings USING btree (last_accessed_at);
+
+
+--
+-- Name: index_seo_settings_on_page_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_seo_settings_on_page_type ON public.seo_settings USING btree (page_type);
+
+
+--
+-- Name: index_seo_settings_on_seo_score; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_seo_settings_on_seo_score ON public.seo_settings USING btree (seo_score);
+
+
+--
 -- Name: index_settings_on_key_unique; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4982,6 +5107,14 @@ ALTER TABLE ONLY public.checkin_audit_logs
 
 
 --
+-- Name: ai_property_suggestions fk_rails_16f184cd4c; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_property_suggestions
+    ADD CONSTRAINT fk_rails_16f184cd4c FOREIGN KEY (admin_user_id) REFERENCES public.admin_users(id);
+
+
+--
 -- Name: stores fk_rails_19c4970b14; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5083,6 +5216,14 @@ ALTER TABLE ONLY public.check_ins
 
 ALTER TABLE ONLY public.meta_facebook_pages
     ADD CONSTRAINT fk_rails_5348759d86 FOREIGN KEY (user_meta_integration_id) REFERENCES public.user_meta_integrations(id);
+
+
+--
+-- Name: ai_property_suggestions fk_rails_5396749713; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_property_suggestions
+    ADD CONSTRAINT fk_rails_5396749713 FOREIGN KEY (habitation_id) REFERENCES public.habitations(id);
 
 
 --
@@ -5385,11 +5526,14 @@ ALTER TABLE ONLY public.push_subscriptions
 -- PostgreSQL database dump complete
 --
 
-\unrestrict rMlXJa2ZP3y1lnF3UTB1yJF80SaIKzFrHUEKORRKhUinrQmIHRzmRBBdbSoMjHu
+\unrestrict 6SGiM8RdlpRTProni9g1MKOvBcmys6zdBWaWqiOcG3Y0n0Rwfns9gjlZraUDGKz
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260508121500'),
+('20260507142000'),
+('20260507131000'),
 ('20260507124000'),
 ('20260507123000'),
 ('20260507122000'),

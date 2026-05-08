@@ -1,23 +1,16 @@
-<div class="admin-content">
-  <h1><%= @seo_setting.persisted? ? "Editar" : "Novo" %> SEO</h1>
-
-  <%= form_with(model: [:admin, @seo_setting], class: "admin-form") do |f| %>
-    <div class="card">
-      <div class="card-body">
-        <div class="mb-3">
-          <%= f.label :page_name, "Nome da Página" %>
-          <%= f.text_field :page_name, class: "form-control", placeholder: "home, about, contact" %>
-        </div>
-        <div class="mb-3">
-          <%= f.label :meta_title %>
-          <%= f.text_field :meta_title, class: "form-control" %>
-        </div>
-        <div class="mb-3">
-          <%= f.label :meta_description %>
-          <%= f.text_area :meta_description, rows: 3, class: "form-control" %>
-        </div>
-        <%= f.submit "Salvar", class: "btn btn-primary" %>
-      </div>
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+      <h1 class="h3 mb-1">Editar SEO</h1>
+      <p class="text-muted mb-0"><%= @seo_setting.page_name %></p>
     </div>
-  <% end %>
+    <%= button_to generate_ai_admin_seo_setting_path(@seo_setting),
+        method: :post,
+        class: "btn btn-outline-primary",
+        data: { turbo_submits_with: "Gerando com IA..." } do %>
+      <i class="bi bi-stars me-1"></i>Gerar com IA
+    <% end %>
+  </div>
+
+  <%= render "form", seo_setting: @seo_setting %>
 </div>
