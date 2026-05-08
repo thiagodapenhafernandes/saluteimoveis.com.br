@@ -12,6 +12,7 @@ module ApplicationHelper
       source
     end
     return image unless image.respond_to?(:variant)
+    return image unless active_storage_variants_enabled?
 
     transformations = {}
     transformations[:resize_to_limit] = resize_to_limit if resize_to_limit.present?
@@ -19,6 +20,10 @@ module ApplicationHelper
     transformations[:saver] = saver if saver.present?
 
     transformations.present? ? image.variant(transformations) : image
+  end
+
+  def active_storage_variants_enabled?
+    ENV["ACTIVE_STORAGE_VARIANTS_ENABLED"] == "true"
   end
 
   def public_image_url(source)
