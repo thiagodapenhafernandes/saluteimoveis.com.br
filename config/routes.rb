@@ -41,8 +41,19 @@ Rails.application.routes.draw do
       post :test, on: :member
       patch :share_tracking, on: :collection
     end
+    resource :ai_integration, only: [:show, :update] do
+      post :generate_batch
+    end
     get :image_migration_status, to: "image_migration_status#index"
-    resources :seo_settings
+    resources :seo_settings, except: :show do
+      collection do
+        patch :update_strategy
+      end
+      member do
+        post :generate_ai
+        patch :toggle
+      end
+    end
     resources :banners
     resources :home_sections do
       member do
@@ -63,6 +74,9 @@ Rails.application.routes.draw do
     end
     resources :habitations do
       post :sync, on: :member
+      post :generate_ai_preview, on: :member
+      patch :format_ai_suggestion, on: :member
+      patch :apply_ai_suggestion, on: :member
       delete "purge_attachment/:association/:attachment_id", on: :member, action: :purge_attachment, as: :purge_attachment
     end
     resources :leads, only: [:index, :show, :update, :destroy]
@@ -168,6 +182,7 @@ Rails.application.routes.draw do
 
   # Root
   root 'home#index'
+  get "sitemap.xml", to: "sitemaps#show", defaults: { format: :xml }, as: :sitemap
   
   # Home pages
   get 'sobre', to: 'home#sobre', as: :sobre

@@ -184,6 +184,7 @@ class Habitation < ApplicationRecord
   
   # Active Storage Photos (For manual upload)
   has_many_attached :photos
+  has_many :ai_property_suggestions, dependent: :destroy
 
   # Documentos internos do imóvel (só admin/editor enxergam — não vão para o site público)
   # Após anexar, AttachmentOrganizerService move os blobs para

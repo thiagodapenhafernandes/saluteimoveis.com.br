@@ -1,33 +1,44 @@
-<div style="position: relative;" data-controller="broker-share"
+<div class="broker-share"
+     data-controller="broker-share"
      data-broker-share-generate-url-value="<%= current_admin_user.present? ? share_link_habitation_path(property) : '' %>"
      data-broker-share-fallback-url-value="<%= habitation_url(property) %>"
      data-broker-share-property-title-value="<%= property.display_title %>">
   <button type="button"
-          style="width: 34px; height: 34px; border-radius: 9999px; border: 1px solid #e5e7eb; background: #fff; color: #374151; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.12);"
+          class="broker-share__trigger"
           data-action="click->broker-share#toggle"
           title="Compartilhar imóvel">
     <i class="bi bi-share-fill"></i>
   </button>
 
-  <div class="hidden d-none"
-       style="position: absolute; right: 0; margin-top: 8px; width: 260px; border-radius: 14px; border: 1px solid #e5e7eb; background: #fff; padding: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.14); z-index: 1000;"
+  <div class="broker-share__menu hidden d-none"
        data-broker-share-target="menu">
-    <p style="margin: 0 0 10px 0; font-size: 15px; font-weight: 600; color: #111827;">Compartilhar imóvel</p>
+    <p class="broker-share__title">Compartilhar imóvel</p>
 
-    <div style="display: flex; align-items: center; gap: 8px;">
-      <button type="button" style="width: 38px; height: 38px; border: none; border-radius: 9999px; background: #22c55e; color: #fff; font-size: 12px; font-weight: 700;" data-action="click->broker-share#whatsapp" title="WhatsApp">WA</button>
-      <button type="button" style="width: 38px; height: 38px; border: none; border-radius: 9999px; background: #3b82f6; color: #fff; font-size: 12px; font-weight: 700;" data-action="click->broker-share#email" title="Email">E</button>
-      <button type="button" style="width: 38px; height: 38px; border: none; border-radius: 9999px; background: #0ea5e9; color: #fff; font-size: 12px; font-weight: 700;" data-action="click->broker-share#twitter" title="X/Twitter">X</button>
-      <button type="button" style="width: 38px; height: 38px; border: none; border-radius: 9999px; background: #1d4ed8; color: #fff; font-size: 11px; font-weight: 700;" data-action="click->broker-share#facebook" title="Facebook">FB</button>
-      <button type="button" style="width: 38px; height: 38px; border: 1px solid #d1d5db; border-radius: 9999px; background: #f3f4f6; color: #374151; font-size: 10px; font-weight: 700;" data-action="click->broker-share#copy" title="Copiar link">Link</button>
+    <div class="broker-share__actions">
+      <button type="button" class="broker-share__action broker-share__action--whatsapp" data-action="click->broker-share#whatsapp" title="WhatsApp" aria-label="Compartilhar no WhatsApp">
+        <i class="bi bi-whatsapp"></i>
+      </button>
+      <button type="button" class="broker-share__action broker-share__action--email" data-action="click->broker-share#email" title="Email" aria-label="Compartilhar por email">
+        <i class="bi bi-envelope-fill"></i>
+      </button>
+      <button type="button" class="broker-share__action broker-share__action--x" data-action="click->broker-share#twitter" title="X/Twitter" aria-label="Compartilhar no X">
+        <i class="bi bi-twitter-x"></i>
+      </button>
+      <button type="button" class="broker-share__action broker-share__action--facebook" data-action="click->broker-share#facebook" title="Facebook" aria-label="Compartilhar no Facebook">
+        <i class="bi bi-facebook"></i>
+      </button>
+      <button type="button" class="broker-share__action broker-share__action--link" data-action="click->broker-share#copy" title="Copiar link" aria-label="Copiar link">
+        <i class="bi bi-link-45deg"></i>
+      </button>
     </div>
 
     <button type="button"
-            style="margin-top: 12px; width: 100%; border-radius: 10px; border: 1px solid #d1d5db; background: #f9fafb; color: #111827; padding: 9px 10px; font-size: 13px; font-weight: 600;"
+            class="broker-share__native"
             data-action="click->broker-share#shareNative">
+      <i class="bi bi-send-fill"></i>
       Compartilhar (nativo)
     </button>
 
-    <p class="hidden d-none" style="margin: 8px 0 0 0; font-size: 12px; color: #059669;" data-broker-share-target="status"></p>
+    <p class="broker-share__status hidden d-none" data-broker-share-target="status"></p>
   </div>
 </div>

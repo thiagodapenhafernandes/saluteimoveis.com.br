@@ -1,5 +1,6 @@
 class Admin::BaseController < ApplicationController
   before_action :authenticate_admin_user!
+  before_action :prevent_search_indexing
   layout 'admin'
   
   private
@@ -8,6 +9,10 @@ class Admin::BaseController < ApplicationController
     unless current_admin_user
       redirect_to new_admin_user_session_path, alert: 'Acesso negado. Por favor, faça login.'
     end
+  end
+
+  def prevent_search_indexing
+    response.set_header("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet")
   end
   
   def require_admin!

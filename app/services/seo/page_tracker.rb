@@ -1,0 +1,103 @@
+module Seo
+  class PageTracker
+    AUTO_INVENTORY_SETTING = "seo_auto_inventory_enabled".freeze
+    AUTO_APPLY_SETTING = "seo_auto_apply_enabled".freeze
+    AUTO_AI_SETTING = "seo_ai_auto_generate_enabled".freeze
+
+    def self.track!(controller)
+      new(controller).track!
+    end
+
+    def self.enabled?
+      Setting.get(AUTO_INVENTORY_SETTING, "1") == "1"
+    end
+
+    def self.auto_apply?
+      Setting.get(AUTO_APPLY_SETTING, "1") == "1"
+    end
+
+    def self.auto_ai?
+      Setting.get(AUTO_AI_SETTING, "1") == "1"
+    end
+
+    def initialize(controller)
+      @controller = controller
+    end
+
+    def track!
+      return unless trackable?
+
+      identity = PageIdentity.new(@controller).to_h
+      seo = SeoSetting.find_or_initialize_by(canonical_key: identity[:canonical_key])
+      created = seo.new_record?
+
+      unless created || !seo.manual_mode?
+        seo.register_access!
+        return seo
+      end
+
+      seo.assign_attributes(attributes_for(identity, created))
+      seo.save!
+      seo.register_access!
+
+      enqueue_ai_generation(seo) if created && self.class.auto_ai? && Ai::SeoContentService.connected?
+      seo
+    rescue => e
+      Rails.logger.warn("[Seo::PageTracker] #{e.class}: #{e.message}")
+      nil
+    end
+
+    private
+
+    def trackable?
+      self.class.enabled? &&
+        @controller.request.get? &&
+        @controller.request.format.html? &&
+        @controller.response.successful? &&
+        !admin_request? &&
+        !internal_path?
+    end
+
+    def admin_request?
+      @controller.request.path.start_with?("/admin")
+    end
+
+    def internal_path?
+      path = @controller.request.path
+      path.start_with?("/rails/", "/assets/", "/packs/", "/cable")
+    end
+
+    def attributes_for(identity, created)
+      {
+        page_name: identity[:page_name],
+        page_type: identity[:page_type],
+        controller_name: @controller.controller_name,
+        action_name: @controller.action_name,
+        canonical_path: identity[:canonical_path],
+        canonical_url: "#{@controller.request.base_url}#{identity[:canonical_path]}",
+        normalized_params: identity[:normalized_params],
+        robots_index: identity[:robots_index],
+        robots_follow: identity[:robots_follow],
+        active: true,
+        apply_to_public: created ? self.class.auto_apply? : nil,
+        auto_discovered: true,
+        last_generated_from_path: @controller.request.fullpath,
+        meta_title: existing_or_fallback(identity, :title_fallback, created),
+        meta_description: existing_or_fallback(identity, :description_fallback, created),
+        meta_keywords: existing_or_fallback(identity, :keywords_fallback, created),
+        og_title: existing_or_fallback(identity, :title_fallback, created),
+        og_description: existing_or_fallback(identity, :description_fallback, created)
+      }.compact
+    end
+
+    def existing_or_fallback(identity, key, created)
+      return nil unless created
+
+      identity[key].to_s.presence
+    end
+
+    def enqueue_ai_generation(seo)
+      SeoAiGenerationJob.perform_later(seo.id)
+    end
+  end
+end

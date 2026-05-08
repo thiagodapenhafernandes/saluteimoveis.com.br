@@ -1,4 +1,4 @@
-<div class="group bg-white rounded-xl overflow-hidden shadow-[0_18px_38px_rgba(15,23,42,0.16)] hover:shadow-[0_26px_52px_rgba(15,23,42,0.22)] transition-all duration-300 border border-gray-100 flex flex-col relative cursor-pointer"
+<div class="group bg-white rounded-[16px] overflow-hidden shadow-[0_14px_34px_rgba(15,23,42,0.1)] hover:shadow-[0_20px_46px_rgba(15,23,42,0.16)] transition-all duration-300 border border-white/80 ring-1 ring-slate-900/5 flex flex-col relative cursor-pointer"
      data-controller="clickable-card"
      data-clickable-card-url-value="<%= habitation_path(property) %>"
      data-property-id="<%= property.id %>">
@@ -8,7 +8,7 @@
     <!-- Badges (Top Left) - Dynamic with max 2 -->
     <div class="absolute top-3 left-3 z-20 flex flex-col gap-1.5 items-start">
       <% property.display_badges.each do |badge| %>
-        <span class="px-2.5 py-1 bg-<%= badge[:tailwind_color] %> text-white text-[10px] font-bold uppercase tracking-wider rounded shadow-sm border border-white/20">
+        <span class="px-2.5 py-1 bg-<%= badge[:tailwind_color] %> text-white text-[10px] font-bold uppercase tracking-wider rounded-lg shadow-[0_8px_18px_rgba(2,43,58,0.12)] border border-white/25">
           <%= badge[:text] %>
         </span>
       <% end %>
@@ -16,7 +16,7 @@
 
     <!-- Code & Constructor Badge (Top Right) -->
     <div class="absolute top-3 right-3 z-20 flex flex-col items-end gap-2">
-      <span class="px-2 py-1 bg-white/90 backdrop-blur-sm text-gray-600 text-[10px] font-bold rounded shadow-sm border border-gray-100">
+      <span class="px-2.5 py-1.5 bg-white/60 backdrop-blur-md text-blue-three text-[10px] font-bold rounded-lg shadow-[0_8px_18px_rgba(2,43,58,0.1)] border border-white/50">
         <%= property.id %>
       </span>
       
@@ -74,6 +74,8 @@
       <!-- Pagination -->
       <div class="swiper-pagination !bottom-2 !z-30"></div>
     </div>
+
+    <div class="absolute inset-0 z-[12] pointer-events-none bg-gradient-to-b from-black/10 via-transparent to-black/15"></div>
     
     <!-- Link Overlay -->
     <%= link_to habitation_path(property), class: "absolute inset-0 z-10" %>

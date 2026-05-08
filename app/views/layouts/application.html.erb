@@ -4,16 +4,23 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     
-    <% seo = SeoSetting.for_page(@page_name || 'home') %>
+    <%
+      seo = current_public_seo_setting || SeoSetting.for_page(@page_name || 'home')
+      seo_public = seo&.public_applicable?
+      effective_title = (seo_public ? seo.meta_title.presence : nil) || @page_title || "#{@layout_setting&.site_name.presence || 'Salute Imóveis'} - Encontre seu Imóvel Ideal"
+      effective_description = (seo_public ? seo.meta_description.presence : nil) || @page_description || "Os melhores imóveis para venda e locação. Encontre seu imóvel ideal com a #{@layout_setting&.site_name.presence || 'Salute Imóveis'}."
+      effective_keywords = (seo_public ? seo.meta_keywords.presence : nil) || @page_keywords
+      effective_robots = seo_public ? seo.robots_content : "index, follow"
+    %>
     
     <%# Dynamic Metadata %>
-    <title><%= @page_title || seo.meta_title || "#{@layout_setting&.site_name.presence || 'Salute Imóveis'} - Encontre seu Imóvel Ideal" %></title>
-    <meta name="description" content="<%= strip_tags(@page_description || seo.meta_description || "Os melhores imóveis para venda e locação. Encontre seu imóvel ideal com a #{@layout_setting&.site_name.presence || 'Salute Imóveis'}.") %>">
-    <% if (keywords = @page_keywords || seo.meta_keywords).present? %>
-      <meta name="keywords" content="<%= keywords %>">
+    <title><%= effective_title %></title>
+    <meta name="description" content="<%= strip_tags(effective_description) %>">
+    <% if effective_keywords.present? %>
+      <meta name="keywords" content="<%= effective_keywords %>">
     <% end %>
     <meta name="author" content="<%= @layout_setting&.site_name.presence || 'Salute Imóveis' %>">
-    <meta name="robots" content="index, follow">
+    <meta name="robots" content="<%= effective_robots %>">
     
     <%# Resource Hints %>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,27 +30,47 @@
     <%# Image Metadata Logic %>
     <% 
       sanitize_utf8 = ->(value) { value.to_s.encode("UTF-8", invalid: :replace, undef: :replace, replace: "").scrub }
-      image_source = @page_image || (seo.og_image_file.attached? ? rails_blob_path(seo.og_image_file, only_path: true) : asset_path('salute.icon.svg'))
-      final_image = image_source.start_with?('http') ? image_source : "#{request.base_url}#{image_source}"
-      canonical_url = sanitize_utf8.call(request.original_url)
-      og_title = sanitize_utf8.call(@page_title || seo.meta_title)
+      final_image = seo&.social_image_url(base_url: request.base_url, page_image: @page_image) || "#{request.base_url}/icon.png"
+      canonical_url = sanitize_utf8.call(seo_public ? seo.public_url(request.base_url) : request.original_url)
+      og_title = sanitize_utf8.call((seo_public ? seo.og_title.presence : nil) || effective_title)
+      og_description = strip_tags((seo_public ? seo.og_description.presence : nil) || effective_description)
+      social_property = defined?(@habitation) ? @habitation : nil
+      og_type = social_property.present? ? "product" : "website"
+      image_alt = sanitize_utf8.call([og_title, @layout_setting&.site_name.presence || "Salute Imóveis"].reject(&:blank?).join(" | "))
+      social_price_cents = if social_property.present?
+        social_property.valor_venda_cents.to_i.positive? ? social_property.valor_venda_cents : social_property.valor_locacao_cents
+      end
+      social_price_value = (social_price_cents || 0).to_i
+      social_price_amount = social_price_value.positive? ? format("%.2f", social_price_value / 100.0) : nil
+      social_modified_at = (seo&.updated_at || social_property&.updated_at)
     %>
     
     <%# Open Graph / Facebook %>
-    <meta property="og:type" content="website">
+    <meta property="og:type" content="<%= og_type %>">
     <meta property="og:url" content="<%= canonical_url %>">
     <meta property="og:title" content="<%= og_title %>">
-    <meta property="og:description" content="<%= strip_tags(@page_description || seo.meta_description) %>">
+    <meta property="og:description" content="<%= og_description %>">
     <meta property="og:site_name" content="<%= @layout_setting&.site_name.presence || 'Salute Imóveis' %>">
     <meta property="og:locale" content="pt_BR">
     <meta property="og:image" content="<%= final_image %>">
     <meta property="og:image:secure_url" content="<%= final_image.to_s.sub('http://', 'https://') %>">
+    <meta property="og:image:alt" content="<%= image_alt %>">
+    <% if social_modified_at.present? %>
+      <meta property="og:updated_time" content="<%= social_modified_at.iso8601 %>">
+    <% end %>
+    <% if social_property.present? && social_price_amount.present? %>
+      <meta property="product:price:amount" content="<%= social_price_amount %>">
+      <meta property="product:price:currency" content="BRL">
+      <meta property="product:availability" content="in stock">
+    <% end %>
     
     <%# Twitter %>
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="<%= @page_title || seo.meta_title %>">
-    <meta name="twitter:description" content="<%= strip_tags(@page_description || seo.meta_description) %>">
+    <meta name="twitter:url" content="<%= canonical_url %>">
+    <meta name="twitter:title" content="<%= og_title %>">
+    <meta name="twitter:description" content="<%= og_description %>">
     <meta name="twitter:image" content="<%= final_image %>">
+    <meta name="twitter:image:alt" content="<%= image_alt %>">
     
     <link rel="canonical" href="<%= canonical_url %>">
     <% if @layout_setting&.favicon&.attached? %>

@@ -1,0 +1,106 @@
+<div id="seo-setting-form">
+<%= form_with(model: [:admin, seo_setting], local: true) do |f| %>
+  <% if local_assigns[:ai_message].present? %>
+    <div class="alert alert-<%= local_assigns[:ai_message_type].presence || "info" %> alert-dismissible fade show" role="alert">
+      <%= local_assigns[:ai_message] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+  <% end %>
+
+  <% if seo_setting.errors.any? %>
+    <div class="alert alert-danger">
+      <strong>Revise os campos:</strong>
+      <ul class="mb-0">
+        <% seo_setting.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <%= f.label :page_name, "Nome interno da página", class: "form-label fw-semibold" %>
+          <%= f.text_field :page_name, class: "form-control" %>
+        </div>
+        <div class="col-md-6">
+          <%= f.label :canonical_key, "Chave canônica", class: "form-label fw-semibold" %>
+          <%= f.text_field :canonical_key, class: "form-control" %>
+        </div>
+        <div class="col-md-6">
+          <%= f.label :page_type, "Tipo da página", class: "form-label fw-semibold" %>
+          <%= f.text_field :page_type, class: "form-control" %>
+        </div>
+        <div class="col-md-6">
+          <%= f.label :canonical_url, "Canonical URL", class: "form-label fw-semibold" %>
+          <%= f.text_field :canonical_url, class: "form-control" %>
+        </div>
+        <div class="col-12">
+          <%= f.label :meta_title, "Meta title", class: "form-label fw-semibold" %>
+          <%= f.text_field :meta_title, class: "form-control" %>
+        </div>
+        <div class="col-12">
+          <%= f.label :meta_description, "Meta description", class: "form-label fw-semibold" %>
+          <%= f.text_area :meta_description, rows: 3, class: "form-control" %>
+        </div>
+        <div class="col-12">
+          <%= f.label :meta_keywords, "Keywords", class: "form-label fw-semibold" %>
+          <%= f.text_area :meta_keywords, rows: 2, class: "form-control" %>
+        </div>
+        <div class="col-md-6">
+          <%= f.label :og_title, "Open Graph title", class: "form-label fw-semibold" %>
+          <%= f.text_field :og_title, class: "form-control" %>
+        </div>
+        <div class="col-md-6">
+          <%= f.label :og_image_file, "Imagem OG", class: "form-label fw-semibold" %>
+          <%= f.file_field :og_image_file, class: "form-control" %>
+          <div class="form-text">
+            Se não enviar uma imagem, o sistema usa a primeira imagem do imóvel. Se não houver imóvel/imagem, usa a logo quadrada da Salute.
+          </div>
+          <% effective_og_image = seo_setting.social_image_url(base_url: request.base_url) %>
+          <% if effective_og_image.present? %>
+            <div class="mt-2 d-flex align-items-center gap-2 small text-muted">
+              <%= image_tag effective_og_image, alt: "Imagem OG atual", class: "rounded border", style: "width: 56px; height: 56px; object-fit: cover;" %>
+              <span>Imagem atual para compartilhamento</span>
+            </div>
+          <% end %>
+        </div>
+        <div class="col-12">
+          <%= f.label :og_description, "Open Graph description", class: "form-label fw-semibold" %>
+          <%= f.text_area :og_description, rows: 2, class: "form-control" %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+      <h5 class="fw-bold mb-3">Controle público</h5>
+      <div class="row g-3">
+        <% [["active", "Ativo"], ["apply_to_public", "Usar na página pública"], ["manual_mode", "Manual"], ["robots_index", "Index"], ["robots_follow", "Follow"]].each do |field, label| %>
+          <div class="col-md">
+            <label class="custom-checkbox-card w-100 justify-content-between">
+              <span><%= label %></span>
+              <%= f.check_box field, class: "form-check-input" %>
+            </label>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <% if seo_setting.ai_insights.present? %>
+    <div class="alert alert-info">
+      <strong>Insights da IA:</strong>
+      <div style="white-space: pre-line;"><%= seo_setting.ai_insights %></div>
+    </div>
+  <% end %>
+
+  <div class="d-flex justify-content-end gap-2">
+    <%= link_to "Cancelar", admin_seo_settings_path, class: "btn btn-outline-secondary" %>
+    <%= f.submit "Salvar SEO", class: "btn btn-primary" %>
+  </div>
+<% end %>
+</div>
