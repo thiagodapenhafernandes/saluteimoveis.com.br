@@ -88,11 +88,18 @@ module Ai
       raise "Sugestão sem título." if suggestion.generated_title.blank?
       raise "Sugestão sem descrição." if suggestion.generated_description.blank?
 
+      html_description = description_html(suggestion.generated_description)
+      plain_description = plain_text(suggestion.generated_description)
+
       @habitation.titulo_anuncio = suggestion.generated_title
-      @habitation.descricao_web = description_html(suggestion.generated_description)
+      @habitation.descricao_web = html_description
+      @habitation[:descricao_web] = html_description if @habitation.has_attribute?(:descricao_web)
       @habitation.meta_title = suggestion.generated_title if @habitation.respond_to?(:meta_title=)
-      @habitation.meta_description = description_html(suggestion.generated_description) if @habitation.respond_to?(:meta_description=)
-      @habitation.meta_keywords = suggestion.seo_keywords_list if suggestion.seo_keywords_list.any?
+      if @habitation.respond_to?(:meta_description=)
+        @habitation.meta_description = plain_description
+        @habitation[:meta_description] = plain_description if @habitation.has_attribute?(:meta_description)
+      end
+      @habitation.meta_keywords = suggestion.seo_keywords_list.join(", ") if suggestion.seo_keywords_list.any?
       @habitation.save!
 
       suggestion.update!(status: "applied", applied_at: Time.current)
@@ -214,6 +221,10 @@ module Ai
       return text.to_s if paragraphs.blank?
 
       paragraphs.map { |paragraph| "<p>#{ERB::Util.html_escape(paragraph)}</p>" }.join
+    end
+
+    def plain_text(text)
+      ActionController::Base.helpers.strip_tags(description_html(text)).squish
     end
   end
 end
