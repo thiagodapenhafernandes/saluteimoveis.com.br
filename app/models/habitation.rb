@@ -598,9 +598,7 @@ class Habitation < ApplicationRecord
                    []
                  end
 
-    return api_images.presence || attached_images if dwv_property?
-
-    attached_images + api_images
+    api_images.presence || attached_images
   end
   
   # Retorna todas as imagens (Hash format)

@@ -115,16 +115,16 @@ class HomeController < ApplicationController
       next unless slide.image.attached?
 
       {
-        source: slide.image.variant(resize_to_limit: [1920, 1080], saver: { quality: 82 }),
-        mobile_source: slide.image.variant(resize_to_limit: [900, 1200], saver: { quality: 80 }),
+        source: slide.image,
+        mobile_source: slide.image,
         alt: slide.alt_text.presence || "Salute Imóveis - Luxo e Exclusividade"
       }
     end
 
     if images.empty? && home_setting.hero_background_desktop.attached?
       images << {
-        source: home_setting.hero_background_desktop.variant(resize_to_limit: [1920, 1080], saver: { quality: 82 }),
-        mobile_source: (home_setting.hero_background_mobile.attached? ? home_setting.hero_background_mobile : home_setting.hero_background_desktop).variant(resize_to_limit: [900, 1200], saver: { quality: 80 }),
+        source: home_setting.hero_background_desktop,
+        mobile_source: (home_setting.hero_background_mobile.attached? ? home_setting.hero_background_mobile : home_setting.hero_background_desktop),
         alt: "Salute Imóveis - Luxo e Exclusividade"
       }
     end
