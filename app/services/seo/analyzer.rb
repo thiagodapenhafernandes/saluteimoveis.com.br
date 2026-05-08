@@ -13,6 +13,7 @@ module Seo
       points += 10 if @seo.og_title.present? || @seo.meta_title.present?
       points += 10 if @seo.og_description.present? || @seo.meta_description.present?
       points += 10 if @seo.meta_keywords.present?
+      points += 10 if @seo.intro_text.present? || !listing_page?
       points.clamp(0, 100)
     end
 
@@ -30,6 +31,7 @@ module Seo
       notes << "Canonical ausente." if @seo.canonical_path.blank? && @seo.canonical_url.blank?
       notes << "Página marcada como noindex." unless @seo.robots_index?
       notes << "Palavras-chave ausentes para orientar cluster semântico." if @seo.meta_keywords.blank?
+      notes << "Texto introdutório ausente; listagens estratégicas precisam de conteúdo único." if listing_page? && @seo.intro_text.blank?
       notes.presence || ["SEO técnico em bom estado para indexação."]
     end
 
@@ -47,6 +49,10 @@ module Seo
       return 0 if description.blank?
       return 30 if description.length.between?(110, 170)
       15
+    end
+
+    def listing_page?
+      @seo.page_type.to_s.in?(%w[property_listing property_landing developments_index development_landing])
     end
   end
 end

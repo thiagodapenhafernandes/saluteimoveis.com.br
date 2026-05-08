@@ -8,6 +8,8 @@ module Seo
       min_bedrooms min_suites min_bathrooms min_parking min_area max_area min_price max_price
       price_range furnished accepts_exchange accepts_financing characteristics search
     ].freeze
+    INDEXABLE_PROPERTY_FILTERS = %w[transaction_type category tipo city cidade neighborhood bairro characteristics price_range].freeze
+    INDEXABLE_DEVELOPMENT_FILTERS = %w[city cidade neighborhood bairro characteristics].freeze
 
     IGNORED_PARAMS = /\A(utm_.*|fbclid|gclid|msclkid|_gl|commit|authenticity_token|controller|action)\z/
 
@@ -52,11 +54,14 @@ module Seo
     end
 
     def property_listing_identity
+      return strategic_property_listing_identity if strategic_property_page.present?
+
       normalized = normalized_property_filters
       digest = Digest::SHA1.hexdigest(normalized.to_json)[0, 12]
       page_name = normalized.any? ? "imoveis:#{digest}" : "imoveis"
       canonical_key = normalized.any? ? "properties_index:#{digest}" : "imoveis"
       noindex = controller.instance_variable_get(:@habitations).try(:total_entries).to_i.zero?
+      indexable = !noindex && indexable_property_filters?(normalized)
 
       {
         canonical_key: canonical_key,
@@ -64,7 +69,7 @@ module Seo
         page_type: "property_listing",
         canonical_path: canonical_path("/imoveis", normalized),
         normalized_params: normalized,
-        robots_index: !noindex,
+        robots_index: indexable,
         robots_follow: true,
         title_fallback: controller.instance_variable_get(:@page_title),
         description_fallback: controller.instance_variable_get(:@page_description),
@@ -73,11 +78,14 @@ module Seo
     end
 
     def developments_listing_identity
+      return strategic_development_listing_identity if strategic_development_page.present?
+
       normalized = normalized_development_filters
       digest = Digest::SHA1.hexdigest(normalized.to_json)[0, 12]
       page_name = normalized.any? ? "empreendimentos:#{digest}" : "empreendimentos"
       canonical_key = normalized.any? ? "developments_index:#{digest}" : "empreendimentos"
       noindex = controller.instance_variable_get(:@empreendimentos).try(:total_entries).to_i.zero?
+      indexable = !noindex && indexable_development_filters?(normalized)
 
       {
         canonical_key: canonical_key,
@@ -85,11 +93,51 @@ module Seo
         page_type: "developments_index",
         canonical_path: canonical_path("/empreendimentos", normalized),
         normalized_params: normalized,
-        robots_index: !noindex,
+        robots_index: indexable,
         robots_follow: true,
         title_fallback: controller.instance_variable_get(:@page_title),
         description_fallback: controller.instance_variable_get(:@page_description),
         keywords_fallback: controller.instance_variable_get(:@page_keywords)
+      }
+    end
+
+    def strategic_property_listing_identity
+      slug = params[:seo_slug].to_s
+      landing = strategic_property_page
+      noindex = controller.instance_variable_get(:@habitations).try(:total_entries).to_i.zero?
+
+      {
+        canonical_key: "properties_landing:#{slug}",
+        page_name: "imoveis:#{slug}",
+        page_type: "property_landing",
+        canonical_path: "/imoveis/#{slug}",
+        normalized_params: landing[:params],
+        robots_index: !noindex,
+        robots_follow: true,
+        title_fallback: landing[:title],
+        description_fallback: landing[:description],
+        keywords_fallback: landing[:label],
+        intro_fallback: Seo::StrategicLanding.property_intro(landing)
+      }
+    end
+
+    def strategic_development_listing_identity
+      slug = params[:seo_slug].to_s
+      landing = strategic_development_page
+      noindex = controller.instance_variable_get(:@empreendimentos).try(:total_entries).to_i.zero?
+
+      {
+        canonical_key: "developments_landing:#{slug}",
+        page_name: "empreendimentos:#{slug}",
+        page_type: "development_landing",
+        canonical_path: "/empreendimentos/#{slug}",
+        normalized_params: landing[:params],
+        robots_index: !noindex,
+        robots_follow: true,
+        title_fallback: landing[:title],
+        description_fallback: landing[:description],
+        keywords_fallback: landing[:label],
+        intro_fallback: Seo::StrategicLanding.development_intro(landing)
       }
     end
 
@@ -139,7 +187,7 @@ module Seo
     end
 
     def normalized_development_filters
-      normalize_hash(params.to_unsafe_h.slice("q"))
+      normalize_hash(params.to_unsafe_h.slice("q", "city", "cidade", "neighborhood", "bairro", "characteristics"))
     end
 
     def normalized_generic_params
@@ -176,6 +224,37 @@ module Seo
       end
       query = URI.encode_www_form(pairs)
       "#{path}?#{query}"
+    end
+
+    def strategic_property_page
+      @strategic_property_page ||= Seo::StrategicLanding.property(params[:seo_slug])
+    end
+
+    def strategic_development_page
+      @strategic_development_page ||= Seo::StrategicLanding.development(params[:seo_slug])
+    end
+
+    def indexable_property_filters?(normalized)
+      return true if normalized.blank?
+      return false if normalized.key?("search")
+      return false if (normalized.keys - INDEXABLE_PROPERTY_FILTERS).any?
+      return false if normalized.keys.size > 3
+
+      normalized.key?("city") || normalized.key?("cidade") ||
+        normalized.key?("neighborhood") || normalized.key?("bairro") ||
+        normalized.key?("characteristics") || normalized.key?("category") ||
+        normalized.key?("tipo")
+    end
+
+    def indexable_development_filters?(normalized)
+      return true if normalized.blank?
+      return false if normalized.key?("q")
+      return false if (normalized.keys - INDEXABLE_DEVELOPMENT_FILTERS).any?
+      return false if normalized.keys.size > 2
+
+      normalized.key?("city") || normalized.key?("cidade") ||
+        normalized.key?("neighborhood") || normalized.key?("bairro") ||
+        normalized.key?("characteristics")
     end
 
   end

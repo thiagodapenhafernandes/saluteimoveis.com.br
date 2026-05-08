@@ -5,6 +5,8 @@ class SeoSetting < ApplicationRecord
 
   # ActiveStorage for OG image
   has_one_attached :og_image_file
+  has_many :focus_keywords, -> { ordered }, class_name: "SeoFocusKeyword", dependent: :destroy
+  has_many :change_logs, -> { recent }, class_name: "SeoChangeLog", dependent: :destroy
   
   # Validations
   validates :page_name, presence: true, uniqueness: true
@@ -14,6 +16,7 @@ class SeoSetting < ApplicationRecord
   before_validation :ensure_canonical_key
   before_validation :sanitize_urls
   before_save :refresh_seo_score
+  after_update :record_change_log
   
   # Find by page with caching
   def self.for_page(page_name)
@@ -50,6 +53,27 @@ class SeoSetting < ApplicationRecord
 
   def display_name
     meta_title.presence || og_title.presence || page_name
+  end
+
+  def focus_keyword_list
+    focus_keywords.map(&:keyword).join(", ")
+  end
+
+  def focus_keyword_list=(value)
+    @focus_keyword_list = value
+  end
+
+  def sync_focus_keywords!(value = @focus_keyword_list)
+    keywords = value.to_s.split(",").map(&:squish).reject(&:blank?).map(&:downcase).uniq.first(5)
+    transaction do
+      focus_keywords.where.not(keyword: keywords).destroy_all
+      keywords.each_with_index do |keyword, index|
+        focus_keywords.find_or_initialize_by(keyword: keyword).tap do |record|
+          record.position = index
+          record.save!
+        end
+      end
+    end
   end
 
   def public_url(base_url)
@@ -99,6 +123,47 @@ class SeoSetting < ApplicationRecord
   def clear_seo_cache
     Rails.cache.delete("seo_setting_#{page_name}")
     Rails.cache.delete("seo_setting_#{canonical_key}")
+  end
+
+  def record_change_log
+    tracked = saved_changes.slice(
+      "meta_title",
+      "meta_description",
+      "meta_keywords",
+      "intro_text",
+      "og_title",
+      "og_description",
+      "canonical_url",
+      "canonical_path",
+      "robots_index",
+      "robots_follow",
+      "active",
+      "apply_to_public",
+      "manual_mode",
+      "seo_score"
+    )
+    return if tracked.blank?
+
+    change_logs.create!(
+      admin_user: Current.admin_user,
+      event_type: ai_generated_at_previously_changed? ? "ai_generate" : "update",
+      changed_fields: tracked.transform_values { |before, after| { from: before, to: after } },
+      snapshot: seo_snapshot
+    )
+  end
+
+  def seo_snapshot
+    {
+      meta_title: meta_title,
+      meta_description: meta_description,
+      meta_keywords: meta_keywords,
+      intro_text: intro_text,
+      og_title: og_title,
+      og_description: og_description,
+      canonical_path: canonical_path,
+      robots: robots_content,
+      seo_score: seo_score
+    }
   end
 
   def attached_og_image_path

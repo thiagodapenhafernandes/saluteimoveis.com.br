@@ -22,6 +22,12 @@ production:
     args:
       - mode: "full"
     schedule: every day at 4:20am
+  seo_discovery:
+    class: SeoDiscoveryJob
+    queue: default
+    args:
+      - generate_ai: true
+    schedule: every day at 5:10am
   loft_schedule_tick:
     class: LoftScheduleTickJob
     queue: default

@@ -1,5 +1,6 @@
 class Admin::BaseController < ApplicationController
   before_action :authenticate_admin_user!
+  before_action :set_current_admin_user
   before_action :prevent_search_indexing
   layout 'admin'
   
@@ -13,6 +14,10 @@ class Admin::BaseController < ApplicationController
 
   def prevent_search_indexing
     response.set_header("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet")
+  end
+
+  def set_current_admin_user
+    Current.admin_user = current_admin_user
   end
   
   def require_admin!
