@@ -1,4 +1,23 @@
 <!-- Página de Empreendimento - Enhanced Layout -->
+<script type="application/ld+json">
+  <%= raw({
+    "@context" => "https://schema.org",
+    "@type" => "ApartmentComplex",
+    "name" => @habitation.nome_empreendimento.presence || @habitation.display_title,
+    "url" => empreendimento_details_url(@habitation),
+    "image" => @habitation.image_urls.presence,
+    "address" => {
+      "@type" => "PostalAddress",
+      "streetAddress" => @habitation.logradouro.presence,
+      "addressLocality" => @habitation.cidade.presence,
+      "addressRegion" => @habitation.uf.presence,
+      "postalCode" => @habitation.cep.presence,
+      "addressCountry" => "BR"
+    }.compact,
+    "description" => @habitation.seo_description.presence
+  }.compact.to_json) %>
+</script>
+
 <div class="bg-gray-50 min-h-screen">
   
   <!-- Hero Section with Background Image -->

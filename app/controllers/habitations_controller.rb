@@ -7,6 +7,7 @@ class HabitationsController < ApplicationController
   # GET /habitations
   # GET /imoveis
   def index
+    apply_strategic_landing_params
     load_filter_options
 
     # Handle Target Price (Approximate Search ±20%)
@@ -38,6 +39,11 @@ class HabitationsController < ApplicationController
     @page_title = build_index_title
     @page_description = build_index_description
     @page_keywords = build_index_keywords
+    if @strategic_landing.present?
+      @page_title = "#{@strategic_landing[:title]} | Salute Imóveis"
+      @page_description = @strategic_landing[:description]
+      @page_keywords = [@strategic_landing[:label], "imóveis", "Balneário Camboriú", "Salute Imóveis"].join(", ")
+    end
     
     # Cache da página
     cache_index_page
@@ -367,6 +373,15 @@ class HabitationsController < ApplicationController
         end
 
       (cities + neighborhoods).uniq { |item| item[:value] }
+    end
+  end
+
+  def apply_strategic_landing_params
+    @strategic_landing = Seo::StrategicLanding.property(params[:seo_slug])
+    return if @strategic_landing.blank?
+
+    @strategic_landing[:params].each do |key, value|
+      params[key] = value
     end
   end
 

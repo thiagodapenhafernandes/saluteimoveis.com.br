@@ -118,6 +118,24 @@
   
   <!-- Banner Resultados de Busca -->
   <%= display_banner('search_results') %>
+
+  <% listing_seo = current_public_seo_setting %>
+  <% if listing_seo&.public_applicable? && listing_seo.intro_text.present? %>
+    <section class="bg-white border border-gray-100 rounded-xl p-6 md:p-8 shadow-sm mb-8">
+      <div class="prose prose-slate max-w-none text-gray-600 leading-relaxed">
+        <%= simple_format(listing_seo.intro_text) %>
+      </div>
+    </section>
+  <% end %>
+
+  <nav class="bg-white border border-gray-100 rounded-xl p-5 shadow-sm mb-8" aria-label="Buscas estratégicas">
+    <h2 class="text-sm font-bold text-blue-three uppercase tracking-wide mb-3">Buscas relacionadas</h2>
+    <div class="flex flex-wrap gap-2">
+      <% Seo::StrategicLanding.property_links.each do |link| %>
+        <%= link_to link[:label], link[:path], class: "inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-4 py-2 text-sm font-semibold text-gray-600 hover:border-golden-one hover:text-blue-three transition-colors" %>
+      <% end %>
+    </div>
+  </nav>
   
   <div class="results-section mt-8">
       
@@ -145,9 +163,14 @@
           </div>
           <h3 class="text-xl font-bold text-gray-900 mb-2">Nenhum imóvel encontrado</h3>
           <p class="text-gray-500 mb-8">
-            Tente ajustar seus filtros de busca para encontrar o que procura.
+            Tente remover alguns filtros ou navegar por buscas próximas para encontrar oportunidades semelhantes.
           </p>
-          <%= link_to "Limpar filtros", habitations_path, class: "btn-primary inline-flex items-center gap-2" %>
+          <div class="flex flex-wrap justify-center gap-2">
+            <%= link_to "Limpar filtros", habitations_path, class: "btn-primary inline-flex items-center gap-2" %>
+            <% Seo::StrategicLanding.property_links.first(4).each do |link| %>
+              <%= link_to link[:label], link[:path], class: "inline-flex items-center rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 hover:border-blue-three hover:text-blue-three transition-colors" %>
+            <% end %>
+          </div>
         </div>
       <% end %>
 
@@ -157,17 +180,20 @@
 
 <!-- JSON-LD Structured Data for Listing Page (ItemList) -->
 <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "ItemList",
-    "itemListElement": [
-      <% @habitations.each_with_index do |property, index| %>
-        {
-          "@type": "ListItem",
-          "position": <%= index + 1 %>,
-          "url": "<%= habitation_url(property) %>"
-        }<%= "," unless index == @habitations.length - 1 %>
-      <% end %>
-    ]
-  }
+  <%= raw({
+    "@context" => "https://schema.org",
+    "@type" => "ItemList",
+    "name" => @page_title.presence || "Imóveis Salute Imóveis",
+    "numberOfItems" => @habitations.size,
+    "itemListElement" => @habitations.each_with_index.map do |property, index|
+      item = {
+        "@type" => "ListItem",
+        "position" => index + 1,
+        "url" => habitation_url(property),
+        "name" => property.display_title
+      }
+      item["image"] = property.primary_image_url if property.primary_image_url.present?
+      item
+    end
+  }.to_json) %>
 </script>

@@ -41,6 +41,7 @@ module Ai
         meta_title: parsed.fetch("meta_title").to_s.strip,
         meta_description: parsed.fetch("meta_description").to_s.strip,
         meta_keywords: Array(parsed["keywords"]).join(", "),
+        intro_text: parsed["intro_text"].to_s.strip.presence,
         og_title: parsed["og_title"].to_s.presence || parsed.fetch("meta_title").to_s.strip,
         og_description: parsed["og_description"].to_s.presence || parsed.fetch("meta_description").to_s.strip,
         robots_index: parsed.key?("robots_index") ? parsed["robots_index"] : @seo_setting.robots_index,
@@ -79,11 +80,12 @@ module Ai
             schema: {
               type: "object",
               additionalProperties: false,
-              required: ["meta_title", "meta_description", "keywords", "og_title", "og_description", "robots_index", "robots_follow", "insights"],
+              required: ["meta_title", "meta_description", "keywords", "intro_text", "og_title", "og_description", "robots_index", "robots_follow", "insights"],
               properties: {
                 meta_title: { type: "string" },
                 meta_description: { type: "string" },
                 keywords: { type: "array", items: { type: "string" } },
+                intro_text: { type: "string" },
                 og_title: { type: "string" },
                 og_description: { type: "string" },
                 robots_index: { type: "boolean" },
@@ -100,6 +102,9 @@ module Ai
       <<~TEXT
         Você gera SEO técnico para páginas públicas de uma imobiliária.
         Respeite as instruções estratégicas abaixo e nunca invente ofertas, contagens ou informações ausentes.
+        Quando a página for de listagem, gere intro_text com 150 a 250 palavras em 2 ou 3 parágrafos, útil para humanos,
+        sem tópicos, explicando a intenção da página, para quem ela serve e como refinar a busca.
+        Se a página não for uma listagem, retorne intro_text como string vazia.
         Retorne apenas JSON no schema solicitado.
 
         INSTRUÇÕES ESTRATÉGICAS:
@@ -119,6 +124,7 @@ module Ai
           current_meta_title: @seo_setting.meta_title,
           current_meta_description: @seo_setting.meta_description,
           current_keywords: @seo_setting.meta_keywords,
+          current_intro_text: @seo_setting.intro_text,
           current_score: @seo_setting.seo_score,
           access_count: @seo_setting.access_count
         }
@@ -135,6 +141,7 @@ module Ai
       raise "Resposta da IA sem meta title." if parsed["meta_title"].blank?
       raise "Resposta da IA sem meta description." if parsed["meta_description"].blank?
       raise "Resposta da IA sem keywords." unless parsed["keywords"].is_a?(Array)
+      raise "Resposta da IA sem texto introdutório." unless parsed.key?("intro_text")
       raise "Resposta da IA sem insights." unless parsed["insights"].is_a?(Array)
     end
   end

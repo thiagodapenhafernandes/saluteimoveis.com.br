@@ -474,6 +474,184 @@ html:has(body.admin-layout) {
   white-space: nowrap;
 }
 
+.seo-editor-shell {
+  max-width: 1680px;
+}
+
+.seo-editor-page .seo-editor-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 1rem;
+  align-items: start;
+}
+
+.seo-editor-page .seo-editor-main {
+  min-width: 0;
+}
+
+.seo-editor-page .seo-editor-side {
+  min-width: 0;
+}
+
+.seo-editor-page .seo-sticky-panel {
+  position: sticky;
+  top: 1rem;
+  z-index: 2;
+}
+
+.seo-editor-page .card {
+  border-radius: .65rem;
+}
+
+.seo-editor-page .form-label {
+  margin-bottom: .35rem;
+  color: #374151;
+  font-size: .87rem;
+}
+
+.seo-editor-page .form-control,
+.seo-editor-page .custom-checkbox-card {
+  background-color: #eef2f6;
+}
+
+.seo-editor-page textarea.form-control {
+  resize: vertical;
+}
+
+.seo-editor-page .seo-checklist {
+  display: grid;
+  gap: .45rem;
+}
+
+.seo-editor-page .seo-check {
+  display: flex;
+  gap: .5rem;
+  align-items: center;
+  color: #6b7280;
+  font-size: .86rem;
+}
+
+.seo-editor-page .seo-check i {
+  font-size: .52rem;
+}
+
+.seo-editor-page .seo-check.is-ok {
+  color: #198754;
+}
+
+.seo-editor-page .seo-check.is-warning {
+  color: #b45309;
+}
+
+.seo-editor-page .seo-serp-preview {
+  border: 1px solid #e5e7eb;
+  border-radius: .55rem;
+  background: #fff;
+  padding: .85rem;
+}
+
+.seo-editor-page .seo-serp-url {
+  color: #4d5156;
+  font-size: .78rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seo-editor-page .seo-serp-title {
+  color: #1a0dab;
+  font-size: 1.05rem;
+  line-height: 1.25;
+  margin-top: .25rem;
+}
+
+.seo-editor-page .seo-serp-description {
+  color: #4d5156;
+  font-size: .84rem;
+  line-height: 1.35;
+  margin-top: .25rem;
+}
+
+.seo-editor-page .seo-social-preview {
+  overflow: hidden;
+  border: 1px solid #d9dde3;
+  border-radius: .65rem;
+  background: #fff;
+}
+
+.seo-editor-page .seo-social-image {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  display: block;
+  background: #eef2f6;
+}
+
+.seo-editor-page .seo-social-copy {
+  padding: .75rem;
+}
+
+.seo-editor-page .seo-social-domain {
+  color: #6b7280;
+  font-size: .72rem;
+  text-transform: uppercase;
+}
+
+.seo-editor-page .seo-social-title {
+  color: #111827;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-top: .15rem;
+}
+
+.seo-editor-page .seo-social-description {
+  color: #4b5563;
+  font-size: .82rem;
+  line-height: 1.35;
+  margin-top: .2rem;
+}
+
+.seo-editor-page .seo-link-suggestions,
+.seo-editor-page .seo-history-list {
+  display: grid;
+  gap: .55rem;
+}
+
+.seo-editor-page .seo-link-suggestion {
+  display: grid;
+  gap: .12rem;
+  padding: .55rem .65rem;
+  border: 1px solid #e5e7eb;
+  border-radius: .5rem;
+  background: #f8fafc;
+  color: #111827;
+  text-decoration: none;
+}
+
+.seo-editor-page .seo-link-suggestion:hover {
+  border-color: #0d6efd;
+  background: #eef5ff;
+}
+
+.seo-editor-page .seo-link-suggestion small {
+  color: #6b7280;
+}
+
+.seo-editor-page .seo-history-item {
+  border-left: 3px solid #dbeafe;
+  padding-left: .65rem;
+}
+
+@media (max-width: 1199.98px) {
+  .seo-editor-page .seo-editor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .seo-editor-page .seo-sticky-panel {
+    position: static;
+  }
+}
+
 .btn-xs {
   --bs-btn-padding-y: .2rem;
   --bs-btn-padding-x: .45rem;

@@ -48,12 +48,14 @@ Rails.application.routes.draw do
     resources :seo_settings, except: :show do
       collection do
         patch :update_strategy
+        post :discover
       end
       member do
         post :generate_ai
         patch :toggle
       end
     end
+    resources :seo_redirects, only: [:index, :create, :update, :destroy]
     resources :banners
     resources :home_sections do
       member do
@@ -204,6 +206,10 @@ Rails.application.routes.draw do
       get :search
     end
   end
+  get "empreendimentos/:seo_slug",
+      to: "empreendimentos#index",
+      as: :strategic_empreendimentos,
+      constraints: { seo_slug: /balneario-camboriu|praia-brava|centro|barra-sul|frente-mar|vista-mar|lancamentos|prontos-para-morar/ }
   get 'empreendimento/:id', to: 'habitations#show', as: :empreendimento_details
   get 'empreendimetos', to: redirect('/empreendimentos')
   get 'links-uteis', to: 'pages#links_uteis', as: :links_uteis
@@ -215,7 +221,11 @@ Rails.application.routes.draw do
   # Quick search by code
   get 'buscar-codigo', to: 'habitations#search_by_code', as: :search_by_code
   
-  # Habitations - SEO friendly routes  
+  # Habitations - SEO friendly routes
+  get "imoveis/:seo_slug",
+      to: "habitations#index",
+      as: :strategic_habitations,
+      constraints: { seo_slug: /frente-mar|quadra-mar|lancamentos|prontos-para-morar|centro|barra-sul|praia-brava/ }
   resources :habitations, only: [:index, :show], path: 'imoveis' do
     member do
       post :schedule_visit
@@ -271,6 +281,13 @@ Rails.application.routes.draw do
       get ":portal/feed", to: "feeds#show", as: :feed
     end
   end
+
+  # Catch-all route for SEO redirects
+  get "/*path", to: "seo_redirects#show", constraints: lambda { |req|
+    lookup = "/#{req.params[:path]}"
+    query_lookup = req.query_string.present? ? "#{lookup}?#{req.query_string}" : lookup
+    SeoRedirect.active.exists?(from_path: query_lookup) || SeoRedirect.active.exists?(from_path: lookup)
+  }
 
   # Catch-all route for public landing pages
   get '/:slug', to: 'landing_pages#show', constraints: lambda { |req|

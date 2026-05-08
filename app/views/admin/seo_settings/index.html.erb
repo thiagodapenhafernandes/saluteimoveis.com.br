@@ -7,9 +7,18 @@
       <p class="text-muted small mb-0">Inventário automático, aplicação pública, score e geração com IA.</p>
     </div>
     <div class="d-flex gap-2">
+      <%= button_to discover_admin_seo_settings_path,
+          method: :post,
+          class: "btn btn-sm btn-success",
+          data: { turbo_submits_with: "Descobrindo..." } do %>
+        <i class="bi bi-compass me-1"></i>Descobrir SEO
+      <% end %>
       <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#seoStrategyModal">
         <i class="bi bi-stars me-1"></i>Estratégia IA
       </button>
+      <%= link_to admin_seo_redirects_path, class: "btn btn-sm btn-outline-primary" do %>
+        <i class="bi bi-signpost-split me-1"></i>Redirects
+      <% end %>
       <%= link_to new_admin_seo_setting_path, class: "btn btn-sm btn-primary" do %>
         <i class="bi bi-plus-circle me-1"></i>Novo SEO
       <% end %>
@@ -21,6 +30,32 @@
     <div class="col-6 col-lg-3"><div class="card border-0 shadow-sm seo-stat"><div class="card-body"><div class="text-muted small">Ativas</div><div class="h4 mb-0"><%= @stats[:active] %></div></div></div></div>
     <div class="col-6 col-lg-3"><div class="card border-0 shadow-sm seo-stat"><div class="card-body"><div class="text-muted small">Públicas</div><div class="h4 mb-0"><%= @stats[:public] %></div></div></div></div>
     <div class="col-6 col-lg-3"><div class="card border-0 shadow-sm seo-stat"><div class="card-body"><div class="text-muted small">Com IA</div><div class="h4 mb-0"><%= @stats[:generated] %></div></div></div></div>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-3">
+      <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+        <div>
+          <h2 class="h6 fw-bold mb-1"><i class="bi bi-compass me-1 text-success"></i>Descoberta automática</h2>
+          <p class="small text-muted mb-0"><%= @seo_discovery_status[:message] %></p>
+          <% if @seo_discovery_status[:last_run_at].present? %>
+            <div class="small text-muted mt-1">Última execução: <%= l(@seo_discovery_status[:last_run_at], format: :short) %></div>
+          <% end %>
+          <% if @seo_discovery_status[:last_error].present? %>
+            <div class="small text-danger mt-1"><%= @seo_discovery_status[:last_error] %></div>
+          <% end %>
+        </div>
+        <div class="d-flex flex-wrap gap-2 justify-content-end">
+          <span class="badge <%= @seo_discovery_enabled ? "bg-success" : "bg-secondary" %>">Proativa: <%= @seo_discovery_enabled ? "ativa" : "off" %></span>
+          <span class="badge bg-light text-dark">avaliadas: <%= @seo_discovery_status[:evaluated] %></span>
+          <span class="badge bg-primary">criadas: <%= @seo_discovery_status[:created] %></span>
+          <span class="badge bg-info text-dark">atualizadas: <%= @seo_discovery_status[:updated] %></span>
+          <span class="badge bg-success">indexáveis: <%= @seo_discovery_status[:indexable] %></span>
+          <span class="badge bg-dark">noindex: <%= @seo_discovery_status[:noindex] %></span>
+          <span class="badge bg-warning text-dark">IA fila: <%= @seo_discovery_status[:ai_enqueued] %></span>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="card border-0 shadow-sm mb-3">
@@ -181,6 +216,12 @@
               <label class="custom-checkbox-card w-100 justify-content-between">
                 <span>Gerar IA automaticamente</span>
                 <%= check_box_tag :seo_ai_auto_generate_enabled, "1", @auto_ai_enabled, class: "form-check-input" %>
+              </label>
+            </div>
+            <div class="col-md-4">
+              <label class="custom-checkbox-card w-100 justify-content-between">
+                <span>Descobrir oportunidades todo dia</span>
+                <%= check_box_tag :seo_discovery_enabled, "1", @seo_discovery_enabled, class: "form-check-input" %>
               </label>
             </div>
           </div>

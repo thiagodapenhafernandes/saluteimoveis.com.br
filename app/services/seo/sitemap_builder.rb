@@ -114,7 +114,7 @@ module Seo
 
     def changefreq_for(page_type)
       case page_type.to_s
-      when "property_listing" then "daily"
+      when "property_listing", "property_landing", "developments_index", "development_landing" then "daily"
       when "property_show", "development_show" then "weekly"
       when "home_index" then "daily"
       else "monthly"
@@ -123,7 +123,7 @@ module Seo
 
     def priority_for(page_type)
       case page_type.to_s
-      when "property_listing" then 0.9
+      when "property_listing", "property_landing", "developments_index", "development_landing" then 0.9
       when "home_index" then 1.0
       when "property_show", "development_show" then 0.8
       else 0.6

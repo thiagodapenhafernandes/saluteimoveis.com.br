@@ -85,6 +85,7 @@ module Seo
         meta_title: existing_or_fallback(identity, :title_fallback, created),
         meta_description: existing_or_fallback(identity, :description_fallback, created),
         meta_keywords: existing_or_fallback(identity, :keywords_fallback, created),
+        intro_text: existing_or_fallback(identity, :intro_fallback, created),
         og_title: existing_or_fallback(identity, :title_fallback, created),
         og_description: existing_or_fallback(identity, :description_fallback, created)
       }.compact

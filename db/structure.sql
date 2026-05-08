@@ -1,4 +1,4 @@
-\restrict 6SGiM8RdlpRTProni9g1MKOvBcmys6zdBWaWqiOcG3Y0n0Rwfns9gjlZraUDGKz
+\restrict mYmPmUncbiqujJiDI6Qw2Hg7Q9wOFpb1csMIhdxbWDJdjLyfsIKkOkHktOzBlNJ
 
 -- Dumped from database version 18.3 (Homebrew)
 -- Dumped by pg_dump version 18.3 (Homebrew)
@@ -2102,6 +2102,111 @@ CREATE TABLE public.schema_migrations (
 
 
 --
+-- Name: seo_change_logs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.seo_change_logs (
+    id bigint NOT NULL,
+    seo_setting_id bigint NOT NULL,
+    admin_user_id bigint,
+    event_type character varying DEFAULT 'update'::character varying NOT NULL,
+    changed_fields jsonb DEFAULT '{}'::jsonb NOT NULL,
+    snapshot jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: seo_change_logs_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.seo_change_logs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: seo_change_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.seo_change_logs_id_seq OWNED BY public.seo_change_logs.id;
+
+
+--
+-- Name: seo_focus_keywords; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.seo_focus_keywords (
+    id bigint NOT NULL,
+    seo_setting_id bigint NOT NULL,
+    keyword character varying NOT NULL,
+    "position" integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: seo_focus_keywords_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.seo_focus_keywords_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: seo_focus_keywords_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.seo_focus_keywords_id_seq OWNED BY public.seo_focus_keywords.id;
+
+
+--
+-- Name: seo_redirects; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.seo_redirects (
+    id bigint NOT NULL,
+    from_path character varying NOT NULL,
+    to_path character varying NOT NULL,
+    status_code integer DEFAULT 301 NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    hit_count integer DEFAULT 0 NOT NULL,
+    last_hit_at timestamp(6) without time zone,
+    created_by_admin_user_id bigint,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: seo_redirects_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.seo_redirects_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: seo_redirects_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.seo_redirects_id_seq OWNED BY public.seo_redirects.id;
+
+
+--
 -- Name: seo_settings; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2136,7 +2241,8 @@ CREATE TABLE public.seo_settings (
     seo_score integer DEFAULT 0 NOT NULL,
     access_count integer DEFAULT 0 NOT NULL,
     last_accessed_at timestamp(6) without time zone,
-    last_generated_from_path character varying
+    last_generated_from_path character varying,
+    intro_text text
 );
 
 
@@ -3036,6 +3142,27 @@ ALTER TABLE ONLY public.push_subscriptions ALTER COLUMN id SET DEFAULT nextval('
 
 
 --
+-- Name: seo_change_logs id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.seo_change_logs ALTER COLUMN id SET DEFAULT nextval('public.seo_change_logs_id_seq'::regclass);
+
+
+--
+-- Name: seo_focus_keywords id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.seo_focus_keywords ALTER COLUMN id SET DEFAULT nextval('public.seo_focus_keywords_id_seq'::regclass);
+
+
+--
+-- Name: seo_redirects id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.seo_redirects ALTER COLUMN id SET DEFAULT nextval('public.seo_redirects_id_seq'::regclass);
+
+
+--
 -- Name: seo_settings id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -3528,6 +3655,30 @@ ALTER TABLE ONLY public.push_subscriptions
 
 ALTER TABLE ONLY public.schema_migrations
     ADD CONSTRAINT schema_migrations_pkey PRIMARY KEY (version);
+
+
+--
+-- Name: seo_change_logs seo_change_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.seo_change_logs
+    ADD CONSTRAINT seo_change_logs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: seo_focus_keywords seo_focus_keywords_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.seo_focus_keywords
+    ADD CONSTRAINT seo_focus_keywords_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: seo_redirects seo_redirects_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.seo_redirects
+    ADD CONSTRAINT seo_redirects_pkey PRIMARY KEY (id);
 
 
 --
@@ -4773,6 +4924,76 @@ CREATE UNIQUE INDEX index_push_subscriptions_on_admin_user_id_and_endpoint ON pu
 
 
 --
+-- Name: index_seo_change_logs_on_admin_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_seo_change_logs_on_admin_user_id ON public.seo_change_logs USING btree (admin_user_id);
+
+
+--
+-- Name: index_seo_change_logs_on_event_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_seo_change_logs_on_event_type ON public.seo_change_logs USING btree (event_type);
+
+
+--
+-- Name: index_seo_change_logs_on_seo_setting_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_seo_change_logs_on_seo_setting_id ON public.seo_change_logs USING btree (seo_setting_id);
+
+
+--
+-- Name: index_seo_change_logs_on_seo_setting_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_seo_change_logs_on_seo_setting_id_and_created_at ON public.seo_change_logs USING btree (seo_setting_id, created_at);
+
+
+--
+-- Name: index_seo_focus_keywords_on_seo_setting_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_seo_focus_keywords_on_seo_setting_id ON public.seo_focus_keywords USING btree (seo_setting_id);
+
+
+--
+-- Name: index_seo_focus_keywords_on_seo_setting_id_and_keyword; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_seo_focus_keywords_on_seo_setting_id_and_keyword ON public.seo_focus_keywords USING btree (seo_setting_id, keyword);
+
+
+--
+-- Name: index_seo_focus_keywords_on_seo_setting_id_and_position; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_seo_focus_keywords_on_seo_setting_id_and_position ON public.seo_focus_keywords USING btree (seo_setting_id, "position");
+
+
+--
+-- Name: index_seo_redirects_on_active_and_from_path; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_seo_redirects_on_active_and_from_path ON public.seo_redirects USING btree (active, from_path);
+
+
+--
+-- Name: index_seo_redirects_on_created_by_admin_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_seo_redirects_on_created_by_admin_user_id ON public.seo_redirects USING btree (created_by_admin_user_id);
+
+
+--
+-- Name: index_seo_redirects_on_from_path; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_seo_redirects_on_from_path ON public.seo_redirects USING btree (from_path);
+
+
+--
 -- Name: index_seo_settings_on_canonical_key; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -5131,6 +5352,14 @@ ALTER TABLE ONLY public.leads
 
 
 --
+-- Name: seo_focus_keywords fk_rails_23d9a9ce43; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.seo_focus_keywords
+    ADD CONSTRAINT fk_rails_23d9a9ce43 FOREIGN KEY (seo_setting_id) REFERENCES public.seo_settings(id);
+
+
+--
 -- Name: portal_integration_events fk_rails_23eb6add0b; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5144,6 +5373,14 @@ ALTER TABLE ONLY public.portal_integration_events
 
 ALTER TABLE ONLY public.habitation_share_links
     ADD CONSTRAINT fk_rails_2772a86517 FOREIGN KEY (admin_user_id) REFERENCES public.admin_users(id);
+
+
+--
+-- Name: seo_change_logs fk_rails_27eda6d4a6; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.seo_change_logs
+    ADD CONSTRAINT fk_rails_27eda6d4a6 FOREIGN KEY (admin_user_id) REFERENCES public.admin_users(id);
 
 
 --
@@ -5307,6 +5544,14 @@ ALTER TABLE ONLY public.habitation_broker_assignments
 
 
 --
+-- Name: seo_redirects fk_rails_89614535e7; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.seo_redirects
+    ADD CONSTRAINT fk_rails_89614535e7 FOREIGN KEY (created_by_admin_user_id) REFERENCES public.admin_users(id);
+
+
+--
 -- Name: distribution_rule_agents fk_rails_89af5b0a07; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5451,6 +5696,14 @@ ALTER TABLE ONLY public.store_shifts
 
 
 --
+-- Name: seo_change_logs fk_rails_d4abca6a38; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.seo_change_logs
+    ADD CONSTRAINT fk_rails_d4abca6a38 FOREIGN KEY (seo_setting_id) REFERENCES public.seo_settings(id);
+
+
+--
 -- Name: admin_users fk_rails_d966db7d2f; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5526,11 +5779,13 @@ ALTER TABLE ONLY public.push_subscriptions
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 6SGiM8RdlpRTProni9g1MKOvBcmys6zdBWaWqiOcG3Y0n0Rwfns9gjlZraUDGKz
+\unrestrict mYmPmUncbiqujJiDI6Qw2Hg7Q9wOFpb1csMIhdxbWDJdjLyfsIKkOkHktOzBlNJ
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260508143000'),
+('20260508133000'),
 ('20260508121500'),
 ('20260507142000'),
 ('20260507131000'),
