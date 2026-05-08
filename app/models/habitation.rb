@@ -548,6 +548,14 @@ class Habitation < ApplicationRecord
     img.is_a?(Hash) ? img['url'] : img
   end
 
+  def primary_image_source
+    public_image_sources.first
+  end
+
+  def card_image_sources(limit = 5)
+    public_image_sources.first(limit)
+  end
+
   # Retorna lista de URLs de todas as imagens
   def image_urls
     all_images.map do |img|
@@ -573,6 +581,26 @@ class Habitation < ApplicationRecord
     
     pic = images.first
     pic.is_a?(Hash) ? pic : { 'url' => pic }
+  end
+
+  def public_image_sources
+    attached_images = ordered_photos.map { |photo| { "attachment" => photo, "url" => blob_path_for(photo) } }
+
+    images = if empreendimento?
+               fotos_empreendimento.present? ? fotos_empreendimento : pictures
+             else
+               pictures
+             end
+
+    api_images = if images.is_a?(Array)
+                   images.map { |pic| pic.is_a?(Hash) ? pic : { "url" => pic } }
+                 else
+                   []
+                 end
+
+    return api_images.presence || attached_images if dwv_property?
+
+    attached_images + api_images
   end
   
   # Retorna todas as imagens (Hash format)

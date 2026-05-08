@@ -29,6 +29,11 @@
   padding-right: 1rem;
 }
 
+.home-deferred-section {
+  content-visibility: auto;
+  contain-intrinsic-size: 760px;
+}
+
 .developments-pagination {
   width: 100%;
 }

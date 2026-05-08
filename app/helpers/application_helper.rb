@@ -1,4 +1,33 @@
 module ApplicationHelper
+  def optimized_image_source(source, resize_to_limit: nil, resize_to_fill: nil, saver: { quality: 82 })
+    return if source.blank?
+
+    image = if source.is_a?(Hash)
+      source["attachment"] || source[:attachment] ||
+        source["url_pequena"] || source[:url_pequena] ||
+        source["url_small"] || source[:url_small] ||
+        source["thumbnail_url"] || source[:thumbnail_url] ||
+        source["url"] || source[:url]
+    else
+      source
+    end
+    return image unless image.respond_to?(:variant)
+
+    transformations = {}
+    transformations[:resize_to_limit] = resize_to_limit if resize_to_limit.present?
+    transformations[:resize_to_fill] = resize_to_fill if resize_to_fill.present?
+    transformations[:saver] = saver if saver.present?
+
+    transformations.present? ? image.variant(transformations) : image
+  end
+
+  def public_image_url(source)
+    return if source.blank?
+
+    image = source.is_a?(Hash) ? (source["url"] || source[:url] || source["attachment"] || source[:attachment]) : source
+    image.respond_to?(:variant) ? url_for(image) : image
+  end
+
   # SEO Helper - Dynamic meta tags
   def seo_meta_tags(page_name = 'home')
     seo = SeoSetting.for_page(page_name)

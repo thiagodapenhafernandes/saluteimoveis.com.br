@@ -27,6 +27,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <% if defined?(@hero_preload_source) && @hero_preload_source.present? %>
+      <link rel="preload"
+            as="image"
+            href="<%= url_for(@hero_preload_source) %>"
+            imagesrcset="<%= "#{url_for(@hero_preload_mobile_source || @hero_preload_source)} 900w, #{url_for(@hero_preload_source)} 1920w" %>"
+            imagesizes="100vw"
+            fetchpriority="high">
+    <% end %>
     
     <%# Image Metadata Logic %>
     <% 
@@ -91,10 +99,6 @@
     <%# Fonts loading with swap %>
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&family=Raleway:wght@300;400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     
-    <%# Select2 CSS Premium %>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.5.2/dist/select2-bootstrap4.min.css">
-    
     <%# Layout Settings (Colors) %>
     <style>
       :root {
@@ -111,7 +115,7 @@
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
     
     <%# JS with Defer %>
-    <%= javascript_importmap_tags %>
+    <%= javascript_importmap_tags "public" %>
   </head>
 
   <body class="antialiased"
@@ -143,52 +147,21 @@
     <%# Performance: Defer non-critical external libraries %>
     <script>
       function loadDeferredAssets() {
-        // jQuery precisa carregar antes do select2 (e de qualquer onload que use $).
-        // Os demais scripts são independentes e podem ser baixados em paralelo depois.
-        var loadExtras = function() {
-          var scripts = [
-            'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js',
-            'https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js',
-            'https://unpkg.com/aos@2.3.1/dist/aos.js'
-          ];
+        var scripts = [
+          'https://unpkg.com/aos@2.3.1/dist/aos.js'
+        ];
 
-          scripts.forEach(function(src) {
-            if (document.querySelector('script[src="' + src + '"]')) return;
+        scripts.forEach(function(src) {
+          if (document.querySelector('script[src="' + src + '"]')) return;
 
-            var s = document.createElement('script');
-            s.src = src;
-            s.async = true;
-            if (src.includes('aos.js')) {
-              s.onload = function() { AOS.init({ duration: 800, once: true }); };
-            }
-            if (src.includes('fancybox')) {
-              s.onload = function() {};
-            }
-            if (src.includes('select2.min.js')) {
-              s.onload = function() {
-                $('.select2-premium').select2({
-                  theme: 'bootstrap4',
-                  width: '100%',
-                  placeholder: 'Selecione',
-                  allowClear: true
-                });
-              };
-            }
-            document.body.appendChild(s);
-          });
-        };
-
-        var jquerySrc = 'https://code.jquery.com/jquery-3.7.1.min.js';
-        if (window.jQuery || document.querySelector('script[src="' + jquerySrc + '"]')) {
-          loadExtras();
-          return;
-        }
-
-        var jq = document.createElement('script');
-        jq.src = jquerySrc;
-        jq.async = false;
-        jq.onload = loadExtras;
-        document.body.appendChild(jq);
+          var s = document.createElement('script');
+          s.src = src;
+          s.async = true;
+          if (src.includes('aos.js')) {
+            s.onload = function() { AOS.init({ duration: 800, once: true }); };
+          }
+          document.body.appendChild(s);
+        });
       }
 
       if (window.addEventListener) window.addEventListener('load', loadDeferredAssets);

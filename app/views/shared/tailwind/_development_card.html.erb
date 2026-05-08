@@ -1,5 +1,5 @@
 <%
-  image = development.primary_image_url || development.image_urls.first
+  image = development.primary_image_source || development.primary_image_url || development.image_urls.first
   title = development.nome_empreendimento.presence || development.titulo_anuncio.presence || development.display_title
   location = [development.bairro, development.cidade].compact_blank.join(" - ")
   units_count = local_assigns[:unit_count].presence || development.available_units_count
@@ -20,10 +20,14 @@
     aria: { label: title } do %>
   <article class="relative min-h-[430px] overflow-hidden rounded-xl bg-blue-three shadow-[0_18px_40px_rgba(2,43,58,0.18)] transition-all duration-500 group-hover:-translate-y-1 group-hover:shadow-[0_26px_56px_rgba(2,43,58,0.24)]">
     <% if image.present? %>
-      <%= image_tag image,
+      <%= image_tag optimized_image_source(image, resize_to_fill: [720, 860]),
           alt: title,
           class: "absolute inset-0 z-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105",
-          loading: "lazy" %>
+          loading: "lazy",
+          decoding: "async",
+          width: 720,
+          height: 860,
+          sizes: "(min-width: 1280px) 410px, (min-width: 768px) 50vw, 100vw" %>
     <% else %>
       <div class="absolute inset-0 z-0 flex items-center justify-center bg-blue-three text-white/40">
         <i class="bi bi-building text-6xl"></i>

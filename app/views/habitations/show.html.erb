@@ -1,5 +1,5 @@
-<% images = @habitation.all_images %>
-<% image_url = ->(photo) { photo.is_a?(Hash) ? (photo["url"] || photo[:url]) : photo } %>
+<% images = @habitation.public_image_sources %>
+<% image_url = ->(photo) { public_image_url(photo) } %>
 <% title = @habitation.titulo_anuncio.presence || "#{@habitation.categoria} em #{@habitation.bairro}" %>
 <% address_parts = [@habitation.endereco, @habitation.bairro, @habitation.cidade].compact_blank %>
 <% address_text = address_parts.join(" - ") %>
@@ -33,9 +33,15 @@
              data-fancybox="property-gallery"
              data-caption="<%= title %> - Foto 1"
              class="relative block h-full overflow-hidden bg-gray-100">
-            <%= image_tag image_url.call(images.first),
+            <%= image_tag optimized_image_source(images.first, resize_to_fill: [960, 720]),
                 alt: "#{title} - Foto 1",
-                class: "h-full w-full object-cover transition-transform duration-700 hover:scale-105" %>
+                class: "h-full w-full object-cover transition-transform duration-700 hover:scale-105",
+                fetchpriority: "high",
+                loading: "eager",
+                decoding: "async",
+                width: 960,
+                height: 720,
+                sizes: "(min-width: 1024px) 52vw, 100vw" %>
           </a>
 
           <div class="hidden grid-cols-2 gap-2 lg:grid">
@@ -44,9 +50,14 @@
                  data-fancybox="property-gallery"
                  data-caption="<%= title %> - Foto <%= index + 2 %>"
                  class="relative block overflow-hidden bg-gray-100">
-                <%= image_tag image_url.call(photo),
+                <%= image_tag optimized_image_source(photo, resize_to_fill: [520, 360]),
                     alt: "#{title} - Foto #{index + 2}",
-                    class: "h-full w-full object-cover transition-transform duration-700 hover:scale-105" %>
+                    class: "h-full w-full object-cover transition-transform duration-700 hover:scale-105",
+                    loading: "lazy",
+                    decoding: "async",
+                    width: 520,
+                    height: 360,
+                    sizes: "24vw" %>
               </a>
             <% end %>
           </div>

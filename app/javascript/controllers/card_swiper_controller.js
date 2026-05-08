@@ -38,6 +38,13 @@ export default class extends Controller {
 
         // Stop clicks from bubbling to card link
         on: {
+          init: (swiper) => {
+            this.loadSlide(swiper.activeIndex)
+          },
+          slideChange: (swiper) => {
+            this.loadSlide(swiper.activeIndex)
+            this.loadSlide(swiper.activeIndex + 1)
+          },
           click: (swiper, event) => {
             const target = event.target;
             // Only stop propagation on navigation elements
@@ -52,6 +59,18 @@ export default class extends Controller {
     } catch (error) {
       console.error('Error initializing card swiper:', error);
     }
+  }
+
+  loadSlide(index) {
+    if (index < 0) return
+
+    const slide = this.element.querySelectorAll(".swiper-slide")[index]
+    if (!slide) return
+
+    slide.querySelectorAll("img[data-src]").forEach((image) => {
+      image.src = image.dataset.src
+      image.removeAttribute("data-src")
+    })
   }
 
   disconnect() {

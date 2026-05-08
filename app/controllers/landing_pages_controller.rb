@@ -23,7 +23,7 @@ class LandingPagesController < ApplicationController
       status: filters['status']
     }
 
-    @habitations = Habitation.active.advanced_search(search_params)
+    @habitations = Habitation.active.advanced_search(search_params).with_attached_photos
     @habitations = @habitations.order(created_at: :desc).paginate(page: params[:page], per_page: 12)
     
     # SEO meta tags

@@ -4,7 +4,7 @@ class EmpreendimentosController < ApplicationController
     @strategic_landing = Seo::StrategicLanding.development(params[:seo_slug])
     
     # Base scope: only 'Empreendimento' type
-    @empreendimentos = Habitation.empreendimentos_publicos.left_outer_joins(:address).order(nome_empreendimento: :asc)
+    @empreendimentos = Habitation.empreendimentos_publicos.with_attached_photos.left_outer_joins(:address).order(nome_empreendimento: :asc)
     @empreendimentos = apply_strategic_landing_scope(@empreendimentos)
 
     # Filter by search term if present

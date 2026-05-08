@@ -8,17 +8,29 @@
   
   <% desktop_image = banner.image_desktop.attached? ? banner.image_desktop : banner.image_mobile %>
   <% mobile_image = banner.image_mobile.attached? ? banner.image_mobile : desktop_image %>
+  <% desktop_source = optimized_image_source(desktop_image, resize_to_limit: [1440, 360]) %>
+  <% mobile_source = optimized_image_source(mobile_image, resize_to_limit: [768, 360]) %>
   <% image_classes = "w-full rounded-lg shadow-md hover:shadow-xl transition-shadow" %>
   <% banner_body = capture do %>
     <% if desktop_image&.attached? %>
       <% if force_mobile %>
-        <%= image_tag url_for(mobile_image), alt: banner.title, class: image_classes %>
+        <%= image_tag mobile_source,
+              alt: banner.title,
+              class: image_classes,
+              loading: "lazy",
+              decoding: "async",
+              sizes: "100vw" %>
       <% else %>
         <picture>
           <% if mobile_image&.attached? %>
-            <source media="(max-width: 768px)" srcset="<%= url_for(mobile_image) %>">
+            <source media="(max-width: 768px)" srcset="<%= url_for(mobile_source) %>">
           <% end %>
-          <%= image_tag url_for(desktop_image), alt: banner.title, class: image_classes, loading: "lazy" %>
+          <%= image_tag desktop_source,
+                alt: banner.title,
+                class: image_classes,
+                loading: "lazy",
+                decoding: "async",
+                sizes: "100vw" %>
         </picture>
       <% end %>
     <% else %>
