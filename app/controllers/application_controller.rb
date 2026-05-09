@@ -39,7 +39,7 @@ class ApplicationController < ActionController::Base
     @layout_setting = LayoutSetting.instance
     @home_setting = HomeSetting.instance
     @footer_setting = FooterSetting.instance
-    @footer_links = FooterLink.all
+    @footer_links = Footer::QuickLinksService.call
     @footer_stores = Store.active.order(:id)
     @footer_stores = FooterStore.all if @footer_stores.empty?
     @footer_social_links = FooterSocialLink.where(enabled: true)
