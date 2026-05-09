@@ -66,7 +66,11 @@
           <%= f.label :phone, "Telefone", class: "form-label fw-semibold" %>
           <div class="input-group">
             <span class="input-group-text bg-white"><i class="bi bi-telephone text-muted"></i></span>
-            <%= f.text_field :phone, class: "form-control", placeholder: "(47) 3311-1067" %>
+            <%= f.text_field :phone,
+                             class: "form-control",
+                             placeholder: "(47) 3311-1067",
+                             autocomplete: "tel",
+                             data: { controller: "mask", mask_type_value: "phone" } %>
           </div>
         </div>
         <div class="col-md-6">
@@ -126,7 +130,10 @@
             <%= f.text_field :number,
                              class: "form-control",
                              placeholder: "3750",
-                             data: { cep_lookup_target: "number" } %>
+                             data: {
+                               cep_lookup_target: "number",
+                               action: "change->cep-lookup#geocodeFromNumber blur->cep-lookup#geocodeFromNumber"
+                             } %>
           </div>
 
           <div class="col-md-5">

@@ -1,6 +1,32 @@
 require "rails_helper"
 
 RSpec.describe Habitation::SearchScopes, type: :model do
+  describe ".with_photos" do
+    it "does not treat development photos as public photos for regular units" do
+      unit_without_public_photo = create(
+        :habitation,
+        tipo: "Unitário",
+        pictures: [],
+        fotos_empreendimento: [{ "url" => "https://example.com/development.jpg" }]
+      )
+
+      result = Habitation.with_photos
+
+      expect(result).not_to include(unit_without_public_photo)
+    end
+
+    it "allows development photos for developments" do
+      development = create(
+        :habitation,
+        tipo: "Empreendimento",
+        pictures: [],
+        fotos_empreendimento: [{ "url" => "https://example.com/development.jpg" }]
+      )
+
+      expect(Habitation.with_photos).to include(development)
+    end
+  end
+
   describe ".dependencia_empregada" do
     it "matches Vista characteristics for dependencia de empregada" do
       matching = create(:habitation, caracteristicas: ["Dependência de Empregada"])

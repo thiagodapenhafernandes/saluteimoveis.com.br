@@ -79,9 +79,18 @@ export default class extends Controller {
   bindNumberBlur() {
     if (this._numberBlurBound) return
     this._numberBlurBound = true
-    this.numberTarget.addEventListener("blur", () => {
-      if (this.numberTarget.value.trim()) this.triggerGeocode()
-    }, { once: true })
+    if ((this.numberTarget.dataset.action || "").includes("cep-lookup#geocodeFromNumber")) return
+
+    this.numberTarget.addEventListener("blur", () => this.geocodeFromNumber())
+  }
+
+  geocodeFromNumber(event) {
+    if (event) event.preventDefault()
+    if (!this.hasNumberTarget || !this.numberTarget.value.trim()) return
+    if (this.hasAddressTarget && !this.addressTarget.value.trim()) return
+    if (this.hasCityTarget && !this.cityTarget.value.trim()) return
+
+    this.triggerGeocode()
   }
 
   fillFields(data) {

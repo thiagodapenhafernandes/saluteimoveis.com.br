@@ -75,12 +75,18 @@ module Habitation::SearchScopes
       )
     }
     
-    # Scope para imóveis com fotos (verifica se é array e tem elementos OU se tem fotos anexadas)
+    # Scope para imóveis com fotos públicas. Unidades comuns não devem entrar na
+    # listagem usando fotos_empreendimento, pois a página pública não as exibe.
     scope :with_photos, -> { 
       where(
-        "(jsonb_typeof(pictures) = 'array' AND jsonb_array_length(pictures) > 0) OR " \
-        "(jsonb_typeof(fotos_empreendimento) = 'array' AND jsonb_array_length(fotos_empreendimento) > 0) OR " \
-        "(EXISTS (SELECT 1 FROM active_storage_attachments WHERE active_storage_attachments.record_id = habitations.id AND active_storage_attachments.record_type = 'Habitation'))"
+        "((COALESCE(habitations.tipo, '') = 'Empreendimento' AND (" \
+        "  (jsonb_typeof(pictures) = 'array' AND jsonb_array_length(pictures) > 0) OR " \
+        "  (jsonb_typeof(fotos_empreendimento) = 'array' AND jsonb_array_length(fotos_empreendimento) > 0) OR " \
+        "  EXISTS (SELECT 1 FROM active_storage_attachments WHERE active_storage_attachments.record_id = habitations.id AND active_storage_attachments.record_type = 'Habitation')" \
+        ")) OR (COALESCE(habitations.tipo, '') <> 'Empreendimento' AND (" \
+        "  (jsonb_typeof(pictures) = 'array' AND jsonb_array_length(pictures) > 0) OR " \
+        "  EXISTS (SELECT 1 FROM active_storage_attachments WHERE active_storage_attachments.record_id = habitations.id AND active_storage_attachments.record_type = 'Habitation')" \
+        ")))"
       ) 
     }
     
