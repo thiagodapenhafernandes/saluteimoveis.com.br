@@ -33,12 +33,16 @@ module Seo
 
       unless created || !seo.manual_mode?
         seo.register_access!
+        SeoPageVisit.record!(seo, @controller.request)
+        record_campaign_visit(seo)
         return seo
       end
 
       seo.assign_attributes(attributes_for(identity, created))
       seo.save!
       seo.register_access!
+      SeoPageVisit.record!(seo, @controller.request)
+      record_campaign_visit(seo)
 
       enqueue_ai_generation(seo) if created && self.class.auto_ai? && Ai::SeoContentService.connected?
       seo
@@ -99,6 +103,24 @@ module Seo
 
     def enqueue_ai_generation(seo)
       SeoAiGenerationJob.perform_later(seo.id)
+    end
+
+    def record_campaign_visit(seo)
+      return if @controller.request.query_parameters["utm_campaign"].blank?
+
+      event = Seo::ConversionTracker.record!(
+        event_type: "campaign_click",
+        request: @controller.request,
+        metadata: {
+          placement: "utm_landing",
+          seo_setting_id: seo.id,
+          page_url: @controller.request.fullpath
+        }
+      )
+      event&.marketing_campaign&.register_click!
+    rescue => e
+      Rails.logger.warn("[Seo::PageTracker::CampaignVisit] #{e.class}: #{e.message}")
+      nil
     end
   end
 end

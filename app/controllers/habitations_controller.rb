@@ -84,6 +84,12 @@ class HabitationsController < ApplicationController
     )
     
     WebhookService.send_form_data('property_visit_form', webhook_data)
+    Seo::ConversionTracker.record!(
+      event_type: "schedule_visit",
+      request: request,
+      habitation: @habitation,
+      metadata: visit_params.to_h.slice("preferred_date", "preferred_time")
+    )
     
     redirect_to habitation_path(@habitation), notice: 'Visita agendada com sucesso! Entraremos em contato para confirmar.'
   end
@@ -411,6 +417,12 @@ class HabitationsController < ApplicationController
     @lead_share_token = link.token
     remember_share_link(link)
     link.register_click!
+    Seo::ConversionTracker.record!(
+      event_type: "share_click",
+      request: request,
+      habitation: @habitation,
+      metadata: { broker_id: link.admin_user_id }
+    )
   end
 
   def remember_share_link(link)

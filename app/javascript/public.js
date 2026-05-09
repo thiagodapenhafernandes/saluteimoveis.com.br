@@ -13,6 +13,7 @@ import FiltersController from "controllers/filters_controller"
 import HeroSliderController from "controllers/hero_slider_controller"
 import LeadCaptureController from "controllers/lead_capture_controller"
 import LocationFilterController from "controllers/location_filter_controller"
+import MarketingTrackerController from "controllers/marketing_tracker_controller"
 import NavbarController from "controllers/navbar_controller"
 import PhotoGalleryController from "controllers/photo_gallery_controller"
 import PropertyCarouselController from "controllers/property_carousel_controller"
@@ -34,6 +35,7 @@ application.register("filters", FiltersController)
 application.register("hero-slider", HeroSliderController)
 application.register("lead-capture", LeadCaptureController)
 application.register("location-filter", LocationFilterController)
+application.register("marketing-tracker", MarketingTrackerController)
 application.register("navbar", NavbarController)
 application.register("photo-gallery", PhotoGalleryController)
 application.register("property-carousel", PropertyCarouselController)

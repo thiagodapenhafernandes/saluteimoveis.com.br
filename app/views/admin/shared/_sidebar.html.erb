@@ -120,17 +120,27 @@
 
     <!-- Marketing -->
     <% if can_access.call(:manage, :marketing) %>
+      <% marketing_controllers = ['landing_pages', 'marketing_campaigns', 'marketing_opportunities', 'marketing_properties', 'marketing_alerts', 'marketing_tools', 'seo_dashboard', 'seo_settings', 'banners', 'home_sections', 'contact_settings', 'layout_settings', 'footer_settings', 'home_settings'] %>
       <li class="sidebar-menu-item">
-        <a href="#submenu-marketing" data-bs-toggle="collapse" class="d-flex justify-content-between align-items-center <%= ['landing_pages', 'seo_settings', 'banners', 'home_sections', 'contact_settings', 'layout_settings', 'footer_settings', 'home_settings'].include?(controller_name) ? '' : 'collapsed' %>">
+        <a href="#submenu-marketing" data-bs-toggle="collapse" class="d-flex justify-content-between align-items-center <%= marketing_controllers.include?(controller_name) ? '' : 'collapsed' %>">
           <span><i class="bi bi-megaphone"></i><span class="ms-2">Marketing e Conteúdo</span></span>
           <i class="bi bi-chevron-down small"></i>
         </a>
-        <div class="collapse <%= ['landing_pages', 'seo_settings', 'banners', 'home_sections', 'contact_settings', 'layout_settings', 'footer_settings', 'home_settings'].include?(controller_name) ? 'show' : '' %>" id="submenu-marketing">
+        <div class="collapse <%= marketing_controllers.include?(controller_name) ? 'show' : '' %>" id="submenu-marketing">
           <ul class="sidebar-menu ps-3 mt-1 bg-light rounded">
+            <li class="px-3 pt-2 pb-1 small text-uppercase text-muted fw-bold">Estratégia</li>
+            <li class="sidebar-menu-item"><%= link_to admin_seo_dashboard_path, class: controller_name == 'seo_dashboard' ? 'active' : '' do %><i class="bi bi-graph-up-arrow"></i><span>Dashboard SEO</span><% end %></li>
+            <li class="sidebar-menu-item"><%= link_to admin_marketing_opportunities_path, class: controller_name == 'marketing_opportunities' ? 'active' : '' do %><i class="bi bi-lightbulb"></i><span>Oportunidades</span><% end %></li>
+            <li class="sidebar-menu-item"><%= link_to admin_marketing_campaigns_path, class: controller_name == 'marketing_campaigns' ? 'active' : '' do %><i class="bi bi-bullseye"></i><span>Campanhas</span><% end %></li>
+            <li class="sidebar-menu-item"><%= link_to admin_marketing_tools_path, class: controller_name == 'marketing_tools' ? 'active' : '' do %><i class="bi bi-link-45deg"></i><span>UTM Builder</span><% end %></li>
+            <li class="sidebar-menu-item"><%= link_to admin_marketing_properties_path, class: controller_name == 'marketing_properties' ? 'active' : '' do %><i class="bi bi-house-heart"></i><span>Imóveis com Potencial</span><% end %></li>
+            <li class="sidebar-menu-item"><%= link_to admin_marketing_alerts_path, class: controller_name == 'marketing_alerts' ? 'active' : '' do %><i class="bi bi-exclamation-triangle"></i><span>Alertas</span><% end %></li>
+            <li class="sidebar-menu-item"><%= link_to admin_seo_settings_path, class: controller_name == 'seo_settings' ? 'active' : '' do %><i class="bi bi-search"></i><span>Páginas SEO</span><% end %></li>
+            <li class="px-3 pt-2 pb-1 small text-uppercase text-muted fw-bold">Conteúdo</li>
             <li class="sidebar-menu-item"><%= link_to admin_landing_pages_path, class: controller_name == 'landing_pages' ? 'active' : '' do %><i class="bi bi-file-earmark-post"></i><span>Landing Pages</span><% end %></li>
-            <li class="sidebar-menu-item"><%= link_to admin_seo_settings_path, class: controller_name == 'seo_settings' ? 'active' : '' do %><i class="bi bi-search"></i><span>SEO Técnico</span><% end %></li>
             <li class="sidebar-menu-item"><%= link_to admin_banners_path, class: controller_name == 'banners' ? 'active' : '' do %><i class="bi bi-image"></i><span>Banners</span><% end %></li>
             <li class="sidebar-menu-item"><%= link_to admin_home_sections_path, class: controller_name == 'home_sections' ? 'active' : '' do %><i class="bi bi-layout-text-sidebar"></i><span>Seções da Home</span><% end %></li>
+            <li class="px-3 pt-2 pb-1 small text-uppercase text-muted fw-bold">Site</li>
             <li class="sidebar-menu-item"><%= link_to edit_admin_contact_setting_path, class: controller_name == 'contact_settings' ? 'active' : '' do %><i class="bi bi-telephone"></i><span>Contato</span><% end %></li>
             <li class="sidebar-menu-item"><%= link_to edit_admin_layout_setting_path, class: controller_name == 'layout_settings' ? 'active' : '' do %><i class="bi bi-palette"></i><span>Aparência</span><% end %></li>
             <li class="sidebar-menu-item"><%= link_to edit_admin_footer_setting_path, class: controller_name == 'footer_settings' ? 'active' : '' do %><i class="bi bi-layout-sidebar"></i><span>Rodapé</span><% end %></li>
