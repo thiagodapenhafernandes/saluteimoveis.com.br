@@ -7,6 +7,14 @@ class LeadsController < ApplicationController
     apply_share_attribution(@lead)
     
     if @lead.save
+      Seo::ConversionTracker.record!(
+        event_type: "lead_created",
+        request: request,
+        lead: @lead,
+        habitation: Habitation.find_by(id: @lead.property_id),
+        metadata: { origin: @lead.origin, lead_type: @lead.lead_type }
+      )
+
       # Disparar Webhook
       # Disparar Webhook para todos os endpoints configurados
       WebhookService.send_form_data('whatsapp_lead', @lead.attributes.merge(

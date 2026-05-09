@@ -1,4 +1,4 @@
-\restrict mYmPmUncbiqujJiDI6Qw2Hg7Q9wOFpb1csMIhdxbWDJdjLyfsIKkOkHktOzBlNJ
+\restrict h19TYlTJ9lg8dSotBUWR7PwehSMIZjoM7xfHMvtBmMLO8EEdezE7qeoNCbtHeUg
 
 -- Dumped from database version 18.3 (Homebrew)
 -- Dumped by pg_dump version 18.3 (Homebrew)
@@ -1698,6 +1698,57 @@ ALTER SEQUENCE public.manual_checkin_requests_id_seq OWNED BY public.manual_chec
 
 
 --
+-- Name: marketing_campaigns; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.marketing_campaigns (
+    id bigint NOT NULL,
+    seo_setting_id bigint,
+    admin_user_id bigint,
+    name character varying NOT NULL,
+    channel character varying DEFAULT 'organic'::character varying NOT NULL,
+    status character varying DEFAULT 'idea'::character varying NOT NULL,
+    target_url character varying,
+    objective character varying,
+    budget_cents integer DEFAULT 0 NOT NULL,
+    starts_on date,
+    ends_on date,
+    priority integer DEFAULT 3 NOT NULL,
+    notes text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    slug character varying,
+    utm_source character varying,
+    utm_medium character varying,
+    utm_campaign character varying,
+    utm_term character varying,
+    utm_content character varying,
+    clicks_count integer DEFAULT 0 NOT NULL,
+    conversions_count integer DEFAULT 0 NOT NULL,
+    last_clicked_at timestamp(6) without time zone
+);
+
+
+--
+-- Name: marketing_campaigns_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.marketing_campaigns_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: marketing_campaigns_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.marketing_campaigns_id_seq OWNED BY public.marketing_campaigns.id;
+
+
+--
 -- Name: meta_facebook_pages; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2137,6 +2188,46 @@ ALTER SEQUENCE public.seo_change_logs_id_seq OWNED BY public.seo_change_logs.id;
 
 
 --
+-- Name: seo_conversion_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.seo_conversion_events (
+    id bigint NOT NULL,
+    seo_setting_id bigint,
+    marketing_campaign_id bigint,
+    lead_id bigint,
+    habitation_id bigint,
+    event_type character varying NOT NULL,
+    visitor_hash character varying,
+    path character varying,
+    source_path character varying,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    occurred_at timestamp(6) without time zone NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: seo_conversion_events_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.seo_conversion_events_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: seo_conversion_events_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.seo_conversion_events_id_seq OWNED BY public.seo_conversion_events.id;
+
+
+--
 -- Name: seo_focus_keywords; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2167,6 +2258,45 @@ CREATE SEQUENCE public.seo_focus_keywords_id_seq
 --
 
 ALTER SEQUENCE public.seo_focus_keywords_id_seq OWNED BY public.seo_focus_keywords.id;
+
+
+--
+-- Name: seo_page_visits; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.seo_page_visits (
+    id bigint NOT NULL,
+    seo_setting_id bigint NOT NULL,
+    visitor_hash character varying NOT NULL,
+    session_hash character varying,
+    user_agent_hash character varying,
+    path character varying NOT NULL,
+    visited_on date NOT NULL,
+    visits_count integer DEFAULT 1 NOT NULL,
+    first_seen_at timestamp(6) without time zone NOT NULL,
+    last_seen_at timestamp(6) without time zone NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: seo_page_visits_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.seo_page_visits_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: seo_page_visits_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.seo_page_visits_id_seq OWNED BY public.seo_page_visits.id;
 
 
 --
@@ -3072,6 +3202,13 @@ ALTER TABLE ONLY public.manual_checkin_requests ALTER COLUMN id SET DEFAULT next
 
 
 --
+-- Name: marketing_campaigns id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.marketing_campaigns ALTER COLUMN id SET DEFAULT nextval('public.marketing_campaigns_id_seq'::regclass);
+
+
+--
 -- Name: meta_facebook_pages id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -3149,10 +3286,24 @@ ALTER TABLE ONLY public.seo_change_logs ALTER COLUMN id SET DEFAULT nextval('pub
 
 
 --
+-- Name: seo_conversion_events id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.seo_conversion_events ALTER COLUMN id SET DEFAULT nextval('public.seo_conversion_events_id_seq'::regclass);
+
+
+--
 -- Name: seo_focus_keywords id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.seo_focus_keywords ALTER COLUMN id SET DEFAULT nextval('public.seo_focus_keywords_id_seq'::regclass);
+
+
+--
+-- Name: seo_page_visits id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.seo_page_visits ALTER COLUMN id SET DEFAULT nextval('public.seo_page_visits_id_seq'::regclass);
 
 
 --
@@ -3570,6 +3721,14 @@ ALTER TABLE ONLY public.manual_checkin_requests
 
 
 --
+-- Name: marketing_campaigns marketing_campaigns_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.marketing_campaigns
+    ADD CONSTRAINT marketing_campaigns_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: meta_facebook_pages meta_facebook_pages_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3666,11 +3825,27 @@ ALTER TABLE ONLY public.seo_change_logs
 
 
 --
+-- Name: seo_conversion_events seo_conversion_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.seo_conversion_events
+    ADD CONSTRAINT seo_conversion_events_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: seo_focus_keywords seo_focus_keywords_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.seo_focus_keywords
     ADD CONSTRAINT seo_focus_keywords_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: seo_page_visits seo_page_visits_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.seo_page_visits
+    ADD CONSTRAINT seo_page_visits_pkey PRIMARY KEY (id);
 
 
 --
@@ -4756,6 +4931,62 @@ CREATE INDEX index_manual_checkin_requests_on_store_id ON public.manual_checkin_
 
 
 --
+-- Name: index_marketing_campaigns_on_admin_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_marketing_campaigns_on_admin_user_id ON public.marketing_campaigns USING btree (admin_user_id);
+
+
+--
+-- Name: index_marketing_campaigns_on_channel; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_marketing_campaigns_on_channel ON public.marketing_campaigns USING btree (channel);
+
+
+--
+-- Name: index_marketing_campaigns_on_last_clicked_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_marketing_campaigns_on_last_clicked_at ON public.marketing_campaigns USING btree (last_clicked_at);
+
+
+--
+-- Name: index_marketing_campaigns_on_priority; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_marketing_campaigns_on_priority ON public.marketing_campaigns USING btree (priority);
+
+
+--
+-- Name: index_marketing_campaigns_on_seo_setting_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_marketing_campaigns_on_seo_setting_id ON public.marketing_campaigns USING btree (seo_setting_id);
+
+
+--
+-- Name: index_marketing_campaigns_on_slug; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_marketing_campaigns_on_slug ON public.marketing_campaigns USING btree (slug);
+
+
+--
+-- Name: index_marketing_campaigns_on_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_marketing_campaigns_on_status ON public.marketing_campaigns USING btree (status);
+
+
+--
+-- Name: index_marketing_campaigns_on_utm_campaign; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_marketing_campaigns_on_utm_campaign ON public.marketing_campaigns USING btree (utm_campaign);
+
+
+--
 -- Name: index_meta_facebook_pages_on_page_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4952,6 +5183,62 @@ CREATE INDEX index_seo_change_logs_on_seo_setting_id_and_created_at ON public.se
 
 
 --
+-- Name: index_seo_conversion_events_on_event_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_seo_conversion_events_on_event_type ON public.seo_conversion_events USING btree (event_type);
+
+
+--
+-- Name: index_seo_conversion_events_on_habitation_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_seo_conversion_events_on_habitation_id ON public.seo_conversion_events USING btree (habitation_id);
+
+
+--
+-- Name: index_seo_conversion_events_on_lead_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_seo_conversion_events_on_lead_id ON public.seo_conversion_events USING btree (lead_id);
+
+
+--
+-- Name: index_seo_conversion_events_on_marketing_campaign_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_seo_conversion_events_on_marketing_campaign_id ON public.seo_conversion_events USING btree (marketing_campaign_id);
+
+
+--
+-- Name: index_seo_conversion_events_on_occurred_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_seo_conversion_events_on_occurred_at ON public.seo_conversion_events USING btree (occurred_at);
+
+
+--
+-- Name: index_seo_conversion_events_on_seo_setting_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_seo_conversion_events_on_seo_setting_id ON public.seo_conversion_events USING btree (seo_setting_id);
+
+
+--
+-- Name: index_seo_conversion_events_on_visitor_hash; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_seo_conversion_events_on_visitor_hash ON public.seo_conversion_events USING btree (visitor_hash);
+
+
+--
+-- Name: index_seo_conversions_on_page_type_time; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_seo_conversions_on_page_type_time ON public.seo_conversion_events USING btree (seo_setting_id, event_type, occurred_at);
+
+
+--
 -- Name: index_seo_focus_keywords_on_seo_setting_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4970,6 +5257,34 @@ CREATE UNIQUE INDEX index_seo_focus_keywords_on_seo_setting_id_and_keyword ON pu
 --
 
 CREATE INDEX index_seo_focus_keywords_on_seo_setting_id_and_position ON public.seo_focus_keywords USING btree (seo_setting_id, "position");
+
+
+--
+-- Name: index_seo_page_visits_on_page_visitor_day; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_seo_page_visits_on_page_visitor_day ON public.seo_page_visits USING btree (seo_setting_id, visitor_hash, visited_on);
+
+
+--
+-- Name: index_seo_page_visits_on_seo_setting_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_seo_page_visits_on_seo_setting_id ON public.seo_page_visits USING btree (seo_setting_id);
+
+
+--
+-- Name: index_seo_page_visits_on_visited_on_and_seo_setting_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_seo_page_visits_on_visited_on_and_seo_setting_id ON public.seo_page_visits USING btree (visited_on, seo_setting_id);
+
+
+--
+-- Name: index_seo_page_visits_on_visitor_hash; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_seo_page_visits_on_visitor_hash ON public.seo_page_visits USING btree (visitor_hash);
 
 
 --
@@ -5400,6 +5715,22 @@ ALTER TABLE ONLY public.solid_queue_recurring_executions
 
 
 --
+-- Name: marketing_campaigns fk_rails_32263aaa14; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.marketing_campaigns
+    ADD CONSTRAINT fk_rails_32263aaa14 FOREIGN KEY (seo_setting_id) REFERENCES public.seo_settings(id);
+
+
+--
+-- Name: seo_conversion_events fk_rails_354f47c6c3; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.seo_conversion_events
+    ADD CONSTRAINT fk_rails_354f47c6c3 FOREIGN KEY (seo_setting_id) REFERENCES public.seo_settings(id);
+
+
+--
 -- Name: solid_queue_failed_executions fk_rails_39bbc7a631; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5445,6 +5776,14 @@ ALTER TABLE ONLY public.solid_queue_blocked_executions
 
 ALTER TABLE ONLY public.check_ins
     ADD CONSTRAINT fk_rails_4ffa2041a7 FOREIGN KEY (admin_user_id) REFERENCES public.admin_users(id);
+
+
+--
+-- Name: seo_conversion_events fk_rails_52d0966b31; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.seo_conversion_events
+    ADD CONSTRAINT fk_rails_52d0966b31 FOREIGN KEY (habitation_id) REFERENCES public.habitations(id);
 
 
 --
@@ -5509,6 +5848,14 @@ ALTER TABLE ONLY public.home_hero_slides
 
 ALTER TABLE ONLY public.checkin_audit_logs
     ADD CONSTRAINT fk_rails_6ab3e3b6ba FOREIGN KEY (actor_admin_user_id) REFERENCES public.admin_users(id);
+
+
+--
+-- Name: seo_page_visits fk_rails_6b14e26baa; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.seo_page_visits
+    ADD CONSTRAINT fk_rails_6b14e26baa FOREIGN KEY (seo_setting_id) REFERENCES public.seo_settings(id);
 
 
 --
@@ -5656,6 +6003,22 @@ ALTER TABLE ONLY public.photography_schedule_blocks
 
 
 --
+-- Name: marketing_campaigns fk_rails_bac0f15c01; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.marketing_campaigns
+    ADD CONSTRAINT fk_rails_bac0f15c01 FOREIGN KEY (admin_user_id) REFERENCES public.admin_users(id);
+
+
+--
+-- Name: seo_conversion_events fk_rails_c272ff638d; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.seo_conversion_events
+    ADD CONSTRAINT fk_rails_c272ff638d FOREIGN KEY (marketing_campaign_id) REFERENCES public.marketing_campaigns(id);
+
+
+--
 -- Name: check_ins fk_rails_c2a6d4a105; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5701,6 +6064,14 @@ ALTER TABLE ONLY public.store_shifts
 
 ALTER TABLE ONLY public.seo_change_logs
     ADD CONSTRAINT fk_rails_d4abca6a38 FOREIGN KEY (seo_setting_id) REFERENCES public.seo_settings(id);
+
+
+--
+-- Name: seo_conversion_events fk_rails_d8efb77461; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.seo_conversion_events
+    ADD CONSTRAINT fk_rails_d8efb77461 FOREIGN KEY (lead_id) REFERENCES public.leads(id);
 
 
 --
@@ -5779,11 +6150,14 @@ ALTER TABLE ONLY public.push_subscriptions
 -- PostgreSQL database dump complete
 --
 
-\unrestrict mYmPmUncbiqujJiDI6Qw2Hg7Q9wOFpb1csMIhdxbWDJdjLyfsIKkOkHktOzBlNJ
+\unrestrict h19TYlTJ9lg8dSotBUWR7PwehSMIZjoM7xfHMvtBmMLO8EEdezE7qeoNCbtHeUg
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260509133000'),
+('20260509124500'),
+('20260509123000'),
 ('20260508143000'),
 ('20260508133000'),
 ('20260508121500'),

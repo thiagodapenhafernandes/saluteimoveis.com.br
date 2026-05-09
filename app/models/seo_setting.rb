@@ -7,6 +7,9 @@ class SeoSetting < ApplicationRecord
   has_one_attached :og_image_file
   has_many :focus_keywords, -> { ordered }, class_name: "SeoFocusKeyword", dependent: :destroy
   has_many :change_logs, -> { recent }, class_name: "SeoChangeLog", dependent: :destroy
+  has_many :page_visits, class_name: "SeoPageVisit", dependent: :destroy
+  has_many :marketing_campaigns, dependent: :nullify
+  has_many :seo_conversion_events, dependent: :nullify
   
   # Validations
   validates :page_name, presence: true, uniqueness: true

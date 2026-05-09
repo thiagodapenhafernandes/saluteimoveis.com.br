@@ -100,6 +100,9 @@ application.register("location-filter", LocationFilterController)
 import MaskController from "controllers/mask_controller"
 application.register("mask", MaskController)
 
+import MarketingTrackerController from "controllers/marketing_tracker_controller"
+application.register("marketing-tracker", MarketingTrackerController)
+
 import MetaRulesController from "controllers/meta_rules_controller"
 application.register("meta-rules", MetaRulesController)
 

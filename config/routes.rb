@@ -44,7 +44,13 @@ Rails.application.routes.draw do
     resource :ai_integration, only: [:show, :update] do
       post :generate_batch
     end
+    get :seo_dashboard, to: "seo_dashboard#index"
+    get :marketing_opportunities, to: "marketing_opportunities#index"
+    get :marketing_properties, to: "marketing_properties#index"
+    get :marketing_alerts, to: "marketing_alerts#index"
+    get :marketing_tools, to: "marketing_tools#index"
     get :image_migration_status, to: "image_migration_status#index"
+    resources :marketing_campaigns, except: :show
     resources :seo_settings, except: :show do
       collection do
         patch :update_strategy
@@ -184,6 +190,7 @@ Rails.application.routes.draw do
 
   # Root
   root 'home#index'
+  post "marketing/events", to: "marketing_events#create", as: :marketing_events
   get "sitemap.xml", to: "sitemaps#show", defaults: { format: :xml }, as: :sitemap
   
   # Home pages

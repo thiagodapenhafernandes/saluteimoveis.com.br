@@ -84,7 +84,17 @@
     <div class="absolute inset-0 z-[12] pointer-events-none bg-gradient-to-b from-black/10 via-transparent to-black/15"></div>
     
     <!-- Link Overlay -->
-    <%= link_to habitation_path(property), class: "absolute inset-0 z-10" %>
+    <%= link_to habitation_path(property),
+                class: "absolute inset-0 z-10",
+                data: {
+                  controller: "marketing-tracker",
+                  action: "click->marketing-tracker#track",
+                  marketing_tracker_event_type_value: "property_card_click",
+                  marketing_tracker_placement_value: "property_card_image",
+                  marketing_tracker_label_value: property.titulo_anuncio,
+                  marketing_tracker_target_url_value: habitation_path(property),
+                  marketing_tracker_habitation_id_value: property.id
+                } %>
   </div>
 
   <!-- Content -->
@@ -135,7 +145,13 @@
           </p>
           <button type="button"
                   class="w-8 h-8 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-sm flex items-center justify-center transition-transform hover:scale-110 focus:outline-none"
-                  data-action="click->lead-capture#open"
+                  data-action="click->marketing-tracker#track click->lead-capture#open"
+                  data-controller="marketing-tracker"
+                  data-marketing-tracker-event-type-value="whatsapp_click"
+                  data-marketing-tracker-placement-value="property_card"
+                  data-marketing-tracker-label-value="<%= property.titulo_anuncio %>"
+                  data-marketing-tracker-target-url-value="<%= habitation_path(property) %>"
+                  data-marketing-tracker-habitation-id-value="<%= property.id %>"
                   data-property-id="<%= property.id %>"
                   data-property-code="<%= property.codigo %>"
                   data-property-title="<%= property.titulo_anuncio %>"
@@ -152,7 +168,13 @@
           </p>
           <button type="button"
                   class="w-8 h-8 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-sm flex items-center justify-center transition-transform hover:scale-110 focus:outline-none"
-                  data-action="click->lead-capture#open"
+                  data-action="click->marketing-tracker#track click->lead-capture#open"
+                  data-controller="marketing-tracker"
+                  data-marketing-tracker-event-type-value="whatsapp_click"
+                  data-marketing-tracker-placement-value="property_card"
+                  data-marketing-tracker-label-value="<%= property.titulo_anuncio %>"
+                  data-marketing-tracker-target-url-value="<%= habitation_path(property) %>"
+                  data-marketing-tracker-habitation-id-value="<%= property.id %>"
                   data-property-id="<%= property.id %>"
                   data-property-code="<%= property.codigo %>"
                   data-property-title="<%= property.titulo_anuncio %>"
