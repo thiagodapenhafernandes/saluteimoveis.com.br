@@ -99,8 +99,8 @@ module Admin
             return
           end
 
-          @habitation.update_columns(intake_status: "submitted_for_admin_review", submitted_for_review_at: Time.current, intake_step: current_step)
-          redirect_to admin_captacao_path(@habitation), notice: "Captação enviada para aprovação administrativa."
+          submitted_records = HabitationIntakeSplitter.new(@habitation).call!
+          redirect_to admin_captacao_path(@habitation), notice: submission_notice(submitted_records)
         else
           next_step = @habitation.next_step
           next_step = @habitation.next_step if next_step == "visitas" && @habitation.skip_visitas?
@@ -136,8 +136,8 @@ module Admin
       end
 
       if @habitation.intake_ready_for_admin_review? && @habitation.save
-        @habitation.update!(intake_status: "submitted_for_admin_review", submitted_for_review_at: Time.current)
-        redirect_to admin_captacao_path(@habitation), notice: "Captação enviada para aprovação administrativa."
+        submitted_records = HabitationIntakeSplitter.new(@habitation).call!
+        redirect_to admin_captacao_path(@habitation), notice: submission_notice(submitted_records)
       else
         load_form_options
         @missing_requirements = @habitation.intake_missing_requirements
@@ -298,6 +298,9 @@ module Admin
           missing << "Informe a quantidade de banheiros."
         end
         missing << "Marque ao menos uma característica do imóvel." if @habitation.caracteristicas.blank?
+        missing
+      when "infraestrutura"
+        missing = []
         missing << "Marque ao menos uma característica do edifício." if !@habitation.property_kind_terreno? && @habitation.infra_estrutura.blank?
         missing
       when "negociacao"
@@ -346,6 +349,7 @@ module Admin
         fields[:dormitorios] = true if @habitation.property_kind_residencial? && @habitation.dormitorios_qtd.to_i <= 0
         fields[:banheiros] = true if @habitation.property_kind_residencial? && @habitation.banheiros_qtd.to_i <= 0
         fields[:caracteristicas_imovel] = true if @habitation.caracteristicas.blank?
+      when "infraestrutura"
         fields[:caracteristicas_predio] = true if !@habitation.property_kind_terreno? && @habitation.infra_estrutura.blank?
       when "negociacao"
         fields[:valor_venda] = true if @habitation.requires_sale_price? && !@habitation.valid_intake_sale_price?
@@ -471,6 +475,7 @@ module Admin
                         end
       attrs["categoria"] = mapped_category if mapped_category.present?
       if (modalidade = attrs.delete("modalidade")).present?
+        attrs["intake_modalidade"] = modalidade
         attrs["status"] = modalidade.in?(%w[locacao_anual locacao_diaria]) ? "Aluguel" : "Venda"
       end
       attrs["proprietario"] = attrs.delete("proprietario_nome") if attrs["proprietario_nome"].present?
@@ -518,6 +523,12 @@ module Admin
         attrs["address_attributes"]["id"] = @habitation.address.id if @habitation.address.present?
       end
       attrs.except("salas", "sacada", "terraco", "dependencia_empregada", "precisa_reforma", "distancia_praia", "cidade_permuta", "outras_taxas", "dias_visitas", "extras", "proprietario_cidade")
+    end
+
+    def submission_notice(submitted_records)
+      return "Captação enviada para aprovação administrativa." if submitted_records.size == 1
+
+      "Captação enviada para aprovação administrativa. Foram gerados cadastros separados para venda e locação."
     end
 
     def sale_reason_options

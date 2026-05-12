@@ -58,6 +58,7 @@ class Habitation < ApplicationRecord
   ].freeze
 
   INTAKE_ORIGIN_BROKER = "broker_intake".freeze
+  INTAKE_MODALITIES = %w[venda locacao_anual ambos locacao_diaria].freeze
   INTAKE_STATUSES = {
     "draft" => "Rascunho",
     "submitted_for_admin_review" => "Em revisão administrativa",
@@ -286,6 +287,8 @@ class Habitation < ApplicationRecord
   end
 
   def modalidade
+    return intake_modalidade if intake_modalidade.in?(INTAKE_MODALITIES)
+
     if valor_venda_cents.to_i.positive? && valor_locacao_cents.to_i.positive?
       "ambos"
     elsif rental_intake?
@@ -296,7 +299,9 @@ class Habitation < ApplicationRecord
   end
 
   def modalidade=(value)
-    self.status = value.to_s.in?(%w[locacao_anual locacao_diaria]) ? "Aluguel" : "Venda"
+    normalized = value.to_s.presence_in(INTAKE_MODALITIES)
+    self.intake_modalidade = normalized
+    self.status = normalized.in?(%w[locacao_anual locacao_diaria]) ? "Aluguel" : "Venda"
   end
 
   def requires_sale_price?
@@ -524,10 +529,17 @@ class Habitation < ApplicationRecord
   end
 
   def rental_intake?
+    modalidade = intake_modalidade.presence
+    return true if modalidade.in?(%w[locacao_anual locacao_diaria ambos])
+    return false if modalidade == "venda"
+
     status.to_s.downcase.match?(/aluguel|loca/)
   end
 
   def sale_intake?
+    modalidade = intake_modalidade.presence
+    return true if modalidade.in?(%w[venda ambos])
+
     !rental_intake?
   end
 

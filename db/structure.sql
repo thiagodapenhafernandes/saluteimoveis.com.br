@@ -1,5 +1,3 @@
-\restrict h19TYlTJ9lg8dSotBUWR7PwehSMIZjoM7xfHMvtBmMLO8EEdezE7qeoNCbtHeUg
-
 -- Dumped from database version 18.3 (Homebrew)
 -- Dumped by pg_dump version 18.3 (Homebrew)
 
@@ -993,7 +991,9 @@ CREATE TABLE public.habitations (
     salute_rental_management_answer character varying,
     aceita_permuta_answer character varying,
     intake_step character varying DEFAULT 'intro'::character varying NOT NULL,
-    motivo_venda character varying
+    motivo_venda character varying,
+    intake_modalidade character varying,
+    intake_group_uuid character varying
 );
 
 
@@ -4616,6 +4616,20 @@ CREATE INDEX index_habitations_on_infra_estrutura ON public.habitations USING gi
 
 
 --
+-- Name: index_habitations_on_intake_group_uuid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_intake_group_uuid ON public.habitations USING btree (intake_group_uuid);
+
+
+--
+-- Name: index_habitations_on_intake_modalidade; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_intake_modalidade ON public.habitations USING btree (intake_modalidade);
+
+
+--
 -- Name: index_habitations_on_intake_origin; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -6150,11 +6164,11 @@ ALTER TABLE ONLY public.push_subscriptions
 -- PostgreSQL database dump complete
 --
 
-\unrestrict h19TYlTJ9lg8dSotBUWR7PwehSMIZjoM7xfHMvtBmMLO8EEdezE7qeoNCbtHeUg
-
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260512180000'),
+('20260512120000'),
 ('20260509133000'),
 ('20260509124500'),
 ('20260509123000'),
@@ -6283,4 +6297,3 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20251122130154'),
 ('20251122125348'),
 ('20251122125042');
-

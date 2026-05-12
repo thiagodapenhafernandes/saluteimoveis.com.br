@@ -102,8 +102,44 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     get edit_admin_captacao_path(intake, step: "caracteristicas")
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include("Vista panorâmica")
+    expect(response.body).to include("Vista Panorâmica")
+
+    get edit_admin_captacao_path(intake, step: "infraestrutura")
+
+    expect(response).to have_http_status(:ok)
     expect(response.body).to include("Espaço gourmet")
+  end
+
+  it "separa características do imóvel e do edifício em etapas diferentes" do
+    intake = create(:habitation, :broker_intake, admin_user: admin, intake_step: "caracteristicas")
+
+    patch admin_captacao_path(intake), params: {
+      current_step: "caracteristicas",
+      direction: "forward",
+      habitation: {
+        area_total: "120",
+        dormitorios: "2",
+        banheiros: "2",
+        caracteristicas_imovel: ["Sacada"]
+      }
+    }
+
+    expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "infraestrutura"))
+  end
+
+  it "limpa opções técnicas e duplicadas na ficha de captação" do
+    AttributeOption.create!(context: "habitation", category: "feature", name: "ar_condicionado")
+    AttributeOption.create!(context: "habitation", category: "feature", name: "Ar Condicionado")
+    AttributeOption.create!(context: "habitation", category: "feature", name: "banheiro_social")
+    intake = create(:habitation, :broker_intake, admin_user: admin, intake_step: "caracteristicas")
+
+    get edit_admin_captacao_path(intake, step: "caracteristicas")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body.scan('value="Ar-condicionado"').size).to eq(1)
+    expect(response.body).to include("Banheiro Social")
+    expect(response.body).not_to include("ar_condicionado")
+    expect(response.body).not_to include("banheiro_social")
   end
 
   it "aceita valores monetários formatados na negociação" do
@@ -127,6 +163,16 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(intake.valor_condominio_cents).to eq(100_000)
     expect(intake.valor_iptu_cents).to eq(50_000)
     expect(intake.saldo_devedor_cents).to eq(12_000_000)
+  end
+
+  it "mantém venda e locação como modalidade única durante o rascunho" do
+    intake = create(:habitation, :broker_intake, admin_user: admin, intake_step: "negociacao", intake_modalidade: "ambos")
+
+    get edit_admin_captacao_path(intake, step: "negociacao")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Valor de venda")
+    expect(response.body).to include("Valor de locação")
   end
 
   it "mantém rascunho incompleto sem valor, mas bloqueia envio para revisão" do
@@ -217,5 +263,55 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     post release_to_site_admin_captacao_path(intake)
     expect(response).to redirect_to(admin_captacao_path(intake))
     expect(intake.reload).to have_attributes(intake_status: "published", exibir_no_site_flag: true)
+  end
+
+  it "desdobra venda e locação em dois cadastros ao enviar para revisão" do
+    intake = create(
+      :habitation,
+      :broker_intake,
+      admin_user: admin,
+      intake_modalidade: "ambos",
+      valor_venda_cents: 1_200_000_00,
+      valor_locacao_cents: 8_500_00,
+      salute_rental_management_answer: "sim"
+    )
+    intake.create_address!(
+      cep: "88330-100",
+      logradouro: "Rua Dupla",
+      numero: "200",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+    intake.autorizacoes_venda.attach(
+      io: StringIO.new("autorizacao"),
+      filename: "autorizacao.txt",
+      content_type: "text/plain"
+    )
+
+    expect {
+      post submit_for_review_admin_captacao_path(intake)
+    }.to change { Habitation.broker_intakes.count }.by(1)
+
+    expect(response).to redirect_to(admin_captacao_path(intake))
+    sale = intake.reload
+    rental = Habitation.where(intake_group_uuid: sale.intake_group_uuid).where.not(id: sale.id).sole
+    expect(sale).to have_attributes(
+      intake_status: "submitted_for_admin_review",
+      intake_modalidade: "venda",
+      status: "Venda",
+      valor_venda_cents: 1_200_000_00,
+      valor_locacao_cents: 0
+    )
+    expect(rental).to have_attributes(
+      intake_status: "submitted_for_admin_review",
+      intake_modalidade: "locacao_anual",
+      status: "Aluguel",
+      valor_venda_cents: 0,
+      valor_locacao_cents: 8_500_00,
+      intake_group_uuid: sale.intake_group_uuid
+    )
+    expect(rental.address.logradouro).to eq("Rua Dupla")
+    expect(rental.autorizacoes_venda).to be_attached
   end
 end

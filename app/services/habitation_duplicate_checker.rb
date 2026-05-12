@@ -33,7 +33,14 @@ class HabitationDuplicateChecker
 
   def base_scope
     scope = Habitation.left_outer_joins(:address).includes(:address, :admin_user)
-    @ignored_id.present? ? scope.where.not(id: @ignored_id) : scope
+    if @ignored_id.present?
+      scope = scope.where.not(id: @ignored_id)
+      ignored_group_uuid = Habitation.where(id: @ignored_id).pick(:intake_group_uuid)
+      if ignored_group_uuid.present?
+        scope = scope.where("habitations.intake_group_uuid IS NULL OR habitations.intake_group_uuid != ?", ignored_group_uuid)
+      end
+    end
+    scope
   end
 
   def complete_identity?

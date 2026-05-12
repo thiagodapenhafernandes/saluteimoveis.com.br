@@ -14,7 +14,7 @@ class Captacao < ApplicationRecord
   enum property_kind: { residencial: 0, sala_comercial: 1, terreno: 2 }, _prefix: true
   enum modalidade:    { venda: 0, locacao_anual: 1, ambos: 2, locacao_diaria: 3 }, _prefix: true
 
-  STEPS = %w[intro proprietario endereco caracteristicas negociacao visitas fotos review].freeze
+  STEPS = %w[intro proprietario endereco caracteristicas infraestrutura negociacao visitas fotos review].freeze
 
   # Validações por step — só quando avança pra frente
   with_options on: :intro do
