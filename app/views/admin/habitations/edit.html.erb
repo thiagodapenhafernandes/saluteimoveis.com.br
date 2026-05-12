@@ -69,6 +69,16 @@
           <%= [@habitation.endereco, @habitation.bairro, @habitation.cidade].compact_blank.join(" · ") %>
         </div>
       <% end %>
+      <% if @habitation.broker_intake? && @habitation.intake_submitted_for_admin_review? %>
+        <div class="mt-2">
+          <span class="badge bg-primary-subtle text-primary border">Captação finalizada</span>
+          <span class="small text-muted ms-1">Complete o cadastro e devolva para o corretor publicar no site.</span>
+        </div>
+      <% elsif @habitation.broker_intake? && @habitation.intake_admin_approved? %>
+        <div class="mt-2">
+          <span class="badge bg-success-subtle text-success border">Liberado para o corretor</span>
+        </div>
+      <% end %>
     </div>
     <div class="actions d-flex gap-2">
       <%= link_to admin_habitations_path, class: "btn btn-outline-secondary btn-sm" do %>

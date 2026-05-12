@@ -1,25 +1,28 @@
 <%
   kind = @captacao.property_kind.to_s
-  features_imovel = case kind
-                    when "residencial"
-                      ["Armários nos quartos", "Cozinha planejada", "Ar-condicionado", "Aquecimento a gás",
-                       "Fechadura digital", "Lavabo", "Piscina", "Churrasqueira", "Área de serviço"]
-                    when "sala_comercial"
-                      ["Ar-condicionado", "Recepção", "Sanitários", "Copa/cozinha", "Piso elevado", "Sprinklers",
-                       "Sistema de segurança", "Divisórias prontas"]
-                    else  # terreno
-                      ["Murado", "Cercado", "Aterrado", "Com edificação", "Esquina", "Frente para mar"]
-                    end
+  fallback_features_imovel = case kind
+                             when "residencial"
+                               ["Armários nos quartos", "Cozinha planejada", "Ar-condicionado", "Aquecimento a gás",
+                                "Fechadura digital", "Lavabo", "Piscina", "Churrasqueira", "Área de serviço"]
+                             when "sala_comercial"
+                               ["Ar-condicionado", "Recepção", "Sanitários", "Copa/cozinha", "Piso elevado", "Sprinklers",
+                                "Sistema de segurança", "Divisórias prontas"]
+                             else  # terreno
+                               ["Murado", "Cercado", "Aterrado", "Com edificação", "Esquina", "Frente para mar"]
+                             end
 
-  features_predio = case kind
-                    when "residencial"
-                      ["Elevador", "Salão de festas", "Academia", "Playground", "Piscina", "Churrasqueira",
-                       "Portaria 24h", "Quadra poliesportiva", "Sauna", "Bicicletário", "Pet place", "Coworking"]
-                    when "sala_comercial"
-                      ["Elevador", "Gerador", "Estacionamento rotativo", "Portaria 24h", "Câmeras de segurança", "Heliponto"]
-                    else
-                      []
-                    end
+  fallback_features_predio = case kind
+                             when "residencial"
+                               ["Elevador", "Salão de festas", "Academia", "Playground", "Piscina", "Churrasqueira",
+                                "Portaria 24h", "Quadra poliesportiva", "Sauna", "Bicicletário", "Pet place", "Coworking"]
+                             when "sala_comercial"
+                               ["Elevador", "Gerador", "Estacionamento rotativo", "Portaria 24h", "Câmeras de segurança", "Heliponto"]
+                             else
+                               []
+                             end
+
+  features_imovel = (Array(@internal_features) + fallback_features_imovel + Array(@captacao.caracteristicas_imovel)).compact_blank.uniq
+  features_predio = (Array(@external_features) + fallback_features_predio + Array(@captacao.caracteristicas_predio)).compact_blank.uniq
 %>
 
 <h1 class="wizard-section-title"><i class="bi bi-rulers text-primary me-2"></i>Características</h1>

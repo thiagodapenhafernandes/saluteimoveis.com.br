@@ -34,14 +34,17 @@
       edit_url: edit_admin_habitation_path(development)
     }
   end
+  intake_waiting_admin_review = habitation.broker_intake? && habitation.intake_submitted_for_admin_review?
 %>
 <div class="habitation-form-ui"
-     data-controller="attribute-manager habitation-form"
+     data-controller="attribute-manager habitation-form habitation-duplicate-check"
      data-attribute-manager-modal-id-value="attributeManagerModal"
      data-habitation-form-categories-by-type-value="<%= json_escape(cadastro_categories.to_json) %>"
      data-habitation-form-tipo-by-type-value="<%= json_escape(cadastro_tipo_by_type.to_json) %>"
      data-habitation-form-developments-value="<%= json_escape(development_lookup.to_json) %>"
-     data-habitation-form-error-fields-value="<%= json_escape(habitation.errors.attribute_names.map(&:to_s).uniq.to_json) %>">
+     data-habitation-form-error-fields-value="<%= json_escape(habitation.errors.attribute_names.map(&:to_s).uniq.to_json) %>"
+     data-habitation-duplicate-check-url-value="<%= check_admin_habitation_duplicate_path %>"
+     data-habitation-duplicate-check-ignored-id-value="<%= habitation.id %>">
 <%= form_with(model: [:admin, habitation], local: true, class: "needs-validation", style: "min-height: 80vh;", data: { controller: "save-state", action: "submit->save-state#submitting turbo:submit-end->save-state#submitted" }) do |f| %>
   <%
     tab_titles = {
@@ -329,7 +332,7 @@
               <div class="col-12">
                 <div class="d-flex flex-wrap gap-2 pb-1">
                   <label class="custom-checkbox-card">
-                    <%= f.check_box :exibir_no_site_flag, class: "form-check-input mt-0" %>
+                    <%= f.check_box :exibir_no_site_flag, class: "form-check-input mt-0", disabled: intake_waiting_admin_review %>
                     <span class="small fw-semibold">Exibir no site</span>
                   </label>
                   <label class="custom-checkbox-card">
@@ -618,7 +621,14 @@
                   </div>
                   <div class="col-md-4" data-habitation-form-target="unitOnly">
                     <%= f.label :nome_empreendimento, "Nome do condomínio:", class: "form-label small fw-bold mb-1" %>
-                    <%= f.text_field :nome_empreendimento, class: "form-control form-control-sm", readonly: f.object.codigo_empreendimento.present?, data: { habitation_form_target: "developmentName" } %>
+                    <%= f.text_field :nome_empreendimento,
+                                     class: "form-control form-control-sm",
+                                     readonly: f.object.codigo_empreendimento.present?,
+                                     data: {
+                                       habitation_form_target: "developmentName",
+                                       habitation_duplicate_check_target: "building",
+                                       action: "input->habitation-duplicate-check#schedule blur->habitation-duplicate-check#check"
+                                     } %>
                     <div class="form-text text-muted extra-small mt-1">Campo gerenciado automaticamente para unidades vinculadas.</div>
                   </div>
                   <div class="col-md-3">
@@ -685,11 +695,24 @@
               </div>
               <div class="col-md-5">
                 <%= address_form.label :logradouro, "Logradouro:", class: "form-label small fw-bold mb-1" %>
-                <%= address_form.text_field :logradouro, class: "form-control form-control-sm", placeholder: "Rua, Av...", data: { cep_search_target: "logradouro" } %>
+                <%= address_form.text_field :logradouro,
+                                            class: "form-control form-control-sm",
+                                            placeholder: "Rua, Av...",
+                                            data: {
+                                              cep_search_target: "logradouro",
+                                              habitation_duplicate_check_target: "street",
+                                              action: "input->habitation-duplicate-check#schedule blur->habitation-duplicate-check#check"
+                                            } %>
               </div>
               <div class="col-md-1">
                 <%= address_form.label :numero, "Nº:", class: "form-label small fw-bold mb-1" %>
-                <%= address_form.text_field :numero, class: "form-control form-control-sm", data: { cep_search_target: "numero" } %>
+                <%= address_form.text_field :numero,
+                                            class: "form-control form-control-sm",
+                                            data: {
+                                              cep_search_target: "numero",
+                                              habitation_duplicate_check_target: "number",
+                                              action: "input->habitation-duplicate-check#schedule blur->habitation-duplicate-check#check"
+                                            } %>
               </div>
               <div class="col-md-2">
                 <%= address_form.label :complemento, "Compl.:", class: "form-label small fw-bold mb-1" %>
@@ -732,7 +755,12 @@
               </div>
               <div class="col-md-1">
                 <%= f.label :bloco, "Bloco:", class: "form-label small fw-bold mb-1" %>
-                <%= f.text_field :bloco, class: "form-control form-control-sm" %>
+                <%= f.text_field :bloco,
+                                 class: "form-control form-control-sm",
+                                 data: {
+                                   habitation_duplicate_check_target: "unit",
+                                   action: "input->habitation-duplicate-check#schedule blur->habitation-duplicate-check#check"
+                                 } %>
               </div>
               <div class="col-md-3">
                 <%= address_form.label :imediacoes, "Imediações:", class: "form-label small fw-bold mb-1" %>
@@ -764,7 +792,8 @@
                     <i class="bi bi-gear"></i>
                   </button>
                 </div>
-              </div>
+            </div>
+            <div data-habitation-duplicate-check-target="status"></div>
             </div>
           <% end %>
           </div>
@@ -1750,7 +1779,16 @@
       </div>
       <div class="habitation-action-buttons">
          <%= link_to "Cancelar", admin_habitations_path, class: "btn btn-outline-secondary px-4 px-md-4", data: { save_state_target: "cancelButton" } %>
-         <%= f.button type: "submit", class: "btn btn-primary px-4 px-md-5 fw-bold", data: { save_state_target: "submitButton" } do %>
+         <% if can_release_intake_to_broker?(habitation) %>
+           <%= f.button type: "submit",
+                        name: "release_to_broker_after_save",
+                        value: "1",
+                        class: "btn btn-success px-4 px-md-4 fw-bold",
+                        data: { habitation_duplicate_check_target: "submit" } do %>
+             Salvar e devolver ao corretor
+           <% end %>
+         <% end %>
+         <%= f.button type: "submit", class: "btn btn-primary px-4 px-md-5 fw-bold", data: { save_state_target: "submitButton", habitation_duplicate_check_target: "submit" } do %>
            <span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true" data-save-state-target="spinner"></span>
            <span data-save-state-target="label">Salvar Imóvel</span>
          <% end %>

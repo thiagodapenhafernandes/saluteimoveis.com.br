@@ -22,6 +22,9 @@ Rails.application.routes.draw do
         post :bulk_publish_eligibility
       end
     end
+    resource :habitation_duplicate, only: [] do
+      get :check
+    end
     
     resources :attribute_options, only: [:index, :create, :update, :destroy]
     resources :proprietors do

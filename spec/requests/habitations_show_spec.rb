@@ -238,5 +238,28 @@ RSpec.describe "Habitation details", type: :request do
       expect(codes).to include(matching.codigo)
       expect(codes).not_to include("9302")
     end
+
+    it "filters rent by rental price ranges" do
+      matching = create(:habitation, codigo: "9401", status: "Aluguel", valor_venda_cents: 0, valor_locacao_cents: 7_500_00)
+      create(:habitation, codigo: "9402", status: "Aluguel", valor_venda_cents: 0, valor_locacao_cents: 18_000_00)
+      create(
+        :habitation,
+        codigo: "9403",
+        status: "Aluguel",
+        valor_venda_cents: 0,
+        valor_locacao_cents: 4_000_00,
+        valor_condominio_cents: 3_000_00,
+        valor_iptu_cents: 1_000_00,
+        valor_total_aluguel_cents: 8_000_00
+      )
+
+      get habitations_path(price_range: "5000-10000", transaction_type: "aluguel", format: :json)
+
+      expect(response).to have_http_status(:ok)
+      codes = JSON.parse(response.body).map { |item| item.fetch("codigo") }
+      expect(codes).to include(matching.codigo)
+      expect(codes).not_to include("9402")
+      expect(codes).not_to include("9403")
+    end
   end
 end

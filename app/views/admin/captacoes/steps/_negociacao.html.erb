@@ -12,7 +12,7 @@
                      inputmode: "numeric",
                      class: field_state.call(:valor_venda),
                      data: { controller: "mask", mask_type_value: "currency" } %>
-    <% if field_invalid.call(:valor_venda) %><div class="invalid-feedback d-block">Informe o valor de venda.</div><% end %>
+    <% if field_invalid.call(:valor_venda) %><div class="invalid-feedback d-block"><%= @captacao.intake_sale_price_requirement_message %></div><% end %>
   </div>
 
   <div class="wizard-field-group">
@@ -65,7 +65,7 @@
                      inputmode: "numeric",
                      class: field_state.call(:valor_locacao),
                      data: { controller: "mask", mask_type_value: "currency" } %>
-    <% if field_invalid.call(:valor_locacao) %><div class="invalid-feedback d-block">Informe o valor de locação.</div><% end %>
+    <% if field_invalid.call(:valor_locacao) %><div class="invalid-feedback d-block"><%= @captacao.intake_rent_price_requirement_message %></div><% end %>
   </div>
 
   <div class="wizard-field-group">
@@ -119,7 +119,7 @@
 
 <div class="wizard-field-group">
   <label class="form-label">Outras taxas / contribuições</label>
-  <% %w[Fundo\ de\ reserva Taxa\ extra Lazer Água Gás].each do |opt| %>
+  <% ["Fundo de reserva", "Taxa extra", "Lazer", "Água", "Gás", "Taxa de lixo"].each do |opt| %>
     <% selected = Array(@captacao.outras_taxas).include?(opt) %>
     <label class="wizard-feature-chip <%= 'selected' if selected %>">
       <%= check_box_tag "captacao[outras_taxas][]", opt, selected, onchange: "this.closest('label').classList.toggle('selected', this.checked)" %>

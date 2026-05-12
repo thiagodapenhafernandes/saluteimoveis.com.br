@@ -79,6 +79,9 @@ application.register("habitation-brokers", HabitationBrokersController)
 import HabitationFormController from "controllers/habitation_form_controller"
 application.register("habitation-form", HabitationFormController)
 
+import HabitationDuplicateCheckController from "controllers/habitation_duplicate_check_controller"
+application.register("habitation-duplicate-check", HabitationDuplicateCheckController)
+
 import HelloController from "controllers/hello_controller"
 application.register("hello", HelloController)
 

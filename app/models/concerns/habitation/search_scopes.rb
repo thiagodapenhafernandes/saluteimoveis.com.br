@@ -562,6 +562,8 @@ module Habitation::SearchScopes
         if params[:transaction_type] == 'venda'
           query = query.where("valor_venda_cents BETWEEN ? AND ?", min_cents, max_cents) if min_cents > 0 || max_cents < Float::INFINITY
         elsif params[:transaction_type] == 'aluguel'
+          # No site, o filtro de locação considera apenas o aluguel base.
+          # Taxas como condomínio, IPTU e valor_total_aluguel_cents não entram nesta faixa.
           query = query.where("valor_locacao_cents BETWEEN ? AND ?", min_cents, max_cents) if min_cents > 0 || max_cents < Float::INFINITY
         else
           # Se não especificou tipo, busca em ambos (venda OU locação dentro do range)

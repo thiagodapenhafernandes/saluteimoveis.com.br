@@ -65,6 +65,7 @@ class Habitation < ApplicationRecord
     "returned_to_broker" => "Devolvido ao corretor",
     "published" => "Liberado para site"
   }.freeze
+  CATALOG_VISIBLE_INTAKE_STATUSES = %w[submitted_for_admin_review admin_approved published].freeze
   PHOTO_FLOW_CHOICES = {
     "upload" => "Enviar fotos",
     "schedule" => "Agendar fotógrafo"
@@ -74,6 +75,8 @@ class Habitation < ApplicationRecord
     "nao" => "Não"
   }.freeze
   PHOTO_SCHEDULE_URL = "https://calendly.com/fotografias-saluteimoveis/30min".freeze
+  MINIMUM_INTAKE_SALE_PRICE_CENTS = 10_000_00
+  MINIMUM_INTAKE_RENT_PRICE_CENTS = 100_00
 
   def self.photography_schedule_url
     Setting.get("photography_schedule_url", "").to_s.strip
@@ -304,6 +307,22 @@ class Habitation < ApplicationRecord
     modalidade.in?(%w[locacao_anual locacao_diaria ambos])
   end
 
+  def valid_intake_sale_price?
+    valor_venda_cents.to_i >= MINIMUM_INTAKE_SALE_PRICE_CENTS
+  end
+
+  def valid_intake_rent_price?
+    valor_locacao_cents.to_i >= MINIMUM_INTAKE_RENT_PRICE_CENTS
+  end
+
+  def intake_sale_price_requirement_message
+    "Informe um valor de venda válido (mínimo R$ 10.000)."
+  end
+
+  def intake_rent_price_requirement_message
+    "Informe um valor de locação válido (mínimo R$ 100)."
+  end
+
   def skip_visitas?
     property_kind_terreno?
   end
@@ -515,7 +534,8 @@ class Habitation < ApplicationRecord
   def intake_missing_requirements
     missing = []
     missing << "Dados do proprietário" if proprietario.blank? || (proprietario_celular.blank? && proprietario_email.blank?)
-    missing << "Valor de venda ou locação" if valor_venda_cents.to_i <= 0 && valor_locacao_cents.to_i <= 0
+    missing << intake_sale_price_requirement_message if requires_sale_price? && !valid_intake_sale_price?
+    missing << intake_rent_price_requirement_message if requires_rent_price? && !valid_intake_rent_price?
     missing << "Definições básicas" if categoria.blank? || status.blank?
     missing << "Nome do condomínio/empreendimento" if nome_empreendimento.blank?
     missing << "Endereço e localização" if address.blank? || cep.blank? || logradouro.blank? || bairro.blank? || cidade.blank? || uf.blank?

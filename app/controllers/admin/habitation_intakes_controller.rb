@@ -75,6 +75,13 @@ module Admin
         @habitation.assign_attributes(captacao_style_params)
       end
 
+      if duplicate_address_blocks_intake?(current_step)
+        assign_duplicate_address_errors
+        @step = current_step
+        render "admin/captacoes/edit", status: :unprocessable_entity
+        return
+      end
+
       if @habitation.save
         unless step_requirements_met?(current_step)
           assign_step_errors(current_step)
@@ -117,6 +124,16 @@ module Admin
 
     def submit_for_review
       @habitation.assign_attributes(captacao_style_params) if intake_param_key.present?
+
+      if duplicate_address_blocks_intake?("review")
+        load_form_options
+        assign_duplicate_address_errors
+        flash.now[:alert] = "Complete os campos obrigatórios antes de enviar."
+        @captacao = @habitation
+        @step = "review"
+        render "admin/captacoes/edit", status: :unprocessable_entity
+        return
+      end
 
       if @habitation.intake_ready_for_admin_review? && @habitation.save
         @habitation.update!(intake_status: "submitted_for_admin_review", submitted_for_review_at: Time.current)
@@ -223,7 +240,10 @@ module Admin
     def load_form_options
       @brokers = AdminUser.order(:name)
       @proprietors = Proprietor.order(:name).limit(300)
-      @internal_features = AttributeOption.where(context: "habitation", category: "feature").order(:name).pluck(:name)
+      @internal_features = (
+        AttributeOption.where(context: "habitation", category: "feature").order(:name).pluck(:name) +
+        Admin::HabitationsController::CUSTOM_FEATURE_OPTIONS
+      ).uniq.sort
       @external_features = AttributeOption.where(context: "habitation", category: "infrastructure").order(:name).pluck(:name)
       @badges = AttributeOption.where(context: "habitation", category: "unique_feature").order(:name).pluck(:name)
       @sale_reasons = sale_reason_options
@@ -282,11 +302,11 @@ module Admin
         missing
       when "negociacao"
         missing = []
-        if @habitation.requires_sale_price? && @habitation.valor_venda_cents.to_i <= 0
-          missing << "Informe o valor de venda."
+        if @habitation.requires_sale_price? && !@habitation.valid_intake_sale_price?
+          missing << @habitation.intake_sale_price_requirement_message
         end
-        if @habitation.requires_rent_price? && @habitation.valor_locacao_cents.to_i <= 0
-          missing << "Informe o valor de locação."
+        if @habitation.requires_rent_price? && !@habitation.valid_intake_rent_price?
+          missing << @habitation.intake_rent_price_requirement_message
         end
         missing << "Informe ao menos condomínio ou IPTU." if @habitation.valor_condominio_cents.blank? && @habitation.valor_iptu_cents.blank?
         missing << "Informe se aceita permuta." if @habitation.sale_intake? && @habitation.aceita_permuta_answer.blank?
@@ -328,8 +348,8 @@ module Admin
         fields[:caracteristicas_imovel] = true if @habitation.caracteristicas.blank?
         fields[:caracteristicas_predio] = true if !@habitation.property_kind_terreno? && @habitation.infra_estrutura.blank?
       when "negociacao"
-        fields[:valor_venda] = true if @habitation.requires_sale_price? && @habitation.valor_venda_cents.to_i <= 0
-        fields[:valor_locacao] = true if @habitation.requires_rent_price? && @habitation.valor_locacao_cents.to_i <= 0
+        fields[:valor_venda] = true if @habitation.requires_sale_price? && !@habitation.valid_intake_sale_price?
+        fields[:valor_locacao] = true if @habitation.requires_rent_price? && !@habitation.valid_intake_rent_price?
         if @habitation.valor_condominio_cents.blank? && @habitation.valor_iptu_cents.blank?
           fields[:valor_condominio] = true
           fields[:valor_iptu] = true
@@ -344,6 +364,38 @@ module Admin
         fields[:autorizacoes_venda] = true unless @habitation.autorizacoes_venda.attached?
       end
       fields
+    end
+
+    def duplicate_address_blocks_intake?(step)
+      return false unless step.in?(%w[endereco review])
+
+      duplicate_address_result.complete && duplicate_address_result.duplicate?
+    end
+
+    def duplicate_address_result
+      @duplicate_address_result ||= HabitationDuplicateChecker.new(
+        street: @habitation.logradouro,
+        number: @habitation.numero,
+        building: @habitation.nome_empreendimento,
+        unit: @habitation.bloco,
+        ignored_id: @habitation.id
+      ).call
+    end
+
+    def assign_duplicate_address_errors
+      duplicated = duplicate_address_result.matches.first
+      code = duplicated&.codigo.present? ? " ##{duplicated.codigo}" : ""
+      message = "Já existe imóvel cadastrado com esta rua, número, prédio e unidade#{code}."
+      @invalid_fields ||= {}
+      @invalid_fields[:street] = true
+      @invalid_fields[:street_number] = true
+      @invalid_fields[:edificio_nome] = true
+      @invalid_fields[:unidade_numero] = true
+      @step_errors ||= []
+      @step_errors << message
+      @missing_requirements ||= []
+      @missing_requirements << message
+      @habitation.errors.add(:base, message)
     end
 
     def published_restricted_update?

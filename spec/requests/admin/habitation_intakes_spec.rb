@@ -94,6 +94,18 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(intake.reload.intake_step).to eq("caracteristicas")
   end
 
+  it "carrega características do catálogo do cadastro completo na captação" do
+    AttributeOption.create!(context: "habitation", category: "feature", name: "Vista panorâmica")
+    AttributeOption.create!(context: "habitation", category: "infrastructure", name: "Espaço gourmet")
+    intake = create(:habitation, :broker_intake, admin_user: admin, intake_step: "caracteristicas")
+
+    get edit_admin_captacao_path(intake, step: "caracteristicas")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Vista panorâmica")
+    expect(response.body).to include("Espaço gourmet")
+  end
+
   it "aceita valores monetários formatados na negociação" do
     intake = create(:habitation, :broker_intake, admin_user: admin, intake_step: "negociacao")
 
@@ -115,6 +127,67 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(intake.valor_condominio_cents).to eq(100_000)
     expect(intake.valor_iptu_cents).to eq(50_000)
     expect(intake.saldo_devedor_cents).to eq(12_000_000)
+  end
+
+  it "mantém rascunho incompleto sem valor, mas bloqueia envio para revisão" do
+    intake = create(:habitation, :broker_intake, admin_user: admin, valor_venda_cents: nil)
+
+    post submit_for_review_admin_captacao_path(intake)
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include("Informe um valor de venda válido")
+    expect(intake.reload.intake_status).to eq("draft")
+  end
+
+  it "bloqueia valor simbólico na negociação" do
+    intake = create(:habitation, :broker_intake, admin_user: admin, intake_step: "negociacao")
+
+    patch admin_captacao_path(intake), params: {
+      current_step: "negociacao",
+      direction: "forward",
+      habitation: {
+        valor_venda: "1,00",
+        valor_condominio: "1.000,00",
+        valor_iptu: "500,00",
+        aceita_permuta_answer: "nao",
+        aceita_parcelamento_flag: "false"
+      }
+    }
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include("mínimo R$ 10.000")
+    expect(response.body).to include("is-invalid")
+    expect(intake.reload.intake_step).to eq("negociacao")
+  end
+
+  it "bloqueia avanço da captação quando endereço completo já existe" do
+    existing = create(:habitation, nome_empreendimento: "Residencial Atlântico", bloco: "301")
+    existing.create_address!(
+      logradouro: "Rua 3000",
+      numero: "50",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+    intake = create(:habitation, :broker_intake, admin_user: admin, intake_step: "endereco")
+
+    patch admin_captacao_path(intake), params: {
+      current_step: "endereco",
+      direction: "forward",
+      habitation: {
+        street: "Rua 3000",
+        street_number: "50",
+        neighborhood: "Centro",
+        city: "Balneário Camboriú",
+        state: "SC",
+        edificio_nome: "Residencial Atlantico",
+        unidade_numero: "ap 301"
+      }
+    }
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include("Já existe imóvel cadastrado")
+    expect(intake.reload.intake_step).to eq("endereco")
   end
 
   it "envia, aprova e libera para o site quando a ficha está completa" do

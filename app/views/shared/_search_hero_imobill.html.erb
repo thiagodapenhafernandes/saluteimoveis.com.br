@@ -12,7 +12,10 @@
 <% search_filter_right_border_style = "border-right: var(--search-filter-border);" %>
 <% search_filter_chip_border_style = "border: var(--search-filter-border);" %>
 
-<div class="w-full max-w-5xl mx-auto mt-4 md:mt-8 relative z-20" data-controller="search-tabs">
+<div class="w-full max-w-5xl mx-auto mt-4 md:mt-8 relative z-20"
+     data-controller="search-tabs"
+     data-search-tabs-sale-price-options-value="<%= json_escape(public_price_range_options("venda").to_json) %>"
+     data-search-tabs-rent-price-options-value="<%= json_escape(public_price_range_options("aluguel").to_json) %>">
 
   <!-- Tabs (Comprar / Alugar) - Outside and Centered -->
   <div class="flex justify-center mb-3 md:mb-4">
@@ -41,15 +44,7 @@
 
       <input type="hidden" name="transaction_type" id="transaction_type_input" value="<%= params[:transaction_type] || 'venda' %>" data-search-tabs-target="input">
       <% selected_characteristics = Array(params[:characteristics]).map(&:to_s) %>
-      <% price_range_options = [
-        ["Todos os Valores", ""],
-        ["até R$1.000.000", "0-1000000"],
-        ["R$1.000.000 ↔ R$2.000.000", "1000000-2000000"],
-        ["R$2.000.000 ↔ R$3.000.000", "2000000-3000000"],
-        ["R$3.000.000 ↔ R$5.000.000", "3000000-5000000"],
-        ["R$5.000.000 ↔ R$10.000.000", "5000000-10000000"],
-        ["a partir de R$10.000.000", "10000000-"]
-      ] %>
+      <% price_range_options = public_price_range_options(params[:transaction_type]) %>
 
       <div class="grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-4 items-center">
         
@@ -173,7 +168,8 @@
                 options_for_select(price_range_options, params[:price_range]),
                 {},
                 class: "w-full min-h-[48px] appearance-none rounded-full border border-gray-200/80 bg-white/85 px-4 pr-10 py-3 text-sm font-medium text-gray-700 shadow-sm transition-colors focus:border-blue-three focus:ring-1 focus:ring-blue-three",
-                style: search_filter_field_style %>
+                style: search_filter_field_style,
+                data: { search_tabs_target: "priceSelect" } %>
           </div>
         </div>
 

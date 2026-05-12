@@ -1,7 +1,11 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["tab", "input", "advancedPanel", "advancedLabel", "advancedIcon"]
+  static targets = ["tab", "input", "priceSelect", "advancedPanel", "advancedLabel", "advancedIcon"]
+  static values = {
+    salePriceOptions: Array,
+    rentPriceOptions: Array
+  }
 
   connect() {
     // Set initial state based on input value or default
@@ -13,6 +17,7 @@ export default class extends Controller {
     const value = event.currentTarget.dataset.value
     this.inputTarget.value = value
     this.updateTabs(value)
+    this.updatePriceOptions(value)
   }
 
   updateTabs(activeValue) {
@@ -25,6 +30,24 @@ export default class extends Controller {
         tab.classList.remove('bg-hero-button', 'text-hero-button-text', 'shadow-sm')
       }
     })
+  }
+
+  updatePriceOptions(activeValue) {
+    if (!this.hasPriceSelectTarget) return
+
+    const currentValue = this.priceSelectTarget.value
+    const options = activeValue === "aluguel" ? this.rentPriceOptionsValue : this.salePriceOptionsValue
+    const values = options.map((option) => option[1])
+
+    this.priceSelectTarget.innerHTML = ""
+    options.forEach(([label, value]) => {
+      const option = document.createElement("option")
+      option.value = value
+      option.textContent = label
+      this.priceSelectTarget.appendChild(option)
+    })
+
+    this.priceSelectTarget.value = values.includes(currentValue) ? currentValue : ""
   }
 
   toggleAdvanced(event) {

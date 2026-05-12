@@ -71,6 +71,7 @@ class Admin::HabitationsController < Admin::BaseController
 
   before_action :load_autocomplete_data, only: [:new, :edit, :create, :update]
   helper_method :can_view_proprietor_data?, :can_edit_habitation?
+  helper_method :can_release_intake_to_broker?
 
   def index
     load_index_filters
@@ -273,6 +274,12 @@ class Admin::HabitationsController < Admin::BaseController
     @habitation = Habitation.new(habitation_params)
     assign_proprietor_from_legacy_fields(@habitation) if current_admin_user&.admin?
 
+    unless no_duplicate_address?(@habitation)
+      load_autocomplete_data
+      render :new, status: :unprocessable_entity
+      return
+    end
+
     if @habitation.save
       redirect_to admin_habitations_path, notice: "Imóvel criado com sucesso."
     else
@@ -289,10 +296,37 @@ class Admin::HabitationsController < Admin::BaseController
 
   def update
     @habitation.assign_attributes(habitation_params)
+    keep_admin_review_intake_hidden
+
+    unless no_duplicate_address?(@habitation)
+      load_ai_suggestion
+      render :edit, status: :unprocessable_entity
+      return
+    end
+
+    releasing_to_broker = release_intake_to_broker_requested?
+    if releasing_to_broker
+      unless can_release_intake_to_broker?(@habitation)
+        redirect_to edit_admin_habitation_path(@habitation), alert: "Você não tem permissão para liberar esta captação."
+        return
+      end
+
+      unless @habitation.intake_ready_for_admin_review?
+        @habitation.intake_missing_requirements.each { |message| @habitation.errors.add(:base, message) }
+        load_ai_suggestion
+        render :edit, status: :unprocessable_entity
+        return
+      end
+
+      mark_intake_as_admin_approved(@habitation)
+    end
+
     assign_proprietor_from_legacy_fields(@habitation) if current_admin_user&.admin?
     if @habitation.save
-      redirect_to admin_habitations_path, notice: "Imóvel atualizado com sucesso."
+      notice = releasing_to_broker ? "Imóvel salvo e liberado para o corretor publicar no site." : "Imóvel atualizado com sucesso."
+      redirect_to admin_habitations_path, notice: notice
     else
+      load_ai_suggestion
       render :edit, status: :unprocessable_entity
     end
   end
@@ -618,6 +652,11 @@ class Admin::HabitationsController < Admin::BaseController
 
   def filtered_habitations_scope
     scope = Habitation.left_outer_joins(:address)
+    scope = scope.where(
+      "habitations.intake_origin IS NULL OR habitations.intake_origin != :broker_origin OR habitations.intake_status IN (:visible_statuses)",
+      broker_origin: Habitation::INTAKE_ORIGIN_BROKER,
+      visible_statuses: Habitation::CATALOG_VISIBLE_INTAKE_STATUSES
+    )
     scope = apply_ownership_scope(scope)
 
     if @q.present?
@@ -890,6 +929,52 @@ class Admin::HabitationsController < Admin::BaseController
 
   def can_edit_habitation?(habitation)
     owns_all_resource?(:imoveis) || property_belongs_to_current_user?(habitation)
+  end
+
+  def can_release_intake_to_broker?(habitation)
+    return false unless habitation&.broker_intake?
+    return false unless habitation.intake_submitted_for_admin_review?
+
+    current_admin_user&.admin? || owns_all_resource?(:imoveis) || can?(:review, :captacoes)
+  end
+
+  def no_duplicate_address?(habitation)
+    result = HabitationDuplicateChecker.new(
+      street: habitation.logradouro,
+      number: habitation.numero,
+      building: habitation.nome_empreendimento,
+      unit: habitation.bloco,
+      ignored_id: habitation.id
+    ).call
+    return true unless result.complete && result.duplicate?
+
+    duplicated = result.matches.first
+    code = duplicated&.codigo.present? ? " ##{duplicated.codigo}" : ""
+    message = "Já existe imóvel cadastrado com esta rua, número, prédio e unidade#{code}."
+    habitation.errors.add(:base, message)
+    habitation.errors.add(:"address.logradouro", message)
+    habitation.errors.add(:"address.numero", message)
+    habitation.errors.add(:nome_empreendimento, message)
+    habitation.errors.add(:bloco, message)
+    false
+  end
+
+  def release_intake_to_broker_requested?
+    params[:release_to_broker_after_save].present?
+  end
+
+  def keep_admin_review_intake_hidden
+    return unless @habitation.broker_intake?
+    return if @habitation.intake_published?
+
+    @habitation.exibir_no_site_flag = false
+  end
+
+  def mark_intake_as_admin_approved(habitation)
+    habitation.intake_status = "admin_approved"
+    habitation.admin_reviewed_by = current_admin_user
+    habitation.admin_reviewed_at = Time.current
+    habitation.exibir_no_site_flag = false
   end
 
   def apply_boolean_filter(scope, raw_param, column_name)

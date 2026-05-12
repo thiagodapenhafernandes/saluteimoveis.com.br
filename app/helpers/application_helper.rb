@@ -26,6 +26,30 @@ module ApplicationHelper
     ENV["ACTIVE_STORAGE_VARIANTS_ENABLED"] == "true"
   end
 
+  def public_price_range_options(transaction_type = nil)
+    if transaction_type.to_s.downcase.in?(%w[aluguel locacao locação alugar])
+      [
+        ["Todos os Valores", ""],
+        ["até R$5.000", "0-5000"],
+        ["R$5.000 ↔ R$10.000", "5000-10000"],
+        ["R$10.000 ↔ R$15.000", "10000-15000"],
+        ["R$15.000 ↔ R$20.000", "15000-20000"],
+        ["R$20.000 ↔ R$25.000", "20000-25000"],
+        ["Acima R$25.000", "25000-"]
+      ]
+    else
+      [
+        ["Todos os Valores", ""],
+        ["até R$1.000.000", "0-1000000"],
+        ["R$1.000.000 ↔ R$2.000.000", "1000000-2000000"],
+        ["R$2.000.000 ↔ R$3.000.000", "2000000-3000000"],
+        ["R$3.000.000 ↔ R$5.000.000", "3000000-5000000"],
+        ["R$5.000.000 ↔ R$10.000.000", "5000000-10000000"],
+        ["a partir de R$10.000.000", "10000000-"]
+      ]
+    end
+  end
+
   def public_image_url(source)
     return if source.blank?
 

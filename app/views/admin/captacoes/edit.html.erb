@@ -47,7 +47,28 @@
     </div>
   <% end %>
 
-  <%= form_with model: @captacao, url: admin_captacao_path(@captacao), method: :patch, multipart: true, local: true, html: { id: "wizard-form" } do |f| %>
+  <% if @missing_requirements.present? %>
+    <div class="alert alert-danger border-0 shadow-sm">
+      <strong><i class="bi bi-exclamation-triangle-fill me-1"></i>Complete antes de finalizar:</strong>
+      <ul class="mb-0 mt-1 small">
+        <% @missing_requirements.each do |requirement| %><li><%= requirement %></li><% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <%= form_with model: @captacao,
+                url: admin_captacao_path(@captacao),
+                method: :patch,
+                multipart: true,
+                local: true,
+                html: {
+                  id: "wizard-form",
+                  data: {
+                    controller: "habitation-duplicate-check",
+                    habitation_duplicate_check_url_value: check_admin_habitation_duplicate_path,
+                    habitation_duplicate_check_ignored_id_value: @captacao.id
+                  }
+                } do |f| %>
     <%= hidden_field_tag :current_step, @step %>
 
     <%= render "admin/captacoes/steps/#{@step}", f: f, field_state: field_state, field_invalid: field_invalid %>
@@ -60,11 +81,11 @@
           <% end %>
         <% end %>
         <% if @step == "review" %>
-          <%= button_tag type: :submit, name: :direction, value: "forward", class: "btn btn-success flex-fill" do %>
+          <%= button_tag type: :submit, name: :direction, value: "forward", class: "btn btn-success flex-fill", data: { habitation_duplicate_check_target: "submit" } do %>
             <i class="bi bi-check-circle me-1"></i>Finalizar captação
           <% end %>
         <% else %>
-          <%= button_tag type: :submit, name: :direction, value: "forward", class: "btn btn-primary flex-fill" do %>
+          <%= button_tag type: :submit, name: :direction, value: "forward", class: "btn btn-primary flex-fill", data: { habitation_duplicate_check_target: "submit" } do %>
             Avançar<i class="bi bi-arrow-right ms-1"></i>
           <% end %>
         <% end %>
