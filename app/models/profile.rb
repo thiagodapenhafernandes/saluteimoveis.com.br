@@ -36,9 +36,51 @@ class Profile < ApplicationRecord
     "sync"    => "Sincronizar"
   }.freeze
 
+  PROFILE_PRESETS = {
+    "Administrador" => {
+      "admin" => true
+    },
+    "Corretor" => {
+      "admin" => false,
+      "dashboard" => { "view" => true },
+      "imoveis" => { "view" => true, "manage" => false, "scope" => "own" },
+      "leads" => { "view" => true, "manage" => true, "scope" => "own" },
+      "captacoes" => { "view" => true, "manage" => true, "review" => false, "publish" => true, "scope" => "own" },
+      "captacao_dashboard" => { "view" => true }
+    },
+    "Administrativo" => {
+      "admin" => false,
+      "dashboard" => { "view" => true },
+      "imoveis" => { "view" => true, "manage" => true, "scope" => "all" },
+      "captacoes" => { "view" => true, "manage" => true, "review" => true, "publish" => true, "scope" => "all" },
+      "captacao_dashboard" => { "view" => true },
+      "agenda_fotografia" => { "view" => true, "manage" => true },
+      "marketing" => { "manage" => true }
+    },
+    "Gerente" => {
+      "admin" => false,
+      "dashboard" => { "view" => true },
+      "imoveis" => { "view" => true, "manage" => true, "scope" => "all" },
+      "leads" => { "view" => true, "manage" => true, "scope" => "all" },
+      "captacoes" => { "view" => true, "manage" => true, "review" => true, "publish" => true, "scope" => "all" },
+      "captacao_dashboard" => { "view" => true },
+      "agenda_fotografia" => { "view" => true, "manage" => true },
+      "marketing" => { "manage" => true }
+    }
+  }.freeze
+
   # Permissão "admin" dá acesso irrestrito a tudo, independente das flags abaixo.
   def admin?
     name == "Administrador" || (permissions_hash["admin"] == true)
+  end
+
+  def manager?
+    name == "Gerente"
+  end
+
+  def self.default_permissions_for(name)
+    permissions = PROFILE_PRESETS[name.to_s] || PROFILE_PRESETS["Corretor"]
+    permissions.deep_dup
   end
 
   # Pode fazer `action` sobre `resource`?

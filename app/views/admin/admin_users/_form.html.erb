@@ -99,7 +99,7 @@
         <div class="card-body p-4">
           <div class="mb-4">
             <%= f.label :profile_id, "Perfil de Acesso", class: "form-label fw-bold small text-muted text-uppercase" %>
-            <%= f.collection_select :profile_id, Profile.all, :id, :name, { prompt: "Selecione um perfil..." }, { class: "form-select" } %>
+            <%= f.collection_select :profile_id, Profile.where(active: true).where.not(name: "Fotógrafo").order(:name), :id, :name, { prompt: "Selecione um perfil..." }, { class: "form-select" } %>
             <div class="form-text mt-2 extra-small">Define o que o usuário pode ver e fazer no painel.</div>
           </div>
 

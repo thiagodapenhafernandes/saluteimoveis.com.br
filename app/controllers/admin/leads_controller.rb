@@ -10,7 +10,7 @@ class Admin::LeadsController < Admin::BaseController
     @origin = params[:origin]
     @view_mode = params[:view].presence_in(%w[kanban list]) || "kanban"
 
-    lead_scope = owns_all_resource?(:leads) ? Lead.all : Lead.where(admin_user_id: current_admin_user.id)
+    lead_scope = lead_scope_for_current_user
     
     if @q.present?
       lead_scope = lead_scope.where("name ILIKE :q OR email ILIKE :q OR phone ILIKE :q OR origin ILIKE :q", q: "%#{@q}%")
@@ -68,20 +68,69 @@ class Admin::LeadsController < Admin::BaseController
   end
 
   def authorize_lead_access!
-    return if owns_all_resource?(:leads)
-    return if @lead.admin_user_id == current_admin_user.id
+    return if lead_scope_for_current_user.where(id: @lead.id).exists?
     redirect_to admin_leads_path, alert: "Você não tem acesso a este lead."
   end
 
   def lead_params
     permitted = [:status, :notes, :origin]
     permitted << :admin_user_id if can?(:manage, :leads) || owns_all_resource?(:leads)
-    params.require(:lead).permit(permitted)
+    attributes = params.require(:lead).permit(permitted)
+
+    if attributes[:admin_user_id].present? && permitted_admin_user_ids_for_leads.exclude?(attributes[:admin_user_id].to_i)
+      attributes.delete(:admin_user_id)
+    end
+
+    attributes
   end
 
   def load_origin_options
     @origin_options = Lead.origin_options
     @status_options = Lead.status_options
-    @broker_options = AdminUser.active.order(:name).pluck(:name, :id)
+    @broker_options = permitted_admin_users_for_leads.order(:name).pluck(:name, :id)
+  end
+
+  def lead_scope_for_current_user
+    return Lead.none unless current_admin_user
+    return Lead.all if current_admin_user.admin?
+    return manager_lead_scope if current_admin_user.profile&.manager? && owns_all_resource?(:leads)
+    return Lead.all if owns_all_resource?(:leads)
+
+    Lead.where(admin_user_id: current_admin_user.id)
+  end
+
+  def manager_lead_scope
+    case current_admin_user.acting_type
+    when "sales"
+      Lead.joins(:admin_user).where(admin_users: { acting_type: %i[sales both] })
+    when "rentals"
+      Lead.joins(:admin_user).where(admin_users: { acting_type: %i[rentals both] })
+    else
+      Lead.all
+    end
+  end
+
+  def permitted_admin_users_for_leads
+    return AdminUser.none unless current_admin_user
+    return AdminUser.active if current_admin_user.admin?
+    return manager_team_users if current_admin_user.profile&.manager? && owns_all_resource?(:leads)
+    return AdminUser.active if owns_all_resource?(:leads)
+
+    AdminUser.active.where(id: current_admin_user.id)
+  end
+
+  def manager_team_users
+    case current_admin_user.acting_type
+    when "sales"
+      AdminUser.active.where(acting_type: %i[sales both])
+    when "rentals"
+      AdminUser.active.where(acting_type: %i[rentals both])
+    else
+      AdminUser.active
+    end
+  end
+
+  def permitted_admin_user_ids_for_leads
+    permitted_admin_users_for_leads.pluck(:id)
   end
 end

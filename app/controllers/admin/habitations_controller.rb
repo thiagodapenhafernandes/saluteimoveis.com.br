@@ -1,5 +1,6 @@
 class Admin::HabitationsController < Admin::BaseController
   before_action -> { check_permission!(:view, :imoveis) }
+  before_action -> { check_permission!(:manage, :imoveis) }, only: [:new, :create]
   before_action :require_admin!, only: [:bulk_publish, :bulk_publish_eligibility]
   before_action :scope_habitations_by_permission, only: [:edit, :update, :destroy, :sync, :purge_attachment, :generate_ai_preview, :format_ai_suggestion, :apply_ai_suggestion]
   require "csv"
@@ -69,7 +70,7 @@ class Admin::HabitationsController < Admin::BaseController
   before_action :set_habitation, only: [:edit, :update, :destroy, :generate_ai_preview, :format_ai_suggestion, :apply_ai_suggestion]
 
   before_action :load_autocomplete_data, only: [:new, :edit, :create, :update]
-  helper_method :can_view_proprietor_data?
+  helper_method :can_view_proprietor_data?, :can_edit_habitation?
 
   def index
     load_index_filters
@@ -400,7 +401,8 @@ class Admin::HabitationsController < Admin::BaseController
     return if owns_all_resource?(:imoveis)
     id = (params[:id] || params[:habitation_id]).to_i
     return if id.zero?
-    unless Habitation.where(id: id, admin_user_id: current_admin_user.id).exists?
+    habitation = Habitation.find_by(id: id)
+    unless habitation && property_belongs_to_current_user?(habitation)
       redirect_to admin_habitations_path, alert: "Você não tem acesso a este imóvel."
     end
   end
@@ -883,8 +885,11 @@ class Admin::HabitationsController < Admin::BaseController
 
   def can_view_proprietor_data?(habitation)
     return true if current_admin_user&.admin? || owns_all_resource?(:imoveis)
-    return true if habitation.admin_user_id == current_admin_user&.id
-    habitation.broker_assignments.loaded? ? habitation.broker_assignments.any? { |assignment| assignment.admin_user_id == current_admin_user&.id } : habitation.broker_assignments.exists?(admin_user_id: current_admin_user&.id)
+    property_belongs_to_current_user?(habitation)
+  end
+
+  def can_edit_habitation?(habitation)
+    owns_all_resource?(:imoveis) || property_belongs_to_current_user?(habitation)
   end
 
   def apply_boolean_filter(scope, raw_param, column_name)
@@ -983,7 +988,30 @@ class Admin::HabitationsController < Admin::BaseController
   end
 
   def habitation_params
-    permitted = params.require(:habitation).permit(
+    permitted = params.require(:habitation).permit(*permitted_habitation_fields)
+
+    unless current_admin_user&.admin? || owns_all_resource?(:imoveis)
+      permitted = permitted.slice(*broker_limited_habitation_fields.map(&:to_s))
+    end
+
+    unless current_admin_user&.admin?
+      proprietor_locked_fields = %i[
+        proprietario proprietario_codigo proprietario_email proprietario_celular
+        proprietario_telefone_comercial proprietario_telefone_residencial proprietor_id
+      ]
+      proprietor_locked_fields.each { |field| permitted.delete(field) }
+    end
+
+    # Campos presentes no formulário, mas ainda sem coluna no schema atual.
+    # São descartados para evitar UnknownAttributeError ao inicializar o model.
+    permitted.delete(:salas_qtd)
+    permitted.delete(:varandas_qtd)
+
+    permitted
+  end
+
+  def permitted_habitation_fields
+    [
       :slug, :categoria, :status, :situacao, :tipo, :codigo_empreendimento, 
       :nome_empreendimento,
       :dormitorios_qtd, :suites_qtd, :salas_qtd, :varandas_qtd, :banheiros_qtd, :hidromassagem_qtd, :vagas_qtd, :elevadores_qtd, 
@@ -1036,22 +1064,29 @@ class Admin::HabitationsController < Admin::BaseController
       caracteristicas: [], infra_estrutura: [], caracteristica_unica: [],
       broker_assignments_attributes: [:id, :admin_user_id, :role, :commission_type, :commission_value, :observations, :_destroy],
       address_attributes: [:id, :tipo_endereco, :logradouro, :numero, :complemento, :bairro, :bairro_comercial, :cidade, :uf, :cep, :pais, :latitude, :longitude, :_destroy, { imediacoes: [] }]
-    )
+    ]
+  end
 
-    unless current_admin_user&.admin?
-      proprietor_locked_fields = %i[
-        proprietario proprietario_codigo proprietario_email proprietario_celular
-        proprietario_telefone_comercial proprietario_telefone_residencial proprietor_id
-      ]
-      proprietor_locked_fields.each { |field| permitted.delete(field) }
-    end
+  def broker_limited_habitation_fields
+    %i[
+      status
+      exibir_no_site_flag
+      valor_venda_formatted
+      valor_locacao_formatted
+      valor_promocional_formatted
+      valor_condominio_formatted
+      valor_iptu_formatted
+      ordered_photo_ids
+    ]
+  end
 
-    # Campos presentes no formulário, mas ainda sem coluna no schema atual.
-    # São descartados para evitar UnknownAttributeError ao inicializar o model.
-    permitted.delete(:salas_qtd)
-    permitted.delete(:varandas_qtd)
+  def property_belongs_to_current_user?(habitation)
+    return false unless current_admin_user
+    return true if habitation.admin_user_id == current_admin_user.id
+    return true if habitation.broker_assignments.loaded? ? habitation.broker_assignments.any? { |assignment| assignment.admin_user_id == current_admin_user.id } : habitation.broker_assignments.exists?(admin_user_id: current_admin_user.id)
 
-    permitted
+    broker_name = current_admin_user.name.to_s.strip
+    broker_name.present? && habitation.corretor_nome.to_s.downcase.include?(broker_name.downcase)
   end
 
   def assign_proprietor_from_legacy_fields(habitation)

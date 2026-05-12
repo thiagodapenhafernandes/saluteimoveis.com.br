@@ -855,7 +855,7 @@
 <div class="row g-3">
   <% if @habitations.any? %>
     <% @habitations.each do |imovel| %>
-      <% can_manage_this_property = owns_all_resource?(:imoveis) || imovel.admin_user_id == current_admin_user&.id %>
+      <% can_manage_this_property = can_edit_habitation?(imovel) %>
       <div class="col-12">
         <div class="card shadow-sm border-0 overflow-hidden property-card-horizontal"
              style="height: 240px; cursor: pointer;"

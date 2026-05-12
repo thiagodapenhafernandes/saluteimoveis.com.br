@@ -85,17 +85,7 @@ module Admin
     end
 
     def default_permissions
-      # Corretor comum: view+manage em leads, captacoes, imoveis com scope "own";
-      # view nos dashboards. Nada mais.
-      {
-        "admin" => false,
-        "dashboard"          => { "view"    => true },
-        "imoveis"            => { "view"    => true, "manage" => false, "scope" => "own" },
-        "leads"              => { "view"    => true, "manage" => true,  "scope" => "own" },
-        "captacoes"          => { "view"    => true, "manage" => true, "review" => false, "publish" => false, "scope" => "own" },
-        "agenda_fotografia"  => { "view"    => false, "manage" => false },
-        "captacao_dashboard" => { "view"    => true }
-      }
+      Profile.default_permissions_for("Corretor")
     end
   end
 end
