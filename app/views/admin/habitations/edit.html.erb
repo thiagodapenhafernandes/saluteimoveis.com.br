@@ -12,6 +12,32 @@
   .habitation-edit-header .title { font-size: 1.3rem; font-weight: 700; color: #0f172a; line-height: 1.2; }
   .habitation-edit-header .codigo { font-size: .8rem; color: #64748b; font-weight: 600; letter-spacing: .02em; }
   .habitation-edit-header .subtitle { font-size: .85rem; color: #64748b; margin-top: .15rem; }
+  .habitation-edit-header .captador-card {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    min-width: 190px;
+    max-width: 280px;
+  }
+  .habitation-edit-header .captador-avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 999px;
+    object-fit: cover;
+    flex: 0 0 46px;
+    border: 2px solid #e5e7eb;
+    background: #f8fafc;
+  }
+  .habitation-edit-header .captador-avatar-fallback {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: #2563eb;
+    background: #eff6ff;
+  }
+  .habitation-edit-header .captador-label { font-size: .7rem; color: #64748b; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+  .habitation-edit-header .captador-name { font-size: .9rem; color: #0f172a; font-weight: 700; line-height: 1.15; }
   .habitation-edit-header .actions .btn { font-weight: 600; }
 
   /* Tabs com scroll horizontal em mobile */
@@ -20,9 +46,16 @@
       padding: .9rem 1rem;
     }
     .habitation-edit-header .title { font-size: 1.1rem; }
+    .habitation-edit-header .captador-card {
+      order: 2;
+      width: 100%;
+      max-width: none;
+    }
     .habitation-edit-header .actions {
+      order: 3;
       flex-wrap: wrap;
       gap: .4rem !important;
+      width: 100%;
     }
     .habitation-edit-header .actions .btn {
       flex: 1 1 auto;
@@ -70,6 +103,24 @@
         </div>
       <% end %>
     </div>
+    <% if @habitation.admin_user.present? %>
+      <% captador = @habitation.admin_user %>
+      <div class="captador-card">
+        <% if captador.avatar.attached? %>
+          <%= image_tag captador.avatar,
+                        class: "captador-avatar shadow-sm",
+                        alt: "Foto de #{captador.name}" %>
+        <% else %>
+          <span class="captador-avatar captador-avatar-fallback shadow-sm" aria-hidden="true">
+            <%= captador.name.to_s.split.map { |part| part.first }.join.first(2).presence || "?" %>
+          </span>
+        <% end %>
+        <div style="min-width: 0;">
+          <div class="captador-label">Captador</div>
+          <div class="captador-name text-truncate"><%= captador.name %></div>
+        </div>
+      </div>
+    <% end %>
     <div class="actions d-flex gap-2">
       <%= link_to admin_habitations_path, class: "btn btn-outline-secondary btn-sm" do %>
         <i class="bi bi-arrow-left"></i><span class="ms-1">Voltar</span>

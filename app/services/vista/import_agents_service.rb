@@ -199,20 +199,23 @@ module Vista
     end
 
     def attach_avatar(user, url)
-      # Basic check to avoid re-downloading same image if logic existed, 
-      # but ActiveStorage doesn't easily expose original URL. 
-      # For now we update if it's there, or we could check filename hash.
-      # To avoid heavy traffic, maybe skip if attached? 
-      # But photos update. Let's rely on standard overwrite for now unless performance hit.
-      
-      return if user.avatar.attached? # Simple cache strategy: don't replace if exists for now, or maybe later check timestamps
+      return if avatar_available?(user)
 
       begin
+        user.avatar.purge if user.avatar.attached?
         downloaded_image = URI.open(url)
         user.avatar.attach(io: downloaded_image, filename: "vista_avatar_#{user.vista_id}.jpg")
       rescue => e
         puts "\nErro ao baixar foto para #{user.email}: #{e.message}"
       end
+    end
+
+    def avatar_available?(user)
+      return false unless user.avatar.attached?
+
+      user.avatar.blob.open { true }
+    rescue ActiveStorage::FileNotFoundError
+      false
     end
   end
 end

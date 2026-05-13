@@ -73,6 +73,7 @@ class SyncPropertyService
         'ValorCondominio', 'ValorIptu', 'Empreendimento', 'CodigoEmpreendimento', 'Lancamento',
         'DescricaoWeb', 'CaracteristicaUnica', 'Caracteristicas', 'InfraEstrutura', 'ExibirNoSite', 'DestaqueWeb', 'Categoria', 'Construtora',
         'Proprietario', 'CodigoProprietario',
+        { 'proprietarios' => ['Nome', 'Email', 'Celular', 'FoneComercial', 'FoneResidencial'] },
         'Corretor', 'CodigoCorretor',
         'DataCadastro', 'DataAtualizacao', 'DataEntrega', { 'Foto' => ['Foto', 'FotoPequena', 'Destaque', 'Ordem'] }
       ]
@@ -110,7 +111,8 @@ class SyncPropertyService
     is_empreendimento = @force_empreendimento || categoria.casecmp("Empreendimento").zero?
     tipo = is_empreendimento ? "Empreendimento" : "Unitário"
     constructor_id = resolve_constructor(hb['Construtora'])
-    proprietor = resolve_proprietor(hb)
+    owner_data = extract_owner_data(hb['proprietarios'])
+    proprietor = resolve_proprietor(hb, owner_data)
     broker_id = resolve_broker(hb)
     raw_imediacoes = hb['Imediacoes']
 
@@ -149,6 +151,8 @@ class SyncPropertyService
       proprietario_codigo: proprietor&.vista_code,
       proprietario_email: proprietor&.email,
       proprietario_celular: proprietor&.mobile_phone,
+      proprietario_telefone_comercial: proprietor&.business_phone,
+      proprietario_telefone_residencial: proprietor&.residential_phone,
       exibir_no_site_flag: hb['ExibirNoSite'] == 'Sim',
       destaque_web_flag: hb['DestaqueWeb'] == 'Sim',
       lancamento_flag: hb['Lancamento'] == 'Sim',
@@ -262,8 +266,8 @@ class SyncPropertyService
     Habitation.where(codigo: @codigo).limit(1).pluck(:admin_user_id).first
   end
 
-  def resolve_proprietor(hb)
-    proprietor_name = hb['Proprietario'].presence || hb['Construtora'].presence
+  def resolve_proprietor(hb, owner_data = {})
+    proprietor_name = owner_data['Nome'].presence || hb['Proprietario'].presence || hb['Construtora'].presence
     proprietor_code = hb['CodigoProprietario'].to_s.strip.presence
     return nil if proprietor_name.to_s.strip.blank?
 
@@ -277,10 +281,26 @@ class SyncPropertyService
     proprietor.name = proprietor_name.to_s.strip
     proprietor.role = role
     proprietor.vista_code = proprietor_code if proprietor_code.present?
+    proprietor.email = owner_data['Email'].to_s.strip.presence if owner_data['Email'].to_s.strip.present?
+    proprietor.mobile_phone = owner_data['Celular'].to_s.strip.presence if owner_data['Celular'].to_s.strip.present?
+    proprietor.business_phone = owner_data['FoneComercial'].to_s.strip.presence if owner_data['FoneComercial'].to_s.strip.present?
+    proprietor.residential_phone = owner_data['FoneResidencial'].to_s.strip.presence if owner_data['FoneResidencial'].to_s.strip.present?
     proprietor.save!
     proprietor
   rescue
     nil
+  end
+
+  def extract_owner_data(raw_owner_data)
+    case raw_owner_data
+    when Hash
+      first_value = raw_owner_data.values.first
+      first_value.is_a?(Hash) ? first_value : {}
+    when Array
+      raw_owner_data.find { |item| item.is_a?(Hash) } || {}
+    else
+      {}
+    end
   end
 
   def extract_characteristics(data)
