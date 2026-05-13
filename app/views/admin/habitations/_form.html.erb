@@ -1434,6 +1434,29 @@
               </div>
 
               <div data-habitation-brokers-target="container">
+                <%
+                  assigned_captador_ids = f.object.broker_assignments
+                    .reject(&:marked_for_destruction?)
+                    .select { |assignment| assignment.role == "captador" }
+                    .map(&:admin_user_id)
+                    .compact
+                %>
+                <% if f.object.admin_user.present? && !assigned_captador_ids.include?(f.object.admin_user_id) %>
+                  <div class="card border-dashed p-2 mb-2 bg-light shadow-none">
+                    <div class="d-flex justify-content-between align-items-start">
+                      <div>
+                        <div class="fw-bold extra-small text-primary mb-1">
+                          <span class="badge bg-primary extra-small me-1">Captador</span>
+                          <%= f.object.admin_user.name %>
+                        </div>
+                        <div class="text-muted smaller">
+                          Captador responsável pelo cadastro do imóvel
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
+
                 <%= f.fields_for :broker_assignments do |ba_form| %>
                   <div class="nested-fields card border-dashed p-2 mb-2 bg-light shadow-none" data-new-record="<%= ba_form.object.new_record? %>">
                     <%= ba_form.hidden_field :_destroy %>

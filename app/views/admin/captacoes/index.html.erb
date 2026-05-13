@@ -59,6 +59,16 @@
 
         <div class="captacao-mobile-grid mb-3">
           <div>
+            <span>Código</span>
+            <strong>
+              <% if c.codigo.present? %>
+                <%= link_to c.codigo, admin_habitations_path(q: c.codigo), class: "text-decoration-none" %>
+              <% else %>
+                —
+              <% end %>
+            </strong>
+          </div>
+          <div>
             <span>Tipo</span>
             <strong><%= c.property_kind.humanize %></strong>
           </div>
@@ -120,6 +130,7 @@
         <thead class="bg-light text-muted small text-uppercase fw-bold">
           <tr>
             <th class="px-3">Imóvel</th>
+            <th>Código</th>
             <th>Tipo</th>
             <th>Modalidade</th>
             <% if current_admin_user.admin? %><th>Corretor</th><% end %>
@@ -137,6 +148,13 @@
                 <div class="small text-muted">
                   <% if c.city.present? %><i class="bi bi-geo-alt me-1"></i><%= c.city %><% end %>
                 </div>
+              </td>
+              <td class="small">
+                <% if c.codigo.present? %>
+                  <%= link_to c.codigo, admin_habitations_path(q: c.codigo), class: "badge bg-light text-dark border text-decoration-none" %>
+                <% else %>
+                  —
+                <% end %>
               </td>
               <td><span class="badge bg-light text-dark border"><%= c.property_kind.humanize %></span></td>
               <td>
