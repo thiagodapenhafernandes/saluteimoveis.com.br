@@ -53,6 +53,19 @@
     position: absolute; top: 0; left: 6px; line-height: 22px;
     font-size: .85rem; font-weight: 600; color: #0d253f;
   }
+  .capt-donut-wrapper {
+    height: 210px;
+    min-height: 210px;
+    position: relative;
+  }
+  .capt-donut-title {
+    color: #4b5563;
+    font-size: .82rem;
+    font-weight: 800;
+    margin-bottom: .35rem;
+    text-align: center;
+    text-transform: uppercase;
+  }
   .capt-tv-toolbar {
     display: flex;
     justify-content: flex-end;
@@ -105,9 +118,31 @@
     background: #0d253f;
   }
   body.capt-dashboard-tv-active .capt-tv-toolbar {
-    position: sticky;
-    top: 0;
+    position: fixed;
+    top: .75rem;
+    right: .75rem;
     z-index: 20;
+    margin: 0;
+  }
+  body.capt-dashboard-tv-active [data-capt-tv-tab],
+  body.capt-dashboard-tv-active [data-capt-active-tv] {
+    display: none !important;
+  }
+  body.capt-dashboard-tv-active [data-capt-tv-exit] {
+    display: inline-flex !important;
+    align-items: center;
+    gap: .25rem;
+    border-color: rgba(255, 255, 255, .22) !important;
+    background: rgba(255, 255, 255, .12) !important;
+    color: rgba(255, 255, 255, .72) !important;
+    box-shadow: none;
+    opacity: .58;
+  }
+  body.capt-dashboard-tv-active [data-capt-tv-exit]:hover,
+  body.capt-dashboard-tv-active [data-capt-tv-exit]:focus {
+    opacity: 1;
+    color: #fff !important;
+    background: rgba(255, 255, 255, .2) !important;
   }
   @media (max-width: 575px) {
     .capt-gauge-wrapper { height: 180px; }
@@ -150,7 +185,7 @@
     <i class="bi bi-arrows-fullscreen me-1"></i>Tela cheia Leads
   </button>
   <button type="button" class="btn btn-sm btn-light border d-none" data-capt-tv-exit>
-    <i class="bi bi-fullscreen-exit me-1"></i>Sair
+    <i class="bi bi-x-lg"></i><span>Sair</span>
   </button>
 </div>
 
@@ -252,6 +287,7 @@
             </div>
           </div>
         </div>
+
       </div>
       <div class="col-md-6">
         <div class="card shadow-sm border-0">
@@ -264,6 +300,7 @@
             </div>
           </div>
         </div>
+
       </div>
 
       <div class="col-md-6">
@@ -286,6 +323,7 @@
             </div>
           </div>
         </div>
+
       </div>
       <div class="col-md-6">
         <div class="card shadow-sm border-0">
@@ -298,6 +336,7 @@
             </div>
           </div>
         </div>
+
       </div>
     </div>
 
@@ -371,6 +410,25 @@
             </div>
           </div>
         </div>
+
+        <div class="card shadow-sm border-0 mt-3">
+          <div class="card-body">
+            <div class="row g-3 align-items-center">
+              <div class="col-md-6">
+                <div class="capt-donut-title">Região Foco Captação</div>
+                <div class="capt-donut-wrapper">
+                  <canvas id="focusVendaBig"></canvas>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="capt-donut-title">Publicado no Site</div>
+                <div class="capt-donut-wrapper">
+                  <canvas id="pubVendaBig"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="col-lg-7">
@@ -410,6 +468,31 @@
               <div class="col-6">
                 <div class="small text-muted">Total Locação</div>
                 <div class="fs-3 fw-bold"><%= number_to_currency(@total_valor_locacao, unit: "R$ ", precision: 0) %></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card shadow-sm border-0 mt-3">
+          <div class="card-body">
+            <div class="row g-3 align-items-center">
+              <div class="col-md-4">
+                <div class="capt-donut-title">Região Foco Captação</div>
+                <div class="capt-donut-wrapper">
+                  <canvas id="focusLocacaoBig"></canvas>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="capt-donut-title">Publicado no Site</div>
+                <div class="capt-donut-wrapper">
+                  <canvas id="pubLocacaoBig"></canvas>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="capt-donut-title">Administração Salute</div>
+                <div class="capt-donut-wrapper">
+                  <canvas id="admLocacaoBig"></canvas>
+                </div>
               </div>
             </div>
           </div>
@@ -482,13 +565,13 @@
       }
     }
 
-    function donutConfig(publicado, naoPublicado, color = '#f59e0b') {
+    function donutConfig(sim, nao, color = '#f59e0b', labels = ['Sim', 'Não']) {
       return {
         type: 'doughnut',
         data: {
-          labels: ['Publicado', 'Não publicado'],
+          labels: labels,
           datasets: [{
-            data: [publicado, naoPublicado],
+            data: [sim, nao],
             backgroundColor: [color, '#1f2937'],
             borderWidth: 2,
             borderColor: '#fff'
@@ -510,7 +593,12 @@
       gaugeVendaBig: gaugeConfig(<%= @total_venda %>, <%= [@meta_venda, 1].max %>, '#f59e0b'),
       gaugeLocacaoBig: gaugeConfig(<%= @total_locacao %>, <%= [@meta_locacao, 1].max %>, '#f59e0b'),
       pubVenda: donutConfig(<%= @publicado_venda %>, <%= @nao_publicado_venda %>, '#f59e0b'),
-      pubLocacao: donutConfig(<%= @publicado_locacao %>, <%= @nao_publicado_locacao %>, '#f59e0b')
+      pubLocacao: donutConfig(<%= @publicado_locacao %>, <%= @nao_publicado_locacao %>, '#f59e0b'),
+      focusVendaBig: donutConfig(<%= @regiao_foco_venda %>, <%= [@total_venda - @regiao_foco_venda, 0].max %>, '#f59e0b'),
+      pubVendaBig: donutConfig(<%= @publicado_venda %>, <%= @nao_publicado_venda %>, '#f59e0b'),
+      focusLocacaoBig: donutConfig(<%= @regiao_foco_locacao %>, <%= [@total_locacao - @regiao_foco_locacao, 0].max %>, '#f59e0b'),
+      pubLocacaoBig: donutConfig(<%= @publicado_locacao %>, <%= @nao_publicado_locacao %>, '#f59e0b'),
+      admLocacaoBig: donutConfig(<%= @captacao_adm_locacao %>, <%= [@total_locacao - @captacao_adm_locacao, 0].max %>, '#f59e0b')
     };
 
     function renderOne(id, cfg, options = {}) {

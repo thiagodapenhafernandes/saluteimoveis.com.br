@@ -76,12 +76,20 @@
         <% end %>
       </li>
       <% if can_access.call(:view, :captacao_dashboard) %>
-        <li class="sidebar-menu-item ps-3">
+        <li class="sidebar-menu-item">
           <%= link_to dashboard_admin_captacoes_path, class: (controller_name == 'captacoes' && action_name == 'dashboard') ? 'active' : '' do %>
-            <i class="bi bi-bullseye"></i><span>Dashboard de Captação</span>
+            <i class="bi bi-bullseye"></i><span>Dashboard Captações</span>
           <% end %>
         </li>
       <% end %>
+    <% end %>
+
+    <% if can_access.call(:view, :metas_captacao) %>
+      <li class="sidebar-menu-item">
+        <%= link_to admin_captacao_goals_path, class: controller_name == 'captacao_goals' ? 'active' : '' do %>
+          <i class="bi bi-flag"></i><span>Metas de Captação</span>
+        <% end %>
+      </li>
     <% end %>
 
     <!-- Campo: check-ins, pedidos manuais, auditoria, settings -->
@@ -205,22 +213,19 @@
     <% end %>
 
     <!-- Administração -->
-    <% if can_access.call(:view, :corretores) || can_access.call(:manage, :perfis) || can_access.call(:view, :metas_captacao) || can_access.call(:view, :catalogos) %>
+    <% if can_access.call(:view, :corretores) || can_access.call(:manage, :perfis) || can_access.call(:view, :catalogos) %>
       <li class="sidebar-menu-item">
-        <a href="#submenu-admin" data-bs-toggle="collapse" class="d-flex justify-content-between align-items-center <%= ['admin_users', 'profiles', 'captacao_goals', 'attribute_options'].include?(controller_name) ? '' : 'collapsed' %>">
+        <a href="#submenu-admin" data-bs-toggle="collapse" class="d-flex justify-content-between align-items-center <%= ['admin_users', 'profiles', 'attribute_options'].include?(controller_name) ? '' : 'collapsed' %>">
           <span><i class="bi bi-shield-lock-fill"></i><span class="ms-2">Administração</span></span>
           <i class="bi bi-chevron-down small"></i>
         </a>
-        <div class="collapse <%= ['admin_users', 'profiles', 'captacao_goals', 'attribute_options'].include?(controller_name) ? 'show' : '' %>" id="submenu-admin">
+        <div class="collapse <%= ['admin_users', 'profiles', 'attribute_options'].include?(controller_name) ? 'show' : '' %>" id="submenu-admin">
           <ul class="sidebar-menu ps-3 mt-1 bg-light rounded">
             <% if can_access.call(:view, :corretores) %>
               <li class="sidebar-menu-item"><%= link_to admin_admin_users_path, class: controller_name == 'admin_users' ? 'active' : '' do %><i class="bi bi-people"></i><span>Corretores</span><% end %></li>
             <% end %>
             <% if can_access.call(:manage, :perfis) %>
               <li class="sidebar-menu-item"><%= link_to admin_profiles_path, class: controller_name == 'profiles' ? 'active' : '' do %><i class="bi bi-shield-lock"></i><span>Perfis</span><% end %></li>
-            <% end %>
-            <% if can_access.call(:view, :metas_captacao) %>
-              <li class="sidebar-menu-item"><%= link_to admin_captacao_goals_path, class: controller_name == 'captacao_goals' ? 'active' : '' do %><i class="bi bi-bullseye"></i><span>Metas de Captação</span><% end %></li>
             <% end %>
             <% if can_access.call(:view, :catalogos) %>
               <li class="sidebar-menu-item"><%= link_to admin_attribute_options_path, class: controller_name == 'attribute_options' ? 'active' : '' do %><i class="bi bi-tags"></i><span>Catálogos Dinâmicos</span><% end %></li>
