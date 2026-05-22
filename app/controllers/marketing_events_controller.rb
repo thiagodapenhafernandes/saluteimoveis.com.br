@@ -2,6 +2,8 @@ class MarketingEventsController < ApplicationController
   skip_before_action :verify_authenticity_token, only: :create
 
   def create
+    return head :accepted unless lgpd_consent_accepted?
+
     event_type = params[:event_type].presence_in(SeoConversionEvent::EVENT_TYPES.keys) || "campaign_click"
     campaign = MarketingCampaign.find_by(id: params[:marketing_campaign_id])
     habitation = Habitation.find_by(id: params[:habitation_id])

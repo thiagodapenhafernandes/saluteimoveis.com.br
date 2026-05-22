@@ -37,7 +37,8 @@ module Admin
     end
 
     def new
-      start_new_intake
+      @captacao = build_intake_preview
+      render "admin/captacoes/new"
     end
 
     def create
@@ -196,7 +197,15 @@ module Admin
     private
 
     def start_new_intake
-      habitation = Habitation.create!(
+      habitation = build_intake_preview
+      habitation.intake_step = "proprietario"
+
+      habitation.save!
+      redirect_to edit_admin_captacao_path(habitation, step: "proprietario"), notice: "Captação iniciada."
+    end
+
+    def build_intake_preview
+      Habitation.new(
         admin_user: current_admin_user,
         intake_origin: Habitation::INTAKE_ORIGIN_BROKER,
         intake_status: "draft",
@@ -204,9 +213,15 @@ module Admin
         categoria: "Apartamento",
         status: default_status,
         tipo: "Unitário",
-        foto_classificacao: "Não tem fotos"
-      )
-      redirect_to edit_admin_captacao_path(habitation), notice: "Captação iniciada."
+        foto_classificacao: "Não tem fotos",
+        intake_modalidade: default_modalidade
+      ).tap do |habitation|
+        habitation.assign_attributes(initial_intake_params) if params[:habitation].present?
+      end
+    end
+
+    def initial_intake_params
+      params.require(:habitation).permit(:property_kind, :modalidade).compact_blank
     end
 
     def set_habitation
@@ -235,6 +250,14 @@ module Admin
 
     def default_status
       current_admin_user&.rentals? ? "Aluguel" : "Venda"
+    end
+
+    def default_modalidade
+      case current_admin_user&.acting_type
+      when "rentals" then "locacao_anual"
+      when "sales" then "venda"
+      else "venda"
+      end
     end
 
     def load_form_options
@@ -475,6 +498,7 @@ module Admin
 
     def normalize_captacao_params(raw)
       attrs = raw.to_h
+      normalize_attachment_params!(attrs)
       attrs["intake_step"] = attrs.delete("step") if attrs["step"].present?
       property_kind = attrs.delete("property_kind")
       mapped_category = case property_kind
@@ -532,6 +556,19 @@ module Admin
         attrs["address_attributes"]["id"] = @habitation.address.id if @habitation.address.present?
       end
       attrs.except("salas", "sacada", "terraco", "dependencia_empregada", "precisa_reforma", "distancia_praia", "cidade_permuta", "outras_taxas", "dias_visitas", "extras", "proprietario_cidade")
+    end
+
+    def normalize_attachment_params!(attrs)
+      %w[photos fotos autorizacoes_venda fichas_cadastro autorizacao_pdf].each do |key|
+        next unless attrs.key?(key)
+
+        values = Array(attrs[key]).reject { |value| value.respond_to?(:blank?) ? value.blank? : value.nil? }
+        if values.any?
+          attrs[key] = values
+        else
+          attrs.delete(key)
+        end
+      end
     end
 
     def submission_notice(submitted_records)

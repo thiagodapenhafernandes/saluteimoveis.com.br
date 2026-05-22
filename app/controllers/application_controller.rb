@@ -2,12 +2,18 @@ class ApplicationController < ActionController::Base
   before_action :apply_seo_redirect
   before_action :set_admin_robots_header
   before_action :load_layout_settings
-  helper_method :current_public_seo_setting
+  helper_method :current_public_seo_setting, :lgpd_consent_accepted?
+
+  LGPD_CONSENT_COOKIE = "salute_lgpd_consent".freeze
 
   def current_public_seo_setting
     return @current_public_seo_setting if defined?(@current_public_seo_setting)
 
     @current_public_seo_setting = Seo::PageTracker.track!(self)
+  end
+
+  def lgpd_consent_accepted?
+    cookies[LGPD_CONSENT_COOKIE] == "accepted"
   end
 
   private

@@ -401,7 +401,8 @@ class HabitationsController < ApplicationController
     return unless @habitation
 
     @lead_share_token = nil
-    token = params[:share_token].presence || cookies.signed[HabitationShareLink::COOKIE_KEY].presence
+    token = params[:share_token].presence
+    token ||= cookies.signed[HabitationShareLink::COOKIE_KEY].presence if lgpd_consent_accepted?
     return if token.blank?
 
     link = HabitationShareLink.active
@@ -415,6 +416,8 @@ class HabitationsController < ApplicationController
     @share_link = link
     @shared_broker = link.admin_user
     @lead_share_token = link.token
+    return unless lgpd_consent_accepted?
+
     remember_share_link(link)
     link.register_click!
     Seo::ConversionTracker.record!(

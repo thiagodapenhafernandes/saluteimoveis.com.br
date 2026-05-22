@@ -32,17 +32,13 @@ module Seo
       created = seo.new_record?
 
       unless created || !seo.manual_mode?
-        seo.register_access!
-        SeoPageVisit.record!(seo, @controller.request)
-        record_campaign_visit(seo)
+        record_page_visit(seo)
         return seo
       end
 
       seo.assign_attributes(attributes_for(identity, created))
       seo.save!
-      seo.register_access!
-      SeoPageVisit.record!(seo, @controller.request)
-      record_campaign_visit(seo)
+      record_page_visit(seo)
 
       enqueue_ai_generation(seo) if created && self.class.auto_ai? && Ai::SeoContentService.connected?
       seo
@@ -121,6 +117,18 @@ module Seo
     rescue => e
       Rails.logger.warn("[Seo::PageTracker::CampaignVisit] #{e.class}: #{e.message}")
       nil
+    end
+
+    def record_page_visit(seo)
+      return unless consent_accepted?
+
+      seo.register_access!
+      SeoPageVisit.record!(seo, @controller.request)
+      record_campaign_visit(seo)
+    end
+
+    def consent_accepted?
+      @controller.respond_to?(:lgpd_consent_accepted?) && @controller.lgpd_consent_accepted?
     end
   end
 end

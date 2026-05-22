@@ -12,6 +12,8 @@ export default class extends Controller {
   }
 
   track(event) {
+    if (!this.canTrack()) return
+
     const target = event.currentTarget
     const payload = new FormData()
 
@@ -46,5 +48,9 @@ export default class extends Controller {
 
   capitalize(value) {
     return value.charAt(0).toUpperCase() + value.slice(1)
+  }
+
+  canTrack() {
+    return window.SaluteLgpdConsent?.accepted?.() === true
   }
 }

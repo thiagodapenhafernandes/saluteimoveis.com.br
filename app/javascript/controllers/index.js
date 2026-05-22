@@ -94,6 +94,9 @@ application.register("image-preview", ImagePreviewController)
 import LeadCaptureController from "controllers/lead_capture_controller"
 application.register("lead-capture", LeadCaptureController)
 
+import LgpdConsentController from "controllers/lgpd_consent_controller"
+application.register("lgpd-consent", LgpdConsentController)
+
 import LeadKanbanController from "controllers/lead_kanban_controller"
 application.register("lead-kanban", LeadKanbanController)
 

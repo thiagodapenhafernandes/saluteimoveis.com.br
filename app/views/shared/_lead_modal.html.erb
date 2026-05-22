@@ -75,9 +75,9 @@
             </button>
           </div>
           
-          <p class="text-[10px] text-center text-gray-400 mt-4 leading-tight">
-            Seus dados estão seguros. Ao clicar, você concorda com nossa <%= link_to 'Política de Privacidade', privacy_policy_path, class: 'underline hover:text-blue-three', target: '_blank' %> e em ser contatado por nossos consultores.
-          </p>
+          <%= render "shared/form_consent_notice",
+                     class_name: "text-[10px] text-center text-gray-400 mt-4 leading-tight",
+                     link_class: "underline hover:text-blue-three" %>
         </form>
       </div>
     </div>

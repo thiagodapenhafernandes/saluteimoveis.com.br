@@ -31,6 +31,14 @@
       <% unless @captacao.completed? %>
         <span class="badge bg-warning-subtle text-warning">Rascunho</span>
       <% end %>
+      <% unless @captacao.intake_published? %>
+        <%= button_to admin_captacao_path(@captacao),
+                      method: :delete,
+                      class: "btn btn-sm btn-outline-danger",
+                      form: { data: { turbo_confirm: "Descartar esta captação?" } } do %>
+          <i class="bi bi-trash me-1"></i>Descartar
+        <% end %>
+      <% end %>
     </div>
     <div class="wizard-progress">
       <div class="wizard-progress-bar" style="width: <%= @captacao.progress_percentage %>%;"></div>

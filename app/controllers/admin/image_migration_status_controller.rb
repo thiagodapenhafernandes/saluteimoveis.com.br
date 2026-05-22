@@ -23,6 +23,7 @@ class Admin::ImageMigrationStatusController < Admin::BaseController
     properties_with_photos = source_scope.joins(:photos_attachments).distinct.count
     pending_properties = source_scope.where.missing(:photos_attachments).count
     public_pending_properties = source_scope.where(status: PUBLIC_STATUSES).where.missing(:photos_attachments).count
+    public_vista_first_properties = public_vista_first_scope.count
     total_source_images = source_scope.pick(Arel.sql("COALESCE(SUM(jsonb_array_length(pictures)), 0)::bigint")).to_i
     migrated_images = ActiveStorage::Attachment.where(record_type: "Habitation", name: "photos").count
     latest_attachment_at = ActiveStorage::Attachment.where(record_type: "Habitation", name: "photos").maximum(:created_at)
@@ -33,6 +34,8 @@ class Admin::ImageMigrationStatusController < Admin::BaseController
       properties_with_photos: properties_with_photos,
       pending_properties: pending_properties,
       public_pending_properties: public_pending_properties,
+      public_vista_first_properties: public_vista_first_properties,
+      public_vista_first_sample: public_vista_first_scope.limit(20).pluck(:id),
       property_progress: percentage(properties_with_photos, total_properties),
       total_source_images: total_source_images,
       migrated_images: migrated_images,
@@ -54,6 +57,15 @@ class Admin::ImageMigrationStatusController < Admin::BaseController
     return 100.0 if total.to_i.zero?
 
     ((current.to_f / total.to_f) * 100).round(2)
+  end
+
+  def public_vista_first_scope
+    Habitation
+      .where.not(imovel_dwv: "Sim")
+      .where(exibir_no_site_flag: true)
+      .where(status: PUBLIC_STATUSES)
+      .where("jsonb_typeof(pictures) = ? AND jsonb_array_length(pictures) > 0", "array")
+      .where.missing(:photos_attachments)
   end
 
   def worker_status

@@ -108,6 +108,10 @@
               <span>Pendentes públicos de venda/aluguel</span>
               <strong><%= number_with_delimiter(@status[:public_pending_properties]) %></strong>
             </li>
+            <li class="d-flex justify-content-between py-2 border-bottom">
+              <span>Públicos ainda renderizando Vista primeiro</span>
+              <strong><%= number_with_delimiter(@status[:public_vista_first_properties]) %></strong>
+            </li>
             <li class="d-flex justify-content-between py-2">
               <span>Total estimado de imagens de origem</span>
               <strong><%= number_with_delimiter(@status[:total_source_images]) %></strong>
@@ -151,8 +155,18 @@
     </div>
   <% end %>
 
+  <% if @status[:public_vista_first_properties].positive? %>
+    <div class="alert alert-warning">
+      <div class="fw-bold mb-1"><i class="bi bi-exclamation-triangle me-2"></i>Há imóveis públicos usando Vista como fallback</div>
+      <div class="small">
+        Esses imóveis ainda não têm foto anexada na nossa base e podem renderizar imagens do Vista.
+        Amostra de IDs: <code><%= @status[:public_vista_first_sample].join(", ") %></code>.
+      </div>
+    </div>
+  <% end %>
+
   <div class="alert alert-info mb-0">
     <i class="bi bi-info-circle me-2"></i>
-    Esta tela mede imóveis que já possuem pelo menos uma foto anexada no Active Storage. A porcentagem por imagem é uma estimativa baseada no total de URLs antigas versus anexos de fotos atuais.
+    Esta tela mede imóveis que já possuem pelo menos uma foto anexada no Active Storage. O site prioriza as imagens anexadas na nossa base e usa URLs antigas apenas quando ainda não existe anexo migrado.
   </div>
 </div>

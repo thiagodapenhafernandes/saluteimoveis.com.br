@@ -143,9 +143,7 @@
               <i class="bi bi-send mr-2"></i>
               Enviar Mensagem
             </button>
-            <p class="text-xs text-center text-gray-500 mt-3">
-              Seus dados estão seguros. Ao enviar, você concorda com nossa <%= link_to 'Política de Privacidade', privacy_policy_path, class: 'underline hover:text-blue-three', target: '_blank' %>.
-            </p>
+            <%= render "shared/form_consent_notice" %>
           <% end %>
         </div>
       </div>

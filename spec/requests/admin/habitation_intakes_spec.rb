@@ -10,17 +10,36 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     sign_in admin
   end
 
-  it "cria uma captação como imóvel oculto" do
+  it "abre nova captação sem criar rascunho automaticamente" do
     expect {
       get new_admin_captacao_path
+    }.not_to change { Habitation.broker_intakes.count }
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Sem rascunho criado")
+    expect(response.body).to include("Iniciar captação")
+  end
+
+  it "cria rascunho somente quando o corretor inicia a captação" do
+    expect {
+      post admin_captacoes_path, params: {
+        habitation: {
+          property_kind: "terreno",
+          modalidade: "locacao_anual"
+        }
+      }
     }.to change { Habitation.broker_intakes.count }.by(1)
 
     intake = Habitation.broker_intakes.order(:created_at).last
-    expect(response).to redirect_to(edit_admin_captacao_path(intake))
+    expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "proprietario"))
     expect(intake).to have_attributes(
       intake_status: "draft",
+      intake_step: "proprietario",
       exibir_no_site_flag: false,
-      admin_user_id: admin.id
+      admin_user_id: admin.id,
+      categoria: "Terreno",
+      status: "Aluguel",
+      intake_modalidade: "locacao_anual"
     )
   end
 
@@ -183,6 +202,52 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(response).to have_http_status(:unprocessable_entity)
     expect(response.body).to include("Informe um valor de venda válido")
     expect(intake.reload.intake_status).to eq("draft")
+  end
+
+  it "anexa autorização enviada no passo de fotos antes de validar avanço" do
+    intake = create(:habitation, :broker_intake, admin_user: admin, intake_step: "fotos", photo_flow_choice: "upload")
+    intake.photos.attach(
+      io: StringIO.new("foto"),
+      filename: "foto.jpg",
+      content_type: "image/jpeg"
+    )
+    authorization = Rack::Test::UploadedFile.new(
+      StringIO.new("autorizacao"),
+      "image/png",
+      original_filename: "autorizacao.png"
+    )
+
+    patch admin_captacao_path(intake), params: {
+      current_step: "fotos",
+      direction: "forward",
+      habitation: {
+        photos: [""],
+        autorizacoes_venda: [authorization]
+      }
+    }
+
+    expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "review"))
+    expect(intake.reload.autorizacoes_venda).to be_attached
+    expect(intake.photos).to be_attached
+  end
+
+  it "não remove anexos existentes quando o navegador envia campos de arquivo vazios" do
+    intake = create(:habitation, :broker_intake, admin_user: admin, intake_step: "fotos", photo_flow_choice: "upload")
+    intake.photos.attach(io: StringIO.new("foto"), filename: "foto.jpg", content_type: "image/jpeg")
+    intake.autorizacoes_venda.attach(io: StringIO.new("autorizacao"), filename: "autorizacao.png", content_type: "image/png")
+
+    patch admin_captacao_path(intake), params: {
+      current_step: "fotos",
+      direction: "forward",
+      habitation: {
+        photos: [""],
+        autorizacoes_venda: [""]
+      }
+    }
+
+    expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "review"))
+    expect(intake.reload.photos).to be_attached
+    expect(intake.autorizacoes_venda).to be_attached
   end
 
   it "bloqueia valor simbólico na negociação" do

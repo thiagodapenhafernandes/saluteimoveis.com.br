@@ -643,10 +643,12 @@ class Habitation < ApplicationRecord
     api_images = if images.is_a?(Array)
                    images.map { |pic| pic.is_a?(Hash) ? pic : { "url" => pic } }
                  else
-                   []
-                 end
+                 []
+               end
 
-    api_images.presence || attached_images
+    return api_images.presence || attached_images if dwv_property?
+
+    attached_images.presence || api_images
   end
   
   # Retorna todas as imagens (Hash format)

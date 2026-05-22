@@ -12,6 +12,7 @@ import FancyboxGalleryController from "controllers/fancybox_gallery_controller"
 import FiltersController from "controllers/filters_controller"
 import HeroSliderController from "controllers/hero_slider_controller"
 import LeadCaptureController from "controllers/lead_capture_controller"
+import LgpdConsentController from "controllers/lgpd_consent_controller"
 import LocationFilterController from "controllers/location_filter_controller"
 import MarketingTrackerController from "controllers/marketing_tracker_controller"
 import NavbarController from "controllers/navbar_controller"
@@ -34,6 +35,7 @@ application.register("fancybox-gallery", FancyboxGalleryController)
 application.register("filters", FiltersController)
 application.register("hero-slider", HeroSliderController)
 application.register("lead-capture", LeadCaptureController)
+application.register("lgpd-consent", LgpdConsentController)
 application.register("location-filter", LocationFilterController)
 application.register("marketing-tracker", MarketingTrackerController)
 application.register("navbar", NavbarController)
