@@ -239,6 +239,9 @@ class Habitation < ApplicationRecord
   after_destroy :clear_cache
 
   scope :broker_intakes, -> { where(intake_origin: INTAKE_ORIGIN_BROKER) }
+  scope :pending_admin_review_from_intake, -> {
+    broker_intakes.where(intake_status: "submitted_for_admin_review")
+  }
 
   def step
     intake_step.presence || "intro"

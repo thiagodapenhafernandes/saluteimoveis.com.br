@@ -550,10 +550,24 @@
                     class: "form-select form-select-sm" %>
               </div>
               <div class="col-md-2">
-                <%= f.label :status, "Status:", class: "form-label small fw-bold mb-1" %>
+                <%= f.label :status, "Status comercial:", class: "form-label small fw-bold mb-1" %>
                 <%= f.select :status, (@status_options.presence || Habitation::STATUS_OPTIONS), { include_blank: true },
                     class: "form-select form-select-sm", data: { controller: "tom-select", placeholder: "Selecione..." } %>
               </div>
+              <% if habitation.broker_intake? %>
+                <div class="col-md-3">
+                  <%= f.label :intake_status, "Status da captação:", class: "form-label small fw-bold mb-1" %>
+                  <%= f.select :intake_status,
+                      Habitation::INTAKE_STATUSES.map { |value, label| [label, value] },
+                      {},
+                      class: "form-select form-select-sm",
+                      disabled: !can_manage_intake_status?(habitation),
+                      data: { controller: "tom-select", placeholder: "Selecione..." } %>
+                  <div class="form-text small">
+                    Fluxo separado do status comercial.
+                  </div>
+                </div>
+              <% end %>
               <div class="col-md-2">
                 <%= f.label :situacao, "Situação:", class: "form-label small fw-bold mb-1" %>
                 <%= f.select :situacao, Habitation::SITUATIONS, { include_blank: true },
