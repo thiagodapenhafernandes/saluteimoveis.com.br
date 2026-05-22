@@ -11,6 +11,12 @@ class AdminUser < ApplicationRecord
   has_many :subordinates, class_name: "AdminUser", foreign_key: "manager_id"
   has_many :habitations
   has_many :habitation_share_links, dependent: :destroy
+  has_many :habitation_audit_logs
+  has_many :access_audit_logs
+  has_many :data_export_audit_logs
+  has_many :lead_audit_logs
+  has_many :trusted_devices, dependent: :destroy
+  has_many :access_control_rules, dependent: :nullify
 
   # Field ops (check-in geolocalizado)
   belongs_to :default_store, class_name: "Store", optional: true

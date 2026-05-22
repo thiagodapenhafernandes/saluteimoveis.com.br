@@ -101,7 +101,7 @@ module Admin
     end
 
     def admin_user_params
-      params.require(:admin_user).permit(:email, :password, :password_confirmation, :name, :role, :profile_id, :manager_id, :creci, :phone, :biography, :birth_date, :city, :avatar, :acting_type, :active, :field_agent_enabled, :default_store_id)
+      params.require(:admin_user).permit(:email, :password, :password_confirmation, :name, :role, :profile_id, :manager_id, :creci, :phone, :biography, :birth_date, :city, :avatar, :acting_type, :active, :field_agent_enabled, :default_store_id, :require_ip_allowlist, :require_trusted_device)
     end
   end
 end

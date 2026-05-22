@@ -15,6 +15,8 @@ module Seo
     end
 
     def record!
+      return if AccessControl::TrackerExclusion.excluded?(request)
+
       event = SeoConversionEvent.create!(
         seo_setting: seo_setting,
         marketing_campaign: marketing_campaign,

@@ -40,6 +40,7 @@ class Admin::LeadsController < Admin::BaseController
   def show
     @page_title = "Lead: #{@lead.name}"
     @property = Habitation.find_by(id: @lead.property_id)
+    @lead_audit_logs = @lead.lead_audit_logs.includes(:admin_user).recent.limit(80)
   end
 
   def update

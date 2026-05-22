@@ -1,5 +1,6 @@
 class ApplicationController < ActionController::Base
   before_action :apply_seo_redirect
+  before_action :set_current_request_context
   before_action :set_admin_robots_header
   before_action :load_layout_settings
   helper_method :current_public_seo_setting, :lgpd_consent_accepted?
@@ -17,6 +18,17 @@ class ApplicationController < ActionController::Base
   end
 
   private
+
+  def set_current_request_context
+    Current.request_ip = request.remote_ip
+    Current.request_user_agent = request.user_agent.to_s.first(255)
+    Current.request_metadata = {
+      path: request.fullpath,
+      method: request.request_method,
+      controller: params[:controller],
+      action: params[:action]
+    }.compact
+  end
 
   def apply_seo_redirect
     return unless request.get? || request.head?

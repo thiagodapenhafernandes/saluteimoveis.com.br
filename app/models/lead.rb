@@ -15,8 +15,12 @@ class Lead < ApplicationRecord
   belongs_to :admin_user, optional: true
   belongs_to :shared_by_admin_user, class_name: "AdminUser", optional: true
   belongs_to :distribution_rule, optional: true
+  has_many :lead_audit_logs
   has_many :activities, class_name: "LeadActivity", dependent: :destroy
   
+  after_create :record_audit_create
+  after_update :record_audit_update
+  after_destroy :record_audit_destroy
   after_create_commit :route_lead
 
   before_validation :normalize_status
@@ -113,6 +117,18 @@ class Lead < ApplicationRecord
 
   def normalize_status
     self.status = self.class.status_value(status)
+  end
+
+  def record_audit_create
+    Leads::AuditChangeRecorder.record_create!(self)
+  end
+
+  def record_audit_update
+    Leads::AuditChangeRecorder.record_update!(self)
+  end
+
+  def record_audit_destroy
+    Leads::AuditChangeRecorder.record_destroy!(self)
   end
 
   def route_lead

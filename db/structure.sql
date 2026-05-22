@@ -1,5 +1,7 @@
--- Dumped from database version 18.3 (Homebrew)
--- Dumped by pg_dump version 18.3 (Homebrew)
+\restrict QwLJyjded5fs7JeS6tzjDXjtkzhVIroW8tRs0V9geDc7c1RbZDpY2vcmDO7YM8Y
+
+-- Dumped from database version 17.9 (Homebrew)
+-- Dumped by pg_dump version 18.3
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -42,6 +44,18 @@ COMMENT ON EXTENSION unaccent IS 'text search dictionary that removes accents';
 
 
 --
+-- Name: raise_access_audit_immutable(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.raise_access_audit_immutable() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'access_audit_logs is append-only';
+END; $$;
+
+
+--
 -- Name: raise_checkin_audit_immutable(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -53,9 +67,130 @@ BEGIN
 END; $$;
 
 
+--
+-- Name: raise_data_export_audit_immutable(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.raise_data_export_audit_immutable() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'data_export_audit_logs is append-only';
+END;
+$$;
+
+
+--
+-- Name: raise_habitation_audit_immutable(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.raise_habitation_audit_immutable() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'habitation_audit_logs is append-only';
+END; $$;
+
+
+--
+-- Name: raise_lead_audit_immutable(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.raise_lead_audit_immutable() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'lead_audit_logs is append-only';
+END;
+$$;
+
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
+
+--
+-- Name: access_audit_logs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.access_audit_logs (
+    id bigint NOT NULL,
+    admin_user_id bigint,
+    event_type character varying NOT NULL,
+    result character varying NOT NULL,
+    reason character varying,
+    email character varying,
+    ip inet,
+    user_agent character varying,
+    device_type character varying,
+    browser character varying,
+    platform character varying,
+    path character varying,
+    request_method character varying,
+    controller_name character varying,
+    action_name character varying,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: access_audit_logs_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.access_audit_logs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: access_audit_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.access_audit_logs_id_seq OWNED BY public.access_audit_logs.id;
+
+
+--
+-- Name: access_control_rules; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.access_control_rules (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    rule_type character varying NOT NULL,
+    scope_type character varying DEFAULT 'global'::character varying NOT NULL,
+    profile_id bigint,
+    admin_user_id bigint,
+    created_by_id bigint,
+    ip_value character varying NOT NULL,
+    enabled boolean DEFAULT true NOT NULL,
+    description text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: access_control_rules_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.access_control_rules_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: access_control_rules_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.access_control_rules_id_seq OWNED BY public.access_control_rules.id;
+
 
 --
 -- Name: action_text_rich_texts; Type: TABLE; Schema: public; Owner: -
@@ -261,7 +396,9 @@ CREATE TABLE public.admin_users (
     acting_type integer,
     field_agent_enabled boolean DEFAULT false NOT NULL,
     default_store_id bigint,
-    active boolean DEFAULT true NOT NULL
+    active boolean DEFAULT true NOT NULL,
+    require_ip_allowlist boolean DEFAULT false NOT NULL,
+    require_trusted_device boolean DEFAULT false NOT NULL
 );
 
 
@@ -682,6 +819,47 @@ CREATE SEQUENCE public.contact_settings_id_seq
 --
 
 ALTER SEQUENCE public.contact_settings_id_seq OWNED BY public.contact_settings.id;
+
+
+--
+-- Name: data_export_audit_logs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.data_export_audit_logs (
+    id bigint NOT NULL,
+    admin_user_id bigint,
+    export_type character varying NOT NULL,
+    resource_name character varying NOT NULL,
+    format character varying NOT NULL,
+    record_count integer DEFAULT 0 NOT NULL,
+    selected_count integer DEFAULT 0 NOT NULL,
+    filename character varying,
+    filters jsonb DEFAULT '{}'::jsonb NOT NULL,
+    fields jsonb DEFAULT '[]'::jsonb NOT NULL,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    ip inet,
+    user_agent character varying,
+    created_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: data_export_audit_logs_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.data_export_audit_logs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: data_export_audit_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.data_export_audit_logs_id_seq OWNED BY public.data_export_audit_logs.id;
 
 
 --
@@ -1207,6 +1385,44 @@ ALTER SEQUENCE public.friendly_id_slugs_id_seq OWNED BY public.friendly_id_slugs
 
 
 --
+-- Name: habitation_audit_logs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.habitation_audit_logs (
+    id bigint NOT NULL,
+    habitation_id bigint NOT NULL,
+    admin_user_id bigint,
+    action character varying NOT NULL,
+    source character varying DEFAULT 'admin'::character varying NOT NULL,
+    changed_fields text[] DEFAULT '{}'::text[] NOT NULL,
+    changeset jsonb DEFAULT '{}'::jsonb NOT NULL,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    ip inet,
+    user_agent character varying,
+    created_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: habitation_audit_logs_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.habitation_audit_logs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: habitation_audit_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.habitation_audit_logs_id_seq OWNED BY public.habitation_audit_logs.id;
+
+
+--
 -- Name: habitation_broker_assignments; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1560,6 +1776,44 @@ CREATE SEQUENCE public.lead_activities_id_seq
 --
 
 ALTER SEQUENCE public.lead_activities_id_seq OWNED BY public.lead_activities.id;
+
+
+--
+-- Name: lead_audit_logs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.lead_audit_logs (
+    id bigint NOT NULL,
+    lead_id bigint NOT NULL,
+    admin_user_id bigint,
+    action character varying NOT NULL,
+    source character varying NOT NULL,
+    changed_fields text[] DEFAULT '{}'::text[] NOT NULL,
+    changeset jsonb DEFAULT '{}'::jsonb NOT NULL,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    ip inet,
+    user_agent character varying,
+    created_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: lead_audit_logs_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.lead_audit_logs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: lead_audit_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.lead_audit_logs_id_seq OWNED BY public.lead_audit_logs.id;
 
 
 --
@@ -2882,6 +3136,48 @@ ALTER SEQUENCE public.stores_id_seq OWNED BY public.stores.id;
 
 
 --
+-- Name: trusted_devices; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.trusted_devices (
+    id bigint NOT NULL,
+    admin_user_id bigint NOT NULL,
+    created_by_id bigint,
+    name character varying,
+    fingerprint character varying NOT NULL,
+    status character varying DEFAULT 'pending'::character varying NOT NULL,
+    device_type character varying,
+    browser character varying,
+    platform character varying,
+    last_ip inet,
+    user_agent character varying,
+    trusted_at timestamp(6) without time zone,
+    last_seen_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: trusted_devices_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.trusted_devices_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: trusted_devices_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.trusted_devices_id_seq OWNED BY public.trusted_devices.id;
+
+
+--
 -- Name: user_meta_integrations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2954,6 +3250,20 @@ CREATE SEQUENCE public.webhook_settings_id_seq
 --
 
 ALTER SEQUENCE public.webhook_settings_id_seq OWNED BY public.webhook_settings.id;
+
+
+--
+-- Name: access_audit_logs id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.access_audit_logs ALTER COLUMN id SET DEFAULT nextval('public.access_audit_logs_id_seq'::regclass);
+
+
+--
+-- Name: access_control_rules id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.access_control_rules ALTER COLUMN id SET DEFAULT nextval('public.access_control_rules_id_seq'::regclass);
 
 
 --
@@ -3062,6 +3372,13 @@ ALTER TABLE ONLY public.contact_settings ALTER COLUMN id SET DEFAULT nextval('pu
 
 
 --
+-- Name: data_export_audit_logs id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.data_export_audit_logs ALTER COLUMN id SET DEFAULT nextval('public.data_export_audit_logs_id_seq'::regclass);
+
+
+--
 -- Name: distribution_rule_agents id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -3108,6 +3425,13 @@ ALTER TABLE ONLY public.footer_stores ALTER COLUMN id SET DEFAULT nextval('publi
 --
 
 ALTER TABLE ONLY public.friendly_id_slugs ALTER COLUMN id SET DEFAULT nextval('public.friendly_id_slugs_id_seq'::regclass);
+
+
+--
+-- Name: habitation_audit_logs id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.habitation_audit_logs ALTER COLUMN id SET DEFAULT nextval('public.habitation_audit_logs_id_seq'::regclass);
 
 
 --
@@ -3178,6 +3502,13 @@ ALTER TABLE ONLY public.layout_settings ALTER COLUMN id SET DEFAULT nextval('pub
 --
 
 ALTER TABLE ONLY public.lead_activities ALTER COLUMN id SET DEFAULT nextval('public.lead_activities_id_seq'::regclass);
+
+
+--
+-- Name: lead_audit_logs id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.lead_audit_logs ALTER COLUMN id SET DEFAULT nextval('public.lead_audit_logs_id_seq'::regclass);
 
 
 --
@@ -3419,6 +3750,13 @@ ALTER TABLE ONLY public.stores ALTER COLUMN id SET DEFAULT nextval('public.store
 
 
 --
+-- Name: trusted_devices id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trusted_devices ALTER COLUMN id SET DEFAULT nextval('public.trusted_devices_id_seq'::regclass);
+
+
+--
 -- Name: user_meta_integrations id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -3430,6 +3768,22 @@ ALTER TABLE ONLY public.user_meta_integrations ALTER COLUMN id SET DEFAULT nextv
 --
 
 ALTER TABLE ONLY public.webhook_settings ALTER COLUMN id SET DEFAULT nextval('public.webhook_settings_id_seq'::regclass);
+
+
+--
+-- Name: access_audit_logs access_audit_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.access_audit_logs
+    ADD CONSTRAINT access_audit_logs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: access_control_rules access_control_rules_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.access_control_rules
+    ADD CONSTRAINT access_control_rules_pkey PRIMARY KEY (id);
 
 
 --
@@ -3561,6 +3915,14 @@ ALTER TABLE ONLY public.contact_settings
 
 
 --
+-- Name: data_export_audit_logs data_export_audit_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.data_export_audit_logs
+    ADD CONSTRAINT data_export_audit_logs_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: distribution_rule_agents distribution_rule_agents_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3614,6 +3976,14 @@ ALTER TABLE ONLY public.footer_stores
 
 ALTER TABLE ONLY public.friendly_id_slugs
     ADD CONSTRAINT friendly_id_slugs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: habitation_audit_logs habitation_audit_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.habitation_audit_logs
+    ADD CONSTRAINT habitation_audit_logs_pkey PRIMARY KEY (id);
 
 
 --
@@ -3694,6 +4064,14 @@ ALTER TABLE ONLY public.layout_settings
 
 ALTER TABLE ONLY public.lead_activities
     ADD CONSTRAINT lead_activities_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: lead_audit_logs lead_audit_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.lead_audit_logs
+    ADD CONSTRAINT lead_audit_logs_pkey PRIMARY KEY (id);
 
 
 --
@@ -3977,6 +4355,14 @@ ALTER TABLE ONLY public.stores
 
 
 --
+-- Name: trusted_devices trusted_devices_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trusted_devices
+    ADD CONSTRAINT trusted_devices_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: user_meta_integrations user_meta_integrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4088,6 +4474,97 @@ CREATE INDEX idx_store_shifts_agent_day_active ON public.store_shifts USING btre
 --
 
 CREATE UNIQUE INDEX idx_unique_active_checkin_per_user ON public.check_ins USING btree (admin_user_id) WHERE (status = 0);
+
+
+--
+-- Name: index_access_audit_logs_on_admin_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_access_audit_logs_on_admin_user_id ON public.access_audit_logs USING btree (admin_user_id);
+
+
+--
+-- Name: index_access_audit_logs_on_admin_user_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_access_audit_logs_on_admin_user_id_and_created_at ON public.access_audit_logs USING btree (admin_user_id, created_at);
+
+
+--
+-- Name: index_access_audit_logs_on_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_access_audit_logs_on_created_at ON public.access_audit_logs USING btree (created_at);
+
+
+--
+-- Name: index_access_audit_logs_on_event_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_access_audit_logs_on_event_type ON public.access_audit_logs USING btree (event_type);
+
+
+--
+-- Name: index_access_audit_logs_on_ip; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_access_audit_logs_on_ip ON public.access_audit_logs USING btree (ip);
+
+
+--
+-- Name: index_access_audit_logs_on_result; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_access_audit_logs_on_result ON public.access_audit_logs USING btree (result);
+
+
+--
+-- Name: index_access_control_rules_on_admin_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_access_control_rules_on_admin_user_id ON public.access_control_rules USING btree (admin_user_id);
+
+
+--
+-- Name: index_access_control_rules_on_created_by_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_access_control_rules_on_created_by_id ON public.access_control_rules USING btree (created_by_id);
+
+
+--
+-- Name: index_access_control_rules_on_enabled; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_access_control_rules_on_enabled ON public.access_control_rules USING btree (enabled);
+
+
+--
+-- Name: index_access_control_rules_on_profile_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_access_control_rules_on_profile_id ON public.access_control_rules USING btree (profile_id);
+
+
+--
+-- Name: index_access_control_rules_on_rule_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_access_control_rules_on_rule_type ON public.access_control_rules USING btree (rule_type);
+
+
+--
+-- Name: index_access_control_rules_on_scope_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_access_control_rules_on_scope_type ON public.access_control_rules USING btree (scope_type);
+
+
+--
+-- Name: index_access_rules_on_type_scope_enabled; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_access_rules_on_type_scope_enabled ON public.access_control_rules USING btree (rule_type, scope_type, enabled);
 
 
 --
@@ -4364,6 +4841,48 @@ CREATE INDEX index_checkin_audit_logs_on_check_in_id ON public.checkin_audit_log
 
 
 --
+-- Name: index_data_export_audit_logs_on_admin_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_data_export_audit_logs_on_admin_user_id ON public.data_export_audit_logs USING btree (admin_user_id);
+
+
+--
+-- Name: index_data_export_audit_logs_on_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_data_export_audit_logs_on_created_at ON public.data_export_audit_logs USING btree (created_at);
+
+
+--
+-- Name: index_data_export_audit_logs_on_export_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_data_export_audit_logs_on_export_type ON public.data_export_audit_logs USING btree (export_type);
+
+
+--
+-- Name: index_data_export_audit_logs_on_format; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_data_export_audit_logs_on_format ON public.data_export_audit_logs USING btree (format);
+
+
+--
+-- Name: index_data_export_audit_logs_on_resource_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_data_export_audit_logs_on_resource_name ON public.data_export_audit_logs USING btree (resource_name);
+
+
+--
+-- Name: index_data_export_audit_logs_on_resource_name_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_data_export_audit_logs_on_resource_name_and_created_at ON public.data_export_audit_logs USING btree (resource_name, created_at);
+
+
+--
 -- Name: index_distribution_rule_agents_on_admin_user_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4452,6 +4971,55 @@ CREATE UNIQUE INDEX index_friendly_id_slugs_on_slug_and_sluggable_type_and_scope
 --
 
 CREATE INDEX index_friendly_id_slugs_on_sluggable_type_and_sluggable_id ON public.friendly_id_slugs USING btree (sluggable_type, sluggable_id);
+
+
+--
+-- Name: index_habitation_audit_logs_on_action; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitation_audit_logs_on_action ON public.habitation_audit_logs USING btree (action);
+
+
+--
+-- Name: index_habitation_audit_logs_on_admin_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitation_audit_logs_on_admin_user_id ON public.habitation_audit_logs USING btree (admin_user_id);
+
+
+--
+-- Name: index_habitation_audit_logs_on_admin_user_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitation_audit_logs_on_admin_user_id_and_created_at ON public.habitation_audit_logs USING btree (admin_user_id, created_at);
+
+
+--
+-- Name: index_habitation_audit_logs_on_changed_fields; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitation_audit_logs_on_changed_fields ON public.habitation_audit_logs USING gin (changed_fields);
+
+
+--
+-- Name: index_habitation_audit_logs_on_habitation_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitation_audit_logs_on_habitation_id ON public.habitation_audit_logs USING btree (habitation_id);
+
+
+--
+-- Name: index_habitation_audit_logs_on_habitation_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitation_audit_logs_on_habitation_id_and_created_at ON public.habitation_audit_logs USING btree (habitation_id, created_at);
+
+
+--
+-- Name: index_habitation_audit_logs_on_source; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitation_audit_logs_on_source ON public.habitation_audit_logs USING btree (source);
 
 
 --
@@ -4837,6 +5405,55 @@ CREATE INDEX index_home_section_items_on_home_section_id ON public.home_section_
 --
 
 CREATE INDEX index_lead_activities_on_lead_id ON public.lead_activities USING btree (lead_id);
+
+
+--
+-- Name: index_lead_audit_logs_on_action; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_lead_audit_logs_on_action ON public.lead_audit_logs USING btree (action);
+
+
+--
+-- Name: index_lead_audit_logs_on_admin_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_lead_audit_logs_on_admin_user_id ON public.lead_audit_logs USING btree (admin_user_id);
+
+
+--
+-- Name: index_lead_audit_logs_on_admin_user_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_lead_audit_logs_on_admin_user_id_and_created_at ON public.lead_audit_logs USING btree (admin_user_id, created_at);
+
+
+--
+-- Name: index_lead_audit_logs_on_changed_fields; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_lead_audit_logs_on_changed_fields ON public.lead_audit_logs USING gin (changed_fields);
+
+
+--
+-- Name: index_lead_audit_logs_on_lead_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_lead_audit_logs_on_lead_id ON public.lead_audit_logs USING btree (lead_id);
+
+
+--
+-- Name: index_lead_audit_logs_on_lead_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_lead_audit_logs_on_lead_id_and_created_at ON public.lead_audit_logs USING btree (lead_id, created_at);
+
+
+--
+-- Name: index_lead_audit_logs_on_source; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_lead_audit_logs_on_source ON public.lead_audit_logs USING btree (source);
 
 
 --
@@ -5603,6 +6220,41 @@ CREATE UNIQUE INDEX index_stores_on_slug ON public.stores USING btree (slug);
 
 
 --
+-- Name: index_trusted_devices_on_admin_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_trusted_devices_on_admin_user_id ON public.trusted_devices USING btree (admin_user_id);
+
+
+--
+-- Name: index_trusted_devices_on_admin_user_id_and_fingerprint; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_trusted_devices_on_admin_user_id_and_fingerprint ON public.trusted_devices USING btree (admin_user_id, fingerprint);
+
+
+--
+-- Name: index_trusted_devices_on_created_by_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_trusted_devices_on_created_by_id ON public.trusted_devices USING btree (created_by_id);
+
+
+--
+-- Name: index_trusted_devices_on_last_ip; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_trusted_devices_on_last_ip ON public.trusted_devices USING btree (last_ip);
+
+
+--
+-- Name: index_trusted_devices_on_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_trusted_devices_on_status ON public.trusted_devices USING btree (status);
+
+
+--
 -- Name: index_user_meta_integrations_on_admin_user_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -5610,10 +6262,46 @@ CREATE INDEX index_user_meta_integrations_on_admin_user_id ON public.user_meta_i
 
 
 --
+-- Name: access_audit_logs access_audit_logs_no_update; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER access_audit_logs_no_update BEFORE DELETE OR UPDATE ON public.access_audit_logs FOR EACH ROW EXECUTE FUNCTION public.raise_access_audit_immutable();
+
+
+--
 -- Name: checkin_audit_logs checkin_audit_logs_no_update; Type: TRIGGER; Schema: public; Owner: -
 --
 
 CREATE TRIGGER checkin_audit_logs_no_update BEFORE DELETE OR UPDATE ON public.checkin_audit_logs FOR EACH ROW EXECUTE FUNCTION public.raise_checkin_audit_immutable();
+
+
+--
+-- Name: data_export_audit_logs data_export_audit_logs_no_update; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER data_export_audit_logs_no_update BEFORE DELETE OR UPDATE ON public.data_export_audit_logs FOR EACH ROW EXECUTE FUNCTION public.raise_data_export_audit_immutable();
+
+
+--
+-- Name: habitation_audit_logs habitation_audit_logs_no_update; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER habitation_audit_logs_no_update BEFORE DELETE OR UPDATE ON public.habitation_audit_logs FOR EACH ROW EXECUTE FUNCTION public.raise_habitation_audit_immutable();
+
+
+--
+-- Name: lead_audit_logs lead_audit_logs_no_update; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER lead_audit_logs_no_update BEFORE DELETE OR UPDATE ON public.lead_audit_logs FOR EACH ROW EXECUTE FUNCTION public.raise_lead_audit_immutable();
+
+
+--
+-- Name: data_export_audit_logs fk_rails_0b946cd1da; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.data_export_audit_logs
+    ADD CONSTRAINT fk_rails_0b946cd1da FOREIGN KEY (admin_user_id) REFERENCES public.admin_users(id);
 
 
 --
@@ -5750,6 +6438,14 @@ ALTER TABLE ONLY public.seo_conversion_events
 
 ALTER TABLE ONLY public.solid_queue_failed_executions
     ADD CONSTRAINT fk_rails_39bbc7a631 FOREIGN KEY (job_id) REFERENCES public.solid_queue_jobs(id) ON DELETE CASCADE;
+
+
+--
+-- Name: access_control_rules fk_rails_3a9287ea7a; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.access_control_rules
+    ADD CONSTRAINT fk_rails_3a9287ea7a FOREIGN KEY (created_by_id) REFERENCES public.admin_users(id);
 
 
 --
@@ -5905,6 +6601,14 @@ ALTER TABLE ONLY public.habitation_broker_assignments
 
 
 --
+-- Name: access_control_rules fk_rails_891464e92a; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.access_control_rules
+    ADD CONSTRAINT fk_rails_891464e92a FOREIGN KEY (admin_user_id) REFERENCES public.admin_users(id);
+
+
+--
 -- Name: seo_redirects fk_rails_89614535e7; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6025,6 +6729,14 @@ ALTER TABLE ONLY public.marketing_campaigns
 
 
 --
+-- Name: trusted_devices fk_rails_c1b334ed72; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trusted_devices
+    ADD CONSTRAINT fk_rails_c1b334ed72 FOREIGN KEY (created_by_id) REFERENCES public.admin_users(id);
+
+
+--
 -- Name: seo_conversion_events fk_rails_c272ff638d; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6057,6 +6769,14 @@ ALTER TABLE ONLY public.active_storage_attachments
 
 
 --
+-- Name: access_control_rules fk_rails_c3da571690; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.access_control_rules
+    ADD CONSTRAINT fk_rails_c3da571690 FOREIGN KEY (profile_id) REFERENCES public.profiles(id);
+
+
+--
 -- Name: solid_queue_scheduled_executions fk_rails_c4316f352d; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6070,6 +6790,14 @@ ALTER TABLE ONLY public.solid_queue_scheduled_executions
 
 ALTER TABLE ONLY public.store_shifts
     ADD CONSTRAINT fk_rails_c9e77c3011 FOREIGN KEY (store_id) REFERENCES public.stores(id);
+
+
+--
+-- Name: trusted_devices fk_rails_d44f794038; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.trusted_devices
+    ADD CONSTRAINT fk_rails_d44f794038 FOREIGN KEY (admin_user_id) REFERENCES public.admin_users(id);
 
 
 --
@@ -6164,9 +6892,19 @@ ALTER TABLE ONLY public.push_subscriptions
 -- PostgreSQL database dump complete
 --
 
+\unrestrict QwLJyjded5fs7JeS6tzjDXjtkzhVIroW8tRs0V9geDc7c1RbZDpY2vcmDO7YM8Y
+
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260522174500'),
+('20260522173500'),
+('20260522172700'),
+('20260522172600'),
+('20260522172500'),
+('20260522171512'),
+('20260522170618'),
+('20260522120000'),
 ('20260512180000'),
 ('20260512120000'),
 ('20260509133000'),

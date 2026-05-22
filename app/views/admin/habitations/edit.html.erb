@@ -138,6 +138,9 @@
       <%= link_to habitation_path(@habitation), target: "_blank", rel: "noopener", class: "btn btn-primary btn-sm" do %>
         <i class="bi bi-eye"></i><span class="ms-1">Ver no site</span>
       <% end %>
+      <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#habitationHistoryModal">
+        <i class="bi bi-clock-history"></i><span class="ms-1">Histórico</span>
+      </button>
       <% if current_admin_user&.admin? %>
         <%= button_to admin_habitation_path(@habitation),
             method: :delete,
@@ -152,4 +155,5 @@
   </div>
 
   <%= render 'form', habitation: @habitation %>
+  <%= render 'audit_history_modal', habitation: @habitation, logs: @habitation_audit_logs || [] %>
 </div>

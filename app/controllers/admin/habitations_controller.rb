@@ -143,6 +143,16 @@ class Admin::HabitationsController < Admin::BaseController
       end
     end
 
+    record_data_export!(
+      export_type: "print_report",
+      format: "html_print",
+      record_count: data_export_count_for(scope),
+      selected_count: ids.size,
+      fields: [@report_type],
+      filters: data_export_filters,
+      metadata: { report_type: @report_type, full_print: @full_print_mode }
+    )
+
     render layout: false
   end
 
@@ -164,8 +174,20 @@ class Admin::HabitationsController < Admin::BaseController
     end
 
     timestamp = Time.current.strftime("%Y%m%d_%H%M%S")
+    filename = "imoveis_exportacao_#{timestamp}.csv"
+    record_data_export!(
+      export_type: "csv_export",
+      format: params[:data_format].to_s.presence || "csv",
+      record_count: scope.count,
+      selected_count: ids.size,
+      fields: fields,
+      filename: filename,
+      filters: data_export_filters,
+      metadata: { sort_column: @sort_column, sort_direction: @sort_direction }
+    )
+
     send_data csv_content,
-              filename: "imoveis_exportacao_#{timestamp}.csv",
+              filename: filename,
               type: "text/csv; charset=utf-8"
   end
 
@@ -217,10 +239,12 @@ class Admin::HabitationsController < Admin::BaseController
 
     # Bump updated_at so feed ETags e cache_keys das habitations invalidem automaticamente
     updates[:updated_at] = Time.current
+    bulk_audit_changesets = bulk_habitation_audit_changesets(ids, updates)
 
     updated_count = 0
     Habitation.transaction do
       updated_count = Habitation.where(id: ids).update_all(updates)
+      record_bulk_habitation_updates(bulk_audit_changesets, action_type: action_type, channels: channels)
     end
 
     # Invalida caches individuais (replica o after_save :clear_cache manualmente, pois update_all pula callbacks)
@@ -272,6 +296,7 @@ class Admin::HabitationsController < Admin::BaseController
 
   def create
     @habitation = Habitation.new(habitation_params)
+    @habitation.skip_auto_audit = true
     assign_proprietor_from_legacy_fields(@habitation) if current_admin_user&.admin?
 
     unless no_duplicate_address?(@habitation)
@@ -281,6 +306,7 @@ class Admin::HabitationsController < Admin::BaseController
     end
 
     if @habitation.save
+      record_habitation_created(@habitation)
       redirect_to admin_habitations_path, notice: "Imóvel criado com sucesso."
     else
       load_autocomplete_data
@@ -292,14 +318,18 @@ class Admin::HabitationsController < Admin::BaseController
   def edit
     @page_title = "Editar Imóvel: #{@habitation.codigo}"
     load_ai_suggestion
+    load_habitation_audit_logs
   end
 
   def update
+    audit_snapshot_before = Habitations::AuditChangeRecorder.snapshot_for(@habitation)
+    @habitation.skip_auto_audit = true
     @habitation.assign_attributes(habitation_params)
     keep_admin_review_intake_hidden
 
     unless no_duplicate_address?(@habitation)
       load_ai_suggestion
+      load_habitation_audit_logs
       render :edit, status: :unprocessable_entity
       return
     end
@@ -314,6 +344,7 @@ class Admin::HabitationsController < Admin::BaseController
       unless @habitation.intake_ready_for_admin_review?
         @habitation.intake_missing_requirements.each { |message| @habitation.errors.add(:base, message) }
         load_ai_suggestion
+        load_habitation_audit_logs
         render :edit, status: :unprocessable_entity
         return
       end
@@ -324,10 +355,12 @@ class Admin::HabitationsController < Admin::BaseController
     assign_proprietor_from_legacy_fields(@habitation) if current_admin_user&.admin?
     apply_intake_status_transition_metadata(@habitation)
     if @habitation.save
+      record_habitation_updated(@habitation, before_snapshot: audit_snapshot_before)
       notice = releasing_to_broker ? "Imóvel salvo e liberado para o corretor publicar no site." : "Imóvel atualizado com sucesso."
       redirect_to admin_habitations_path, notice: notice
     else
       load_ai_suggestion
+      load_habitation_audit_logs
       render :edit, status: :unprocessable_entity
     end
   end
@@ -338,6 +371,8 @@ class Admin::HabitationsController < Admin::BaseController
       return
     end
 
+    @habitation.skip_auto_audit = true
+    record_habitation_destroyed(@habitation)
     @habitation.destroy
     redirect_to admin_habitations_path, notice: "Imóvel excluído com sucesso."
   end
@@ -426,6 +461,8 @@ class Admin::HabitationsController < Admin::BaseController
       return
     end
 
+    attachment_payload = Habitations::AuditChangeRecorder.attachment_payload(attachment)
+    record_habitation_attachment_removed(@habitation, association: association, attachment_payload: attachment_payload)
     attachment.purge_later
     redirect_to edit_admin_habitation_path(@habitation, anchor: "documents"), notice: "Anexo removido."
   end
@@ -905,6 +942,36 @@ class Admin::HabitationsController < Admin::BaseController
     params[:data_format].to_s == "csv_comma" ? "," : ";"
   end
 
+  def record_data_export!(export_type:, format:, record_count:, selected_count:, fields:, filters:, filename: nil, metadata: {})
+    Audit::DataExportRecorder.call(
+      admin_user: current_admin_user,
+      request: request,
+      export_type: export_type,
+      resource_name: "habitations",
+      format: format,
+      record_count: record_count,
+      selected_count: selected_count,
+      filename: filename,
+      filters: filters,
+      fields: fields,
+      metadata: metadata
+    )
+  end
+
+  def data_export_filters
+    params.to_unsafe_h.slice(
+      "q", "status", "categoria", "tipo", "bairro", "cidade", "codigo", "corretor",
+      "selected_ids", "report_type", "data_format", "fields", "sort", "direction"
+    )
+  end
+
+  def data_export_count_for(scope)
+    return @broker_rows.size if defined?(@broker_rows) && @broker_rows.present?
+    return @summary_rows.size if defined?(@summary_rows) && @summary_rows.present?
+
+    scope.count
+  end
+
   def export_row(habitation, fields)
     fields.map do |field|
       case field
@@ -1140,6 +1207,93 @@ class Admin::HabitationsController < Admin::BaseController
     permitted.delete(:varandas_qtd)
 
     permitted
+  end
+
+  def load_habitation_audit_logs
+    @habitation_audit_logs = @habitation.habitation_audit_logs.includes(:admin_user).recent.limit(80)
+  end
+
+  def record_habitation_created(habitation)
+    Habitations::AuditChangeRecorder.new(
+      habitation,
+      actor: current_admin_user,
+      request: request,
+      source: habitation_audit_source(habitation)
+    ).record_create!
+  end
+
+  def record_habitation_updated(habitation, before_snapshot: nil)
+    Habitations::AuditChangeRecorder.new(
+      habitation,
+      actor: current_admin_user,
+      request: request,
+      source: habitation_audit_source(habitation),
+      before_snapshot: before_snapshot
+    ).record_update!
+  end
+
+  def record_habitation_destroyed(habitation)
+    Habitations::AuditChangeRecorder.new(
+      habitation,
+      actor: current_admin_user,
+      request: request,
+      source: habitation_audit_source(habitation),
+      before_snapshot: Habitations::AuditChangeRecorder.snapshot_for(habitation)
+    ).record_destroy!
+  end
+
+  def record_habitation_attachment_removed(habitation, association:, attachment_payload:)
+    Habitations::AuditChangeRecorder.new(
+      habitation,
+      actor: current_admin_user,
+      request: request,
+      source: habitation_audit_source(habitation)
+    ).record_attachment_removed!(
+      association: association,
+      attachment_payload: attachment_payload
+    )
+  end
+
+  def bulk_habitation_audit_changesets(ids, updates)
+    audit_fields = updates.keys.map(&:to_s) & Habitations::AuditChangeRecorder.audited_habitation_fields
+    audit_fields -= %w[updated_at]
+    return {} if audit_fields.blank?
+
+    Habitation.where(id: ids).pluck(:id, *audit_fields).each_with_object({}) do |row, result|
+      habitation_id = row.first
+      changeset = {}
+
+      audit_fields.each_with_index do |field, index|
+        before_value = row[index + 1]
+        after_value = updates.key?(field.to_sym) ? updates[field.to_sym] : updates[field]
+        changeset[field] = { before: before_value, after: after_value }
+      end
+
+      result[habitation_id] = changeset
+    end
+  end
+
+  def record_bulk_habitation_updates(changesets_by_id, action_type:, channels:)
+    return if changesets_by_id.blank?
+
+    Habitation.where(id: changesets_by_id.keys).find_each do |habitation|
+      Habitations::AuditChangeRecorder.new(
+        habitation,
+        actor: current_admin_user,
+        request: request,
+        source: habitation_audit_source(habitation)
+      ).record_bulk_update!(
+        changesets_by_id[habitation.id],
+        metadata: {
+          action_type: action_type,
+          channels: channels
+        }
+      )
+    end
+  end
+
+  def habitation_audit_source(habitation)
+    habitation&.broker_intake? ? "captacao" : "admin"
   end
 
   def permitted_habitation_fields

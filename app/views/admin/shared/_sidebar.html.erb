@@ -110,6 +110,30 @@
       </li>
     <% end %>
 
+    <% if can_access.call(:view, :access_audit) %>
+      <li class="sidebar-menu-item">
+        <%= link_to admin_access_audit_logs_path, class: controller_name == 'access_audit_logs' ? 'active' : '' do %>
+          <i class="bi bi-person-lock"></i><span>Auditoria de Acessos</span>
+        <% end %>
+      </li>
+    <% end %>
+
+    <% if can_access.call(:view, :data_export_audit) %>
+      <li class="sidebar-menu-item">
+        <%= link_to admin_data_export_audit_logs_path, class: controller_name == 'data_export_audit_logs' ? 'active' : '' do %>
+          <i class="bi bi-file-earmark-arrow-down"></i><span>Auditoria de Exportações</span>
+        <% end %>
+      </li>
+    <% end %>
+
+    <% if can_access.call(:manage, :access_security) %>
+      <li class="sidebar-menu-item">
+        <%= link_to admin_access_security_path, class: ['access_security', 'access_control_rules', 'trusted_devices'].include?(controller_name) ? 'active' : '' do %>
+          <i class="bi bi-fingerprint"></i><span>Segurança de Acesso</span>
+        <% end %>
+      </li>
+    <% end %>
+
     <% if can_access.call(:manage, :field_settings) %>
       <li class="sidebar-menu-item">
         <%= link_to edit_admin_field_settings_path, class: (controller_path == 'admin/field_settings') ? 'active' : '' do %>

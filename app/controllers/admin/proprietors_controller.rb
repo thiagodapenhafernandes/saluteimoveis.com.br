@@ -79,6 +79,16 @@ module Admin
         end
       end
 
+      record_data_export!(
+        export_type: "print_report",
+        format: "html_print",
+        record_count: @report_type == "proprietors_with_habitations" ? @rows.size : @proprietors.count,
+        selected_count: ids.size,
+        fields: [@report_type],
+        filters: data_export_filters,
+        metadata: { report_type: @report_type }
+      )
+
       render layout: false
     end
 
@@ -112,9 +122,22 @@ module Admin
         end
       end
 
+      record_count = report_type == "proprietors_with_habitations" ? export_rows_count(proprietors) : proprietors.count
       timestamp = Time.current.strftime("%Y%m%d_%H%M%S")
+      filename = "proprietarios_#{report_type}_#{timestamp}.csv"
+      record_data_export!(
+        export_type: "csv_export",
+        format: data_format,
+        record_count: record_count,
+        selected_count: ids.size,
+        filename: filename,
+        fields: fields,
+        filters: data_export_filters,
+        metadata: { report_type: report_type }
+      )
+
       send_data csv_content,
-                filename: "proprietarios_#{report_type}_#{timestamp}.csv",
+                filename: filename,
                 type: "text/csv; charset=utf-8"
     end
 
@@ -343,6 +366,33 @@ module Admin
             .map(&:to_i)
             .select { |id| id.positive? }
             .uniq
+    end
+
+    def record_data_export!(export_type:, format:, record_count:, selected_count:, fields:, filters:, filename: nil, metadata: {})
+      Audit::DataExportRecorder.call(
+        admin_user: current_admin_user,
+        request: request,
+        export_type: export_type,
+        resource_name: "proprietors",
+        format: format,
+        record_count: record_count,
+        selected_count: selected_count,
+        filename: filename,
+        filters: filters,
+        fields: fields,
+        metadata: metadata
+      )
+    end
+
+    def data_export_filters
+      params.to_unsafe_h.slice("filters", "selected_ids", "report_type", "data_format", "fields")
+    end
+
+    def export_rows_count(proprietors)
+      proprietors.sum do |proprietor|
+        count = proprietor.habitations.count
+        count.positive? ? count : 1
+      end
     end
 
     def money_from_cents(cents)

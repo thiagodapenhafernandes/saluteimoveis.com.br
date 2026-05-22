@@ -55,7 +55,8 @@ module Seo
         @controller.request.format.html? &&
         @controller.response.successful? &&
         !admin_request? &&
-        !internal_path?
+        !internal_path? &&
+        !AccessControl::TrackerExclusion.excluded?(@controller.request)
     end
 
     def admin_request?

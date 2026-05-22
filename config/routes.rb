@@ -92,6 +92,11 @@ Rails.application.routes.draw do
       delete "purge_attachment/:association/:attachment_id", on: :member, action: :purge_attachment, as: :purge_attachment
     end
     resources :leads, only: [:index, :show, :update, :destroy]
+    resources :access_audit_logs, only: [:index]
+    resources :data_export_audit_logs, only: [:index]
+    resource :access_security, only: [:show, :update], controller: "access_security"
+    resources :access_control_rules, only: [:create, :update, :destroy]
+    resources :trusted_devices, only: [:update, :destroy]
     resources :distribution_rules do
       patch :toggle_active, on: :member
     end

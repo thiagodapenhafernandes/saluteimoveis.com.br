@@ -3,6 +3,8 @@
 # Table name: habitations
 #
 class Habitation < ApplicationRecord
+  attr_accessor :skip_auto_audit, :auto_audit_destroy_snapshot
+
   # Concerns organizados por responsabilidade
   include Habitation::PriceFormatting
   include Habitation::SearchScopes
@@ -202,6 +204,7 @@ class Habitation < ApplicationRecord
   # Active Storage Photos (For manual upload)
   has_many_attached :photos
   has_many :ai_property_suggestions, dependent: :destroy
+  has_many :habitation_audit_logs
 
   # Documentos internos do imóvel (só admin/editor enxergam — não vão para o site público)
   # Após anexar, AttachmentOrganizerService move os blobs para
@@ -250,6 +253,10 @@ class Habitation < ApplicationRecord
   before_save :sync_intake_answers
   after_save :clear_cache
   after_destroy :clear_cache
+  after_create_commit :record_auto_audit_create, unless: :skip_auto_audit?
+  after_update_commit :record_auto_audit_update, unless: :skip_auto_audit?
+  before_destroy :capture_auto_audit_destroy_snapshot, unless: :skip_auto_audit?
+  after_destroy_commit :record_auto_audit_destroy, unless: :skip_auto_audit?
 
   scope :broker_intakes, -> { where(intake_origin: INTAKE_ORIGIN_BROKER) }
   scope :pending_admin_review_from_intake, -> {
@@ -1107,6 +1114,43 @@ class Habitation < ApplicationRecord
   end
   
   private
+
+  def skip_auto_audit?
+    ActiveModel::Type::Boolean.new.cast(skip_auto_audit)
+  end
+
+  def record_auto_audit_create
+    build_auto_audit_recorder.record_create!
+  end
+
+  def record_auto_audit_update
+    build_auto_audit_recorder.record_update!
+  end
+
+  def capture_auto_audit_destroy_snapshot
+    self.auto_audit_destroy_snapshot = Habitations::AuditChangeRecorder.snapshot_for(self)
+  end
+
+  def record_auto_audit_destroy
+    build_auto_audit_recorder(before_snapshot: auto_audit_destroy_snapshot).record_destroy!
+  end
+
+  def build_auto_audit_recorder(before_snapshot: nil)
+    Habitations::AuditChangeRecorder.new(
+      self,
+      actor: Current.admin_user,
+      source: auto_audit_source,
+      before_snapshot: before_snapshot,
+      metadata: { auto_recorded: true }
+    )
+  end
+
+  def auto_audit_source
+    return "captacao" if broker_intake?
+    return "admin" if Current.admin_user.present?
+
+    "integracao"
+  end
 
   def has_public_photo?
     (pictures.is_a?(Array) && pictures.any?) || photos.attached?

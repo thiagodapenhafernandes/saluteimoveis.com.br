@@ -6,7 +6,12 @@
       <li class="breadcrumb-item active" aria-current="page">Detalhes do Lead</li>
     </ol>
   </nav>
-  <h1 class="h3 mb-0 text-gray-800">Detalhes do Lead: <%= @lead.name %></h1>
+  <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2">
+    <h1 class="h3 mb-0 text-gray-800">Detalhes do Lead: <%= @lead.name %></h1>
+    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#leadAuditHistoryModal">
+      <i class="bi bi-clock-history me-1"></i> Histórico
+    </button>
+  </div>
 </div>
 
 <div class="row g-4">
@@ -129,4 +134,5 @@
   </div>
 </div>
 <%= render "admin/shared/attribute_manager_modal", modal_id: "attributeManagerModalLead" %>
+<%= render "admin/leads/audit_history_modal", lead: @lead, audit_logs: @lead_audit_logs %>
 </div>

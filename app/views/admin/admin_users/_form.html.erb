@@ -129,6 +129,21 @@
             <%= f.collection_select :manager_id, AdminUser.where.not(id: admin_user.id), :id, :name, { prompt: "Nenhum (Topo da Hierarquia)" }, { class: "form-select" } %>
             <div class="form-text mt-2 extra-small">Usado para organizar equipes e regras de distribuição.</div>
           </div>
+
+          <div class="mb-4 border-top pt-3">
+            <label class="form-label fw-bold small text-muted text-uppercase">Segurança de login</label>
+            <div class="form-check form-switch mb-2">
+              <%= f.check_box :require_ip_allowlist, class: "form-check-input", id: "admin_user_require_ip_allowlist" %>
+              <%= f.label :require_ip_allowlist, "Exigir IP permitido", class: "form-check-label", for: "admin_user_require_ip_allowlist" %>
+            </div>
+            <div class="form-check form-switch">
+              <%= f.check_box :require_trusted_device, class: "form-check-input", id: "admin_user_require_trusted_device" %>
+              <%= f.label :require_trusted_device, "Exigir aparelho confiável", class: "form-check-label", for: "admin_user_require_trusted_device" %>
+            </div>
+            <div class="form-text mt-2 extra-small">
+              Regras específicas deste usuário. A configuração geral dos corretores fica em Segurança de Acesso.
+            </div>
+          </div>
           
           <% if admin_user.vista_id.present? %>
             <div class="mb-0">

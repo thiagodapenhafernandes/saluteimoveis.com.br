@@ -8,9 +8,27 @@ module Field
     include FieldFeatureGate
 
     before_action :authenticate_admin_user!
+    before_action :enforce_access_control_policy!
     layout "field"
 
     private
+
+    def enforce_access_control_policy!
+      access_result = AccessControl::Policy.call(admin_user: current_admin_user, request: request, controller: self)
+      return if access_result.allowed?
+
+      AccessAuditLog.log!(
+        event_type: "access_denied",
+        result: "denied",
+        request: request,
+        admin_user: current_admin_user,
+        reason: access_result.reason,
+        metadata: { trusted_device_id: access_result.device&.id, trusted_device_status: access_result.device&.status, area: "field" }.compact
+      )
+
+      sign_out(current_admin_user)
+      redirect_to new_admin_user_session_path, alert: access_result.reason
+    end
 
     # Exigido pelas rotas de check-in/pings/manual (não pela home).
     def ensure_field_agent!
