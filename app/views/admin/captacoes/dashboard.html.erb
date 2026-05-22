@@ -53,12 +53,69 @@
     position: absolute; top: 0; left: 6px; line-height: 22px;
     font-size: .85rem; font-weight: 600; color: #0d253f;
   }
+  .capt-tv-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    gap: .5rem;
+    margin-top: -.35rem;
+    margin-bottom: .75rem;
+  }
+  .capt-tv-tab-actions {
+    margin-left: auto;
+  }
+  .capt-tv-shell:fullscreen {
+    overflow: auto;
+    background: #0d253f;
+    padding: 1rem;
+  }
+  .capt-tv-shell:fullscreen .capt-dash-hero {
+    border-radius: 0;
+    background: #263f4e;
+  }
+  .capt-tv-shell:fullscreen .card,
+  body.capt-dashboard-tv-active .capt-tv-shell .card {
+    border-radius: 18px;
+  }
+  .capt-tv-shell:fullscreen .capt-gauge-wrapper,
+  body.capt-dashboard-tv-active .capt-gauge-wrapper {
+    height: min(38vh, 420px);
+    max-width: none;
+  }
+  .capt-tv-shell:fullscreen .capt-gauge-center .value,
+  body.capt-dashboard-tv-active .capt-gauge-center .value {
+    font-size: clamp(3.4rem, 7vw, 7rem);
+  }
+  body.capt-dashboard-tv-active {
+    background: #0d253f;
+  }
+  body.capt-dashboard-tv-active .admin-navbar,
+  body.capt-dashboard-tv-active > .admin-sidebar,
+  body.capt-dashboard-tv-active .admin-sidebar-offcanvas {
+    display: none !important;
+  }
+  body.capt-dashboard-tv-active .admin-content {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+  }
+  body.capt-dashboard-tv-active .capt-tv-shell {
+    min-height: 100vh;
+    padding: 1rem;
+    background: #0d253f;
+  }
+  body.capt-dashboard-tv-active .capt-tv-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
   @media (max-width: 575px) {
     .capt-gauge-wrapper { height: 180px; }
     .capt-gauge-center .value { font-size: 2.2rem; }
   }
 </style>
 
+<div id="captDashboard" class="capt-tv-shell" data-capt-dashboard>
 <!-- Hero -->
 <div class="capt-dash-hero mb-3">
   <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
@@ -77,6 +134,24 @@
       <% end %>
     </div>
   </div>
+</div>
+
+<div class="capt-tv-toolbar">
+  <button type="button" class="btn btn-sm btn-outline-secondary" data-capt-tv-tab="tab-geral">
+    <i class="bi bi-arrows-fullscreen me-1"></i>Tela cheia Geral
+  </button>
+  <button type="button" class="btn btn-sm btn-outline-secondary" data-capt-tv-tab="tab-venda">
+    <i class="bi bi-arrows-fullscreen me-1"></i>Tela cheia Venda
+  </button>
+  <button type="button" class="btn btn-sm btn-outline-secondary" data-capt-tv-tab="tab-locacao">
+    <i class="bi bi-arrows-fullscreen me-1"></i>Tela cheia Locação
+  </button>
+  <button type="button" class="btn btn-sm btn-outline-secondary" data-capt-tv-tab="tab-leads">
+    <i class="bi bi-arrows-fullscreen me-1"></i>Tela cheia Leads
+  </button>
+  <button type="button" class="btn btn-sm btn-light border d-none" data-capt-tv-exit>
+    <i class="bi bi-fullscreen-exit me-1"></i>Sair
+  </button>
 </div>
 
 <!-- Filtros -->
@@ -145,6 +220,11 @@
   <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-venda" type="button">Venda</button></li>
   <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-locacao" type="button">Locação</button></li>
   <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-leads" type="button">Leads</button></li>
+  <li class="nav-item capt-tv-tab-actions">
+    <button class="btn btn-sm btn-outline-primary" type="button" data-capt-active-tv>
+      <i class="bi bi-display me-1"></i>TV da aba atual
+    </button>
+  </li>
 </ul>
 
 <div class="tab-content">
@@ -352,78 +432,172 @@
     <%= render "leads_heatmap" %>
   </div>
 </div>
+</div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
-  window.__captDashCharts = window.__captDashCharts || {};
+  (() => {
+    window.__captDashCharts = window.__captDashCharts || {};
+    const chartUrl = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js';
 
-  function gaugeConfig(atual, meta, color) {
-    return {
-      type: 'doughnut',
-      data: {
-        datasets: [{
-          data: [atual, Math.max(meta - atual, 0)],
-          backgroundColor: [color, '#e5e7eb'],
-          borderWidth: 0
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        resizeDelay: 150,
-        rotation: 270,
-        circumference: 180,
-        cutout: '75%',
-        plugins: { legend: { display: false }, tooltip: { enabled: false } }
-      }
+    function ensureChartJs() {
+      if (window.Chart) return Promise.resolve();
+      if (window.__captDashChartLoader) return window.__captDashChartLoader;
+
+      window.__captDashChartLoader = new Promise((resolve, reject) => {
+        let script = document.getElementById('capt-dashboard-chartjs');
+        if (!script) {
+          script = document.createElement('script');
+          script.id = 'capt-dashboard-chartjs';
+          script.src = chartUrl;
+          script.async = true;
+          script.dataset.turboTrack = 'reload';
+          document.head.appendChild(script);
+        }
+        script.addEventListener('load', resolve, { once: true });
+        script.addEventListener('error', reject, { once: true });
+      });
+
+      return window.__captDashChartLoader;
     }
-  }
 
-  function donutConfig(publicado, naoPublicado, color = '#f59e0b') {
-    return {
-      type: 'doughnut',
-      data: {
-        labels: ['Publicado', 'Não publicado'],
-        datasets: [{
-          data: [publicado, naoPublicado],
-          backgroundColor: [color, '#1f2937'],
-          borderWidth: 2,
-          borderColor: '#fff'
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false, resizeDelay: 150,
-        cutout: '55%',
-        plugins: {
-          legend: { position: 'bottom', labels: { boxWidth: 10, padding: 8, font: { size: 11 } } }
+    function gaugeConfig(atual, meta, color) {
+      return {
+        type: 'doughnut',
+        data: {
+          datasets: [{
+            data: [atual, Math.max(meta - atual, 0)],
+            backgroundColor: [color, '#e5e7eb'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          resizeDelay: 150,
+          rotation: 270,
+          circumference: 180,
+          cutout: '75%',
+          plugins: { legend: { display: false }, tooltip: { enabled: false } }
         }
       }
     }
-  }
 
-  function renderCaptCharts() {
-    if (!window.Chart) return;
-    const mk = (id, cfg) => {
+    function donutConfig(publicado, naoPublicado, color = '#f59e0b') {
+      return {
+        type: 'doughnut',
+        data: {
+          labels: ['Publicado', 'Não publicado'],
+          datasets: [{
+            data: [publicado, naoPublicado],
+            backgroundColor: [color, '#1f2937'],
+            borderWidth: 2,
+            borderColor: '#fff'
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, resizeDelay: 150,
+          cutout: '55%',
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 10, padding: 8, font: { size: 11 } } }
+          }
+        }
+      }
+    }
+
+    const chartConfigs = {
+      gaugeVenda: gaugeConfig(<%= @total_venda %>, <%= [@meta_venda, 1].max %>, '#f59e0b'),
+      gaugeLocacao: gaugeConfig(<%= @total_locacao %>, <%= [@meta_locacao, 1].max %>, '#f59e0b'),
+      gaugeVendaBig: gaugeConfig(<%= @total_venda %>, <%= [@meta_venda, 1].max %>, '#f59e0b'),
+      gaugeLocacaoBig: gaugeConfig(<%= @total_locacao %>, <%= [@meta_locacao, 1].max %>, '#f59e0b'),
+      pubVenda: donutConfig(<%= @publicado_venda %>, <%= @nao_publicado_venda %>, '#f59e0b'),
+      pubLocacao: donutConfig(<%= @publicado_locacao %>, <%= @nao_publicado_locacao %>, '#f59e0b')
+    };
+
+    function renderOne(id, cfg, options = {}) {
       const c = document.getElementById(id);
       if (!c) return;
+      if (!options.force && !c.offsetParent) return;
       if (window.__captDashCharts[id]) { window.__captDashCharts[id].destroy(); }
       window.__captDashCharts[id] = new Chart(c, cfg);
-    };
-    mk('gaugeVenda',   gaugeConfig(<%= @total_venda %>, <%= [@meta_venda, 1].max %>, '#f59e0b'));
-    mk('gaugeLocacao', gaugeConfig(<%= @total_locacao %>, <%= [@meta_locacao, 1].max %>, '#f59e0b'));
-    mk('gaugeVendaBig',    gaugeConfig(<%= @total_venda %>, <%= [@meta_venda, 1].max %>, '#f59e0b'));
-    mk('gaugeLocacaoBig',  gaugeConfig(<%= @total_locacao %>, <%= [@meta_locacao, 1].max %>, '#f59e0b'));
-    mk('pubVenda',    donutConfig(<%= @publicado_venda %>,   <%= @nao_publicado_venda %>, '#f59e0b'));
-    mk('pubLocacao',  donutConfig(<%= @publicado_locacao %>, <%= @nao_publicado_locacao %>, '#f59e0b'));
-  }
+    }
 
-  function destroyCaptCharts() {
-    Object.values(window.__captDashCharts || {}).forEach(c => { try { c.destroy(); } catch (e) {} });
-    window.__captDashCharts = {};
-  }
+    function renderCaptCharts(options = {}) {
+      ensureChartJs().then(() => {
+        requestAnimationFrame(() => {
+          Object.entries(chartConfigs).forEach(([id, cfg]) => renderOne(id, cfg, options));
+        });
+      }).catch(() => {});
+    }
 
-  document.addEventListener('turbo:load', renderCaptCharts);
-  document.addEventListener('turbo:before-cache', destroyCaptCharts);
-  if (document.readyState === 'complete') renderCaptCharts();
-  else window.addEventListener('load', renderCaptCharts, { once: true });
+    function destroyCaptCharts() {
+      Object.values(window.__captDashCharts || {}).forEach(c => { try { c.destroy(); } catch (e) {} });
+      window.__captDashCharts = {};
+    }
+
+    function activateTab(tabId) {
+      const trigger = document.querySelector(`[data-bs-target="#${tabId}"]`);
+      if (trigger && window.bootstrap) bootstrap.Tab.getOrCreateInstance(trigger).show();
+    }
+
+    function activeTabId() {
+      return document.querySelector('#captTabs .nav-link.active')?.dataset.bsTarget?.replace('#', '') || 'tab-geral';
+    }
+
+    function enterTvMode(tabId, requestFullscreen = true) {
+      const dashboard = document.getElementById('captDashboard');
+      if (!dashboard) return;
+      activateTab(tabId);
+      document.body.classList.add('capt-dashboard-tv-active');
+      document.querySelector('[data-capt-tv-exit]')?.classList.remove('d-none');
+
+      setTimeout(() => {
+        renderCaptCharts({ force: true });
+        if (requestFullscreen && dashboard.requestFullscreen && !document.fullscreenElement) {
+          dashboard.requestFullscreen().catch(() => {});
+        }
+      }, 220);
+    }
+
+    function exitTvMode() {
+      document.body.classList.remove('capt-dashboard-tv-active');
+      document.querySelector('[data-capt-tv-exit]')?.classList.add('d-none');
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+      setTimeout(() => renderCaptCharts({ force: true }), 180);
+    }
+
+    function setupCaptDashboard() {
+      const dashboard = document.getElementById('captDashboard');
+      if (!dashboard) return;
+
+      renderCaptCharts();
+      if (!dashboard.dataset.captDashboardBound) {
+        dashboard.dataset.captDashboardBound = '1';
+        dashboard.querySelectorAll('[data-bs-toggle="tab"]').forEach((button) => {
+          button.addEventListener('shown.bs.tab', () => setTimeout(() => renderCaptCharts({ force: true }), 120));
+        });
+        dashboard.querySelectorAll('[data-capt-tv-tab]').forEach((button) => {
+          button.addEventListener('click', () => enterTvMode(button.dataset.captTvTab));
+        });
+        dashboard.querySelector('[data-capt-active-tv]')?.addEventListener('click', () => enterTvMode(activeTabId()));
+        dashboard.querySelector('[data-capt-tv-exit]')?.addEventListener('click', exitTvMode);
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const tvTab = params.get('tab');
+      if (params.get('tv') === '1') enterTvMode(tvTab || activeTabId(), false);
+    }
+
+    document.addEventListener('turbo:load', setupCaptDashboard);
+    document.addEventListener('turbo:before-cache', () => {
+      document.body.classList.remove('capt-dashboard-tv-active');
+      document.getElementById('captDashboard')?.removeAttribute('data-capt-dashboard-bound');
+      destroyCaptCharts();
+    });
+    document.addEventListener('fullscreenchange', () => {
+      if (!document.fullscreenElement) document.body.classList.remove('capt-dashboard-tv-active');
+      setTimeout(() => renderCaptCharts({ force: true }), 180);
+    });
+    if (document.readyState === 'complete') setupCaptDashboard();
+    else window.addEventListener('load', setupCaptDashboard, { once: true });
+  })();
 </script>

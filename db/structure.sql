@@ -1,7 +1,7 @@
-\restrict QwLJyjded5fs7JeS6tzjDXjtkzhVIroW8tRs0V9geDc7c1RbZDpY2vcmDO7YM8Y
+\restrict 2mdapwrMpWwV9mzOULrwmBR3Dw3FfT3xZSAjNrSQk9bjPCITN6tHG06bF4If9R7
 
 -- Dumped from database version 17.9 (Homebrew)
--- Dumped by pg_dump version 18.3
+-- Dumped by pg_dump version 17.9 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -555,7 +555,9 @@ CREATE TABLE public.captacao_goals (
     foco_valor_min numeric(12,2),
     foco_valor_max numeric(12,2),
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    start_date date NOT NULL,
+    end_date date NOT NULL
 );
 
 
@@ -4694,10 +4696,10 @@ CREATE UNIQUE INDEX index_attribute_options_on_context_category_lower_name ON pu
 
 
 --
--- Name: index_captacao_goals_on_year_and_kind; Type: INDEX; Schema: public; Owner: -
+-- Name: index_captacao_goals_on_kind_and_period; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX index_captacao_goals_on_year_and_kind ON public.captacao_goals USING btree (year, kind);
+CREATE INDEX index_captacao_goals_on_kind_and_period ON public.captacao_goals USING btree (kind, start_date, end_date);
 
 
 --
@@ -6892,11 +6894,12 @@ ALTER TABLE ONLY public.push_subscriptions
 -- PostgreSQL database dump complete
 --
 
-\unrestrict QwLJyjded5fs7JeS6tzjDXjtkzhVIroW8tRs0V9geDc7c1RbZDpY2vcmDO7YM8Y
+\unrestrict 2mdapwrMpWwV9mzOULrwmBR3Dw3FfT3xZSAjNrSQk9bjPCITN6tHG06bF4If9R7
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260522211000'),
 ('20260522174500'),
 ('20260522173500'),
 ('20260522172700'),

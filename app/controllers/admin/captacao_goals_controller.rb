@@ -4,11 +4,16 @@ module Admin
     before_action :set_goal, only: [:edit, :update, :destroy]
 
     def index
-      @goals = CaptacaoGoal.order(year: :desc, kind: :asc)
+      @goals = CaptacaoGoal.order(start_date: :desc, kind: :asc)
     end
 
     def new
-      @goal = CaptacaoGoal.new(year: Date.current.year, kind: :venda, target: 50)
+      @goal = CaptacaoGoal.new(
+        start_date: Date.current.beginning_of_month,
+        end_date: Date.current.end_of_month,
+        kind: :venda,
+        target: 50
+      )
     end
 
     def create
@@ -43,7 +48,7 @@ module Admin
     end
 
     def goal_params
-      params.require(:captacao_goal).permit(:year, :kind, :target, :foco_regiao, :foco_valor_min, :foco_valor_max)
+      params.require(:captacao_goal).permit(:start_date, :end_date, :kind, :target, :foco_regiao, :foco_valor_min, :foco_valor_max)
     end
   end
 end

@@ -71,18 +71,17 @@
     <!-- Captações -->
     <% if can_access.call(:view, :captacoes) %>
       <li class="sidebar-menu-item">
-        <%= link_to admin_captacoes_path, class: ((controller_name == 'captacoes' && action_name != 'dashboard') || controller_name == 'captacao_goals') ? 'active' : '' do %>
+        <%= link_to admin_captacoes_path, class: (controller_name == 'captacoes' && action_name != 'dashboard') ? 'active' : '' do %>
           <i class="bi bi-journal-plus"></i><span>Captações</span>
         <% end %>
       </li>
-    <% end %>
-
-    <% if can_access.call(:view, :captacao_dashboard) %>
-      <li class="sidebar-menu-item">
-        <%= link_to dashboard_admin_captacoes_path, class: (controller_name == 'captacoes' && action_name == 'dashboard') ? 'active' : '' do %>
-          <i class="bi bi-bullseye"></i><span>Dashboard Captação</span>
-        <% end %>
-      </li>
+      <% if can_access.call(:view, :captacao_dashboard) %>
+        <li class="sidebar-menu-item ps-3">
+          <%= link_to dashboard_admin_captacoes_path, class: (controller_name == 'captacoes' && action_name == 'dashboard') ? 'active' : '' do %>
+            <i class="bi bi-bullseye"></i><span>Dashboard de Captação</span>
+          <% end %>
+        </li>
+      <% end %>
     <% end %>
 
     <!-- Campo: check-ins, pedidos manuais, auditoria, settings -->

@@ -29,7 +29,8 @@ FactoryBot.define do
   end
 
   factory :captacao_goal do
-    year { Date.current.year }
+    start_date { Date.current.beginning_of_month }
+    end_date { Date.current.end_of_month }
     kind { :venda }
     target { 55 }
     foco_regiao { "Frente Mar" }
