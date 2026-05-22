@@ -1,6 +1,12 @@
 require "rails_helper"
 
 RSpec.describe Habitation::SearchScopes, type: :model do
+  describe ".public_property_types" do
+    it "includes fixed public type options even without published records" do
+      expect(Habitation.public_property_types).to include("Diferenciado", "Garden")
+    end
+  end
+
   describe ".with_photos" do
     it "does not treat development photos as public photos for regular units" do
       unit_without_public_photo = create(
@@ -82,6 +88,36 @@ RSpec.describe Habitation::SearchScopes, type: :model do
       non_matching = create(:habitation, face: "Sul")
 
       result = Habitation.advanced_search(characteristics: ["sol_dia_todo"])
+
+      expect(result).to include(matching)
+      expect(result).not_to include(non_matching)
+    end
+
+    it "keeps filtering regular public types by category" do
+      matching = create(:habitation, categoria: "Apartamento")
+      non_matching = create(:habitation, categoria: "Casa")
+
+      result = Habitation.advanced_search(category: ["Apartamento"])
+
+      expect(result).to include(matching)
+      expect(result).not_to include(non_matching)
+    end
+
+    it "filters Garden selected as a public type by the garden flag" do
+      matching = create(:habitation, garden_flag: true, categoria: "Apartamento")
+      non_matching = create(:habitation, garden_flag: false, categoria: "Apartamento")
+
+      result = Habitation.advanced_search(category: ["Garden"])
+
+      expect(result).to include(matching)
+      expect(result).not_to include(non_matching)
+    end
+
+    it "filters Diferenciado selected as a public type by its unique feature" do
+      matching = create(:habitation, caracteristica_unica: ["Diferenciado"], categoria: "Apartamento")
+      non_matching = create(:habitation, caracteristica_unica: ["Decorado"], categoria: "Apartamento")
+
+      result = Habitation.advanced_search(category: ["Diferenciado"])
 
       expect(result).to include(matching)
       expect(result).not_to include(non_matching)

@@ -16,6 +16,10 @@ class Habitation < ApplicationRecord
     'Loja', 'Prédio Comercial', 'Galpão', 'Área', 'Rural'
   ].freeze
 
+  PUBLIC_FILTER_EXTRA_CATEGORIES = [
+    'Diferenciado', 'Garden'
+  ].freeze
+
   STATUS_OPTIONS = [
     'Venda', 'Aluguel', 'Diária', 'Pendente', 'Lançamento', 'Suspenso',
     'Alugado imobiliária', 'Alugado terceiros',
@@ -78,6 +82,15 @@ class Habitation < ApplicationRecord
   PHOTO_SCHEDULE_URL = "https://calendly.com/fotografias-saluteimoveis/30min".freeze
   MINIMUM_INTAKE_SALE_PRICE_CENTS = 10_000_00
   MINIMUM_INTAKE_RENT_PRICE_CENTS = 100_00
+
+  def self.public_property_types
+    (where(exibir_no_site_flag: true).distinct.pluck(:categoria).compact + PUBLIC_FILTER_EXTRA_CATEGORIES)
+      .map(&:to_s)
+      .map(&:strip)
+      .reject(&:blank?)
+      .uniq
+      .sort
+  end
 
   def self.photography_schedule_url
     Setting.get("photography_schedule_url", "").to_s.strip
@@ -1056,14 +1069,29 @@ class Habitation < ApplicationRecord
   end
 
   def slug_candidates
+    if empreendimento?
+      return [
+        :development_slug_base,
+        [:development_slug_base, :codigo]
+      ]
+    end
+
     [
       [:tipo_imovel_slug, :cidade_slug, :bairro_slug, :codigo],
       [:tipo_imovel_slug, :cidade_slug, :codigo],
       [:categoria, :codigo]
     ]
   end
+
+  def should_generate_new_friendly_id?
+    slug.blank? || (empreendimento? && will_save_change_to_nome_empreendimento?)
+  end
   
   # Métodos auxiliares para o slug
+  def development_slug_base
+    nome_empreendimento.presence || titulo_anuncio.presence || default_title
+  end
+
   def tipo_imovel_slug
     categoria&.parameterize
   end

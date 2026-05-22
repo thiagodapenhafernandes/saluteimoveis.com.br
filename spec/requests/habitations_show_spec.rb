@@ -91,6 +91,47 @@ RSpec.describe "Habitation details", type: :request do
     end
   end
 
+  describe "GET /empreendimento/:id" do
+    it "uses the development name as the public URL slug" do
+      development = create(
+        :habitation,
+        codigo: "4652",
+        slug: nil,
+        tipo: "Empreendimento",
+        nome_empreendimento: "Nome do Empreendimento",
+        valor_venda_cents: 0,
+        pictures: [],
+        fotos_empreendimento: [{ "url" => "https://example.com/development.jpg" }]
+      )
+
+      expect(development.slug).to eq("nome-do-empreendimento")
+      expect(empreendimento_details_path(development)).to eq("/empreendimento/nome-do-empreendimento")
+
+      get empreendimento_details_path(development)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Nome do Empreendimento")
+    end
+
+    it "keeps legacy development URLs with a trailing code working" do
+      development = create(
+        :habitation,
+        codigo: "4652",
+        slug: "nome-do-empreendimento",
+        tipo: "Empreendimento",
+        nome_empreendimento: "Nome do Empreendimento",
+        valor_venda_cents: 0,
+        pictures: [],
+        fotos_empreendimento: [{ "url" => "https://example.com/development.jpg" }]
+      )
+
+      get "/empreendimento/empreendimento-balneario-camboriu-centro-4652"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(development.nome_empreendimento)
+    end
+  end
+
   describe "GET /imoveis" do
     it "does not list developments" do
       development = create(

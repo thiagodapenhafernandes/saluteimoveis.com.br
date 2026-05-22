@@ -359,8 +359,8 @@ class HabitationsController < ApplicationController
     @selected_categories = normalize_filter_values(params[:category])
     @selected_locations = normalize_filter_values(params[:city])
 
-    @property_types = Rails.cache.fetch("habitations_property_types_v1", expires_in: 12.hours) do
-      Habitation.where(exibir_no_site_flag: true).distinct.pluck(:categoria).compact.sort
+    @property_types = Rails.cache.fetch("habitations_property_types_v2", expires_in: 12.hours) do
+      Habitation.public_property_types
     end
 
     @location_options = Rails.cache.fetch("habitations_location_options_v1", expires_in: 6.hours) do

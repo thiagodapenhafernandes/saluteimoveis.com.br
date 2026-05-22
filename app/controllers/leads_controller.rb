@@ -1,6 +1,13 @@
 class LeadsController < ApplicationController
   skip_before_action :verify_authenticity_token, only: [:create] # Para facilitar testes AJAX se necessário, mas idealmente usar CSRF
 
+  def whatsapp_url
+    habitation = Habitation.find_by(id: params[:property_id])
+    routing = Whatsapp::SiteRouting.for_habitation(habitation, message: params[:message])
+
+    render json: routing.slice(:capture_required, :whatsapp_url, :negotiation_type, :negotiation_label)
+  end
+
   def create
     @lead = Lead.new(lead_params)
     @lead.source_url = request.referer
@@ -27,7 +34,7 @@ class LeadsController < ApplicationController
 
       render json: { 
         success: true, 
-        whatsapp_url: @lead.whatsapp_url 
+        whatsapp_url: @lead.whatsapp_url(message: lead_whatsapp_message)
       }
     else
       render json: { 
@@ -41,6 +48,10 @@ class LeadsController < ApplicationController
 
   def lead_params
     params.require(:lead).permit(:name, :email, :phone, :property_id, :lead_type, :origin, :share_token)
+  end
+
+  def lead_whatsapp_message
+    params.dig(:lead, :whatsapp_message).to_s
   end
 
   def apply_share_attribution(lead)

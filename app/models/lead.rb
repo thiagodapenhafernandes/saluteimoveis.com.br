@@ -44,17 +44,15 @@ class Lead < ApplicationRecord
     client_phone.presence || phone
   end
 
-  def whatsapp_url
-    base_number = ContactSetting.first&.whatsapp_primary&.gsub(/\D/, '') || "554733111067"
+  def whatsapp_url(message: nil)
     property = Habitation.find_by(id: property_id)
-    
-    message = if property
+    fallback_message = if property
       "Olá, meu nome é #{display_name}. Estou interessado no imóvel #{property.codigo}. (Origem: #{origin})"
     else
       "Olá, meu nome é #{display_name}. Gostaria de mais informações. (Origem: #{origin})"
     end
-    
-    "https://wa.me/#{base_number}?text=#{ERB::Util.url_encode(message)}"
+
+    Whatsapp::SiteRouting.for_habitation(property, message: message.presence || fallback_message).fetch(:whatsapp_url)
   end
 
   def direct_whatsapp_url

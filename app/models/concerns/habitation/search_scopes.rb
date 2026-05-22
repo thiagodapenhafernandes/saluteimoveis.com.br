@@ -100,18 +100,30 @@ module Habitation::SearchScopes
     # Scopes por categoria (com unaccent)
     scope :by_category, ->(category) { 
       if category.is_a?(Array)
-        clean = category.reject(&:blank?)
+        clean = category.reject(&:blank?).map { |item| item.to_s.strip }
         if clean.any?
-          if clean.any? { |item| item.to_s.casecmp("Empreendimento").zero? }
-            regular_categories = clean.reject { |item| item.to_s.casecmp("Empreendimento").zero? }
-            relation = where(tipo: "Empreendimento")
-            if regular_categories.any?
-              relation.or(where("unaccent(categoria) IN (SELECT unaccent(n) FROM unnest(ARRAY[?]) AS n)", regular_categories))
-            else
-              relation
-            end
+          relation = none
+          regular_categories = clean
+
+          if clean.any? { |item| item.casecmp("Empreendimento").zero? }
+            relation = relation.or(where(tipo: "Empreendimento"))
+            regular_categories = regular_categories.reject { |item| item.casecmp("Empreendimento").zero? }
+          end
+
+          if clean.any? { |item| item.casecmp("Garden").zero? }
+            relation = relation.or(garden)
+            regular_categories = regular_categories.reject { |item| item.casecmp("Garden").zero? }
+          end
+
+          if clean.any? { |item| item.casecmp("Diferenciado").zero? }
+            relation = relation.or(diferenciado)
+            regular_categories = regular_categories.reject { |item| item.casecmp("Diferenciado").zero? }
+          end
+
+          if regular_categories.any?
+            relation.or(where("unaccent(categoria) IN (SELECT unaccent(n) FROM unnest(ARRAY[?]) AS n)", regular_categories))
           else
-            where("unaccent(categoria) IN (SELECT unaccent(n) FROM unnest(ARRAY[?]) AS n)", clean)
+            relation
           end
         else
           all
@@ -119,6 +131,10 @@ module Habitation::SearchScopes
       elsif category.present?
         if category.to_s.casecmp("Empreendimento").zero?
           where(tipo: "Empreendimento")
+        elsif category.to_s.casecmp("Garden").zero?
+          garden
+        elsif category.to_s.casecmp("Diferenciado").zero?
+          diferenciado
         else
           where("unaccent(categoria) ILIKE unaccent(?)", category)
         end
@@ -287,6 +303,17 @@ module Habitation::SearchScopes
     # Garden
     scope :garden, lambda {
       where(garden_flag: true)
+    }
+
+    scope :diferenciado, lambda {
+      where(
+        "unaccent(categoria) ILIKE unaccent('Diferenciado') OR " \
+        "caracteristicas ? 'Diferenciado' OR " \
+        "EXISTS (" \
+        "SELECT 1 FROM unnest((#{UNIQUE_FEATURES_ARRAY_SQL})) AS feature " \
+        "WHERE unaccent(feature) ILIKE unaccent('Diferenciado')" \
+        ")"
+      )
     }
 
     # Festival Salute

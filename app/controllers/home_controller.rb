@@ -52,8 +52,8 @@ class HomeController < ApplicationController
     end
     
     # Tipos de imóveis disponíveis (para o formulário de busca) - CACHED
-    @property_types = Rails.cache.fetch("home_property_types_v5", expires_in: 12.hours) do
-      Habitation.where(exibir_no_site_flag: true).distinct.pluck(:categoria).compact.sort
+    @property_types = Rails.cache.fetch("home_property_types_v6", expires_in: 12.hours) do
+      Habitation.public_property_types
     end
 
     # Localizações disponíveis (cidade e bairro/cidade) para multiseleção na home

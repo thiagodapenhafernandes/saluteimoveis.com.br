@@ -23,7 +23,7 @@ export default class extends Controller {
     event.target.value = value.substring(0, 15) // Limit length
   }
 
-  open(event) {
+  async open(event) {
     event.preventDefault()
     event.stopPropagation()
 
@@ -38,6 +38,12 @@ export default class extends Controller {
 
     // Store message for redirect
     this.whatsappMessage = message
+
+    const routing = await this.fetchWhatsappRouting(propertyId, message)
+    if (routing && routing.capture_required === false && routing.whatsapp_url) {
+      window.location.href = routing.whatsapp_url
+      return
+    }
 
     // Set hidden fields
     if (this.hasPropertyIdTarget) this.propertyIdTarget.value = propertyId
@@ -60,7 +66,7 @@ export default class extends Controller {
     document.body.style.overflow = ''
   }
 
-  submit(event) {
+  async submit(event) {
     event.preventDefault()
 
     const name = this.nameTarget.value.trim()
@@ -86,23 +92,20 @@ export default class extends Controller {
     // But to respect the flow, we will first capture on backend then redirect.
     // If backend fails, we redirect anyway to not block the user.
 
-    this.sendLeadData({
+    const result = await this.sendLeadData({
       name,
       phone: phoneWithMask,
       email,
       property_id: this.propertyIdTarget.value,
       origin: this.hasOriginTarget ? this.originTarget.value : "",
-      share_token: this.hasShareTokenTarget ? this.shareTokenTarget.value : ""
+      share_token: this.hasShareTokenTarget ? this.shareTokenTarget.value : "",
+      whatsapp_message: this.whatsappMessage
     })
 
-    // Construct WhatsApp URL
-    // Default number if not configured elsewhere - using the one from the views
-    const phoneNumber = "554733111067" // This should ideally come from backend config too
-    const text = encodeURIComponent(this.whatsappMessage)
-    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${text}`
+    const whatsappUrl = result?.whatsapp_url || await this.fallbackWhatsappUrl()
 
-    // Open WhatsApp
-    window.open(whatsappUrl, '_blank')
+    // Redirect to WhatsApp
+    window.location.href = whatsappUrl
 
     // Close modal
     this.close()
@@ -111,7 +114,7 @@ export default class extends Controller {
     event.target.reset()
   }
 
-  sendLeadData(data) {
+  async sendLeadData(data) {
     const csrfToken = document.querySelector("[name='csrf-token']").content
 
     return fetch('/leads', {
@@ -124,11 +127,35 @@ export default class extends Controller {
     }).then(response => {
       if (response.ok) {
         console.log("Lead captured successfully")
+        return response.json()
       } else {
         console.warn("Failed to capture lead on backend")
+        return null
       }
     }).catch(error => {
       console.error("Error capturing lead:", error)
+      return null
     })
+  }
+
+  fetchWhatsappRouting(propertyId, message) {
+    const params = new URLSearchParams()
+    if (propertyId) params.set("property_id", propertyId)
+    if (message) params.set("message", message)
+
+    return fetch(`/leads/whatsapp_url?${params.toString()}`, {
+      headers: { "Accept": "application/json" }
+    }).then(response => {
+      if (response.ok) return response.json()
+      return null
+    }).catch(error => {
+      console.error("Error fetching WhatsApp routing:", error)
+      return null
+    })
+  }
+
+  async fallbackWhatsappUrl() {
+    const routing = await this.fetchWhatsappRouting(this.hasPropertyIdTarget ? this.propertyIdTarget.value : "", this.whatsappMessage)
+    return routing?.whatsapp_url || `https://wa.me/554733111067?text=${encodeURIComponent(this.whatsappMessage || "")}`
   }
 }

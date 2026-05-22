@@ -44,6 +44,7 @@ Rails.application.routes.draw do
       post :test, on: :member
       patch :share_tracking, on: :collection
     end
+    resource :whatsapp_integration, only: [:show, :update]
     resource :ai_integration, only: [:show, :update] do
       post :generate_batch
     end
@@ -273,7 +274,11 @@ Rails.application.routes.draw do
   get "up" => "rails/health#show", as: :rails_health_check
   
   # Public Leads creation
-  resources :leads, only: [:create]
+  resources :leads, only: [:create] do
+    collection do
+      get :whatsapp_url
+    end
+  end
 
   # Mission Control for Jobs
   mount MissionControl::Jobs::Engine => "/jobs"

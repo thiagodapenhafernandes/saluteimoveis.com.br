@@ -1,0 +1,99 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-1 text-gray-800"><i class="bi bi-whatsapp text-success me-2"></i>WhatsApp</h1>
+    <p class="text-muted mb-0">Configure os números e o comportamento dos botões do site.</p>
+  </div>
+</div>
+
+<ul class="nav nav-tabs mb-4" id="whatsappIntegrationTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" id="internal-tab" data-bs-toggle="tab" data-bs-target="#internal" type="button" role="tab" aria-controls="internal" aria-selected="true">
+      Integrações internas
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="external-tab" data-bs-toggle="tab" data-bs-target="#external" type="button" role="tab" aria-controls="external" aria-selected="false">
+      Integrações externas
+    </button>
+  </li>
+</ul>
+
+<div class="tab-content">
+  <div class="tab-pane fade show active" id="internal" role="tabpanel" aria-labelledby="internal-tab">
+    <%= form_with url: admin_whatsapp_integration_path, method: :patch, scope: :whatsapp, local: true do |f| %>
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white">
+          <h2 class="h5 mb-1">Botões de WhatsApp do site</h2>
+          <p class="text-muted small mb-0">Defina o número de destino e se o visitante deve preencher o formulário antes do redirecionamento.</p>
+        </div>
+
+        <div class="card-body">
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <%= f.label :default_number, "Número padrão", class: "form-label fw-bold" %>
+              <%= f.telephone_field :default_number,
+                                    value: @whatsapp_config["default_number"],
+                                    class: "form-control",
+                                    placeholder: "5547999999999" %>
+              <div class="form-text">Usado quando a regra do tipo de negociação estiver sem número ou o imóvel não for identificado.</div>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <thead>
+                <tr>
+                  <th>Tipo de negociação</th>
+                  <th style="min-width: 260px;">Número do WhatsApp</th>
+                  <th class="text-center" style="width: 220px;">Captar dados antes?</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @negotiation_types.each do |key, label| %>
+                  <% rule = @whatsapp_config.fetch("rules", {}).fetch(key, {}) %>
+                  <tr>
+                    <td>
+                      <strong><%= label %></strong>
+                      <div class="text-muted small">Se vazio, usa o número padrão.</div>
+                    </td>
+                    <td>
+                      <%= telephone_field_tag "whatsapp[rules][#{key}][number]",
+                                              rule["number"],
+                                              class: "form-control",
+                                              placeholder: "5547999999999" %>
+                    </td>
+                    <td class="text-center">
+                      <%= hidden_field_tag "whatsapp[rules][#{key}][capture_enabled]", "0" %>
+                      <div class="form-check form-switch d-inline-flex align-items-center gap-2">
+                        <%= check_box_tag "whatsapp[rules][#{key}][capture_enabled]",
+                                          "1",
+                                          rule.fetch("capture_enabled", true),
+                                          class: "form-check-input",
+                                          role: "switch",
+                                          id: "whatsapp_rules_#{key}_capture_enabled" %>
+                        <%= label_tag "whatsapp_rules_#{key}_capture_enabled", "Sim", class: "form-check-label" %>
+                      </div>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card-footer bg-white d-flex justify-content-end">
+          <%= f.submit "Salvar configurações", class: "btn btn-primary" %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="tab-pane fade" id="external" role="tabpanel" aria-labelledby="external-tab">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h2 class="h5 mb-2">Integrações externas</h2>
+        <p class="text-muted mb-0">Esta área fica reservada para provedores externos de WhatsApp, webhooks e automações futuras.</p>
+      </div>
+    </div>
+  </div>
+</div>
