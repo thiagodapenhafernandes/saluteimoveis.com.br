@@ -128,7 +128,7 @@ class Habitation < ApplicationRecord
   TOPOGRAFIA_OPTIONS = ["Plano", "Aclive", "Declive", "Irregular"].freeze
   FOTO_CLASSIFICACAO = ["Profissionais", "Boas", "Aceitáveis", "Amadoras", "Não tem fotos"].freeze
   KEY_LOCATION_OPTIONS = ["Imobiliária", "Corretor(a)", "Proprietário", "Zelador", "Portaria", "Inquilino", "Outro"].freeze
-  REGIAO_FOCO_OPTIONS = ["Centro", "Norte", "Sul", "Leste", "Oeste", "Praia", "Interior", "Sem preferência"].freeze
+  REGIAO_FOCO_OPTIONS = ["Sim", "Não"].freeze
   PORTAL_PUBLICATION_FIELDS = {
     "zapimoveis" => :publicar_zapimoveis,
     "vivareal_vrsync" => :publicar_viva_real_vrsync,

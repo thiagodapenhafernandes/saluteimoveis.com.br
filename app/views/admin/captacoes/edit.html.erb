@@ -57,6 +57,13 @@
     </div>
   <% end %>
 
+  <% if @captacao.intake_published? && !can?(:manage, :imoveis) %>
+    <div class="alert alert-warning border-0 shadow-sm">
+      <strong><i class="bi bi-lock-fill me-1"></i>Imóvel publicado no site.</strong>
+      Nome do empreendimento, endereço, dados do proprietário, título e descrição ficam bloqueados para corretores.
+    </div>
+  <% end %>
+
   <%= form_with model: @captacao,
                 url: admin_captacao_path(@captacao),
                 method: :patch,

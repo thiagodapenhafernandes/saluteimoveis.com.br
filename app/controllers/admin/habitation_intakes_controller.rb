@@ -407,15 +407,24 @@ module Admin
     end
 
     def published_restricted_params
-      params.require(:habitation).permit(
-        :status,
-        :valor_venda_formatted,
-        :valor_locacao_formatted,
-        :valor_promocional_formatted,
-        :valor_condominio_formatted,
-        :valor_iptu_formatted,
-        :ordered_photo_ids
-      )
+      captacao_style_params.except(*published_locked_fields.map(&:to_s))
+    end
+
+    def published_locked_fields
+      %i[
+        nome_empreendimento
+        titulo_anuncio
+        descricao_web
+        descricao_interna
+        proprietario
+        proprietario_celular
+        proprietario_email
+        proprietario_codigo
+        proprietario_telefone_comercial
+        proprietario_telefone_residencial
+        proprietor_id
+        address_attributes
+      ]
     end
 
     def intake_param_key

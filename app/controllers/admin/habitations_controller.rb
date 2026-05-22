@@ -563,9 +563,7 @@ class Admin::HabitationsController < Admin::BaseController
     @filter_estado_conservacoes = (Habitation::ESTADO_CONSERVACAO + Habitation.where("NULLIF(TRIM(estado_conservacao), '') IS NOT NULL AND estado_conservacao != '.'")
                                                                                  .distinct
                                                                                  .pluck(:estado_conservacao)).uniq.sort
-    @filter_regioes_foco = (Habitation::REGIAO_FOCO_OPTIONS + Habitation.where("NULLIF(TRIM(regiao_foco), '') IS NOT NULL AND regiao_foco != '.'")
-                                                                          .distinct
-                                                                          .pluck(:regiao_foco)).uniq.sort
+    @filter_regioes_foco = Habitation::REGIAO_FOCO_OPTIONS
   end
 
   def extract_multi_select_integers(param_key)
@@ -689,7 +687,21 @@ class Admin::HabitationsController < Admin::BaseController
     scope = scope.where(face: @face) if @face.present?
     scope = scope.where(ocupacao_status: @ocupacao_status) if @ocupacao_status.present?
     scope = scope.where(estado_conservacao: @estado_conservacao) if @estado_conservacao.present?
-    scope = scope.where(regiao_foco: @regiao_foco) if @regiao_foco.present?
+    if @regiao_foco == "Sim"
+      scope = scope.where(
+        "NULLIF(TRIM(habitations.regiao_foco), '') IS NOT NULL " \
+        "AND habitations.regiao_foco != '.' " \
+        "AND unaccent(habitations.regiao_foco) NOT ILIKE unaccent('Nao') " \
+        "AND unaccent(habitations.regiao_foco) NOT ILIKE unaccent('Sem preferência')"
+      )
+    elsif @regiao_foco == "Não"
+      scope = scope.where(
+        "habitations.regiao_foco IS NULL OR TRIM(habitations.regiao_foco) = '' " \
+        "OR habitations.regiao_foco = '.' " \
+        "OR unaccent(habitations.regiao_foco) ILIKE unaccent('Nao') " \
+        "OR unaccent(habitations.regiao_foco) ILIKE unaccent('Sem preferência')"
+      )
+    end
     @amenities.each { |amenity| scope = apply_amenity_filter(scope, amenity) } if @amenities.any?
 
     if @promotion_status == "with_promo"

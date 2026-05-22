@@ -11,41 +11,50 @@ module Admin
       @period_end   = parse_date(params[:end_date])   || Date.current
       @month_filter = params[:month].presence
 
-      scope = Captacao.done.where(submitted_at: @period_start.beginning_of_day..@period_end.end_of_day)
-      scope = scope.where("EXTRACT(MONTH FROM submitted_at) = ?", @month_filter.to_i) if @month_filter.present?
-      scope = scope.where(corretor_id: current_admin_user.id) unless owns_all_resource?(:captacoes)
+      scope = captacao_habitation_scope
+      scope = scope.where("EXTRACT(MONTH FROM COALESCE(habitations.data_cadastro_crm, habitations.created_at)) = ?", @month_filter.to_i) if @month_filter.present?
+      scope = scope.where(admin_user_id: current_admin_user.id) unless owns_all_resource?(:captacoes)
 
-      @total_venda   = scope.venda_type.count
-      @total_locacao = scope.locacao_type.count
+      venda_scope = scope.where("COALESCE(habitations.valor_venda_cents, 0) > 0")
+      locacao_scope = scope.where("COALESCE(habitations.valor_locacao_cents, 0) > 0")
+
+      @total_venda   = venda_scope.count
+      @total_locacao = locacao_scope.count
 
       @meta_venda   = CaptacaoGoal.current_target(year: @period_end.year, kind: :venda)
       @meta_locacao = CaptacaoGoal.current_target(year: @period_end.year, kind: :locacao)
 
-      @publicado_venda   = scope.venda_type.where(published_on_site: true).count
+      @publicado_venda   = venda_scope.where(exibir_no_site_flag: true).count
       @nao_publicado_venda = @total_venda - @publicado_venda
 
-      @publicado_locacao   = scope.locacao_type.where(published_on_site: true).count
+      @publicado_locacao   = locacao_scope.where(exibir_no_site_flag: true).count
       @nao_publicado_locacao = @total_locacao - @publicado_locacao
 
-      @total_valor_venda   = scope.venda_type.sum(:valor_venda).to_f
-      @total_valor_locacao = scope.locacao_type.sum(:valor_locacao).to_f
+      @total_valor_venda   = venda_scope.sum(:valor_venda_cents).to_f / 100.0
+      @total_valor_locacao = locacao_scope.sum(:valor_locacao_cents).to_f / 100.0
 
-      @ranking_venda = scope.venda_type
-        .joins(:corretor)
+      @ranking_venda = venda_scope
+        .left_joins(:admin_user)
         .group("admin_users.id", "admin_users.name")
-        .select("admin_users.id, admin_users.name, COUNT(captacoes.id) AS ct, COALESCE(SUM(valor_venda),0) AS total_value")
+        .select("admin_users.id, COALESCE(admin_users.name, 'Sem corretor') AS name, COUNT(habitations.id) AS ct, COALESCE(SUM(habitations.valor_venda_cents),0) / 100.0 AS total_value")
         .order("ct DESC, total_value DESC")
         .limit(15)
 
-      @ranking_locacao = scope.locacao_type
-        .joins(:corretor)
+      @ranking_locacao = locacao_scope
+        .left_joins(:admin_user)
         .group("admin_users.id", "admin_users.name")
-        .select("admin_users.id, admin_users.name, COUNT(captacoes.id) AS ct, COALESCE(SUM(valor_locacao),0) AS total_value")
+        .select("admin_users.id, COALESCE(admin_users.name, 'Sem corretor') AS name, COUNT(habitations.id) AS ct, COALESCE(SUM(habitations.valor_locacao_cents),0) / 100.0 AS total_value")
         .order("ct DESC, total_value DESC")
         .limit(15)
 
       @goal_venda_obj   = CaptacaoGoal.current_foco(year: @period_end.year, kind: :venda)
       @goal_locacao_obj = CaptacaoGoal.current_foco(year: @period_end.year, kind: :locacao)
+      @regiao_foco_venda = venda_scope.where(regiao_foco_positive_condition).count
+      @regiao_foco_locacao = locacao_scope.where(regiao_foco_positive_condition).count
+      @captacao_adm_locacao = locacao_scope.where(salute_rental_management_flag: true).count
+      @regiao_foco_venda_percent = percentage(@regiao_foco_venda, @total_venda)
+      @regiao_foco_locacao_percent = percentage(@regiao_foco_locacao, @total_locacao)
+      @captacao_adm_locacao_percent = percentage(@captacao_adm_locacao, @total_locacao)
 
       intake_scope = Habitation.broker_intakes.where(created_at: @period_start.beginning_of_day..@period_end.end_of_day)
       intake_scope = intake_scope.where("EXTRACT(MONTH FROM habitations.created_at) = ?", @month_filter.to_i) if @month_filter.present?
@@ -138,6 +147,27 @@ module Admin
     end
 
     private
+
+    def captacao_habitation_scope
+      Habitation
+        .where("COALESCE(habitations.tipo, '') <> 'Empreendimento'")
+        .where("COALESCE(habitations.data_cadastro_crm, habitations.created_at) BETWEEN ? AND ?", @period_start.beginning_of_day, @period_end.end_of_day)
+    end
+
+    def percentage(value, total)
+      return 0 if total.to_i.zero?
+
+      ((value.to_f / total.to_f) * 100).round
+    end
+
+    def regiao_foco_positive_condition
+      [
+        "NULLIF(TRIM(habitations.regiao_foco), '') IS NOT NULL " \
+        "AND habitations.regiao_foco != '.' " \
+        "AND unaccent(habitations.regiao_foco) NOT ILIKE unaccent('Nao') " \
+        "AND unaccent(habitations.regiao_foco) NOT ILIKE unaccent('Sem preferência')"
+      ]
+    end
 
     def set_captacao
       @captacao = Captacao.find(params[:id])

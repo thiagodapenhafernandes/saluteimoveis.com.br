@@ -1351,7 +1351,7 @@
                   <%= f.text_field :zelador_telefone, class: "form-control form-control-sm", data: { controller: "mask", mask_type_value: "phone" } %>
                 </div>
                 <div class="col-md-6">
-                  <%= f.label :regiao_foco, "Região foco", class: "form-label small fw-bold mb-1" %>
+                  <%= f.label :regiao_foco, "Região foco?", class: "form-label small fw-bold mb-1" %>
                   <%= f.select :regiao_foco, Habitation::REGIAO_FOCO_OPTIONS, { include_blank: "Selecione..." }, class: "form-select form-select-sm", data: { controller: "tom-select", placeholder: "Selecione..." } %>
                 </div>
                 <div class="col-md-3">

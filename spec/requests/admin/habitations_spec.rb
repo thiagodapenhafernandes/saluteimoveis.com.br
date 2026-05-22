@@ -105,6 +105,18 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(intake.admin_reviewed_at).to be_present
   end
 
+  it "exibe região foco como decisão sim ou não no cadastro completo" do
+    habitation = create(:habitation, codigo: "FOCO-#{SecureRandom.hex(6)}")
+
+    get edit_admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Região foco?")
+    expect(response.body).to include(">Sim<")
+    expect(response.body).to include(">Não<")
+    expect(response.body).not_to include(">Centro<")
+  end
+
   it "bloqueia cadastro de imóvel com mesma rua, número, prédio e unidade" do
     existing = create(:habitation, codigo: "DUP-#{SecureRandom.hex(6)}", nome_empreendimento: "Edifício Aurora", bloco: "1203")
     existing.create_address!(

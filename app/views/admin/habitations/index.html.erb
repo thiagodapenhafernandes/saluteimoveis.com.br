@@ -277,7 +277,7 @@
                   <%= f.select :estado_conservacao, @filter_estado_conservacoes, { include_blank: "Todas", selected: params[:estado_conservacao] }, class: "form-select" %>
                 </div>
                 <div class="col-md-3">
-                  <label class="form-label small fw-bold text-muted text-uppercase">Região foco (interno)</label>
+                  <label class="form-label small fw-bold text-muted text-uppercase">Região foco?</label>
                   <%= f.select :regiao_foco, @filter_regioes_foco, { include_blank: "Todas", selected: params[:regiao_foco] }, class: "form-select" %>
                 </div>
                 <div class="col-md-3">
@@ -845,7 +845,7 @@
   active_filter_chips << "Empreendimento: #{params[:empreendimento_codigo]}" if params[:empreendimento_codigo].present?
   active_filter_chips << "Corretor: #{params[:corretor_id]}" if params[:corretor_id].present?
   active_filter_chips << "Proprietário: #{params[:proprietor_id]}" if current_admin_user&.admin? && params[:proprietor_id].present?
-  active_filter_chips << "Região foco: #{params[:regiao_foco]}" if params[:regiao_foco].present?
+  active_filter_chips << "Região foco?: #{params[:regiao_foco]}" if params[:regiao_foco].present?
   active_filter_chips << "Meus imóveis" if @ownership_scope == "mine"
   active_filter_chips << "Pendente de revisão" if @intake_review == "pending"
   active_filter_chips << "Captação de: #{params[:captacao_inicio]}" if params[:captacao_inicio].present?

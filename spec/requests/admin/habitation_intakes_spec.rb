@@ -265,6 +265,123 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(intake.reload).to have_attributes(intake_status: "published", exibir_no_site_flag: true)
   end
 
+  it "bloqueia campos sensíveis para corretor após publicação no site" do
+    broker_profile = Profile.create!(
+      name: "Corretor teste",
+      active: true,
+      permissions: Profile.default_permissions_for("Corretor")
+    )
+    broker = create(:admin_user, profile: broker_profile)
+    intake = create(
+      :habitation,
+      :broker_intake,
+      admin_user: broker,
+      intake_status: "published",
+      intake_step: "negociacao",
+      exibir_no_site_flag: true,
+      nome_empreendimento: "Residencial Original",
+      titulo_anuncio: "Título original",
+      descricao_web: "Descrição original",
+      proprietario: "Proprietário original",
+      proprietario_celular: "(47) 99999-0000",
+      valor_venda_cents: 900_000_00
+    )
+    intake.create_address!(
+      cep: "88330-000",
+      logradouro: "Rua Original",
+      numero: "100",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+
+    sign_out admin
+    sign_in broker
+
+    patch admin_captacao_path(intake), params: {
+      current_step: "negociacao",
+      habitation: {
+        edificio_nome: "Residencial Alterado",
+        titulo_anuncio: "Título alterado",
+        descricao_web: "Descrição alterada",
+        proprietario_nome: "Proprietário alterado",
+        proprietario_telefone: "(47) 98888-1111",
+        zip_code: "88331-000",
+        street: "Rua Alterada",
+        street_number: "200",
+        neighborhood: "Barra Sul",
+        city: "Itajaí",
+        state: "SC",
+        valor_venda: "1200000"
+      }
+    }
+
+    expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "visitas"))
+    intake.reload
+    expect(intake).to have_attributes(
+      nome_empreendimento: "Residencial Original",
+      titulo_anuncio: "Título original",
+      proprietario: "Proprietário original",
+      proprietario_celular: "(47) 99999-0000",
+      valor_venda_cents: 120_000_000
+    )
+    expect(intake.descricao_web.to_plain_text).to eq("Descrição original")
+    expect(intake.address).to have_attributes(
+      logradouro: "Rua Original",
+      numero: "100",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      cep: "88330-000"
+    )
+  end
+
+  it "permite que administrativo altere campos sensíveis após publicação" do
+    intake = create(
+      :habitation,
+      :broker_intake,
+      admin_user: admin,
+      intake_status: "published",
+      intake_step: "endereco",
+      exibir_no_site_flag: true,
+      nome_empreendimento: "Residencial Original",
+      titulo_anuncio: "Título original",
+      descricao_web: "Descrição original",
+      proprietario: "Proprietário original"
+    )
+    intake.create_address!(
+      cep: "88330-000",
+      logradouro: "Rua Original",
+      numero: "100",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+
+    patch admin_captacao_path(intake), params: {
+      current_step: "endereco",
+      habitation: {
+        edificio_nome: "Residencial Alterado",
+        zip_code: "88331-000",
+        street: "Rua Alterada",
+        street_number: "200",
+        neighborhood: "Barra Sul",
+        city: "Itajaí",
+        state: "SC"
+      }
+    }
+
+    expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "caracteristicas"))
+    intake.reload
+    expect(intake.nome_empreendimento).to eq("Residencial Alterado")
+    expect(intake.address).to have_attributes(
+      logradouro: "Rua Alterada",
+      numero: "200",
+      bairro: "Barra Sul",
+      cidade: "Itajaí",
+      cep: "88331-000"
+    )
+  end
+
   it "desdobra venda e locação em dois cadastros ao enviar para revisão" do
     intake = create(
       :habitation,
