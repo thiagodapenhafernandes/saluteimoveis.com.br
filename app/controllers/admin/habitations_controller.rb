@@ -71,7 +71,7 @@ class Admin::HabitationsController < Admin::BaseController
 
   before_action :load_autocomplete_data, only: [:new, :edit, :create, :update]
   helper_method :can_view_proprietor_data?, :can_edit_habitation?
-  helper_method :can_release_intake_to_broker?
+  helper_method :can_release_intake_to_broker?, :can_manage_intake_status?
 
   def index
     load_index_filters
@@ -322,6 +322,7 @@ class Admin::HabitationsController < Admin::BaseController
     end
 
     assign_proprietor_from_legacy_fields(@habitation) if current_admin_user&.admin?
+    apply_intake_status_transition_metadata(@habitation)
     if @habitation.save
       notice = releasing_to_broker ? "Imóvel salvo e liberado para o corretor publicar no site." : "Imóvel atualizado com sucesso."
       redirect_to admin_habitations_path, notice: notice
@@ -644,6 +645,7 @@ class Admin::HabitationsController < Admin::BaseController
     @permuta_min_value = params[:permuta_min_value].to_s.gsub(/[^\d]/, '').to_i
     @scope = params[:scope]
     @ownership_scope = params[:ownership].presence_in(%w[mine all]) || (current_admin_user&.admin? ? "all" : "mine")
+    @intake_review = params[:intake_review].presence_in(%w[pending])
     @captacao_inicio = params[:captacao_inicio]
     @captacao_fim = params[:captacao_fim]
     @atualizacao_inicio = params[:atualizacao_inicio]
@@ -658,6 +660,7 @@ class Admin::HabitationsController < Admin::BaseController
       visible_statuses: Habitation::CATALOG_VISIBLE_INTAKE_STATUSES
     )
     scope = apply_ownership_scope(scope)
+    scope = scope.pending_admin_review_from_intake if @intake_review == "pending"
 
     if @q.present?
       scope = scope.where(
@@ -938,6 +941,12 @@ class Admin::HabitationsController < Admin::BaseController
     current_admin_user&.admin? || owns_all_resource?(:imoveis) || can?(:review, :captacoes)
   end
 
+  def can_manage_intake_status?(habitation)
+    return false unless habitation&.broker_intake?
+
+    current_admin_user&.admin? || owns_all_resource?(:imoveis) || can?(:review, :captacoes)
+  end
+
   def no_duplicate_address?(habitation)
     result = HabitationDuplicateChecker.new(
       street: habitation.logradouro,
@@ -975,6 +984,30 @@ class Admin::HabitationsController < Admin::BaseController
     habitation.admin_reviewed_by = current_admin_user
     habitation.admin_reviewed_at = Time.current
     habitation.exibir_no_site_flag = false
+  end
+
+  def apply_intake_status_transition_metadata(habitation)
+    return unless habitation.broker_intake?
+    return unless habitation.will_save_change_to_intake_status?
+
+    case habitation.intake_status
+    when "submitted_for_admin_review"
+      habitation.submitted_for_review_at ||= Time.current
+      habitation.exibir_no_site_flag = false
+    when "admin_approved"
+      habitation.admin_reviewed_by ||= current_admin_user
+      habitation.admin_reviewed_at ||= Time.current
+      habitation.exibir_no_site_flag = false
+    when "returned_to_broker"
+      habitation.admin_reviewed_by ||= current_admin_user
+      habitation.admin_reviewed_at ||= Time.current
+      habitation.exibir_no_site_flag = false
+    when "published"
+      habitation.broker_released_at ||= Time.current
+      habitation.exibir_no_site_flag = true
+    else
+      habitation.exibir_no_site_flag = false
+    end
   end
 
   def apply_boolean_filter(scope, raw_param, column_name)
@@ -1087,6 +1120,8 @@ class Admin::HabitationsController < Admin::BaseController
       proprietor_locked_fields.each { |field| permitted.delete(field) }
     end
 
+    permitted.delete(:intake_status) unless @habitation&.broker_intake? && can_manage_intake_status?(@habitation)
+
     # Campos presentes no formulário, mas ainda sem coluna no schema atual.
     # São descartados para evitar UnknownAttributeError ao inicializar o model.
     permitted.delete(:salas_qtd)
@@ -1142,7 +1177,7 @@ class Admin::HabitationsController < Admin::BaseController
       :permuta_localizacao, :permuta_dormitorios_qtd, :permuta_suites_qtd, :permuta_garagens_qtd,
       :agenciador, :captador_commission_percentage, :broker_commission_percentage,
       :salute_rental_management_flag, :home_corporate_flag, :home_corporate_position,
-      :key_location, :key_location_notes, :ordered_photo_ids,
+      :key_location, :key_location_notes, :ordered_photo_ids, :intake_status,
       videos: [], plantas: [], fotos_empreendimento: [], photos: [],
       fichas_cadastro: [], autorizacoes_venda: [],
       meta_keywords: [],

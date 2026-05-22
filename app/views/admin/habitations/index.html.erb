@@ -93,6 +93,7 @@
       <%= hidden_field_tag :direction, params[:direction] if params[:direction].present? %>
       <%= hidden_field_tag :scope, params[:scope] if params[:scope].present? %>
       <%= hidden_field_tag :ownership, @ownership_scope if @ownership_scope.present? %>
+      <%= hidden_field_tag :intake_review, @intake_review if @intake_review.present? %>
 
       <div class="row g-3 align-items-end">
         <div class="col-lg-5 col-md-12">
@@ -126,7 +127,7 @@
         </div>
       </div>
 
-      <% request.query_parameters.except("q", "status", "categoria", "sort", "direction", "scope", "page").each do |key, value| %>
+      <% request.query_parameters.except("q", "status", "categoria", "sort", "direction", "scope", "ownership", "intake_review", "page").each do |key, value| %>
         <% if value.is_a?(Array) %>
           <% value.reject(&:blank?).each do |entry| %>
             <%= hidden_field_tag "#{key}[]", entry %>
@@ -154,6 +155,8 @@
         <%= hidden_field_tag :sort, params[:sort] if params[:sort].present? %>
         <%= hidden_field_tag :direction, params[:direction] if params[:direction].present? %>
         <%= hidden_field_tag :scope, params[:scope] if params[:scope].present? %>
+        <%= hidden_field_tag :ownership, @ownership_scope if @ownership_scope.present? %>
+        <%= hidden_field_tag :intake_review, @intake_review if @intake_review.present? %>
 
         <div class="row g-3">
           <div class="col-md-2">
@@ -592,9 +595,10 @@
 
 <!-- Quick Scopes (Pills) -->
 <%
-  ownership_base_params = request.query_parameters.except("ownership", "page")
-  mine_active = @ownership_scope == "mine"
-  all_active = @ownership_scope == "all"
+  ownership_base_params = request.query_parameters.except("ownership", "intake_review", "page")
+  mine_active = @ownership_scope == "mine" && @intake_review.blank?
+  all_active = @ownership_scope == "all" && @intake_review.blank?
+  pending_review_active = @intake_review == "pending"
 %>
 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
   <div class="btn-group ownership-toggle" role="group" aria-label="Escopo dos imóveis">
@@ -604,9 +608,14 @@
     <%= link_to admin_habitations_path(ownership_base_params.merge(ownership: "all")), class: "btn btn-sm #{all_active ? 'btn-primary' : 'btn-white bg-white border text-muted'} fw-semibold" do %>
       <i class="bi bi-collection me-1"></i> Todos
     <% end %>
+    <%= link_to admin_habitations_path(ownership_base_params.merge(ownership: "all", intake_review: "pending")), class: "btn btn-sm #{pending_review_active ? 'btn-primary' : 'btn-white bg-white border text-muted'} fw-semibold" do %>
+      <i class="bi bi-clipboard-check me-1"></i> Pendente de revisão
+    <% end %>
   </div>
   <% if mine_active %>
     <span class="small text-muted">Mostrando imóveis vinculados ao corretor logado.</span>
+  <% elsif pending_review_active %>
+    <span class="small text-muted">Captações finalizadas pelo corretor e aguardando revisão administrativa.</span>
   <% end %>
 </div>
 
@@ -737,7 +746,7 @@
     <span class="small text-muted fw-semibold">
       <span class="text-dark fw-bold"><%= @habitations.count %></span> de <%= Habitation.count %>
     </span>
-    <% if params[:q].present? || params[:status].present? || params[:categoria].present? || params[:scope].present? || @ownership_scope == "mine" || active_extra_filters_count.positive? %>
+    <% if params[:q].present? || params[:status].present? || params[:categoria].present? || params[:scope].present? || @ownership_scope == "mine" || @intake_review.present? || active_extra_filters_count.positive? %>
       <span class="badge bg-warning-subtle text-warning border">Filtrando</span>
     <% end %>
   </div>
@@ -838,6 +847,7 @@
   active_filter_chips << "Proprietário: #{params[:proprietor_id]}" if current_admin_user&.admin? && params[:proprietor_id].present?
   active_filter_chips << "Região foco: #{params[:regiao_foco]}" if params[:regiao_foco].present?
   active_filter_chips << "Meus imóveis" if @ownership_scope == "mine"
+  active_filter_chips << "Pendente de revisão" if @intake_review == "pending"
   active_filter_chips << "Captação de: #{params[:captacao_inicio]}" if params[:captacao_inicio].present?
   active_filter_chips << "Captação até: #{params[:captacao_fim]}" if params[:captacao_fim].present?
   active_filter_chips << "Escopo: #{params[:scope]}" if params[:scope].present?

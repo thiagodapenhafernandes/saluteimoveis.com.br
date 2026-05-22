@@ -11,18 +11,28 @@ RSpec.describe "Admin::Habitations", type: :request do
   end
 
   it "lista captações finalizadas no menu de imóveis e oculta rascunhos" do
-    draft = create(:habitation, :broker_intake, admin_user: admin, titulo_anuncio: "Captação em rascunho")
-    submitted = create(:habitation, :broker_intake, admin_user: admin, intake_status: "submitted_for_admin_review", titulo_anuncio: "Captação finalizada")
+    draft = create(:habitation, :broker_intake, admin_user: admin, codigo: "DRAFT-#{SecureRandom.hex(6)}", titulo_anuncio: "Captação em rascunho")
+    submitted = create(:habitation, :broker_intake, admin_user: admin, codigo: "REV-#{SecureRandom.hex(6)}", intake_status: "submitted_for_admin_review", titulo_anuncio: "Captação finalizada")
+    approved = create(:habitation, :broker_intake, admin_user: admin, codigo: "APP-#{SecureRandom.hex(6)}", intake_status: "admin_approved", titulo_anuncio: "Captação aprovada")
 
     get admin_habitations_path
 
     expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Pendente de revisão")
     expect(response.body).to include(submitted.titulo_anuncio)
+    expect(response.body).to include(approved.titulo_anuncio)
+    expect(response.body).not_to include(draft.titulo_anuncio)
+
+    get admin_habitations_path(intake_review: "pending", ownership: "all")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(submitted.titulo_anuncio)
+    expect(response.body).not_to include(approved.titulo_anuncio)
     expect(response.body).not_to include(draft.titulo_anuncio)
   end
 
   it "salva o imóvel completo e libera a captação para o corretor publicar" do
-    intake = create(:habitation, :broker_intake, admin_user: admin, intake_status: "submitted_for_admin_review")
+    intake = create(:habitation, :broker_intake, admin_user: admin, codigo: "REL-#{SecureRandom.hex(6)}", intake_status: "submitted_for_admin_review")
     intake.create_address!(
       cep: "88330-000",
       logradouro: "Rua Central",
@@ -55,8 +65,48 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(intake.admin_reviewed_at).to be_present
   end
 
+  it "exibe e atualiza o status separado da captação no cadastro completo" do
+    intake = create(
+      :habitation,
+      :broker_intake,
+      admin_user: admin,
+      codigo: "REV-#{SecureRandom.hex(6)}",
+      intake_status: "submitted_for_admin_review"
+    )
+    intake.create_address!(
+      cep: "88330-000",
+      logradouro: "Rua Central",
+      numero: "100",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+
+    get edit_admin_habitation_path(intake)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Status da captação")
+    expect(response.body).to include("Fluxo separado do status comercial.")
+
+    patch admin_habitation_path(intake), params: {
+      habitation: {
+        intake_status: "returned_to_broker",
+        status: "Venda"
+      }
+    }
+
+    expect(response).to redirect_to(admin_habitations_path)
+    expect(intake.reload).to have_attributes(
+      intake_status: "returned_to_broker",
+      status: "Venda",
+      exibir_no_site_flag: false,
+      admin_reviewed_by_id: admin.id
+    )
+    expect(intake.admin_reviewed_at).to be_present
+  end
+
   it "bloqueia cadastro de imóvel com mesma rua, número, prédio e unidade" do
-    existing = create(:habitation, nome_empreendimento: "Edifício Aurora", bloco: "1203")
+    existing = create(:habitation, codigo: "DUP-#{SecureRandom.hex(6)}", nome_empreendimento: "Edifício Aurora", bloco: "1203")
     existing.create_address!(
       logradouro: "Rua 1500",
       numero: "100",
@@ -89,7 +139,7 @@ RSpec.describe "Admin::Habitations", type: :request do
   end
 
   it "retorna duplicidade em tempo real por endereço completo" do
-    existing = create(:habitation, nome_empreendimento: "Edifício Aurora", bloco: "1203")
+    existing = create(:habitation, codigo: "CHK-#{SecureRandom.hex(6)}", nome_empreendimento: "Edifício Aurora", bloco: "1203")
     existing.create_address!(
       logradouro: "Rua 1500",
       numero: "100",
