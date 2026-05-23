@@ -3,42 +3,44 @@
   Olá, <strong><%= current_admin_user.name.split.first %></strong>! Selecione o tipo de imóvel e a modalidade que você está captando.
 </p>
 
-<div class="wizard-field-group">
-  <label class="form-label">Tipo de imóvel <span class="required-star">*</span></label>
-  <div class="row g-2" data-controller="option-picker">
-    <% [
-      ["residencial",    "Residencial",    "bi-house-door-fill"],
-      ["sala_comercial", "Sala Comercial", "bi-shop"],
-      ["terreno",        "Terreno",        "bi-tree-fill"]
-    ].each do |val, label, icon| %>
-      <div class="col-4">
-        <label class="wizard-option-card <%= 'selected' if @captacao.property_kind == val %>">
-          <%= f.radio_button :property_kind, val, data: { action: "change->option-picker#pick" } %>
-          <div class="icon mb-2"><i class="bi <%= icon %>"></i></div>
-          <div class="small fw-semibold"><%= label %></div>
-        </label>
-      </div>
-    <% end %>
+<div class="wizard-start-grid">
+  <div class="wizard-field-group">
+    <label class="form-label">Tipo de imóvel <span class="required-star">*</span></label>
+    <div class="row g-2" data-controller="option-picker">
+      <% [
+        ["residencial",    "Residencial",    "bi-house-door-fill"],
+        ["sala_comercial", "Sala Comercial", "bi-shop"],
+        ["terreno",        "Terreno",        "bi-tree-fill"]
+      ].each do |val, label, icon| %>
+        <div class="col-4">
+          <label class="wizard-option-card <%= 'selected' if @captacao.property_kind == val %>">
+            <%= f.radio_button :property_kind, val, data: { action: "change->option-picker#pick" } %>
+            <div class="icon mb-2"><i class="bi <%= icon %>"></i></div>
+            <div class="small fw-semibold"><%= label %></div>
+          </label>
+        </div>
+      <% end %>
+    </div>
   </div>
-</div>
 
-<div class="wizard-field-group">
-  <label class="form-label">Modalidade <span class="required-star">*</span></label>
-  <div class="row g-2" data-controller="option-picker">
-    <% [
-      ["venda",          "Venda",           "bi-cash-coin"],
-      ["locacao_anual",  "Locação anual",   "bi-calendar-month"],
-      ["ambos",          "Venda e locação", "bi-arrow-left-right"],
-      ["locacao_diaria", "Locação diária",  "bi-calendar-day"]
-    ].each do |val, label, icon| %>
-      <div class="col-6">
-        <label class="wizard-option-card <%= 'selected' if @captacao.modalidade == val %>">
-          <%= f.radio_button :modalidade, val, data: { action: "change->option-picker#pick" } %>
-          <div class="icon mb-2"><i class="bi <%= icon %>"></i></div>
-          <div class="small fw-semibold"><%= label %></div>
-        </label>
-      </div>
-    <% end %>
+  <div class="wizard-field-group">
+    <label class="form-label">Modalidade <span class="required-star">*</span></label>
+    <div class="row g-2" data-controller="option-picker">
+      <% [
+        ["venda",          "Venda",           "bi-cash-coin"],
+        ["locacao_anual",  "Locação anual",   "bi-calendar-month"],
+        ["ambos",          "Venda e locação", "bi-arrow-left-right"],
+        ["locacao_diaria", "Locação diária",  "bi-calendar-day"]
+      ].each do |val, label, icon| %>
+        <div class="col-6">
+          <label class="wizard-option-card <%= 'selected' if @captacao.modalidade == val %>">
+            <%= f.radio_button :modalidade, val, data: { action: "change->option-picker#pick" } %>
+            <div class="icon mb-2"><i class="bi <%= icon %>"></i></div>
+            <div class="small fw-semibold"><%= label %></div>
+          </label>
+        </div>
+      <% end %>
+    </div>
   </div>
 </div>
 

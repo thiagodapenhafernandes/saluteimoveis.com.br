@@ -278,7 +278,19 @@
       }
 
       @media (min-width: 768px) {
-        body { padding-bottom: 0; }
+        body {
+          padding-bottom: 0;
+          padding-top: 0;
+        }
+        .wizard-admin-content {
+          margin-left: 260px;
+          min-height: 100vh;
+          padding-top: 64px;
+          width: calc(100% - 260px);
+        }
+        .wizard-top-bar {
+          top: 64px;
+        }
         .wizard-bottom-nav {
           position: static;
           max-width: 480px;
@@ -291,6 +303,75 @@
         }
         .captacao-photo-actions {
           grid-column: auto;
+        }
+      }
+      @media (min-width: 768px) and (max-width: 991.98px) {
+        .wizard-admin-content {
+          margin-left: 220px;
+          width: calc(100% - 220px);
+        }
+      }
+      @media (min-width: 992px) {
+        .wizard-start-shell,
+        .wizard-start-page {
+          max-width: 960px;
+        }
+
+        .wizard-start-page {
+          padding-top: 2rem;
+        }
+
+        .wizard-start-page .alert {
+          max-width: none;
+        }
+
+        .wizard-start-form {
+          background: #fff;
+          border: 1px solid #e5e7eb;
+          border-radius: 18px;
+          box-shadow: 0 18px 40px rgba(15, 23, 42, .08);
+          padding: 2rem;
+        }
+
+        .wizard-start-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+          gap: 1.25rem;
+          align-items: start;
+        }
+
+        .wizard-start-grid .wizard-field-group {
+          margin-bottom: 0;
+        }
+
+        .wizard-start-grid .wizard-option-card {
+          min-height: 132px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .wizard-start-grid .wizard-option-card .icon {
+          font-size: 2.15rem;
+        }
+
+        .wizard-start-form > .alert {
+          margin-top: 1.5rem;
+          margin-bottom: 0;
+        }
+
+        .wizard-start-form + .wizard-bottom-nav {
+          max-width: 960px;
+        }
+
+        .wizard-bottom-nav .wizard-start-shell {
+          max-width: none;
+          justify-content: flex-end;
+        }
+
+        .wizard-bottom-nav .wizard-start-shell .btn {
+          flex: 0 0 220px !important;
         }
       }
       @media (max-width: 420px) {
@@ -323,6 +404,26 @@
     </style>
   </head>
   <body>
+    <nav class="admin-navbar d-none d-md-flex">
+      <%= link_to((current_admin_user&.admin? ? admin_root_path : field_root_path), class: "admin-navbar-brand") do %>
+        <i class="bi bi-speedometer2"></i>
+        <span class="admin-navbar-brand-text"><%= @layout_setting&.site_name.presence || 'Salute' %> Admin</span>
+      <% end %>
+      <div class="admin-navbar-user">
+        <span class="admin-navbar-user-name">
+          <i class="bi bi-person-circle"></i> <%= current_admin_user&.name.to_s.split.first || current_admin_user&.email %>
+        </span>
+        <%= link_to destroy_admin_user_session_path, data: { turbo_method: :delete }, class: "btn btn-sm btn-outline-danger admin-navbar-logout" do %>
+          <i class="bi bi-box-arrow-right"></i><span class="ms-1">Sair</span>
+        <% end %>
+      </div>
+    </nav>
+
+    <aside class="admin-sidebar d-none d-md-block">
+      <%= render 'admin/shared/sidebar' %>
+    </aside>
+
+    <div class="wizard-admin-content">
     <% if flash.any? %>
       <div class="wizard-shell">
         <% flash.each do |type, msg| %>
@@ -333,6 +434,7 @@
     <% end %>
 
     <%= yield %>
+    </div>
     <%= render 'layouts/pwa_service_worker' %>
   </body>
 </html>
