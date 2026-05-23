@@ -1,10 +1,11 @@
 class AccessAuditLog < ApplicationRecord
-  EVENT_TYPES = %w[login logout access_denied].freeze
+  EVENT_TYPES = %w[login logout admin_access access_denied].freeze
   RESULTS = %w[allowed denied].freeze
 
   EVENT_LABELS = {
     "login" => "Login",
     "logout" => "Logout",
+    "admin_access" => "Acesso administrativo",
     "access_denied" => "Acesso negado"
   }.freeze
 

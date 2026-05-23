@@ -17,6 +17,7 @@ module Admin
       @period_start = parse_date(params[:start_date]) || Date.current.beginning_of_year
       @period_end   = parse_date(params[:end_date])   || Date.current
       @month_filter = params[:month].presence
+      @target_month_label = target_month_label(@month_filter)
 
       scope = captacao_habitation_scope
       scope = scope.where("EXTRACT(MONTH FROM COALESCE(habitations.data_cadastro_crm, habitations.created_at)) = ?", @month_filter.to_i) if @month_filter.present?
@@ -209,6 +210,14 @@ module Admin
     def parse_date(str)
       return nil if str.blank?
       Date.parse(str) rescue nil
+    end
+
+    def target_month_label(month)
+      return "Todos" if month.blank?
+
+      I18n.l(Date.new(Date.current.year, month.to_i), format: "%B").capitalize
+    rescue ArgumentError
+      "Todos"
     end
 
     def build_leads_heatmap

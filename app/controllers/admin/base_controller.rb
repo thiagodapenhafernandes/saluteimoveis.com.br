@@ -3,6 +3,7 @@ class Admin::BaseController < ApplicationController
   before_action :set_current_admin_user
   before_action :enforce_access_control_policy!
   before_action :prevent_search_indexing
+  after_action :record_allowed_admin_access
   layout 'admin'
   
   private
@@ -36,6 +37,7 @@ class Admin::BaseController < ApplicationController
       metadata: { trusted_device_id: access_result.device&.id, trusted_device_status: access_result.device&.status }.compact
     )
 
+    @access_audit_denied = true
     sign_out(current_admin_user)
     redirect_to new_admin_user_session_path, alert: access_result.reason
   end
@@ -57,11 +59,30 @@ class Admin::BaseController < ApplicationController
         metadata: { required_action: action, required_resource: resource }
       )
 
+      @access_audit_denied = true
       respond_to do |format|
         format.html { redirect_to admin_root_path, alert: "Você não tem permissão para acessar esta área." }
         format.json { render json: { error: "forbidden" }, status: :forbidden }
       end
     end
+  end
+
+  def record_allowed_admin_access
+    return unless current_admin_user
+    return if @access_audit_denied
+    return if request.format.json?
+
+    AccessAuditLog.log!(
+      event_type: "admin_access",
+      result: "allowed",
+      request: request,
+      admin_user: current_admin_user,
+      reason: "Acesso administrativo permitido",
+      metadata: {
+        response_status: response.status,
+        format: request.format&.symbol
+      }.compact
+    )
   end
 
   # Retorna scope do usuário para o recurso ("own" ou "all").

@@ -40,4 +40,16 @@ RSpec.describe "Admin::AccessAuditLogs", type: :request do
     expect(response.body).to include("Senha inválida")
     expect(response.body).to include("IPs únicos")
   end
+
+  it "records allowed administrative page access" do
+    sign_in admin
+
+    expect {
+      get admin_access_security_path
+    }.to change { AccessAuditLog.where(event_type: "admin_access", result: "allowed", admin_user: admin).count }.by(1)
+
+    log = AccessAuditLog.recent.first
+    expect(log.path).to eq(admin_access_security_path)
+    expect(log.reason).to eq("Acesso administrativo permitido")
+  end
 end
