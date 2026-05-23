@@ -142,7 +142,10 @@ Rails.application.routes.draw do
 
     # === Captação (wizard + dashboard) ===
     resources :captacoes, controller: "habitation_intakes" do
-      collection { get :dashboard, to: "captacoes#dashboard" }
+      collection do
+        get :dashboard, to: "captacoes#dashboard"
+        patch :dashboard_title, to: "captacoes#update_dashboard_title"
+      end
       member do
         post :publish
         post :submit_for_review

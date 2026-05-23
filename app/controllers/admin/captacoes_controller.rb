@@ -1,5 +1,10 @@
 module Admin
   class CaptacoesController < Admin::BaseController
+    DASHBOARD_EYEBROW_SETTING = "captacao_dashboard_eyebrow".freeze
+    DASHBOARD_TITLE_SETTING = "captacao_dashboard_title".freeze
+    DEFAULT_DASHBOARD_EYEBROW = "Palavra do Ano".freeze
+    DEFAULT_DASHBOARD_TITLE = "Captação".freeze
+
     before_action -> { check_permission!(:view, :captacoes) }
     before_action :set_captacao, only: [:edit, :update, :show, :destroy, :publish]
     before_action :authorize_access!, only: [:edit, :update, :show, :destroy, :publish]
@@ -7,6 +12,8 @@ module Admin
     layout :resolve_layout
 
     def dashboard
+      set_dashboard_title
+
       @period_start = parse_date(params[:start_date]) || Date.current.beginning_of_year
       @period_end   = parse_date(params[:end_date])   || Date.current
       @month_filter = params[:month].presence
@@ -67,6 +74,17 @@ module Admin
       @pre_cadastro_published = intake_scope.where(intake_status: "published").count
 
       build_leads_heatmap
+    end
+
+    def update_dashboard_title
+      require_admin!
+      return if performed?
+
+      attrs = dashboard_title_params
+      Setting.set(DASHBOARD_EYEBROW_SETTING, attrs[:eyebrow].to_s.strip.presence || DEFAULT_DASHBOARD_EYEBROW, "Texto superior do dashboard de captação")
+      Setting.set(DASHBOARD_TITLE_SETTING, attrs[:title].to_s.strip.presence || DEFAULT_DASHBOARD_TITLE, "Título principal do dashboard de captação")
+
+      redirect_to dashboard_admin_captacoes_path, notice: "Título do dashboard atualizado."
     end
 
     def index
@@ -147,6 +165,21 @@ module Admin
     end
 
     private
+
+    def set_dashboard_title
+      @dashboard_eyebrow = Setting.get(DASHBOARD_EYEBROW_SETTING, DEFAULT_DASHBOARD_EYEBROW)
+      @dashboard_title = Setting.get(DASHBOARD_TITLE_SETTING, DEFAULT_DASHBOARD_TITLE)
+    end
+
+    def dashboard_title_params
+      params.require(:dashboard).permit(:eyebrow, :title)
+    end
+
+    def require_admin!
+      return if current_admin_user.admin?
+
+      redirect_to dashboard_admin_captacoes_path, alert: "Você não tem permissão para alterar o dashboard."
+    end
 
     def captacao_habitation_scope
       Habitation

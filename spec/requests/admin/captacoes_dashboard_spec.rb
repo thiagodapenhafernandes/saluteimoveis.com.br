@@ -26,4 +26,19 @@ RSpec.describe "Admin::Captacoes dashboard", type: :request do
     expect(response.body).to include("de 2 captações de locação")
     expect(response.body).to include("50%")
   end
+
+  it "permite ao administrador editar o título do dashboard" do
+    patch dashboard_title_admin_captacoes_path, params: {
+      dashboard: {
+        eyebrow: "Meta do mês",
+        title: "Captação Salute"
+      }
+    }
+
+    expect(response).to redirect_to(dashboard_admin_captacoes_path)
+    follow_redirect!
+
+    expect(response.body).to include("Meta do mês")
+    expect(response.body).to include("Captação Salute")
+  end
 end

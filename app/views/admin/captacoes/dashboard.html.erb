@@ -5,6 +5,15 @@
     border-radius: 14px;
     padding: 1.25rem 1.5rem;
   }
+  .capt-hero-settings {
+    border-color: rgba(255, 255, 255, .24) !important;
+    color: rgba(255, 255, 255, .78) !important;
+  }
+  .capt-hero-settings:hover,
+  .capt-hero-settings:focus {
+    border-color: rgba(255, 255, 255, .48) !important;
+    color: #fff !important;
+  }
   .capt-gauge-wrapper {
     position: relative;
     height: 220px;
@@ -32,10 +41,25 @@
     background: linear-gradient(135deg, #198754 0%, #146c43 100%);
     color: #fff;
     border-radius: 12px;
-    padding: .9rem 1.25rem;
+    padding: 1rem 1.25rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 1rem;
+  }
+  .capt-foco-stat {
+    min-width: 8rem;
+    text-align: right;
+  }
+  .capt-summary-card {
+    background: #0d253f;
+    color: #fff;
+    border-radius: 14px;
+    padding: 1.25rem;
+  }
+  .capt-summary-card .summary-label {
+    color: rgba(255, 255, 255, .72);
+    font-size: .86rem;
   }
   .capt-ranking-row .bar-cell {
     position: relative;
@@ -124,6 +148,9 @@
     z-index: 20;
     margin: 0;
   }
+  body.capt-dashboard-tv-active .capt-dash-hero .btn {
+    display: none !important;
+  }
   body.capt-dashboard-tv-active [data-capt-tv-tab],
   body.capt-dashboard-tv-active [data-capt-active-tv] {
     display: none !important;
@@ -155,10 +182,15 @@
 <div class="capt-dash-hero mb-3">
   <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
     <div>
-      <div class="opacity-75 small text-uppercase">Palavra do Ano</div>
-      <h2 class="fw-bold mb-0">Captação</h2>
+      <div class="opacity-75 small text-uppercase"><%= @dashboard_eyebrow %></div>
+      <h2 class="fw-bold mb-0"><%= @dashboard_title %></h2>
     </div>
     <div class="d-flex gap-2">
+      <% if current_admin_user.admin? %>
+        <button type="button" class="btn btn-sm btn-outline-light capt-hero-settings" data-bs-toggle="modal" data-bs-target="#dashboardTitleModal" aria-label="Editar título do dashboard">
+          <i class="bi bi-gear"></i>
+        </button>
+      <% end %>
       <% if current_admin_user.admin? %>
         <%= link_to admin_captacao_goals_path, class: "btn btn-sm btn-light" do %>
           <i class="bi bi-bullseye me-1"></i>Metas
@@ -170,6 +202,35 @@
     </div>
   </div>
 </div>
+
+<% if current_admin_user.admin? %>
+  <div class="modal fade" id="dashboardTitleModal" tabindex="-1" aria-labelledby="dashboardTitleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <%= form_with url: dashboard_title_admin_captacoes_path, method: :patch, local: true do %>
+          <div class="modal-header">
+            <h5 class="modal-title" id="dashboardTitleModalLabel">Editar título do dashboard</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Texto superior</label>
+              <%= text_field_tag "dashboard[eyebrow]", @dashboard_eyebrow, class: "form-control", maxlength: 80, placeholder: "Palavra do Ano" %>
+            </div>
+            <div>
+              <label class="form-label">Título principal</label>
+              <%= text_field_tag "dashboard[title]", @dashboard_title, class: "form-control", maxlength: 80, placeholder: "Captação" %>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <%= submit_tag "Salvar", class: "btn btn-primary" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+<% end %>
 
 <div class="capt-tv-toolbar">
   <button type="button" class="btn btn-sm btn-outline-secondary" data-capt-tv-tab="tab-geral">
@@ -382,6 +443,17 @@
 
   <!-- VENDA -->
   <div class="tab-pane fade" id="tab-venda">
+    <div class="capt-foco-banner mb-3">
+      <div>
+        <div class="small text-uppercase opacity-75 fw-semibold">Região foco</div>
+        <div class="h4 fw-bold mb-0">Captação Venda</div>
+      </div>
+      <div class="capt-foco-stat">
+        <div class="h3 fw-bold mb-0"><%= @regiao_foco_venda %></div>
+        <div class="small opacity-75"><%= @regiao_foco_venda_percent %>% de <%= @total_venda %></div>
+      </div>
+    </div>
+
     <div class="row g-3">
       <div class="col-lg-5">
         <div class="card shadow-sm border-0">
@@ -396,17 +468,6 @@
             </div>
             <div class="d-flex justify-content-between small text-muted mt-2">
               <span>0</span><span><%= @meta_venda %></span>
-            </div>
-            <hr>
-            <div class="row g-2 text-center">
-              <div class="col-6">
-                <div class="small text-muted">Total Captação Venda</div>
-                <div class="fs-3 fw-bold"><%= @total_venda %></div>
-              </div>
-              <div class="col-6">
-                <div class="small text-muted">Total Venda</div>
-                <div class="fs-3 fw-bold"><%= number_to_currency(@total_valor_venda, unit: "R$ ", precision: 0) %></div>
-              </div>
             </div>
           </div>
         </div>
@@ -438,12 +499,35 @@
             <%= render "ranking_table", rows: @ranking_venda, value_key: :total_value, value_label: "Total Venda" %>
           </div>
         </div>
+        <div class="capt-summary-card mt-3">
+          <div class="row g-3 text-center">
+            <div class="col-6">
+              <div class="summary-label">Total Captação Venda</div>
+              <div class="fs-2 fw-bold"><%= @total_venda %></div>
+            </div>
+            <div class="col-6">
+              <div class="summary-label">Total Venda</div>
+              <div class="fs-2 fw-bold"><%= number_to_currency(@total_valor_venda, unit: "R$ ", precision: 0) %></div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- LOCAÇÃO -->
   <div class="tab-pane fade" id="tab-locacao">
+    <div class="capt-foco-banner mb-3">
+      <div>
+        <div class="small text-uppercase opacity-75 fw-semibold">Região foco</div>
+        <div class="h4 fw-bold mb-0">Captação Locação</div>
+      </div>
+      <div class="capt-foco-stat">
+        <div class="h3 fw-bold mb-0"><%= @regiao_foco_locacao %></div>
+        <div class="small opacity-75"><%= @regiao_foco_locacao_percent %>% de <%= @total_locacao %></div>
+      </div>
+    </div>
+
     <div class="row g-3">
       <div class="col-lg-5">
         <div class="card shadow-sm border-0">
@@ -458,17 +542,6 @@
             </div>
             <div class="d-flex justify-content-between small text-muted mt-2">
               <span>0</span><span><%= @meta_locacao %></span>
-            </div>
-            <hr>
-            <div class="row g-2 text-center">
-              <div class="col-6">
-                <div class="small text-muted">Total Captação Locação</div>
-                <div class="fs-3 fw-bold"><%= @total_locacao %></div>
-              </div>
-              <div class="col-6">
-                <div class="small text-muted">Total Locação</div>
-                <div class="fs-3 fw-bold"><%= number_to_currency(@total_valor_locacao, unit: "R$ ", precision: 0) %></div>
-              </div>
             </div>
           </div>
         </div>
@@ -504,6 +577,18 @@
           <div class="card-body">
             <h6 class="fw-bold text-muted text-uppercase small mb-3">Ranking de corretores</h6>
             <%= render "ranking_table", rows: @ranking_locacao, value_key: :total_value, value_label: "Total Locação" %>
+          </div>
+        </div>
+        <div class="capt-summary-card mt-3">
+          <div class="row g-3 text-center">
+            <div class="col-6">
+              <div class="summary-label">Total Captação Locação</div>
+              <div class="fs-2 fw-bold"><%= @total_locacao %></div>
+            </div>
+            <div class="col-6">
+              <div class="summary-label">Total Locação</div>
+              <div class="fs-2 fw-bold"><%= number_to_currency(@total_valor_locacao, unit: "R$ ", precision: 0) %></div>
+            </div>
           </div>
         </div>
       </div>
