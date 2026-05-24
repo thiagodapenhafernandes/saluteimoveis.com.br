@@ -93,6 +93,7 @@ Rails.application.routes.draw do
     resources :leads, only: [:index, :show, :update, :destroy]
     resources :distribution_rules do
       patch :toggle_active, on: :member
+      patch :reorder_agents, on: :member
     end
     resources :meta_integrations, only: [:index] do
       collection do
@@ -101,6 +102,11 @@ Rails.application.routes.draw do
         delete :disconnect
         get :list_forms
       end
+    end
+    resource :whatsapp_integration, only: [:show] do
+      post :embedded_signup_callback
+      delete :disconnect
+      patch :phone_settings
     end
     resource :dwv_integrations, only: [:show, :update] do
       get :status

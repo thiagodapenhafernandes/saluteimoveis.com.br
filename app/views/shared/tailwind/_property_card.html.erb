@@ -51,7 +51,7 @@
         <% if card_images.present? %>
           <% card_images.each_with_index do |pic, index| %>
             <div class="swiper-slide w-full aspect-[4/3]" style="width: 100% !important; flex-shrink: 0 !important;">
-              <% image_source = optimized_image_source(pic, resize_to_fill: [640, 480]) %>
+              <% image_source = public_image_url(pic, resize_to_fill: [640, 480]) %>
               <% placeholder = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" %>
               <%= image_tag(index.zero? ? image_source : placeholder,
                     alt: property.titulo_anuncio,
@@ -61,7 +61,7 @@
                     loading: "lazy",
                     decoding: "async",
                     sizes: "(min-width: 1024px) 400px, (min-width: 640px) 50vw, 100vw",
-                    data: (index.zero? ? {} : { src: url_for(image_source) })) %>
+                    data: (index.zero? ? {} : { src: image_source })) %>
             </div>
           <% end %>
         <% else %>
@@ -155,6 +155,7 @@
                   data-property-id="<%= property.id %>"
                   data-property-code="<%= property.codigo %>"
                   data-property-title="<%= property.titulo_anuncio %>"
+                  data-negotiation-type="<%= property.whatsapp_negotiation_type %>"
                   data-whatsapp-message="Olá, vi o imóvel <%= property.titulo_anuncio %> (Cód: <%= property.codigo %>) no site e gostaria de mais informações."
                   title="Falar no WhatsApp">
             <i class="bi bi-whatsapp text-lg"></i>
@@ -178,6 +179,7 @@
                   data-property-id="<%= property.id %>"
                   data-property-code="<%= property.codigo %>"
                   data-property-title="<%= property.titulo_anuncio %>"
+                  data-negotiation-type="<%= property.whatsapp_negotiation_type %>"
                   data-whatsapp-message="Olá, vi o imóvel <%= property.titulo_anuncio %> (Cód: <%= property.codigo %>) no site e gostaria de mais informações."
                   title="Falar no WhatsApp">
             <i class="bi bi-whatsapp text-lg"></i>

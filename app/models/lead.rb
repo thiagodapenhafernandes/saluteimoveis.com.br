@@ -45,7 +45,6 @@ class Lead < ApplicationRecord
   end
 
   def whatsapp_url
-    base_number = ContactSetting.first&.whatsapp_primary&.gsub(/\D/, '') || "554733111067"
     property = Habitation.find_by(id: property_id)
     
     message = if property
@@ -54,7 +53,7 @@ class Lead < ApplicationRecord
       "Olá, meu nome é #{display_name}. Gostaria de mais informações. (Origem: #{origin})"
     end
     
-    "https://wa.me/#{base_number}?text=#{ERB::Util.url_encode(message)}"
+    WhatsappBusinessIntegration.current.whatsapp_url_for(habitation: property, message: message)
   end
 
   def direct_whatsapp_url

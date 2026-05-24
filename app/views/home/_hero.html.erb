@@ -11,11 +11,13 @@
   <!-- Cinematic Slider Container -->
   <div class="hero-slider-container">
     <% (@hero_images.presence || [{ source: asset_path("hero_05.jpeg"), alt: "Salute Imóveis - Luxo e Exclusividade" }]).each_with_index do |image, index| %>
+      <% desktop_source = public_image_url(image[:source]) %>
+      <% mobile_source = public_image_url(image[:mobile_source] || image[:source]) %>
       <div class="hero-slide <%= 'active' if index == 0 %>" data-hero-slider-target="slide">
-        <%= image_tag image[:source],
+        <%= image_tag desktop_source,
                       class: "hero-image", 
                       alt: image[:alt],
-                      srcset: "#{url_for(image[:mobile_source] || image[:source])} 900w, #{url_for(image[:source])} 1920w",
+                      srcset: "#{mobile_source} 900w, #{desktop_source} 1920w",
                       sizes: "100vw",
                       fetchpriority: index == 0 ? "high" : "low",
                       loading: index == 0 ? "eager" : "lazy",

@@ -28,10 +28,12 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <% if defined?(@hero_preload_source) && @hero_preload_source.present? %>
+      <% hero_preload_source = public_image_url(@hero_preload_source) %>
+      <% hero_preload_mobile_source = public_image_url(@hero_preload_mobile_source || @hero_preload_source) %>
       <link rel="preload"
             as="image"
-            href="<%= url_for(@hero_preload_source) %>"
-            imagesrcset="<%= "#{url_for(@hero_preload_mobile_source || @hero_preload_source)} 900w, #{url_for(@hero_preload_source)} 1920w" %>"
+            href="<%= hero_preload_source %>"
+            imagesrcset="<%= "#{hero_preload_mobile_source} 900w, #{hero_preload_source} 1920w" %>"
             imagesizes="100vw"
             fetchpriority="high">
     <% end %>
@@ -121,6 +123,7 @@
   <body class="antialiased"
         data-controller="lead-capture"
         data-lead-capture-enabled-value="<%= WebhookSetting.active.where(lead_capture_enabled: true).exists? %>"
+        data-lead-capture-phone-settings-value="<%= json_escape(WhatsappBusinessIntegration.site_phone_settings.to_json) %>"
         data-lead-capture-share-token-value="<%= @lead_share_token %>">
     <%= render 'layouts/header' %>
     

@@ -38,7 +38,7 @@
       </div>
 
       <!-- Fontes dos leads -->
-      <div class="card shadow-sm border-0 mb-4" data-controller="meta-rules" data-meta-rules-structure-value="<%= MetaFacebookPage.includes(:meta_lead_forms).map { |p| [p.page_id, { name: p.name, forms: p.meta_lead_forms.map { |f| { id: f.form_id, name: f.name } } }] }.to_h.to_json %>">
+      <div class="card shadow-sm border-0 mb-4" data-controller="meta-rules" data-meta-rules-structure-value="<%= @meta_structure.to_json %>">
         <div class="card-header bg-white py-3">
           <h5 class="card-title mb-0 fw-bold"><i class="bi bi-hdd-network me-2 text-success"></i>Fontes dos leads</h5>
         </div>
@@ -74,7 +74,7 @@
                       <summary class="px-3 py-2 d-flex justify-content-between align-items-center" style="cursor: pointer; list-style: none;">
                         <span class="fw-semibold small">
                           <i class="bi bi-list-check text-primary me-1"></i>
-                          <span data-collapsible-count-target="label">
+                          <span data-collapsible-count-target="label" data-meta-rules-target="formCountLabel">
                             <% if selected_forms_count.zero? %>
                               Nenhum formulário selecionado
                             <% else %>
@@ -94,9 +94,9 @@
                                      options_for_select(@all_form_options || [], distribution_rule.meta_forms), {},
                                      { multiple: true,
                                        class: "form-select",
-                                       data: {
-                                         meta_rules_target: "formSelect",
-                                         action: "change->collapsible-count#recount"
+                                         data: {
+                                          meta_rules_target: "formSelect",
+                                         action: "change->collapsible-count#recount change->meta-rules#syncAutoSummary"
                                        } } %>
                         <div class="form-text small mt-2">
                           Use a busca pra filtrar — o resumo lá em cima atualiza conforme você marca/desmarca.
@@ -109,7 +109,7 @@
                     <div class="card-body py-3 px-4 d-flex align-items-center justify-content-between">
                       <div class="d-flex align-items-center">
                         <div class="form-check form-switch me-3">
-                          <%= f.check_box :auto_add_forms, class: "form-check-input", id: "autoSyncForms", data: { action: "change->meta-rules#toggleAutoSync" } %>
+                          <%= f.check_box :auto_add_forms, class: "form-check-input", id: "autoSyncForms", data: { meta_rules_target: "autoSync", action: "change->meta-rules#toggleAutoSync" } %>
                         </div>
                         <div>
                           <div class="fw-bold small">Sincronização Automática</div>
@@ -194,7 +194,7 @@
       </div>
 
       <!-- Equipe -->
-      <div class="card shadow-sm border-0 mb-4" 
+      <div class="card shadow-sm border-0 mb-4" id="team"
            data-controller="team-rules" 
            data-team-rules-structure-value="<%= AdminUser.where(role: :admin).includes(:subordinates).map { |u| [u.id, { agents: u.subordinates.map { |s| { id: s.id, name: s.name } } }] }.to_h.to_json %>">
         <div class="card-header bg-white py-3">
@@ -236,7 +236,7 @@
             
             <div class="form-text extra-small mb-3">
               <i class="bi bi-info-circle me-1"></i>
-              No modo <strong>Performance</strong>, defina os ciclos (peso). No modo <strong>Rotativo</strong>, a ordem da lista define a fila.
+              Arraste pelo ícone para reordenar. No modo <strong>Performance</strong>, defina os ciclos (peso). No modo <strong>Rotativo</strong>, a ordem da lista define a fila.
             </div>
 
             <!-- Template for new agents -->
@@ -445,4 +445,3 @@
     </div>
   </div>
 <% end %>
-

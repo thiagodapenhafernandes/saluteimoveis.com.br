@@ -4,6 +4,7 @@ export default class extends Controller {
   static targets = ["modal", "propertyId", "leadType", "origin", "shareToken", "name", "phone", "email", "submitButton"]
   static values = {
     enabled: Boolean,
+    phoneSettings: Object,
     shareToken: String
   }
 
@@ -35,9 +36,16 @@ export default class extends Controller {
     const message = trigger.dataset.whatsappMessage || `Olá, gostaria de mais informações sobre o imóvel ${propertyTitle} (Cód: ${propertyCode})`
     const leadOrigin = trigger.dataset.leadOrigin || ""
     const shareToken = trigger.dataset.shareToken || this.shareTokenValue || ""
+    const negotiationType = trigger.dataset.negotiationType || "sale"
 
     // Store message for redirect
     this.whatsappMessage = message
+    this.negotiationType = negotiationType
+
+    if (!this.requiresLeadForm(negotiationType)) {
+      window.open(this.whatsappUrlFor(negotiationType, message), "_blank")
+      return
+    }
 
     // Set hidden fields
     if (this.hasPropertyIdTarget) this.propertyIdTarget.value = propertyId
@@ -95,14 +103,8 @@ export default class extends Controller {
       share_token: this.hasShareTokenTarget ? this.shareTokenTarget.value : ""
     })
 
-    // Construct WhatsApp URL
-    // Default number if not configured elsewhere - using the one from the views
-    const phoneNumber = "554733111067" // This should ideally come from backend config too
-    const text = encodeURIComponent(this.whatsappMessage)
-    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${text}`
-
     // Open WhatsApp
-    window.open(whatsappUrl, '_blank')
+    window.open(this.whatsappUrlFor(this.negotiationType, this.whatsappMessage), '_blank')
 
     // Close modal
     this.close()
@@ -130,5 +132,25 @@ export default class extends Controller {
     }).catch(error => {
       console.error("Error capturing lead:", error)
     })
+  }
+
+  whatsappUrlFor(negotiationType, message) {
+    const phoneNumber = this.phoneNumberFor(negotiationType)
+    const text = encodeURIComponent(message)
+    return `https://wa.me/${phoneNumber}?text=${text}`
+  }
+
+  phoneNumberFor(negotiationType) {
+    const settings = this.phoneSettingsValue || {}
+    const negotiations = settings.negotiations || {}
+    const config = negotiations[negotiationType] || {}
+    return config.phone || settings.default_phone || "554733111067"
+  }
+
+  requiresLeadForm(negotiationType) {
+    const settings = this.phoneSettingsValue || {}
+    const negotiations = settings.negotiations || {}
+    const config = negotiations[negotiationType] || {}
+    return config.requires_form !== false
   }
 }

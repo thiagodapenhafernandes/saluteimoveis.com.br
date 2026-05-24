@@ -1205,7 +1205,13 @@ html:has(body.admin-layout) {
 .card-radio-group .btn-check:checked+.btn {
   border-color: #0d6efd !important;
   background-color: #f8faff !important;
+  color: #212529 !important;
   box-shadow: 0 4px 12px rgba(13, 110, 253, 0.08);
+}
+
+.card-radio-group .btn-check:checked+.btn .fw-bold,
+.card-radio-group .btn-check:checked+.btn .text-muted {
+  color: #212529 !important;
 }
 
 .card-radio-group .btn:hover {

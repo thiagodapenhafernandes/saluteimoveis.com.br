@@ -33,7 +33,7 @@
              data-fancybox="property-gallery"
              data-caption="<%= title %> - Foto 1"
              class="relative block h-full overflow-hidden bg-gray-100">
-            <%= image_tag optimized_image_source(images.first, resize_to_fill: [960, 720]),
+            <%= image_tag public_image_url(images.first, resize_to_fill: [960, 720]),
                 alt: "#{title} - Foto 1",
                 class: "h-full w-full object-cover transition-transform duration-700 hover:scale-105",
                 fetchpriority: "high",
@@ -50,7 +50,7 @@
                  data-fancybox="property-gallery"
                  data-caption="<%= title %> - Foto <%= index + 2 %>"
                  class="relative block overflow-hidden bg-gray-100">
-                <%= image_tag optimized_image_source(photo, resize_to_fill: [520, 360]),
+                <%= image_tag public_image_url(photo, resize_to_fill: [520, 360]),
                     alt: "#{title} - Foto #{index + 2}",
                     class: "h-full w-full object-cover transition-transform duration-700 hover:scale-105",
                     loading: "lazy",
@@ -269,6 +269,7 @@
               data-property-id="<%= @habitation.id %>"
               data-property-code="<%= @habitation.codigo %>"
               data-property-title="<%= title %>"
+              data-negotiation-type="<%= @habitation.whatsapp_negotiation_type %>"
               data-whatsapp-message="Olá, estou interessado no imóvel <%= title %> (Código: <%= @habitation.codigo %>). Gostaria de mais informações.">
             <i class="bi bi-whatsapp text-green-400"></i>
             Falar no WhatsApp
@@ -280,6 +281,7 @@
               data-property-id="<%= @habitation.id %>"
               data-property-code="<%= @habitation.codigo %>"
               data-property-title="<%= title %>"
+              data-negotiation-type="<%= @habitation.whatsapp_negotiation_type %>"
               data-whatsapp-message="Olá, gostaria de agendar uma visita para o imóvel <%= title %> (Código: <%= @habitation.codigo %>).">
             <i class="bi bi-calendar-check text-golden-one"></i>
             Agendar visita

@@ -546,6 +546,16 @@ class Habitation < ApplicationRecord
     !rental_intake?
   end
 
+  def whatsapp_negotiation_type
+    has_sale_price = valor_venda_cents.to_i.positive?
+    has_rent_price = valor_locacao_cents.to_i.positive?
+
+    return "sale_rent" if intake_modalidade == "ambos" || (has_sale_price && has_rent_price)
+    return "rent" if rental_intake? || has_rent_price
+
+    "sale"
+  end
+
   def intake_missing_requirements
     missing = []
     missing << "Dados do proprietário" if proprietario.blank? || (proprietario_celular.blank? && proprietario_email.blank?)
