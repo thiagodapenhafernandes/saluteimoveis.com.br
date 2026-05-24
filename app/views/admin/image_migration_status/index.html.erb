@@ -7,12 +7,113 @@
       <p class="text-muted mb-0">Acompanhe a cópia das fotos antigas dos imóveis para a nossa base.</p>
     </div>
     <div class="d-flex gap-2">
+      <%= button_to admin_sync_image_migration_path,
+            method: :post,
+            class: "btn btn-primary",
+            disabled: worker[:running],
+            form: { class: "d-inline", data: { turbo_confirm: "Iniciar a migração de imagens com as configurações salvas nesta tela?" } } do %>
+        <i class="bi bi-cloud-arrow-up me-2"></i>Iniciar migração
+      <% end %>
       <%= link_to admin_image_migration_status_path, class: "btn btn-outline-primary" do %>
-        <i class="bi bi-arrow-clockwise me-2"></i>Atualizar
+        <i class="bi bi-arrow-clockwise me-2"></i>Recarregar status
       <% end %>
       <%= link_to admin_habitations_path(sort: "last_sync_at", direction: "desc"), class: "btn btn-outline-secondary" do %>
         <i class="bi bi-arrow-left me-2"></i>Vista Soft
       <% end %>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+      <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+        <div>
+          <h5 class="fw-bold mb-1"><i class="bi bi-sliders me-2 text-primary"></i>Configurações da execução</h5>
+          <p class="text-muted small mb-0">Essas opções controlam a próxima execução iniciada por esta tela.</p>
+        </div>
+
+        <%= button_to admin_retry_failed_image_migration_path,
+              method: :post,
+              class: "btn btn-outline-warning",
+              disabled: worker[:running] || @status[:failed_properties].zero?,
+              form: { class: "d-inline", data: { turbo_confirm: "Reprocessar os imóveis registrados no arquivo de falhas?" } } do %>
+          <i class="bi bi-arrow-repeat me-2"></i>Retry falhas
+        <% end %>
+      </div>
+
+      <%= form_with url: admin_image_migration_configuration_path, method: :patch, scope: :image_migration, local: true do |f| %>
+        <div class="row g-3">
+          <div class="col-lg-4">
+            <%= f.label :mode, "Modo", class: "form-label fw-semibold" %>
+            <%= f.select :mode,
+                  options_for_select(Admin::ImageMigrationStatusController::SYNC_MODES.map { |value, label| [label, value] }, @configuration["mode"]),
+                  {},
+                  class: "form-select" %>
+            <div class="form-text">“Apenas imóveis sem fotos” é o padrão mais seguro para completar pendências.</div>
+          </div>
+
+          <div class="col-sm-6 col-lg-2">
+            <%= f.label :batch_size, "Lote", class: "form-label fw-semibold" %>
+            <%= f.number_field :batch_size, value: @configuration["batch_size"], min: 1, max: 500, class: "form-control" %>
+          </div>
+
+          <div class="col-sm-6 col-lg-2">
+            <%= f.label :sleep_seconds, "Pausa", class: "form-label fw-semibold" %>
+            <div class="input-group">
+              <%= f.number_field :sleep_seconds, value: @configuration["sleep_seconds"], min: 0.5, max: 30, step: 0.5, class: "form-control" %>
+              <span class="input-group-text">s</span>
+            </div>
+          </div>
+
+          <div class="col-sm-6 col-lg-2">
+            <%= f.label :max_cycles, "Máx. ciclos", class: "form-label fw-semibold" %>
+            <%= f.number_field :max_cycles, value: @configuration["max_cycles"], min: 0, max: 10000, class: "form-control" %>
+            <div class="form-text">0 = sem limite.</div>
+          </div>
+
+          <div class="col-sm-6 col-lg-2">
+            <%= f.label :start_id, "ID inicial", class: "form-label fw-semibold" %>
+            <%= f.number_field :start_id, value: @configuration["start_id"], min: 0, class: "form-control" %>
+          </div>
+
+          <div class="col-sm-6 col-lg-2">
+            <%= f.label :max_id, "ID final", class: "form-label fw-semibold" %>
+            <%= f.number_field :max_id, value: @configuration["max_id"], min: 0, class: "form-control" %>
+            <div class="form-text">0 = sem limite.</div>
+          </div>
+
+          <div class="col-sm-6 col-lg-2">
+            <div class="form-check form-switch mt-lg-4 pt-lg-2">
+              <%= f.check_box :loop, { checked: @configuration["loop"] == "true", class: "form-check-input" }, "true", "false" %>
+              <%= f.label :loop, "Rodar até acabar", class: "form-check-label fw-semibold" %>
+            </div>
+          </div>
+
+          <div class="col-sm-6 col-lg-2">
+            <div class="form-check form-switch mt-lg-4 pt-lg-2">
+              <%= f.check_box :skip_analysis, { checked: @configuration["skip_analysis"] == "true", class: "form-check-input" }, "true", "false" %>
+              <%= f.label :skip_analysis, "Pular análise", class: "form-check-label fw-semibold" %>
+            </div>
+          </div>
+
+          <div class="col-sm-6 col-lg-2">
+            <div class="form-check form-switch mt-lg-4 pt-lg-2">
+              <%= f.check_box :dry_run, { checked: @configuration["dry_run"] == "true", class: "form-check-input" }, "true", "false" %>
+              <%= f.label :dry_run, "Simular", class: "form-check-label fw-semibold" %>
+            </div>
+          </div>
+
+          <div class="col-lg-4 d-flex align-items-end">
+            <%= f.submit "Salvar configurações", class: "btn btn-outline-primary w-100" %>
+          </div>
+        </div>
+      <% end %>
+
+      <div class="alert alert-light border small mt-3 mb-0">
+        <strong>Leitura dos modos:</strong>
+        “sem fotos” filtra imóveis sem nenhum anexo;
+        “cursor” continua do último ID;
+        “varrer desde o início” revisita todos os imóveis do intervalo, mas ainda pula arquivos já anexados pelo mesmo nome.
+      </div>
     </div>
   </div>
 

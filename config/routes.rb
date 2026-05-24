@@ -54,6 +54,9 @@ Rails.application.routes.draw do
     get :marketing_alerts, to: "marketing_alerts#index"
     get :marketing_tools, to: "marketing_tools#index"
     get :image_migration_status, to: "image_migration_status#index"
+    patch "image_migration_status/configuration", to: "image_migration_status#update_configuration", as: :image_migration_configuration
+    post "image_migration_status/sync", to: "image_migration_status#sync", as: :sync_image_migration
+    post "image_migration_status/retry_failed", to: "image_migration_status#retry_failed", as: :retry_failed_image_migration
     resources :marketing_campaigns, except: :show
     resources :seo_settings, except: :show do
       collection do
