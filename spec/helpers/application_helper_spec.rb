@@ -23,5 +23,16 @@ RSpec.describe ApplicationHelper, type: :helper do
 
       expect(helper.public_image_url(blob)).to start_with("/rails/active_storage/blobs/redirect/")
     end
+
+    it "gera caminho relativo para anexos Active Storage diretos" do
+      setting = HomeSetting.instance
+      setting.hero_background_desktop.attach(
+        io: StringIO.new("image"),
+        filename: "hero.jpg",
+        content_type: "image/jpeg"
+      )
+
+      expect(helper.public_image_url(setting.hero_background_desktop)).to start_with("/rails/active_storage/blobs/redirect/")
+    end
   end
 end

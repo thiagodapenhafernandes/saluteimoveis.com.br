@@ -110,6 +110,11 @@ module ApplicationHelper
   private
 
   def image_source_from(source)
+    if source.respond_to?(:attached?)
+      return source.attachment if source.attached?
+      return
+    end
+
     return source unless source.is_a?(Hash)
 
     source["attachment"] || source[:attachment] ||
@@ -122,7 +127,11 @@ module ApplicationHelper
   def active_storage_public_path(image)
     return if image.blank?
 
-    if defined?(ActiveStorage::VariantWithRecord) && image.is_a?(ActiveStorage::VariantWithRecord)
+    if image.respond_to?(:attached?)
+      return unless image.attached?
+
+      rails_blob_path(image.attachment, only_path: true)
+    elsif defined?(ActiveStorage::VariantWithRecord) && image.is_a?(ActiveStorage::VariantWithRecord)
       rails_representation_path(image, only_path: true)
     elsif defined?(ActiveStorage::Variant) && image.is_a?(ActiveStorage::Variant)
       rails_representation_path(image, only_path: true)
