@@ -56,7 +56,7 @@ class Lead < ApplicationRecord
       "Olá, meu nome é #{display_name}. Gostaria de mais informações. (Origem: #{origin})"
     end
 
-    Whatsapp::SiteRouting.for_habitation(property, message: message.presence || fallback_message).fetch(:whatsapp_url)
+    WhatsappBusinessIntegration.current.whatsapp_url_for(habitation: property, message: message.presence || fallback_message)
   end
 
   def direct_whatsapp_url

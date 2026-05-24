@@ -2,6 +2,7 @@ class Admin::MetaIntegrationsController < Admin::BaseController
   before_action -> { check_permission!(:manage, :integracoes) }
   before_action :set_integration
   before_action :set_page, only: [:list_forms]
+  FORMS_PER_PAGE = 25
 
   def index
     # Show status and link to Facebook Login if not integrated
@@ -9,7 +10,16 @@ class Admin::MetaIntegrationsController < Admin::BaseController
   end
 
   def list_forms
-    @forms = @page.meta_lead_forms.order(facebook_created_at: :desc)
+    @page_number = params[:page].to_i
+    @page_number = 1 if @page_number < 1
+    @forms_per_page = FORMS_PER_PAGE
+    @forms_total_count = @page.meta_lead_forms.count
+    @forms = @page.meta_lead_forms
+                  .order(facebook_created_at: :desc, id: :desc)
+                  .offset((@page_number - 1) * @forms_per_page)
+                  .limit(@forms_per_page)
+    @next_page = @forms_total_count > (@page_number * @forms_per_page) ? @page_number + 1 : nil
+    @frame_id = params[:frame_id].presence || "page_forms_#{@page.id}"
     render layout: false
   end
 

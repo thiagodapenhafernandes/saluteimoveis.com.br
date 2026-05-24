@@ -1,6 +1,6 @@
 class Admin::DistributionRulesController < Admin::BaseController
   before_action -> { check_permission!(:manage, :distribution_rules) }
-  before_action :set_rule, only: [:show, :edit, :update, :destroy, :toggle_active]
+  before_action :set_rule, only: [:show, :edit, :update, :destroy, :toggle_active, :reorder_agents]
   before_action :load_meta_options, only: [:new, :create, :edit, :update]
   before_action :load_team_structure, only: [:new, :create, :edit, :update]
 
@@ -20,6 +20,7 @@ class Admin::DistributionRulesController < Admin::BaseController
 
   def create
     @distribution_rule = DistributionRule.new(rule_params)
+    sync_agents_from_select
     populate_meta_forms_if_auto
     if @distribution_rule.save
       redirect_to admin_distribution_rule_path(@distribution_rule), notice: "Regra criada com sucesso."
@@ -33,6 +34,7 @@ class Admin::DistributionRulesController < Admin::BaseController
 
   def update
     @distribution_rule.assign_attributes(rule_params)
+    sync_agents_from_select
     populate_meta_forms_if_auto
     if @distribution_rule.save
       redirect_to admin_distribution_rule_path(@distribution_rule), notice: "Regra atualizada com sucesso."
@@ -49,6 +51,22 @@ class Admin::DistributionRulesController < Admin::BaseController
   def toggle_active
     @rule.update(active: !@rule.active)
     redirect_to admin_distribution_rules_path, notice: "Status da regra atualizado."
+  end
+
+  def reorder_agents
+    selected_ids = Array(params[:agent_ids]).compact_blank.map(&:to_i).uniq
+    current_agents = @rule.distribution_rule_agents.order(position: :asc, id: :asc).to_a
+    agents_by_id = current_agents.index_by(&:id)
+    agent_ids = selected_ids.select { |agent_id| agents_by_id.key?(agent_id) }
+    agent_ids += current_agents.map(&:id) - agent_ids
+
+    @rule.transaction do
+      agent_ids.each_with_index do |agent_id, index|
+        agents_by_id.fetch(agent_id).update!(position: index + 1)
+      end
+    end
+
+    redirect_to admin_distribution_rule_path(@rule), notice: "Ordem da fila atualizada."
   end
 
   private
@@ -99,6 +117,28 @@ class Admin::DistributionRulesController < Admin::BaseController
       all_forms = MetaLeadForm.where(meta_facebook_page_id: pages.select(:id)).pluck(:form_id)
       @distribution_rule.meta_forms = all_forms
     end
+  end
+
+  def sync_agents_from_select
+    return unless params.key?(:agent_select)
+    return if nested_agent_attributes_present?
+
+    selected_ids = Array(params[:agent_select]).compact_blank.map(&:to_i).uniq
+    existing_agents = @distribution_rule.distribution_rule_agents.index_by(&:admin_user_id)
+
+    existing_agents.each do |admin_user_id, agent|
+      agent.mark_for_destruction unless selected_ids.include?(admin_user_id)
+    end
+
+    selected_ids.each_with_index do |admin_user_id, index|
+      agent = existing_agents[admin_user_id] || @distribution_rule.distribution_rule_agents.build(admin_user_id: admin_user_id)
+      agent.position = index + 1
+      agent.weight = 1 if agent.weight.blank?
+    end
+  end
+
+  def nested_agent_attributes_present?
+    params.dig(:distribution_rule, :distribution_rule_agents_attributes).present?
   end
 
   def rule_params

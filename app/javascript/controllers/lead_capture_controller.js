@@ -4,6 +4,7 @@ export default class extends Controller {
   static targets = ["modal", "propertyId", "leadType", "origin", "shareToken", "name", "phone", "email", "submitButton"]
   static values = {
     enabled: Boolean,
+    phoneSettings: Object,
     shareToken: String
   }
 
@@ -35,9 +36,16 @@ export default class extends Controller {
     const message = trigger.dataset.whatsappMessage || `Olá, gostaria de mais informações sobre o imóvel ${propertyTitle} (Cód: ${propertyCode})`
     const leadOrigin = trigger.dataset.leadOrigin || ""
     const shareToken = trigger.dataset.shareToken || this.shareTokenValue || ""
+    const negotiationType = trigger.dataset.negotiationType || "sale"
 
     // Store message for redirect
     this.whatsappMessage = message
+    this.negotiationType = negotiationType
+
+    if (!this.requiresLeadForm(negotiationType)) {
+      window.open(this.whatsappUrlFor(negotiationType, message), "_blank")
+      return
+    }
 
     const routing = await this.fetchWhatsappRouting(propertyId, message)
     if (routing && routing.capture_required === false && routing.whatsapp_url) {
@@ -102,7 +110,7 @@ export default class extends Controller {
       whatsapp_message: this.whatsappMessage
     })
 
-    const whatsappUrl = result?.whatsapp_url || await this.fallbackWhatsappUrl()
+    const whatsappUrl = result?.whatsapp_url || this.whatsappUrlFor(this.negotiationType, this.whatsappMessage)
 
     // Redirect to WhatsApp
     window.location.href = whatsappUrl
@@ -138,24 +146,23 @@ export default class extends Controller {
     })
   }
 
-  fetchWhatsappRouting(propertyId, message) {
-    const params = new URLSearchParams()
-    if (propertyId) params.set("property_id", propertyId)
-    if (message) params.set("message", message)
-
-    return fetch(`/leads/whatsapp_url?${params.toString()}`, {
-      headers: { "Accept": "application/json" }
-    }).then(response => {
-      if (response.ok) return response.json()
-      return null
-    }).catch(error => {
-      console.error("Error fetching WhatsApp routing:", error)
-      return null
-    })
+  whatsappUrlFor(negotiationType, message) {
+    const phoneNumber = this.phoneNumberFor(negotiationType)
+    const text = encodeURIComponent(message)
+    return `https://wa.me/${phoneNumber}?text=${text}`
   }
 
-  async fallbackWhatsappUrl() {
-    const routing = await this.fetchWhatsappRouting(this.hasPropertyIdTarget ? this.propertyIdTarget.value : "", this.whatsappMessage)
-    return routing?.whatsapp_url || `https://wa.me/554733111067?text=${encodeURIComponent(this.whatsappMessage || "")}`
+  phoneNumberFor(negotiationType) {
+    const settings = this.phoneSettingsValue || {}
+    const negotiations = settings.negotiations || {}
+    const config = negotiations[negotiationType] || {}
+    return config.phone || settings.default_phone || "554733111067"
+  }
+
+  requiresLeadForm(negotiationType) {
+    const settings = this.phoneSettingsValue || {}
+    const negotiations = settings.negotiations || {}
+    const config = negotiations[negotiationType] || {}
+    return config.requires_form !== false
   }
 }

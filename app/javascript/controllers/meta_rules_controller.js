@@ -2,7 +2,7 @@ import { Controller } from "@hotwired/stimulus"
 import TomSelect from "tom-select"
 
 export default class extends Controller {
-  static targets = ["pageSelect", "formSelect"]
+  static targets = ["pageSelect", "formSelect", "autoSync", "formCountLabel"]
   static values = {
     structure: Object // { page_id: { forms: [{id: 1, name: "Name"}] } }
   }
@@ -30,8 +30,9 @@ export default class extends Controller {
       plugins: ['remove_button'],
       placeholder: "Selecione os formulários...",
       maxOptions: null,
+      onChange: () => this.syncAutoSummary(),
       onInitialize: () => {
-        // We might want to pre-populate if editing
+        this.syncAutoSummary()
       }
     })
   }
@@ -63,6 +64,10 @@ export default class extends Controller {
     })
 
     this.formSelectInstance.refreshOptions(false)
+    if (this.autoSyncEnabled()) {
+      this.selectAllForms()
+    }
+    this.syncAutoSummary()
   }
 
   syncNow(event) {
@@ -82,13 +87,68 @@ export default class extends Controller {
   }
 
   toggleAutoSync(event) {
-    if (!event.target.checked) return
     if (!this.formSelectInstance) return
 
-    // Select all available options
-    const allOptions = Object.keys(this.formSelectInstance.options)
+    if (event.target.checked) {
+      this.selectAllForms()
+    }
+    this.syncAutoSummary()
+  }
 
-    // Silence events to avoid performance hit if many items, then trigger one change
+  selectAllForms() {
+    if (!this.formSelectInstance) return
+
+    const allOptions = Object.keys(this.formSelectInstance.options)
     this.formSelectInstance.addItems(allOptions)
+  }
+
+  syncAutoSummary() {
+    if (!this.formSelectInstance) return
+
+    const enabled = this.isAllMetaFormsSelectedAutomatically()
+    const control = this.formSelectInstance.control
+    const wrapper = this.formSelectInstance.wrapper
+
+    wrapper.classList.toggle("meta-auto-summary-mode", enabled)
+    control.querySelectorAll(".item").forEach((item) => item.classList.toggle("d-none", enabled))
+
+    let summary = control.querySelector(".meta-auto-summary")
+    if (enabled) {
+      if (!summary) {
+        summary = document.createElement("div")
+        summary.className = "meta-auto-summary badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-2"
+        control.prepend(summary)
+      }
+      summary.textContent = "Todos os forms da Meta selecionados automaticamente"
+      if (this.hasFormCountLabelTarget) {
+        this.formCountLabelTarget.innerHTML = '<strong>Todos os forms da Meta</strong> selecionados automaticamente'
+      }
+    } else {
+      summary?.remove()
+      if (this.hasFormCountLabelTarget) {
+        const count = this.formSelectInstance.items.filter((value) => value).length
+        this.formCountLabelTarget.innerHTML = this.formatCount(count)
+      }
+    }
+  }
+
+  isAllMetaFormsSelectedAutomatically() {
+    if (!this.autoSyncEnabled()) return false
+
+    const allOptions = Object.keys(this.formSelectInstance.options)
+    if (allOptions.length === 0) return false
+
+    const selected = new Set(this.formSelectInstance.items)
+    return allOptions.every((option) => selected.has(option))
+  }
+
+  autoSyncEnabled() {
+    return this.hasAutoSyncTarget && this.autoSyncTarget.checked
+  }
+
+  formatCount(count) {
+    if (count === 0) return "Nenhum formulário selecionado"
+    if (count === 1) return "<strong>1</strong> formulário selecionado"
+    return `<strong>${count.toLocaleString("pt-BR")}</strong> formulários selecionados`
   }
 }

@@ -14,6 +14,16 @@ RSpec.describe "Leads", type: :request do
         "sale_rent" => { "number" => "47 99999-0003", "capture_enabled" => "1" }
       }
     )
+    create(
+      :whatsapp_business_integration,
+      default_whatsapp_number: "47 3311-1067",
+      sale_whatsapp_number: "47 99999-0001",
+      rent_whatsapp_number: "47 99999-0002",
+      sale_rent_whatsapp_number: "47 99999-0003",
+      sale_requires_lead_form: true,
+      rent_requires_lead_form: false,
+      sale_rent_requires_lead_form: true
+    )
   end
 
   describe "GET /leads/whatsapp_url" do

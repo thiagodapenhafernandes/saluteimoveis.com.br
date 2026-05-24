@@ -71,23 +71,16 @@
     <!-- Captações -->
     <% if can_access.call(:view, :captacoes) %>
       <li class="sidebar-menu-item">
-        <%= link_to admin_captacoes_path, class: (controller_name == 'captacoes' && action_name != 'dashboard') ? 'active' : '' do %>
+        <%= link_to admin_captacoes_path, class: ((controller_name == 'captacoes' && action_name != 'dashboard') || controller_name == 'captacao_goals') ? 'active' : '' do %>
           <i class="bi bi-journal-plus"></i><span>Captações</span>
         <% end %>
       </li>
-      <% if can_access.call(:view, :captacao_dashboard) %>
-        <li class="sidebar-menu-item">
-          <%= link_to dashboard_admin_captacoes_path, class: (controller_name == 'captacoes' && action_name == 'dashboard') ? 'active' : '' do %>
-            <i class="bi bi-bullseye"></i><span>Dashboard Captações</span>
-          <% end %>
-        </li>
-      <% end %>
     <% end %>
 
-    <% if can_access.call(:view, :metas_captacao) %>
+    <% if can_access.call(:view, :captacao_dashboard) %>
       <li class="sidebar-menu-item">
-        <%= link_to admin_captacao_goals_path, class: controller_name == 'captacao_goals' ? 'active' : '' do %>
-          <i class="bi bi-flag"></i><span>Metas de Captação</span>
+        <%= link_to dashboard_admin_captacoes_path, class: (controller_name == 'captacoes' && action_name == 'dashboard') ? 'active' : '' do %>
+          <i class="bi bi-bullseye"></i><span>Dashboard Captação</span>
         <% end %>
       </li>
     <% end %>
@@ -113,30 +106,6 @@
       <li class="sidebar-menu-item">
         <%= link_to admin_field_audit_logs_path, class: (controller_path == 'admin/field/audit_logs') ? 'active' : '' do %>
           <i class="bi bi-shield-lock-fill"></i><span>Auditoria de Campo</span>
-        <% end %>
-      </li>
-    <% end %>
-
-    <% if can_access.call(:view, :access_audit) %>
-      <li class="sidebar-menu-item">
-        <%= link_to admin_access_audit_logs_path, class: controller_name == 'access_audit_logs' ? 'active' : '' do %>
-          <i class="bi bi-person-lock"></i><span>Auditoria de Acessos</span>
-        <% end %>
-      </li>
-    <% end %>
-
-    <% if can_access.call(:view, :data_export_audit) %>
-      <li class="sidebar-menu-item">
-        <%= link_to admin_data_export_audit_logs_path, class: controller_name == 'data_export_audit_logs' ? 'active' : '' do %>
-          <i class="bi bi-file-earmark-arrow-down"></i><span>Auditoria de Exportações</span>
-        <% end %>
-      </li>
-    <% end %>
-
-    <% if can_access.call(:manage, :access_security) %>
-      <li class="sidebar-menu-item">
-        <%= link_to admin_access_security_path, class: ['access_security', 'access_control_rules', 'trusted_devices'].include?(controller_name) ? 'active' : '' do %>
-          <i class="bi bi-fingerprint"></i><span>Segurança de Acesso</span>
         <% end %>
       </li>
     <% end %>
@@ -185,16 +154,17 @@
     <% schedule_context = can_access.call(:view, :agenda_fotografia) || can_access.call(:manage, :agenda_fotografia) || can_access.call(:manage, :integracoes) %>
     <% if can_access.call(:manage, :integracoes) || schedule_context %>
       <li class="sidebar-menu-item">
-        <a href="#submenu-integracoes" data-bs-toggle="collapse" class="d-flex justify-content-between align-items-center <%= (['meta_integrations', 'webhook_settings', 'whatsapp_integrations', 'dwv_integrations', 'loft_integrations', 'portal_integrations', 'scheduling_integrations', 'image_migration_status', 'ai_integrations'].include?(controller_name) || vista_soft_context) ? '' : 'collapsed' %>">
+        <a href="#submenu-integracoes" data-bs-toggle="collapse" class="d-flex justify-content-between align-items-center <%= (['meta_integrations', 'whatsapp_integrations', 'webhook_settings', 'dwv_integrations', 'loft_integrations', 'portal_integrations', 'scheduling_integrations', 'image_migration_status', 'ai_integrations'].include?(controller_name) || vista_soft_context) ? '' : 'collapsed' %>">
           <span><i class="bi bi-plug"></i><span class="ms-2">Integrações</span></span>
           <i class="bi bi-chevron-down small"></i>
         </a>
-        <div class="collapse <%= (['meta_integrations', 'webhook_settings', 'whatsapp_integrations', 'dwv_integrations', 'loft_integrations', 'portal_integrations', 'scheduling_integrations', 'image_migration_status', 'ai_integrations'].include?(controller_name) || vista_soft_context) ? 'show' : '' %>" id="submenu-integracoes">
+        <div class="collapse <%= (['meta_integrations', 'whatsapp_integrations', 'webhook_settings', 'dwv_integrations', 'loft_integrations', 'portal_integrations', 'scheduling_integrations', 'image_migration_status', 'ai_integrations'].include?(controller_name) || vista_soft_context) ? 'show' : '' %>" id="submenu-integracoes">
           <ul class="sidebar-menu ps-3 mt-1 bg-light rounded">
             <% if can_access.call(:manage, :integracoes) %>
               <li class="sidebar-menu-item"><%= link_to admin_portal_integrations_path, class: controller_name == 'portal_integrations' ? 'active' : '' do %><i class="bi bi-building"></i><span>Portais</span><% end %></li>
               <li class="sidebar-menu-item"><%= link_to admin_loft_integrations_path, class: controller_name == 'loft_integrations' ? 'active' : '' do %><i class="bi bi-hdd-rack"></i><span>Loft Soft</span><% end %></li>
               <li class="sidebar-menu-item"><%= link_to admin_dwv_integrations_path, class: controller_name == 'dwv_integrations' ? 'active' : '' do %><i class="bi bi-hdd-network"></i><span>DWV</span><% end %></li>
+              <li class="sidebar-menu-item"><%= link_to admin_whatsapp_integration_path, class: controller_name == 'whatsapp_integrations' ? 'active' : '' do %><i class="bi bi-whatsapp"></i><span>WhatsApp</span><% end %></li>
               <li class="sidebar-menu-item"><%= link_to admin_meta_integrations_path, class: controller_name == 'meta_integrations' ? 'active' : '' do %><i class="bi bi-meta"></i><span>Meta Leads</span><% end %></li>
             <% end %>
             <% if schedule_context %>
@@ -202,7 +172,6 @@
             <% end %>
             <% if can_access.call(:manage, :integracoes) %>
               <li class="sidebar-menu-item"><%= link_to admin_webhook_settings_path, class: controller_name == 'webhook_settings' ? 'active' : '' do %><i class="bi bi-broadcast"></i><span>Webhooks</span><% end %></li>
-              <li class="sidebar-menu-item"><%= link_to admin_whatsapp_integration_path, class: controller_name == 'whatsapp_integrations' ? 'active' : '' do %><i class="bi bi-whatsapp"></i><span>WhatsApp</span><% end %></li>
               <li class="sidebar-menu-item"><%= link_to admin_ai_integration_path, class: controller_name == 'ai_integrations' ? 'active' : '' do %><i class="bi bi-stars"></i><span>IA</span><% end %></li>
               <li class="sidebar-menu-item"><%= link_to admin_habitations_path(sort: "last_sync_at", direction: "desc"), class: vista_soft_context ? 'active' : '' do %><i class="bi bi-arrow-repeat"></i><span>Vista Soft</span><% end %></li>
               <li class="sidebar-menu-item"><%= link_to admin_image_migration_status_path, class: controller_name == 'image_migration_status' ? 'active' : '' do %><i class="bi bi-images"></i><span>Migração de Imagens</span><% end %></li>
@@ -213,19 +182,22 @@
     <% end %>
 
     <!-- Administração -->
-    <% if can_access.call(:view, :corretores) || can_access.call(:manage, :perfis) || can_access.call(:view, :catalogos) %>
+    <% if can_access.call(:view, :corretores) || can_access.call(:manage, :perfis) || can_access.call(:view, :metas_captacao) || can_access.call(:view, :catalogos) %>
       <li class="sidebar-menu-item">
-        <a href="#submenu-admin" data-bs-toggle="collapse" class="d-flex justify-content-between align-items-center <%= ['admin_users', 'profiles', 'attribute_options'].include?(controller_name) ? '' : 'collapsed' %>">
+        <a href="#submenu-admin" data-bs-toggle="collapse" class="d-flex justify-content-between align-items-center <%= ['admin_users', 'profiles', 'captacao_goals', 'attribute_options'].include?(controller_name) ? '' : 'collapsed' %>">
           <span><i class="bi bi-shield-lock-fill"></i><span class="ms-2">Administração</span></span>
           <i class="bi bi-chevron-down small"></i>
         </a>
-        <div class="collapse <%= ['admin_users', 'profiles', 'attribute_options'].include?(controller_name) ? 'show' : '' %>" id="submenu-admin">
+        <div class="collapse <%= ['admin_users', 'profiles', 'captacao_goals', 'attribute_options'].include?(controller_name) ? 'show' : '' %>" id="submenu-admin">
           <ul class="sidebar-menu ps-3 mt-1 bg-light rounded">
             <% if can_access.call(:view, :corretores) %>
               <li class="sidebar-menu-item"><%= link_to admin_admin_users_path, class: controller_name == 'admin_users' ? 'active' : '' do %><i class="bi bi-people"></i><span>Corretores</span><% end %></li>
             <% end %>
             <% if can_access.call(:manage, :perfis) %>
               <li class="sidebar-menu-item"><%= link_to admin_profiles_path, class: controller_name == 'profiles' ? 'active' : '' do %><i class="bi bi-shield-lock"></i><span>Perfis</span><% end %></li>
+            <% end %>
+            <% if can_access.call(:view, :metas_captacao) %>
+              <li class="sidebar-menu-item"><%= link_to admin_captacao_goals_path, class: controller_name == 'captacao_goals' ? 'active' : '' do %><i class="bi bi-bullseye"></i><span>Metas de Captação</span><% end %></li>
             <% end %>
             <% if can_access.call(:view, :catalogos) %>
               <li class="sidebar-menu-item"><%= link_to admin_attribute_options_path, class: controller_name == 'attribute_options' ? 'active' : '' do %><i class="bi bi-tags"></i><span>Catálogos Dinâmicos</span><% end %></li>

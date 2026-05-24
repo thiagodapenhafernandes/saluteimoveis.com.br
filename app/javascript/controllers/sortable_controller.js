@@ -13,6 +13,7 @@ export default class extends Controller {
       animation: this.animationValue,
       onEnd: this.updatePositions.bind(this)
     })
+    this.updatePositions()
   }
 
   disconnect() {

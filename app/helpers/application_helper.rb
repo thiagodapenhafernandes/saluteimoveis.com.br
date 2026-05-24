@@ -1,4 +1,6 @@
 module ApplicationHelper
+  INTERNAL_ACTIVE_STORAGE_PATH = "/rails/active_storage/".freeze
+
   def optimized_image_source(source, resize_to_limit: nil, resize_to_fill: nil, saver: { quality: 82 })
     return if source.blank?
 
@@ -50,11 +52,16 @@ module ApplicationHelper
     end
   end
 
-  def public_image_url(source)
+  def public_image_url(source, resize_to_limit: nil, resize_to_fill: nil, saver: { quality: 82 })
     return if source.blank?
 
-    image = source.is_a?(Hash) ? (source["url"] || source[:url] || source["attachment"] || source[:attachment]) : source
-    image.respond_to?(:variant) ? url_for(image) : image
+    image = if resize_to_limit.present? || resize_to_fill.present?
+              optimized_image_source(source, resize_to_limit: resize_to_limit, resize_to_fill: resize_to_fill, saver: saver)
+            else
+              image_source_from(source)
+            end
+
+    active_storage_public_path(image) || normalize_public_image_url(image)
   end
 
   # SEO Helper - Dynamic meta tags
@@ -98,5 +105,46 @@ module ApplicationHelper
         concat tag.i(class: "bi bi-arrow-down-up text-muted opacity-50 small")
       end
     end
+  end
+
+  private
+
+  def image_source_from(source)
+    return source unless source.is_a?(Hash)
+
+    source["attachment"] || source[:attachment] ||
+      source["url"] || source[:url] ||
+      source["url_pequena"] || source[:url_pequena] ||
+      source["url_small"] || source[:url_small] ||
+      source["thumbnail_url"] || source[:thumbnail_url]
+  end
+
+  def active_storage_public_path(image)
+    return if image.blank?
+
+    if defined?(ActiveStorage::VariantWithRecord) && image.is_a?(ActiveStorage::VariantWithRecord)
+      rails_representation_path(image, only_path: true)
+    elsif defined?(ActiveStorage::Variant) && image.is_a?(ActiveStorage::Variant)
+      rails_representation_path(image, only_path: true)
+    elsif defined?(ActiveStorage::Attachment) && image.is_a?(ActiveStorage::Attachment)
+      rails_blob_path(image, only_path: true)
+    elsif defined?(ActiveStorage::Blob) && image.is_a?(ActiveStorage::Blob)
+      rails_blob_path(image, only_path: true)
+    end
+  rescue StandardError
+    nil
+  end
+
+  def normalize_public_image_url(image)
+    value = image.to_s
+    return value if value.blank?
+    return value if value.start_with?("/", "data:", "blob:")
+
+    uri = URI.parse(value)
+    return value unless uri.path.start_with?(INTERNAL_ACTIVE_STORAGE_PATH)
+
+    [uri.path, uri.query.presence && "?#{uri.query}"].compact.join
+  rescue URI::InvalidURIError
+    value
   end
 end
