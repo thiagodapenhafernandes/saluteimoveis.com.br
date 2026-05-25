@@ -1,6 +1,8 @@
 <% worker = @status[:worker] %>
 
-<div class="container-fluid py-4">
+<div class="container-fluid py-4"
+     data-controller="image-migration-status"
+     data-image-migration-status-url-value="<%= admin_image_migration_status_path(format: :json) %>">
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
     <div>
       <h1 class="mb-1"><i class="bi bi-images me-2"></i>Migração de Imagens</h1>
@@ -11,6 +13,7 @@
             method: :post,
             class: "btn btn-primary",
             disabled: worker[:running],
+            data: { image_migration_status_target: "syncButton" },
             form: { class: "d-inline", data: { turbo_confirm: "Iniciar a migração de imagens com as configurações salvas nesta tela?" } } do %>
         <i class="bi bi-cloud-arrow-up me-2"></i>Iniciar migração
       <% end %>
@@ -35,6 +38,7 @@
               method: :post,
               class: "btn btn-outline-warning",
               disabled: worker[:running] || @status[:failed_properties].zero?,
+              data: { image_migration_status_target: "retryButton" },
               form: { class: "d-inline", data: { turbo_confirm: "Reprocessar os imóveis registrados no arquivo de falhas?" } } do %>
           <i class="bi bi-arrow-repeat me-2"></i>Retry falhas
         <% end %>
@@ -122,10 +126,10 @@
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <div class="text-muted small text-uppercase fw-bold mb-2">Progresso por imóvel</div>
-          <div class="display-6 fw-bold mb-1"><%= number_to_percentage(@status[:property_progress], precision: 2) %></div>
+          <div class="display-6 fw-bold mb-1" data-image-migration-status-target="propertyProgressValue"><%= number_to_percentage(@status[:property_progress], precision: 2) %></div>
           <div class="text-muted small">
-            <strong><%= number_with_delimiter(@status[:properties_with_photos]) %></strong> concluídos de
-            <strong><%= number_with_delimiter(@status[:total_properties]) %></strong>
+            <strong data-image-migration-status-target="propertiesWithPhotos"><%= number_with_delimiter(@status[:properties_with_photos]) %></strong> concluídos de
+            <strong data-image-migration-status-target="totalProperties"><%= number_with_delimiter(@status[:total_properties]) %></strong>
           </div>
         </div>
       </div>
@@ -135,7 +139,7 @@
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <div class="text-muted small text-uppercase fw-bold mb-2">Ainda falta</div>
-          <div class="display-6 fw-bold mb-1"><%= number_with_delimiter(@status[:pending_properties]) %></div>
+          <div class="display-6 fw-bold mb-1" data-image-migration-status-target="pendingProperties"><%= number_with_delimiter(@status[:pending_properties]) %></div>
           <div class="text-muted small">Imóveis com imagens antigas e nenhuma foto migrada.</div>
         </div>
       </div>
@@ -145,9 +149,9 @@
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <div class="text-muted small text-uppercase fw-bold mb-2">Fotos anexadas</div>
-          <div class="display-6 fw-bold mb-1"><%= number_with_delimiter(@status[:migrated_images]) %></div>
+          <div class="display-6 fw-bold mb-1" data-image-migration-status-target="migratedImages"><%= number_with_delimiter(@status[:migrated_images]) %></div>
           <div class="text-muted small">
-            Estimativa: <%= number_to_percentage(@status[:image_progress], precision: 2) %> das imagens de origem.
+            Estimativa: <span data-image-migration-status-target="imageProgress"><%= number_to_percentage(@status[:image_progress], precision: 2) %></span> das imagens de origem.
           </div>
         </div>
       </div>
@@ -158,11 +162,11 @@
         <div class="card-body">
           <div class="text-muted small text-uppercase fw-bold mb-2">Processo</div>
           <div class="h3 fw-bold mb-1">
-            <span class="badge <%= worker[:running] ? "bg-success" : "bg-danger" %>">
+            <span class="badge <%= worker[:running] ? "bg-success" : "bg-danger" %>" data-image-migration-status-target="workerBadge">
               <%= worker[:status] %>
             </span>
           </div>
-          <div class="text-muted small">
+          <div class="text-muted small" data-image-migration-status-target="workerPid">
             <% if worker[:pid].present? %>
               PID <code><%= worker[:pid] %></code>
             <% else %>
@@ -174,11 +178,72 @@
     </div>
   </div>
 
+  <% execution = @status[:execution] || {} %>
+  <% execution_last_run_at = Time.zone.parse(execution[:last_run_at].to_s) rescue nil %>
+  <div class="card border-0 shadow-sm mb-4" data-image-migration-status-target="executionPanel">
+    <div class="card-body p-4">
+      <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+        <div>
+          <div class="text-muted small text-uppercase fw-bold mb-1">Progresso da execução atual</div>
+          <h5 class="fw-bold mb-1" data-image-migration-status-target="executionLabel"><%= execution[:label].presence || "Aguardando execução" %></h5>
+          <div class="text-muted small">
+            Status: <strong data-image-migration-status-target="executionStatus"><%= execution[:running] ? "Rodando" : "Parado" %></strong>
+            · Ciclo <strong data-image-migration-status-target="executionCycle"><%= number_with_delimiter(execution[:cycle].to_i) %></strong>
+            · Última atualização <strong data-image-migration-status-target="executionLastRunAt"><%= execution_last_run_at.present? ? l(execution_last_run_at, format: :short) : "N/D" %></strong>
+          </div>
+        </div>
+        <div class="text-end">
+          <div class="h4 fw-bold mb-0" data-image-migration-status-target="executionProgressPercent"><%= number_to_percentage(execution[:progress].to_f, precision: 2) %></div>
+          <div class="text-muted small" data-image-migration-status-target="executionDetail">
+            <%= number_with_delimiter(execution[:current].to_i) %> de <%= number_with_delimiter(execution[:total].to_i) %>
+          </div>
+        </div>
+      </div>
+
+      <div class="progress mb-3" style="height: 14px;">
+        <div class="progress-bar bg-primary <%= "progress-bar-striped progress-bar-animated" if execution[:running] %>"
+             role="progressbar"
+             style="width: <%= execution[:progress].to_f.clamp(0, 100) %>%"
+             aria-valuenow="<%= execution[:progress].to_f.clamp(0, 100) %>"
+             aria-valuemin="0"
+             aria-valuemax="100"
+             data-image-migration-status-target="executionProgressBar"></div>
+      </div>
+
+      <div class="row g-3 small">
+        <div class="col-6 col-lg-2">
+          <div class="text-muted">Sincronizadas</div>
+          <div class="fw-bold" data-image-migration-status-target="executionSynced"><%= number_with_delimiter(execution[:synced].to_i) %></div>
+        </div>
+        <div class="col-6 col-lg-2">
+          <div class="text-muted">Puladas</div>
+          <div class="fw-bold" data-image-migration-status-target="executionSkipped"><%= number_with_delimiter(execution[:skipped].to_i) %></div>
+        </div>
+        <div class="col-6 col-lg-2">
+          <div class="text-muted">Falhas</div>
+          <div class="fw-bold" data-image-migration-status-target="executionFailed"><%= number_with_delimiter(execution[:failed].to_i) %></div>
+        </div>
+        <div class="col-6 col-lg-2">
+          <div class="text-muted">Restantes</div>
+          <div class="fw-bold" data-image-migration-status-target="executionRemaining"><%= number_with_delimiter(execution[:remaining].to_i) %></div>
+        </div>
+        <div class="col-6 col-lg-2">
+          <div class="text-muted">Imóveis novos</div>
+          <div class="fw-bold" data-image-migration-status-target="executionPropertiesAdded"><%= number_with_delimiter(execution[:properties_added].to_i) %></div>
+        </div>
+        <div class="col-6 col-lg-2">
+          <div class="text-muted">Fotos novas</div>
+          <div class="fw-bold" data-image-migration-status-target="executionImagesAdded"><%= number_with_delimiter(execution[:images_added].to_i) %></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="card border-0 shadow-sm mb-4">
     <div class="card-body p-4">
       <div class="d-flex justify-content-between small mb-2">
         <span>Imóveis concluídos</span>
-        <strong><%= number_to_percentage(@status[:property_progress], precision: 2) %></strong>
+        <strong data-image-migration-status-target="globalProgressPercent"><%= number_to_percentage(@status[:property_progress], precision: 2) %></strong>
       </div>
       <div class="progress mb-4" style="height: 12px;">
         <div class="progress-bar bg-success"
@@ -186,7 +251,8 @@
              style="width: <%= @status[:property_progress] %>%"
              aria-valuenow="<%= @status[:property_progress] %>"
              aria-valuemin="0"
-             aria-valuemax="100"></div>
+             aria-valuemax="100"
+             data-image-migration-status-target="globalProgressBar"></div>
       </div>
 
       <div class="row g-4">
@@ -195,27 +261,27 @@
           <ul class="list-unstyled small mb-0">
             <li class="d-flex justify-content-between py-2 border-bottom">
               <span>Total de imóveis com imagens antigas</span>
-              <strong><%= number_with_delimiter(@status[:total_properties]) %></strong>
+              <strong data-image-migration-status-target="summaryTotalProperties"><%= number_with_delimiter(@status[:total_properties]) %></strong>
             </li>
             <li class="d-flex justify-content-between py-2 border-bottom">
               <span>Imóveis já com fotos na nossa base</span>
-              <strong><%= number_with_delimiter(@status[:properties_with_photos]) %></strong>
+              <strong data-image-migration-status-target="summaryPropertiesWithPhotos"><%= number_with_delimiter(@status[:properties_with_photos]) %></strong>
             </li>
             <li class="d-flex justify-content-between py-2 border-bottom">
               <span>Imóveis pendentes</span>
-              <strong><%= number_with_delimiter(@status[:pending_properties]) %></strong>
+              <strong data-image-migration-status-target="summaryPendingProperties"><%= number_with_delimiter(@status[:pending_properties]) %></strong>
             </li>
             <li class="d-flex justify-content-between py-2 border-bottom">
               <span>Pendentes públicos de venda/aluguel</span>
-              <strong><%= number_with_delimiter(@status[:public_pending_properties]) %></strong>
+              <strong data-image-migration-status-target="summaryPublicPendingProperties"><%= number_with_delimiter(@status[:public_pending_properties]) %></strong>
             </li>
             <li class="d-flex justify-content-between py-2 border-bottom">
               <span>Públicos ainda renderizando Vista primeiro</span>
-              <strong><%= number_with_delimiter(@status[:public_vista_first_properties]) %></strong>
+              <strong data-image-migration-status-target="summaryPublicVistaFirstProperties"><%= number_with_delimiter(@status[:public_vista_first_properties]) %></strong>
             </li>
             <li class="d-flex justify-content-between py-2">
               <span>Total estimado de imagens de origem</span>
-              <strong><%= number_with_delimiter(@status[:total_source_images]) %></strong>
+              <strong data-image-migration-status-target="summaryTotalSourceImages"><%= number_with_delimiter(@status[:total_source_images]) %></strong>
             </li>
           </ul>
         </div>
@@ -225,15 +291,15 @@
           <ul class="list-unstyled small mb-0">
             <li class="d-flex justify-content-between py-2 border-bottom">
               <span>Último ID processado</span>
-              <strong><%= @status[:cursor_last_id].presence || "N/D" %></strong>
+              <strong data-image-migration-status-target="cursorLastId"><%= @status[:cursor_last_id].presence || "N/D" %></strong>
             </li>
             <li class="d-flex justify-content-between py-2 border-bottom">
               <span>Imóveis com falha registrados</span>
-              <strong><%= number_with_delimiter(@status[:failed_properties]) %></strong>
+              <strong data-image-migration-status-target="failedProperties"><%= number_with_delimiter(@status[:failed_properties]) %></strong>
             </li>
             <li class="d-flex justify-content-between py-2 border-bottom">
               <span>Última foto anexada</span>
-              <strong><%= @status[:latest_attachment_at].present? ? l(@status[:latest_attachment_at], format: :short) : "N/D" %></strong>
+              <strong data-image-migration-status-target="latestAttachmentAt"><%= @status[:latest_attachment_at].present? ? l(@status[:latest_attachment_at], format: :short) : "N/D" %></strong>
             </li>
             <li class="py-2">
               <span class="text-muted d-block mb-1">Log no servidor</span>

@@ -91,6 +91,9 @@ application.register("hero-slider", HeroSliderController)
 import ImagePreviewController from "controllers/image_preview_controller"
 application.register("image-preview", ImagePreviewController)
 
+import ImageMigrationStatusController from "controllers/image_migration_status_controller"
+application.register("image-migration-status", ImageMigrationStatusController)
+
 import LeadCaptureController from "controllers/lead_capture_controller"
 application.register("lead-capture", LeadCaptureController)
 

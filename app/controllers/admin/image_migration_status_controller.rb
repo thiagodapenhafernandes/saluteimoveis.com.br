@@ -85,6 +85,8 @@ class Admin::ImageMigrationStatusController < Admin::BaseController
     migrated_images = ActiveStorage::Attachment.where(record_type: "Habitation", name: "photos").count
     latest_attachment_at = ActiveStorage::Attachment.where(record_type: "Habitation", name: "photos").maximum(:created_at)
     failed_ids = failed_habitation_ids
+    cursor_data = current_cursor_data
+    worker = worker_status
 
     {
       total_properties: total_properties,
@@ -99,9 +101,17 @@ class Admin::ImageMigrationStatusController < Admin::BaseController
       image_progress: percentage([migrated_images, total_source_images].min, total_source_images),
       failed_properties: failed_ids.size,
       failed_sample: failed_ids.first(20),
-      cursor_last_id: cursor_last_id,
-      worker: worker_status,
+      cursor_last_id: cursor_data["last_id"].to_i.presence,
+      worker: worker,
       latest_attachment_at: latest_attachment_at,
+      execution: execution_status(
+        worker: worker,
+        cursor_data: cursor_data,
+        source_scope: source_scope,
+        pending_properties: pending_properties,
+        properties_with_photos: properties_with_photos,
+        migrated_images: migrated_images
+      ),
       paths: {
         cursor: cursor_file.to_s,
         failed: failed_file.to_s,
@@ -159,6 +169,25 @@ class Admin::ImageMigrationStatusController < Admin::BaseController
     read_integer(cursor_file, /^last_id:\s*(\d+)/)
   end
 
+  def current_cursor_data
+    return {} unless cursor_file.exist?
+
+    content = cursor_file.read
+    YAML.safe_load(
+      content,
+      permitted_classes: [Time, ActiveSupport::TimeWithZone, ActiveSupport::TimeZone],
+      aliases: true
+    ) || {}
+  rescue
+    {
+      "last_id" => read_integer(cursor_file, /^last_id:\s*(\d+)/),
+      "cycle" => read_integer(cursor_file, /^cycle:\s*(\d+)/),
+      "synced" => read_integer(cursor_file, /^synced:\s*(\d+)/),
+      "skipped" => read_integer(cursor_file, /^skipped:\s*(\d+)/),
+      "failed" => read_integer(cursor_file, /^failed:\s*(\d+)/)
+    }.compact
+  end
+
   def read_integer(path, pattern = /\A\s*(\d+)\s*\z/)
     return nil unless path.exist?
 
@@ -172,6 +201,7 @@ class Admin::ImageMigrationStatusController < Admin::BaseController
   def start_images_sync!(configuration)
     FileUtils.mkdir_p(shared_tmp)
     FileUtils.mkdir_p(shared_log)
+    record_run_start!(configuration)
 
     env = {
       "RAILS_ENV" => Rails.env,
@@ -198,6 +228,7 @@ class Admin::ImageMigrationStatusController < Admin::BaseController
     FileUtils.mkdir_p(shared_log)
 
     configuration = image_migration_configuration
+    record_run_start!(configuration.merge("mode" => "retry_failed"))
     env = {
       "RAILS_ENV" => Rails.env,
       "SKIP_ANALYSIS" => configuration.fetch("skip_analysis"),
@@ -217,6 +248,99 @@ class Admin::ImageMigrationStatusController < Admin::BaseController
 
     pid_file.write(pid.to_s)
     Process.detach(pid)
+  end
+
+  def record_run_start!(configuration)
+    status = build_status_for_run_start
+    values = {
+      "mode" => configuration.fetch("mode"),
+      "started_at" => Time.current.iso8601,
+      "initial_pending_properties" => status.fetch(:pending_properties).to_s,
+      "initial_properties_with_photos" => status.fetch(:properties_with_photos).to_s,
+      "initial_migrated_images" => status.fetch(:migrated_images).to_s,
+      "initial_cursor_last_id" => status.fetch(:cursor_last_id).to_i.to_s,
+      "configured_start_id" => configuration.fetch("start_id", "0").to_s,
+      "configured_max_id" => configuration.fetch("max_id", "0").to_s
+    }
+
+    values.each do |key, value|
+      Setting.set("#{CONFIG_PREFIX}run.#{key}", value, "Estado da execução atual da migração de imagens")
+    end
+  end
+
+  def build_status_for_run_start
+    source_scope = Habitation
+      .where.not(imovel_dwv: "Sim")
+      .where("jsonb_typeof(pictures) = ? AND jsonb_array_length(pictures) > 0", "array")
+
+    {
+      pending_properties: source_scope.where.missing(:photos_attachments).count,
+      properties_with_photos: source_scope.joins(:photos_attachments).distinct.count,
+      migrated_images: ActiveStorage::Attachment.where(record_type: "Habitation", name: "photos").count,
+      cursor_last_id: cursor_last_id
+    }
+  end
+
+  def execution_status(worker:, cursor_data:, source_scope:, pending_properties:, properties_with_photos:, migrated_images:)
+    mode = Setting.get("#{CONFIG_PREFIX}run.mode", image_migration_configuration.fetch("mode"))
+    started_at = Setting.get("#{CONFIG_PREFIX}run.started_at")
+    initial_pending = Setting.get("#{CONFIG_PREFIX}run.initial_pending_properties", pending_properties.to_s).to_i
+    initial_properties_with_photos = Setting.get("#{CONFIG_PREFIX}run.initial_properties_with_photos", properties_with_photos.to_s).to_i
+    initial_migrated_images = Setting.get("#{CONFIG_PREFIX}run.initial_migrated_images", migrated_images.to_s).to_i
+    initial_cursor_last_id = Setting.get("#{CONFIG_PREFIX}run.initial_cursor_last_id", "0").to_i
+    configured_start_id = Setting.get("#{CONFIG_PREFIX}run.configured_start_id", "0").to_i
+    configured_max_id = Setting.get("#{CONFIG_PREFIX}run.configured_max_id", "0").to_i
+    cursor_last_id = cursor_data["last_id"].to_i
+
+    progress_payload = if mode == "missing_properties" && initial_pending.positive?
+      current = (initial_pending - pending_properties).clamp(0, initial_pending)
+      {
+        label: "Imóveis faltantes migrados nesta execução",
+        current: current,
+        total: initial_pending,
+        remaining: pending_properties,
+        progress: percentage(current, initial_pending)
+      }
+    elsif mode == "retry_failed"
+      failed_total = failed_habitation_ids.size
+      failed_current = cursor_data["failed"].to_i
+      synced_current = cursor_data["synced"].to_i
+      current = synced_current + failed_current
+      total = [failed_total, current].max
+      {
+        label: "Retry de imóveis com falha",
+        current: current,
+        total: total,
+        remaining: [failed_total - current, 0].max,
+        progress: percentage(current, total)
+      }
+    else
+      max_source_id = configured_max_id.positive? ? configured_max_id : source_scope.maximum(:id).to_i
+      start_id = configured_start_id.positive? ? configured_start_id - 1 : initial_cursor_last_id
+      total = [max_source_id - start_id, 0].max
+      current = (cursor_last_id - start_id).clamp(0, total)
+      {
+        label: "Varredura por ID",
+        current: current,
+        total: total,
+        remaining: [total - current, 0].max,
+        progress: percentage(current, total)
+      }
+    end
+
+    {
+      mode: mode,
+      running: worker[:running],
+      started_at: started_at,
+      last_run_at: cursor_data["last_run_at"],
+      cycle: cursor_data["cycle"].to_i,
+      cursor_last_id: cursor_last_id,
+      synced: cursor_data["synced"].to_i,
+      skipped: cursor_data["skipped"].to_i,
+      failed: cursor_data["failed"].to_i,
+      properties_added: [properties_with_photos - initial_properties_with_photos, 0].max,
+      images_added: [migrated_images - initial_migrated_images, 0].max
+    }.merge(progress_payload)
   end
 
   def image_migration_configuration
