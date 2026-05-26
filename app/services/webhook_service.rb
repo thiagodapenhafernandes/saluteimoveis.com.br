@@ -13,7 +13,7 @@ class WebhookService
     def send_form_data(origin_form, data, options = {})
       # If specific URL is provided (e.g. testing), just use that
       if options[:url].present?
-        payload = build_payload(origin_form, data)
+        payload = build_payload(origin_form, data, options)
         return send_with_retry(options[:url], payload)
       end
 
@@ -29,7 +29,7 @@ class WebhookService
         target_url = setting.whatsapp_webhook_url.presence || setting.webhook_url
         next false if target_url.blank?
 
-        payload = build_payload(origin_form, data)
+        payload = build_payload(origin_form, data, options)
         send_with_retry(target_url, payload)
       end
       
@@ -38,17 +38,44 @@ class WebhookService
     
     private
     
-    def build_payload(origin_form, data)
+    def build_payload(origin_form, data, options = {})
       {
         origin_form: origin_form,
         timestamp: Time.current.iso8601,
+        source: source_metadata(options[:request], data),
         data: sanitize_data(data)
-      }
+      }.compact
     end
     
     def sanitize_data(data)
       # Remove dados sensíveis do Rails
       data.except('authenticity_token', 'commit', 'controller', 'action', 'utf8')
+    end
+
+    def source_metadata(request, data)
+      metadata = {
+        page_url: data["page_url"] || data[:page_url] || data["source_url"] || data[:source_url],
+        request_url: request&.original_url,
+        referrer_url: data["referrer_url"] || data[:referrer_url] || request&.referer,
+        user_agent: request&.user_agent,
+        utm: tracking_params(request, data)
+      }.compact
+
+      metadata = metadata[:utm].present? ? metadata : metadata.except(:utm)
+      metadata.presence
+    end
+
+    def tracking_params(request, data)
+      params = {}
+      request_query = request&.query_parameters || {}
+      source_data = data.respond_to?(:to_h) ? data.to_h : {}
+
+      %w[utm_source utm_medium utm_campaign utm_term utm_content gclid fbclid msclkid].each do |key|
+        value = source_data[key] || source_data[key.to_sym] || request_query[key] || request_query[key.to_sym]
+        params[key] = value if value.present?
+      end
+
+      params
     end
     
     def send_with_retry(url, payload, attempt = 1)

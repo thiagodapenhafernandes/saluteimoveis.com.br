@@ -1,3 +1,39 @@
+<%
+  sample_webhook_payload = {
+    origin_form: "whatsapp_lead",
+    timestamp: "2026-05-26T14:30:00-03:00",
+    source: {
+      page_url: "https://dev.unitymob.com.br/imoveis/apartamento-frente-mar-123",
+      request_url: "https://dev.unitymob.com.br/leads",
+      referrer_url: "https://google.com/search?q=apartamento+balneario+camboriu",
+      user_agent: "Mozilla/5.0",
+      utm: {
+        utm_source: "google",
+        utm_medium: "cpc",
+        utm_campaign: "frente-mar-maio",
+        utm_term: "apartamento frente mar",
+        utm_content: "botao-whatsapp",
+        gclid: "EAIaIQobChMI..."
+      }
+    },
+    data: {
+      name: "Cliente Exemplo",
+      email: "cliente@example.com",
+      phone: "(47) 99999-9999",
+      lead_type: "whatsapp_modal",
+      origin: "Site",
+      property_id: 123,
+      property_code: "8001",
+      property_title: "Apartamento frente mar",
+      property_url: "https://dev.unitymob.com.br/imoveis/apartamento-frente-mar-123",
+      business_type: "sale",
+      business_type_label: "Venda",
+      source_url: "https://dev.unitymob.com.br/imoveis/apartamento-frente-mar-123",
+      share_token: "abc123"
+    }
+  }
+%>
+
 <%= form_with(model: [:admin, webhook_setting]) do |f| %>
   <% if webhook_setting.errors.any? %>
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -95,6 +131,16 @@
             <li>Busca de Imóveis</li>
             <li>Captura de Leads (WhatsApp)</li>
           </ul>
+        </div>
+      </div>
+
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-secondary bg-opacity-10 border-0">
+          <h5 class="mb-0 text-secondary"><i class="bi bi-braces me-2"></i>Exemplo de Payload</h5>
+        </div>
+        <div class="card-body">
+          <p class="text-muted small mb-3">Envio via <strong>POST</strong> com <code>Content-Type: application/json</code>.</p>
+          <pre class="bg-light border rounded p-3 small mb-0 overflow-auto" style="max-height: 420px;"><code><%= JSON.pretty_generate(sample_webhook_payload) %></code></pre>
         </div>
       </div>
       

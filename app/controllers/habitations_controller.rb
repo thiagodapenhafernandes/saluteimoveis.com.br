@@ -83,7 +83,7 @@ class HabitationsController < ApplicationController
       property_url: habitation_url(@habitation)
     )
     
-    WebhookService.send_form_data('property_visit_form', webhook_data)
+    WebhookService.send_form_data('property_visit_form', webhook_data, request: request)
     Seo::ConversionTracker.record!(
       event_type: "schedule_visit",
       request: request,
