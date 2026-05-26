@@ -17,7 +17,7 @@ class ContactsController < ApplicationController
     WebhookService.send_form_data("contact_form", contact_params.to_h.merge(
       c2s_intent: c2s_intent,
       c2s_queue: c2s_queue
-    ))
+    ), request: request)
     
     # Aqui você pode adicionar lógica para enviar email, salvar no banco, etc.
     

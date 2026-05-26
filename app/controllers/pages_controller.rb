@@ -12,13 +12,13 @@ class PagesController < ApplicationController
   
   def submit_trabalhe_conosco
     # Enviar webhook
-    WebhookService.send_form_data('work_with_us_form', work_params.to_h)
+    WebhookService.send_form_data('work_with_us_form', work_params.to_h, request: request)
     
     redirect_to trabalhe_conosco_path, notice: 'Currículo enviado com sucesso! Entraremos em contato em breve.'
   end
 
   def submit_parcerias
-    WebhookService.send_form_data('partnership_form', partnership_params.to_h)
+    WebhookService.send_form_data('partnership_form', partnership_params.to_h, request: request)
 
     redirect_to parcerias_path, notice: 'Solicitação enviada com sucesso! Nosso time de parcerias entrará em contato.'
   end

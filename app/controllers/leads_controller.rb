@@ -14,19 +14,36 @@ class LeadsController < ApplicationController
     apply_share_attribution(@lead)
     
     if @lead.save
+      habitation = Habitation.find_by(id: @lead.property_id)
+      business_type = lead_business_type(habitation)
+
       Seo::ConversionTracker.record!(
         event_type: "lead_created",
         request: request,
         lead: @lead,
-        habitation: Habitation.find_by(id: @lead.property_id),
+        habitation: habitation,
         metadata: { origin: @lead.origin, lead_type: @lead.lead_type }
       )
 
       # Disparar Webhook
       # Disparar Webhook para todos os endpoints configurados
       WebhookService.send_form_data('whatsapp_lead', @lead.attributes.merge(
-        property_title: Habitation.find_by(id: @lead.property_id)&.display_title
-      ))
+        property_code: habitation&.codigo,
+        property_title: habitation&.display_title,
+        property_url: habitation ? habitation_url(habitation) : nil,
+        business_type: business_type,
+        business_type_label: Whatsapp::SiteRouting::NEGOTIATION_TYPES[business_type],
+        page_url: source_page_url,
+        referrer_url: params.dig(:lead, :referrer_url),
+        utm_source: params.dig(:lead, :utm_source),
+        utm_medium: params.dig(:lead, :utm_medium),
+        utm_campaign: params.dig(:lead, :utm_campaign),
+        utm_term: params.dig(:lead, :utm_term),
+        utm_content: params.dig(:lead, :utm_content),
+        gclid: params.dig(:lead, :gclid),
+        fbclid: params.dig(:lead, :fbclid),
+        msclkid: params.dig(:lead, :msclkid)
+      ).compact, request: request)
 
       # Send Emails (Async)
       LeadMailer.with(lead: @lead).new_lead_notification.deliver_later
@@ -48,6 +65,17 @@ class LeadsController < ApplicationController
 
   def lead_params
     params.require(:lead).permit(:name, :email, :phone, :property_id, :lead_type, :origin, :share_token)
+  end
+
+  def lead_business_type(habitation)
+    requested_type = params.dig(:lead, :business_type).to_s
+    return requested_type if Whatsapp::SiteRouting::NEGOTIATION_TYPES.key?(requested_type)
+
+    habitation&.whatsapp_negotiation_type || "sale"
+  end
+
+  def source_page_url
+    params.dig(:lead, :page_url).presence || request.referer
   end
 
   def lead_whatsapp_message

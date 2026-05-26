@@ -107,7 +107,11 @@ export default class extends Controller {
       property_id: this.propertyIdTarget.value,
       origin: this.hasOriginTarget ? this.originTarget.value : "",
       share_token: this.hasShareTokenTarget ? this.shareTokenTarget.value : "",
-      whatsapp_message: this.whatsappMessage
+      whatsapp_message: this.whatsappMessage,
+      business_type: this.negotiationType,
+      page_url: window.location.href,
+      referrer_url: document.referrer,
+      ...this.trackingParams()
     })
 
     const whatsappUrl = result?.whatsapp_url || this.whatsappUrlFor(this.negotiationType, this.whatsappMessage)
@@ -164,5 +168,16 @@ export default class extends Controller {
     const negotiations = settings.negotiations || {}
     const config = negotiations[negotiationType] || {}
     return config.requires_form !== false
+  }
+
+  trackingParams() {
+    const params = new URLSearchParams(window.location.search)
+    const keys = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "gclid", "fbclid", "msclkid"]
+
+    return keys.reduce((payload, key) => {
+      const value = params.get(key)
+      if (value) payload[key] = value
+      return payload
+    }, {})
   }
 }

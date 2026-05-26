@@ -6,6 +6,7 @@ RSpec.describe "Leads", type: :request do
     allow(WebhookService).to receive(:send_form_data)
     allow(LeadMailer).to receive_message_chain(:with, :new_lead_notification, :deliver_later)
     allow(LeadMailer).to receive_message_chain(:with, :welcome_lead, :deliver_later)
+    WhatsappBusinessIntegration.delete_all
     Whatsapp::SiteRouting.update!(
       default_number: "47 3311-1067",
       rules: {
@@ -47,6 +48,19 @@ RSpec.describe "Leads", type: :request do
     it "creates the lead and returns the configured WhatsApp URL" do
       habitation = create(:habitation, valor_venda_cents: 700_000_00, valor_locacao_cents: 0)
 
+      expect(WebhookService).to receive(:send_form_data).with(
+        "whatsapp_lead",
+        hash_including(
+          business_type: "sale",
+          business_type_label: "Venda",
+          property_code: habitation.codigo,
+          property_title: habitation.display_title,
+          page_url: "https://site.example/imoveis/#{habitation.id}",
+          utm_source: "google"
+        ),
+        request: kind_of(ActionDispatch::Request)
+      )
+
       expect {
         post leads_path, params: {
           lead: {
@@ -55,7 +69,10 @@ RSpec.describe "Leads", type: :request do
             email: "",
             property_id: habitation.id,
             lead_type: "whatsapp_modal",
-            whatsapp_message: "Tenho interesse"
+            whatsapp_message: "Tenho interesse",
+            business_type: "sale",
+            page_url: "https://site.example/imoveis/#{habitation.id}",
+            utm_source: "google"
           }
         }, as: :json
       }.to change(Lead, :count).by(1)
