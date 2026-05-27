@@ -150,6 +150,27 @@ export default class extends Controller {
     })
   }
 
+  async fetchWhatsappRouting(propertyId, message) {
+    if (!propertyId) return null
+
+    const params = new URLSearchParams({
+      property_id: propertyId,
+      message: message || ""
+    })
+
+    return fetch(`/leads/whatsapp_url?${params.toString()}`, {
+      headers: {
+        "Accept": "application/json"
+      }
+    }).then(response => {
+      if (!response.ok) return null
+      return response.json()
+    }).catch(error => {
+      console.error("Error fetching WhatsApp routing:", error)
+      return null
+    })
+  }
+
   whatsappUrlFor(negotiationType, message) {
     const phoneNumber = this.phoneNumberFor(negotiationType)
     const text = encodeURIComponent(message)
