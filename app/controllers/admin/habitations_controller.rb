@@ -1187,6 +1187,7 @@ class Admin::HabitationsController < Admin::BaseController
 
     offset = (@report_page - 1) * per_page
     @habitations = scope.offset(offset).limit(per_page)
+    @report_pages_data = [@habitations.to_a]
   end
 
   def setup_full_report(scope)
@@ -1196,7 +1197,8 @@ class Admin::HabitationsController < Admin::BaseController
     effective_total_entries = [raw_total_entries, max_entries].min
 
     rows = scope.limit(max_entries).to_a
-    @report_pages_data = rows.each_slice(per_page).to_a
+    @habitations = rows
+    @report_pages_data = rows.each_slice(per_page).to_a.presence || [[]]
 
     @report_total_entries = effective_total_entries
     @report_total_pages = @report_pages_data.size
