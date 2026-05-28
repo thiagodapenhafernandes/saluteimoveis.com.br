@@ -1,10 +1,20 @@
 class BrokersController < ApplicationController
   def index
     @page_name = 'corretores'
-    @brokers = fetch_brokers_from_vista
+    @brokers = fetch_brokers_from_admin_users
   end
 
   private
+
+  def fetch_brokers_from_admin_users
+    AdminUser
+      .active
+      .displayed_on_site
+      .joins(:profile)
+      .where(profiles: { name: %w[Corretor Gerente] })
+      .with_attached_avatar
+      .order(:name)
+  end
 
   def fetch_brokers_from_vista
     require 'cgi'

@@ -23,9 +23,9 @@
           <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-all overflow-hidden">
             <!-- Photo -->
             <div class="aspect-square bg-gray-100 overflow-hidden">
-              <% if broker['Foto'].present? %>
-                <%= image_tag broker['Foto'], 
-                    alt: broker['Nomecompleto'],
+              <% if broker.avatar.attached? %>
+                <%= image_tag broker.avatar,
+                    alt: broker.name,
                     class: "w-full h-full object-cover" %>
               <% else %>
                 <div class="w-full h-full flex items-center justify-center bg-gray-200">
@@ -36,26 +36,26 @@
 
             <!-- Info -->
             <div class="p-6">
-              <h3 class="font-bold text-gray-900 text-lg mb-1"><%= broker['Nomecompleto'] %></h3>
+              <h3 class="font-bold text-gray-900 text-lg mb-1"><%= broker.name %></h3>
               
-              <% if broker['CRECI'].present? %>
-                <p class="text-sm text-gray-500 mb-3">CRECI: <%= broker['CRECI'] %></p>
+              <% if broker.creci.present? %>
+                <p class="text-sm text-gray-500 mb-3">CRECI: <%= broker.creci %></p>
               <% end %>
 
               <!-- Specialties -->
               <div class="flex gap-2 mb-4">
-                <% if broker['Atuaçãoemvenda'] == 'Sim' %>
+                <% if broker.sales? || broker.both? %>
                   <span class="px-2 py-1 bg-blue-50 text-blue-three text-xs font-semibold rounded">Venda</span>
                 <% end %>
-                <% if broker['Atuaçãoemlocação'] == 'Sim' %>
+                <% if broker.rentals? || broker.both? %>
                   <span class="px-2 py-1 bg-golden-50 text-golden-one text-xs font-semibold rounded">Locação</span>
                 <% end %>
               </div>
 
               <!-- Contact Buttons -->
               <div class="space-y-2">
-                <% if broker['Celular'].present? %>
-                  <%= link_to "https://wa.me/55#{broker['Celular'].gsub(/\D/, '')}?text=#{url_encode('Olá, gostaria de falar sobre um imóvel')}", 
+                <% if broker.phone.present? %>
+                  <%= link_to "https://wa.me/55#{broker.phone.gsub(/\D/, '')}?text=#{url_encode('Olá, gostaria de falar sobre um imóvel')}",
                       target: "_blank",
                       class: "w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-500 text-white text-sm font-bold rounded-lg hover:bg-green-600 transition-colors" do %>
                     <i class="fab fa-whatsapp"></i>
@@ -63,8 +63,8 @@
                   <% end %>
                 <% end %>
 
-                <% if broker['E-mail'].present? %>
-                  <%= link_to "mailto:#{broker['E-mail']}", 
+                <% if broker.email.present? %>
+                  <%= link_to "mailto:#{broker.email}",
                       class: "w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 text-sm font-bold rounded-lg hover:bg-gray-200 transition-colors" do %>
                     <i class="bi bi-envelope"></i>
                     Email

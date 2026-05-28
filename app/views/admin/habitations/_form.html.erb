@@ -652,7 +652,7 @@
                 </div>
 
                 <div class="row g-2">
-                  <% if current_admin_user&.admin? %>
+                  <% if current_admin_user&.admin? || current_admin_user&.profile&.name == "Administrativo" %>
                     <div class="col-md-5">
                       <%= f.label :proprietor_id, "Proprietário:", class: "form-label small fw-bold mb-1" %>
                       <div class="input-group input-group-sm">
@@ -1243,7 +1243,7 @@
           </div>
 
           <div class="row g-3 mb-4">
-            <% if current_admin_user&.admin? %>
+            <% if can_view_proprietor_data?(habitation) %>
               <div class="col-md-8">
                 <div class="border rounded p-3 h-100">
                   <h6 class="small fw-semibold text-uppercase text-muted mb-3">Proprietário e contatos</h6>
@@ -1572,12 +1572,14 @@
          <div class="card-body p-3 p-md-4" data-controller="photo-upload">
             <h6 class="small fw-semibold text-uppercase text-muted mb-3">Fotos</h6>
             <div class="mb-4 text-center p-5 border border-dashed rounded bg-light">
-               <div class="row justify-content-center mb-3">
-                 <div class="col-md-4">
-                   <%= f.label :foto_classificacao, "Classificação das Fotos:", class: "form-label small fw-bold mb-1" %>
-                   <%= f.select :foto_classificacao, Habitation::FOTO_CLASSIFICACAO, { include_blank: "Selecione..." }, class: "form-select form-select-sm" %>
+               <% if can?(:manage, :imoveis) %>
+                 <div class="row justify-content-center mb-3">
+                   <div class="col-md-4">
+                     <%= f.label :foto_classificacao, "Classificação das Fotos:", class: "form-label small fw-bold mb-1" %>
+                     <%= f.select :foto_classificacao, Habitation::FOTO_CLASSIFICACAO, { include_blank: "Selecione..." }, class: "form-select form-select-sm" %>
+                   </div>
                  </div>
-               </div>
+               <% end %>
                <div class="mb-3">
                  <i class="bi bi-images display-4 text-muted"></i>
                </div>

@@ -1,4 +1,5 @@
 require "rails_helper"
+require "csv"
 
 RSpec.describe "Admin::HabitationIntakes", type: :request do
   include Devise::Test::IntegrationHelpers
@@ -18,6 +19,100 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("Sem rascunho criado")
     expect(response.body).to include("Iniciar captação")
+  end
+
+  it "exibe exportador de planilha somente para administrador ou administrativo" do
+    get admin_captacoes_path
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Exportar planilha")
+
+    broker_profile = Profile.create!(
+      name: "Corretor #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Corretor")
+    )
+    broker = create(:admin_user, profile: broker_profile)
+    sign_in broker
+
+    get admin_captacoes_path
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).not_to include("Exportar planilha")
+  end
+
+  it "exporta planilha de captações para perfil administrativo" do
+    administrative_profile = Profile.find_or_initialize_by(name: "Administrativo")
+    administrative_profile.permissions = Profile.default_permissions_for("Administrativo")
+    administrative_profile.save!
+    administrative = create(:admin_user, profile: administrative_profile, name: "Iasmim")
+    intake = create(
+      :habitation,
+      :broker_intake,
+      admin_user: administrative,
+      codigo: "8571",
+      nome_empreendimento: "Calls",
+      unidade_numero: "101",
+      proprietario: "Tarrassa",
+      proprietario_celular: "47992485780",
+      proprietario_email: "proprietario@example.com",
+      categoria: "Apartamento",
+      intake_modalidade: "venda",
+      status: "Venda",
+      regiao_foco: "Sim",
+      valor_venda_cents: 17_000_000_00,
+      valor_locacao_cents: 0,
+      salute_rental_management_answer: "nao",
+      foto_classificacao: "Não tem fotos/ruins",
+      exibir_no_site_flag: false
+    )
+    intake.create_address!(
+      cep: "88330-000",
+      logradouro: "Rua Central",
+      numero: "100",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+
+    sign_in administrative
+
+    expect {
+      get export_admin_captacoes_path
+    }.to change(DataExportAuditLog, :count).by(1)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.headers["Content-Disposition"]).to include("captacoes_")
+
+    rows = CSV.parse(response.body, headers: true, col_sep: ";")
+    expect(rows.headers).to include("Data", "Responsável Cadastro", "Empreendimento", "Cód. Imóvel CRM", "Status")
+    expect(rows.first["Responsável Cadastro"]).to eq("Iasmim")
+    expect(rows.first["Empreendimento"]).to eq("Calls")
+    expect(rows.first["Nº Imóvel"]).to eq("101")
+    expect(rows.first["Cód. Imóvel CRM"]).to eq("8571")
+    expect(rows.first["nome_proprietario"]).to eq("Tarrassa")
+    expect(rows.first["Cidade"]).to eq("Balneário Camboriú")
+    expect(rows.first["Time"]).to eq("Time Venda")
+    expect(rows.first["Valor de venda"]).to eq("R$ 17.000.000,00")
+    expect(rows.first["Administração"]).to eq("NÃO")
+    expect(rows.first["Status"]).to eq("Não foi publicado - Não tem fotos/ruins")
+
+    log = DataExportAuditLog.last
+    expect(log).to have_attributes(resource_name: "captacoes", export_type: "csv_export", record_count: 1)
+  end
+
+  it "bloqueia exportação de captações para corretor" do
+    broker_profile = Profile.create!(
+      name: "Corretor #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Corretor")
+    )
+    broker = create(:admin_user, profile: broker_profile)
+    sign_in broker
+
+    expect {
+      get export_admin_captacoes_path
+    }.not_to change(DataExportAuditLog, :count)
+
+    expect(response).to redirect_to(admin_captacoes_path)
   end
 
   it "cria rascunho somente quando o corretor inicia a captação" do
@@ -121,7 +216,7 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     get edit_admin_captacao_path(intake, step: "caracteristicas")
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include("Vista Panorâmica")
+    expect(response.body).to include("Vista panorâmica")
 
     get edit_admin_captacao_path(intake, step: "infraestrutura")
 
@@ -147,16 +242,19 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
   end
 
   it "limpa opções técnicas e duplicadas na ficha de captação" do
-    AttributeOption.create!(context: "habitation", category: "feature", name: "ar_condicionado")
-    AttributeOption.create!(context: "habitation", category: "feature", name: "Ar Condicionado")
-    AttributeOption.create!(context: "habitation", category: "feature", name: "banheiro_social")
+    now = Time.current
+    AttributeOption.insert_all([
+      { context: "habitation", category: "feature", name: "ar_condicionado", created_at: now, updated_at: now },
+      { context: "habitation", category: "feature", name: "Ar Condicionado", created_at: now, updated_at: now },
+      { context: "habitation", category: "feature", name: "banheiro_social", created_at: now, updated_at: now }
+    ])
     intake = create(:habitation, :broker_intake, admin_user: admin, intake_step: "caracteristicas")
 
     get edit_admin_captacao_path(intake, step: "caracteristicas")
 
     expect(response).to have_http_status(:ok)
     expect(response.body.scan('value="Ar-condicionado"').size).to eq(1)
-    expect(response.body).to include("Banheiro Social")
+    expect(response.body).to include("Banheiro social")
     expect(response.body).not_to include("ar_condicionado")
     expect(response.body).not_to include("banheiro_social")
   end

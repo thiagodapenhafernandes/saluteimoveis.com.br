@@ -2,38 +2,39 @@ module Admin
   class HabitationIntakesController < Admin::BaseController
     before_action -> { check_permission!(:view, :captacoes) }
     before_action -> { check_permission!(:manage, :captacoes) }, only: %i[new create edit update destroy submit_for_review release_to_site publish]
+    before_action :authorize_export!, only: %i[export]
     before_action :set_habitation, only: %i[show edit update destroy submit_for_review approve return_to_broker release_to_site]
     before_action :authorize_access!, only: %i[show edit update destroy submit_for_review release_to_site]
+    before_action :authorize_intake_edit!, only: %i[edit update]
     before_action :authorize_review!, only: %i[approve return_to_broker]
     before_action :load_form_options, only: %i[edit update]
     layout :resolve_layout
+    helper_method :can_export_captacoes?
 
     def index
       @status = params[:status].presence
       @q = params[:q].to_s.strip
-      @habitations = scoped_intakes.includes(:admin_user, :admin_reviewed_by, :address)
-      @habitations = @habitations.where(categoria: "Terreno") if params[:property_kind] == "terreno"
-      @habitations = @habitations.where(categoria: "Sala Comercial") if params[:property_kind] == "sala_comercial"
-      @habitations = @habitations.where.not(categoria: ["Terreno", "Sala Comercial"]) if params[:property_kind] == "residencial"
-      case @status
-      when "draft"
-        @habitations = @habitations.where(intake_status: [nil, "draft", "returned_to_broker"])
-      when "completed"
-        @habitations = @habitations.where(intake_status: %w[submitted_for_admin_review admin_approved])
-      when "published"
-        @habitations = @habitations.where(intake_status: "published")
-      else
-        @habitations = @habitations.where(intake_status: @status) if @status.present?
-      end
-      if @q.present?
-        @habitations = @habitations.where(
-          "codigo ILIKE :q OR titulo_anuncio ILIKE :q OR nome_empreendimento ILIKE :q OR proprietario ILIKE :q",
-          q: "%#{@q}%"
-        )
-      end
+      @habitations = filtered_intakes_scope.includes(:admin_user, :admin_reviewed_by, :address)
       @habitations = @habitations.order(updated_at: :desc).paginate(page: params[:page], per_page: 20)
       @captacoes = @habitations
       render "admin/captacoes/index"
+    end
+
+    def export
+      scope = filtered_intakes_scope.includes(:admin_user, :address).order(created_at: :asc)
+      csv_content = Captacoes::SpreadsheetExporter.new(scope, helpers: helpers).to_csv
+      timestamp = Time.current.strftime("%Y%m%d_%H%M%S")
+      filename = "captacoes_#{timestamp}.csv"
+
+      record_data_export!(
+        record_count: scope.count,
+        filename: filename,
+        filters: export_filters
+      )
+
+      send_data csv_content,
+                filename: filename,
+                type: "text/csv; charset=utf-8"
     end
 
     def new
@@ -228,6 +229,16 @@ module Admin
       @habitation = Habitation.broker_intakes.friendly.find(params[:id])
     end
 
+    def authorize_export!
+      return if can_export_captacoes?
+
+      redirect_to admin_captacoes_path, alert: "Você não tem permissão para exportar captações."
+    end
+
+    def can_export_captacoes?
+      current_admin_user&.admin? || current_admin_user&.profile&.name == "Administrativo"
+    end
+
     def scoped_intakes
       scope = Habitation.broker_intakes
       return scope if owns_all_resource?(:captacoes) || can?(:review, :captacoes)
@@ -235,11 +246,94 @@ module Admin
       scope.where(admin_user_id: current_admin_user.id)
     end
 
+    def filtered_intakes_scope
+      scope = scoped_intakes
+      scope = scope.where(categoria: "Terreno") if params[:property_kind] == "terreno"
+      scope = scope.where(categoria: "Sala Comercial") if params[:property_kind] == "sala_comercial"
+      scope = scope.where.not(categoria: ["Terreno", "Sala Comercial"]) if params[:property_kind] == "residencial"
+
+      case params[:status].presence
+      when "draft"
+        scope = scope.where(intake_status: [nil, "draft", "returned_to_broker"])
+      when "completed"
+        scope = scope.where(intake_status: %w[submitted_for_admin_review admin_approved])
+      when "published"
+        scope = scope.where(intake_status: "published")
+      else
+        scope = scope.where(intake_status: params[:status]) if params[:status].present?
+      end
+
+      q = params[:q].to_s.strip
+      if q.present?
+        scope = scope.where(
+          "codigo ILIKE :q OR titulo_anuncio ILIKE :q OR nome_empreendimento ILIKE :q OR proprietario ILIKE :q",
+          q: "%#{q}%"
+        )
+      end
+
+      scope
+    end
+
+    def export_filters
+      params.to_unsafe_h.slice("property_kind", "status", "q")
+    end
+
+    def record_data_export!(record_count:, filename:, filters:)
+      Audit::DataExportRecorder.call(
+        admin_user: current_admin_user,
+        request: request,
+        export_type: "csv_export",
+        resource_name: "captacoes",
+        format: "csv_semicolon",
+        record_count: record_count,
+        selected_count: 0,
+        filename: filename,
+        filters: filters,
+        fields: Captacoes::SpreadsheetExporter::HEADERS
+      )
+    end
+
     def authorize_access!
       return if owns_all_resource?(:captacoes) || can?(:review, :captacoes)
       return if @habitation.admin_user_id == current_admin_user.id
 
       redirect_to admin_captacoes_path, alert: "Você não tem acesso a esta captação."
+    end
+
+    def authorize_intake_edit!
+      return unless @habitation.intake_submitted_for_admin_review?
+      return if current_admin_user&.admin? || administrative_profile?
+      return if manager_profile? && manager_can_access_intake?(@habitation)
+
+      redirect_to admin_captacoes_path, alert: "Captações pendentes de revisão só podem ser alteradas pelo Administrativo ou Gerente responsável."
+    end
+
+    def administrative_profile?
+      current_admin_user&.profile&.name == "Administrativo"
+    end
+
+    def manager_profile?
+      current_admin_user&.profile&.manager?
+    end
+
+    def manager_team_user_ids
+      return [] unless current_admin_user
+
+      users = AdminUser.where(manager_id: current_admin_user.id)
+      users = users.where(acting_type: manager_allowed_acting_types) unless current_admin_user.both?
+      users.pluck(:id)
+    end
+
+    def manager_allowed_acting_types
+      case current_admin_user&.acting_type
+      when "sales" then AdminUser.acting_types.values_at("sales", "both")
+      when "rentals" then AdminUser.acting_types.values_at("rentals", "both")
+      else AdminUser.acting_types.values
+      end
+    end
+
+    def manager_can_access_intake?(habitation)
+      manager_team_user_ids.include?(habitation.admin_user_id)
     end
 
     def authorize_review!
@@ -473,7 +567,7 @@ module Admin
         :proprietario, :proprietario_celular, :proprietario_email,
         :proprietario_telefone_comercial, :proprietario_telefone_residencial,
         :proprietario_codigo, :proprietor_id, :admin_user_id,
-        :foto_classificacao, :photo_flow_choice, :photo_session_requested_at, :photo_session_url,
+        :photo_flow_choice, :photo_session_requested_at, :photo_session_url,
         :salute_rental_management_answer, :aceita_permuta_answer,
         :aceita_parcelamento_flag, :numero_prestacoes, :aceita_financiamento_flag,
         :aceita_permuta_veiculo_flag, :aceita_permuta_imovel_flag, :aceita_permuta_outros_flag,

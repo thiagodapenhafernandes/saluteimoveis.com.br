@@ -252,7 +252,7 @@
                   <% property_features.each do |feature| %>
                     <div class="inline-flex items-center gap-2 text-gray-700 bg-white border border-gray-200 rounded-full px-3 py-1.5">
                       <i class="bi bi-building-check text-golden-one text-sm"></i>
-                      <span class="text-sm leading-tight"><%= feature.to_s.tr('_', ' ').squish.titleize %></span>
+                      <span class="text-sm leading-tight"><%= feature %></span>
                     </div>
                   <% end %>
                 </div>
@@ -269,7 +269,7 @@
                   <% leisure_features.each do |feature| %>
                     <div class="inline-flex items-center gap-2 text-gray-700 bg-[#f8fafc] border border-gray-200 rounded-full px-3 py-1.5">
                       <i class="bi bi-stars text-blue-three text-sm"></i>
-                      <span class="text-sm leading-tight"><%= feature.to_s.tr('_', ' ').squish.titleize %></span>
+                      <span class="text-sm leading-tight"><%= feature %></span>
                     </div>
                   <% end %>
                 </div>

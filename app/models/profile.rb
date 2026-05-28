@@ -55,6 +55,7 @@ class Profile < ApplicationRecord
       "admin" => false,
       "dashboard" => { "view" => true },
       "imoveis" => { "view" => true, "manage" => true, "scope" => "all" },
+      "leads" => { "view" => true, "manage" => true, "scope" => "all" },
       "captacoes" => { "view" => true, "manage" => true, "review" => true, "publish" => true, "scope" => "all" },
       "captacao_dashboard" => { "view" => true },
       "agenda_fotografia" => { "view" => true, "manage" => true },
@@ -66,9 +67,7 @@ class Profile < ApplicationRecord
       "imoveis" => { "view" => true, "manage" => true, "scope" => "all" },
       "leads" => { "view" => true, "manage" => true, "scope" => "all" },
       "captacoes" => { "view" => true, "manage" => true, "review" => true, "publish" => true, "scope" => "all" },
-      "captacao_dashboard" => { "view" => true },
-      "agenda_fotografia" => { "view" => true, "manage" => true },
-      "marketing" => { "manage" => true }
+      "captacao_dashboard" => { "view" => true }
     }
   }.freeze
 

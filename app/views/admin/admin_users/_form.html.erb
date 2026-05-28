@@ -119,6 +119,17 @@
           </div>
 
           <div class="mb-4">
+            <label class="form-label fw-bold small text-muted text-uppercase">Site</label>
+            <div class="form-check form-switch fs-5">
+              <%= f.check_box :display_on_site, class: "form-check-input", id: "admin_user_display_on_site" %>
+              <%= f.label :display_on_site, "Exibir perfil do corretor no site", class: "form-check-label", for: "admin_user_display_on_site" %>
+            </div>
+            <div class="form-text mt-2 extra-small">
+              Desative para corretores que não devem aparecer na página pública, por exemplo sem CRECI.
+            </div>
+          </div>
+
+          <div class="mb-4">
             <%= f.label :acting_type, "Área de Atuação", class: "form-label fw-bold small text-muted text-uppercase" %>
             <%= f.select :acting_type, AdminUser.acting_types.keys.map { |k| [I18n.t("enums.admin_user.acting_type.#{k}", default: k.humanize), k] }, { prompt: "Selecione..." }, { class: "form-select" } %>
             <div class="form-text mt-2 extra-small">Define se o corretor atua em Venda, Locação ou Ambos.</div>
