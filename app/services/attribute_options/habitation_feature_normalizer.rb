@@ -13,11 +13,14 @@ module AttributeOptions
       "area de servico" => "Área de serviço",
       "area servico" => "Área de serviço",
       "armario embutido" => "Armário embutido",
+      "armarios embutidos" => "Armário embutido",
       "armarios nos quartos" => "Armários nos quartos",
       "armarios quartos" => "Armários nos quartos",
       "banheira hidromassagem" => "Banheira hidromassagem",
       "banheiro auxiliar" => "Banheiro auxiliar",
+      "banho auxiliar" => "Banheiro auxiliar",
       "banheiro social" => "Banheiro social",
+      "banho social" => "Banheiro social",
       "bar" => "Bar",
       "bicicletario" => "Bicicletário",
       "canaletas no rodape" => "Canaletas no rodapé",
@@ -59,6 +62,7 @@ module AttributeOptions
       "lavabo" => "Lavabo",
       "living" => "Living",
       "living hall" => "Living hall",
+      "living lavabo" => "Lavabo",
       "mezanino" => "Mezanino",
       "mobiliado" => "Mobiliado",
       "mobiliado decorado" => "Mobiliado decorado",
@@ -102,6 +106,7 @@ module AttributeOptions
       "vista panoramica" => "Vista panorâmica",
       "vista para o mar" => "Vista para o mar",
       "vitrine" => "Vitrine",
+      "wc empregada" => "WC empregada",
       "w c empregada" => "WC empregada"
     }.freeze
 
@@ -112,8 +117,10 @@ module AttributeOptions
       "brinquedoteca" => "Brinquedoteca",
       "churrasqueira condominio" => "Churrasqueira condomínio",
       "circuito fechado t v" => "Circuito fechado TV",
+      "circuito interno tv" => "Circuito interno TV",
       "deposito" => "Depósito",
       "elevador" => "Elevador",
+      "elevador com" => "Elevador",
       "elevador servico" => "Elevador de serviço",
       "empresa de monitoramento" => "Empresa de monitoramento",
       "energia eletrica" => "Energia elétrica",
@@ -136,6 +143,7 @@ module AttributeOptions
       "poco artesiano" => "Poço artesiano",
       "portaria" => "Portaria",
       "portaria 24h" => "Portaria 24h",
+      "portaria 24hs" => "Portaria 24h",
       "portaria24 hrs" => "Portaria 24h",
       "porteiro eletronico" => "Porteiro eletrônico",
       "possui viabilidade" => "Possui viabilidade",
@@ -144,12 +152,15 @@ module AttributeOptions
       "quiosque" => "Quiosque",
       "rede esgoto" => "Rede de esgoto",
       "sala de recepcao" => "Sala de recepção",
+      "sala ginastica" => "Sala fitness",
+      "sala jogos" => "Sala de jogos",
       "salao festas" => "Salão de festas",
       "salao jogos" => "Salão de jogos",
       "sauna condominio" => "Sauna condomínio",
       "seguranca patrimonial" => "Segurança patrimonial",
       "spa" => "Spa",
       "terraco coletivo" => "Terraço coletivo",
+      "terraco col" => "Terraço coletivo",
       "tubulacao" => "Tubulação",
       "vigilancia24 horas" => "Vigilância 24h",
       "zelador" => "Zelador"
@@ -162,7 +173,7 @@ module AttributeOptions
       return if raw.blank?
 
       labels = category.to_s == "infrastructure" ? INFRASTRUCTURE_LABELS : FEATURE_LABELS
-      labels[key(raw)] || raw.tr("_", " ").squish
+      labels[key(raw)] || raw.tr("_", " ").downcase.squish.capitalize
     end
 
     def key(value)
