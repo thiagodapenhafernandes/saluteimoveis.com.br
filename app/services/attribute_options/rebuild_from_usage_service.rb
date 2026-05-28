@@ -72,7 +72,7 @@ module AttributeOptions
             []
           end
 
-        normalize_items(items).each { |item| values << item }
+        normalize_items(items, category: "feature").each { |item| values << item }
       end
 
       values.to_a.sort
@@ -82,7 +82,7 @@ module AttributeOptions
       values = Set.new
 
       Habitation.find_each do |habitation|
-        normalize_items(habitation.infra_estrutura).each { |item| values << item }
+        normalize_items(habitation.infra_estrutura, category: "infrastructure").each { |item| values << item }
       end
 
       values.to_a.sort
@@ -103,7 +103,7 @@ module AttributeOptions
             Array(raw)
           end
 
-        normalize_items(items).each { |item| values << item }
+        normalize_items(items, category: "feature").each { |item| values << item }
       end
 
       values.to_a.sort
@@ -113,13 +113,13 @@ module AttributeOptions
       values = Set.new
 
       Address.where(addressable_type: "Habitation").find_each do |address|
-        normalize_items(address.imediacoes).each { |item| values << item }
+        normalize_items(address.imediacoes, category: "feature").each { |item| values << item }
       end
 
       values.to_a.sort
     end
 
-    def normalize_items(raw)
+    def normalize_items(raw, category:)
       case raw
       when Array
         raw
@@ -129,13 +129,13 @@ module AttributeOptions
         raw.split(/[,\n;]+/)
       else
         Array(raw)
-      end.map { |item| item.to_s.strip }
+      end.map { |item| AttributeOptions::HabitationFeatureNormalizer.label(item, category: category) }
        .reject(&:blank?)
        .uniq
     end
 
     def normalized_key(value)
-      I18n.transliterate(value.to_s).downcase.gsub(/\s+/, " ").strip
+      AttributeOptions::HabitationFeatureNormalizer.key(value)
     end
   end
 end

@@ -1,6 +1,7 @@
 class Admin::HabitationsController < Admin::BaseController
   before_action -> { check_permission!(:view, :imoveis) }
   before_action -> { check_permission!(:manage, :imoveis) }, only: [:new, :create]
+  before_action :authorize_data_export!, only: [:print, :export]
   before_action :require_admin!, only: [:bulk_publish, :bulk_publish_eligibility]
   before_action :scope_habitations_by_permission, only: [:edit, :update, :destroy, :sync, :purge_attachment, :generate_ai_preview, :format_ai_suggestion, :apply_ai_suggestion]
   require "csv"
@@ -68,6 +69,7 @@ class Admin::HabitationsController < Admin::BaseController
   }.freeze
 
   before_action :set_habitation, only: [:edit, :update, :destroy, :generate_ai_preview, :format_ai_suggestion, :apply_ai_suggestion]
+  before_action :authorize_habitation_edit!, only: [:edit, :update]
 
   before_action :load_autocomplete_data, only: [:new, :edit, :create, :update]
   helper_method :can_view_proprietor_data?, :can_edit_habitation?
@@ -479,6 +481,21 @@ class Admin::HabitationsController < Admin::BaseController
     end
   end
 
+  def authorize_data_export!
+    return if current_admin_user&.admin? || administrative_profile?
+
+    redirect_to admin_habitations_path, alert: "Você não tem permissão para imprimir ou exportar imóveis."
+  end
+
+  def authorize_habitation_edit!
+    return unless @habitation&.broker_intake?
+    return unless @habitation.intake_submitted_for_admin_review?
+    return if current_admin_user&.admin? || administrative_profile?
+    return if manager_profile? && manager_can_view_proprietor_data?(@habitation)
+
+    redirect_to admin_habitations_path, alert: "Captações pendentes de revisão só podem ser alteradas pelo Administrativo ou Gerente responsável."
+  end
+
   def sort_column
     Habitation.column_names.include?(params[:sort]) ? params[:sort] : "data_cadastro_crm"
   end
@@ -656,7 +673,7 @@ class Admin::HabitationsController < Admin::BaseController
     @salute_rental_management = params[:salute_rental_management]
     @empreendimento_codigo = params[:empreendimento_codigo]
     @corretor_id = params[:corretor_id]
-    @proprietor_id = current_admin_user&.admin? ? params[:proprietor_id] : nil
+    @proprietor_id = can_filter_by_proprietor? ? params[:proprietor_id] : nil
     @festival_salute = params[:festival_salute]
     @exibir_no_site_salute = params[:exibir_no_site_salute]
     @publicar_imovelweb_2 = params[:publicar_imovelweb_2]
@@ -679,7 +696,7 @@ class Admin::HabitationsController < Admin::BaseController
     @max_price = params[:max_price].to_s.gsub(/[^\d]/, '').to_i
     @permuta_min_value = params[:permuta_min_value].to_s.gsub(/[^\d]/, '').to_i
     @scope = params[:scope]
-    @ownership_scope = params[:ownership].presence_in(%w[mine all]) || (current_admin_user&.admin? ? "all" : "mine")
+    @ownership_scope = params[:ownership].presence_in(%w[mine all]) || (owns_all_resource?(:imoveis) ? "all" : "mine")
     @intake_review = params[:intake_review].presence_in(%w[pending])
     @captacao_inicio = params[:captacao_inicio]
     @captacao_fim = params[:captacao_fim]
@@ -696,6 +713,7 @@ class Admin::HabitationsController < Admin::BaseController
     )
     scope = apply_ownership_scope(scope)
     scope = scope.pending_admin_review_from_intake if @intake_review == "pending"
+    scope = restrict_pending_review_to_manager_team(scope) if @intake_review == "pending" && manager_profile? && !administrative_profile? && !current_admin_user&.admin?
 
     if @q.present?
       scope = scope.where(
@@ -934,7 +952,7 @@ class Admin::HabitationsController < Admin::BaseController
   def sanitized_export_fields
     selected = Array(params[:fields]).map(&:to_s)
     valid = selected.select { |field| EXPORT_FIELDS.key?(field) }
-    valid -= %w[proprietario] unless current_admin_user&.admin?
+    valid -= %w[proprietario] unless can_export_proprietor_data?
     valid.presence || %w[codigo categoria logradouro numero complemento dormitorios_qtd valor_venda valor_locacao]
   end
 
@@ -1005,7 +1023,9 @@ class Admin::HabitationsController < Admin::BaseController
   end
 
   def can_view_proprietor_data?(habitation)
-    return true if current_admin_user&.admin? || owns_all_resource?(:imoveis)
+    return true if current_admin_user&.admin? || administrative_profile?
+    return manager_can_view_proprietor_data?(habitation) if manager_profile?
+
     property_belongs_to_current_user?(habitation)
   end
 
@@ -1018,6 +1038,10 @@ class Admin::HabitationsController < Admin::BaseController
     return false unless habitation.intake_submitted_for_admin_review?
 
     current_admin_user&.admin? || owns_all_resource?(:imoveis) || can?(:review, :captacoes)
+  end
+
+  def can_review_intakes?
+    current_admin_user&.admin? || administrative_profile? || manager_profile? || can?(:review, :captacoes)
   end
 
   def can_manage_intake_status?(habitation)
@@ -1191,7 +1215,7 @@ class Admin::HabitationsController < Admin::BaseController
       permitted = permitted.slice(*broker_limited_habitation_fields.map(&:to_s))
     end
 
-    unless current_admin_user&.admin?
+    unless can_view_proprietor_data?(@habitation)
       proprietor_locked_fields = %i[
         proprietario proprietario_codigo proprietario_email proprietario_celular
         proprietario_telefone_comercial proprietario_telefone_residencial proprietor_id
@@ -1373,6 +1397,56 @@ class Admin::HabitationsController < Admin::BaseController
 
     broker_name = current_admin_user.name.to_s.strip
     broker_name.present? && habitation.corretor_nome.to_s.downcase.include?(broker_name.downcase)
+  end
+
+  def administrative_profile?
+    current_admin_user&.profile&.name == "Administrativo"
+  end
+
+  def manager_profile?
+    current_admin_user&.profile&.manager?
+  end
+
+  def can_filter_by_proprietor?
+    current_admin_user&.admin? || administrative_profile?
+  end
+
+  def can_export_proprietor_data?
+    current_admin_user&.admin? || administrative_profile?
+  end
+
+  def manager_team_user_ids
+    return [] unless current_admin_user
+
+    users = AdminUser.where(manager_id: current_admin_user.id)
+    users = users.where(acting_type: manager_allowed_acting_types) unless current_admin_user.both?
+    users.pluck(:id)
+  end
+
+  def manager_allowed_acting_types
+    case current_admin_user&.acting_type
+    when "sales" then AdminUser.acting_types.values_at("sales", "both")
+    when "rentals" then AdminUser.acting_types.values_at("rentals", "both")
+    else AdminUser.acting_types.values
+    end
+  end
+
+  def manager_can_view_proprietor_data?(habitation)
+    team_ids = manager_team_user_ids
+    return false if team_ids.blank?
+    return true if habitation.admin_user_id.in?(team_ids)
+    return true if habitation.broker_assignments.exists?(admin_user_id: team_ids)
+
+    false
+  end
+
+  def restrict_pending_review_to_manager_team(scope)
+    team_ids = manager_team_user_ids
+    return scope.none if team_ids.blank?
+
+    scope.left_outer_joins(:broker_assignments)
+         .where("habitations.admin_user_id IN (:ids) OR habitation_broker_assignments.admin_user_id IN (:ids)", ids: team_ids)
+         .distinct
   end
 
   def assign_proprietor_from_legacy_fields(habitation)

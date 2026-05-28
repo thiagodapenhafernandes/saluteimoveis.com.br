@@ -9,9 +9,16 @@
       <% end %>
     </p>
   </div>
-  <%= link_to new_admin_captacao_path, class: "btn btn-primary d-flex align-items-center" do %>
-    <i class="bi bi-plus-lg me-1"></i>Nova captação
-  <% end %>
+  <div class="d-flex gap-2 flex-wrap">
+    <% if can_export_captacoes? %>
+      <%= link_to export_admin_captacoes_path(request.query_parameters), class: "btn btn-outline-success d-flex align-items-center" do %>
+        <i class="bi bi-file-earmark-spreadsheet me-1"></i>Exportar planilha
+      <% end %>
+    <% end %>
+    <%= link_to new_admin_captacao_path, class: "btn btn-primary d-flex align-items-center" do %>
+      <i class="bi bi-plus-lg me-1"></i>Nova captação
+    <% end %>
+  </div>
 </div>
 
 <!-- Filtros -->

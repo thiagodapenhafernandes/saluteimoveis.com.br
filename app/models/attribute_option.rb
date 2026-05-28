@@ -23,6 +23,7 @@ class AttributeOption < ApplicationRecord
     self.name = name.to_s.strip
     self.context = context.to_s.strip
     self.category = category.to_s.strip
+    self.name = AttributeOptions::HabitationFeatureNormalizer.label(name, category: category) if context == "habitation" && category.in?(%w[feature infrastructure])
   end
 
   def context_immutable

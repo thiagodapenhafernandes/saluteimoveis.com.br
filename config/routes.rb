@@ -48,6 +48,7 @@ Rails.application.routes.draw do
     resource :ai_integration, only: [:show, :update] do
       post :generate_batch
     end
+    resource :google_integration, only: [:show, :update]
     get :seo_dashboard, to: "seo_dashboard#index"
     get :marketing_opportunities, to: "marketing_opportunities#index"
     get :marketing_properties, to: "marketing_properties#index"
@@ -154,6 +155,7 @@ Rails.application.routes.draw do
       collection do
         get :dashboard, to: "captacoes#dashboard"
         patch :dashboard_title, to: "captacoes#update_dashboard_title"
+        get :export
       end
       member do
         post :publish

@@ -118,6 +118,36 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).not_to include(">Centro<")
   end
 
+  it "mantém classificação de fotos visível para o administrativo" do
+    habitation = create(:habitation, codigo: "FOTO-ADM-#{SecureRandom.hex(6)}")
+
+    get edit_admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Classificação das Fotos:")
+  end
+
+  it "oculta classificação de fotos da ficha de pré-cadastro do corretor" do
+    broker_profile = Profile.create!(
+      name: "Corretor #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Corretor")
+    )
+    broker = create(:admin_user, profile: broker_profile)
+    intake = create(
+      :habitation,
+      :broker_intake,
+      admin_user: broker,
+      codigo: "FOTO-COR-#{SecureRandom.hex(6)}",
+      intake_status: "returned_to_broker"
+    )
+
+    sign_in broker
+    get edit_admin_habitation_path(intake)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).not_to include("Classificação das Fotos:")
+  end
+
   it "registra auditoria de alteração do imóvel e exibe o botão de histórico" do
     habitation = create(:habitation, codigo: "AUD-#{SecureRandom.hex(6)}", titulo_anuncio: "Título antigo", exibir_no_site_flag: false)
     habitation.create_address!(

@@ -404,8 +404,8 @@ class Habitation < ApplicationRecord
   def valor_iptu = valor_iptu_cents.to_i.positive? ? valor_iptu_cents / 100.0 : nil
   def saldo_devedor = saldo_devedor_cents.to_i.positive? ? saldo_devedor_cents / 100.0 : nil
 
-  def caracteristicas_imovel = normalize_captacao_list(caracteristicas)
-  def caracteristicas_predio = normalize_captacao_list(infra_estrutura)
+  def caracteristicas_imovel = normalize_captacao_list(caracteristicas, category: "feature")
+  def caracteristicas_predio = normalize_captacao_list(infra_estrutura, category: "infrastructure")
   def aceita_permuta
     aceita_permuta_answer == "sim" || aceita_permuta_flag? ? ["Sim"] : []
   end
@@ -733,8 +733,9 @@ class Habitation < ApplicationRecord
 
   def caracteristicas=(value)
     if value.is_a?(Array)
-      hash = {}
-      value.reject(&:blank?).each { |v| hash[v.to_s] = v.to_s }
+      hash = AttributeOptions::HabitationFeatureNormalizer
+             .normalize_list(value, category: "feature")
+             .index_by(&:itself)
       super(hash)
     else
       super
@@ -743,7 +744,7 @@ class Habitation < ApplicationRecord
 
   def infra_estrutura=(value)
     if value.is_a?(Array)
-      super(value.reject(&:blank?))
+      super(AttributeOptions::HabitationFeatureNormalizer.normalize_list(value, category: "infrastructure"))
     else
       super
     end
@@ -899,11 +900,11 @@ class Habitation < ApplicationRecord
   end
 
   def property_features_for_display
-    normalize_feature_values(caracteristicas)
+    normalize_feature_values(caracteristicas, category: "feature")
   end
 
   def leisure_features_for_display
-    normalize_feature_values(infra_estrutura)
+    normalize_feature_values(infra_estrutura, category: "infrastructure")
   end
   
   # Título padrão baseado nas características
@@ -1186,7 +1187,7 @@ class Habitation < ApplicationRecord
     RefreshFeaturedPropertiesJob.perform_later if defined?(RefreshFeaturedPropertiesJob)
   end
 
-  def normalize_feature_values(source)
+  def normalize_feature_values(source, category: "feature")
     case source
     when Array
       source
@@ -1197,15 +1198,15 @@ class Habitation < ApplicationRecord
     end
       .map { |item| item.to_s.strip }
       .reject { |item| item.blank? || item == "." }
-      .uniq
+      .then { |items| AttributeOptions::HabitationFeatureNormalizer.normalize_list(items, category: category) }
   end
 
-  def normalize_captacao_list(source)
+  def normalize_captacao_list(source, category: "feature")
     case source
     when String
       source.split(",")
     else
-      normalize_feature_values(source)
+      normalize_feature_values(source, category: category)
     end
       .map { |item| item.to_s.strip }
       .reject(&:blank?)

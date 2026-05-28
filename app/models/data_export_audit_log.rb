@@ -6,7 +6,8 @@ class DataExportAuditLog < ApplicationRecord
 
   RESOURCE_NAMES = {
     "habitations" => "Imóveis",
-    "proprietors" => "Proprietários"
+    "proprietors" => "Proprietários",
+    "captacoes" => "Captações"
   }.freeze
 
   belongs_to :admin_user, optional: true

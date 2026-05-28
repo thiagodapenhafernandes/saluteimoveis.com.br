@@ -40,9 +40,11 @@
         <i class="bi bi-person-vcard me-2"></i><span class="d-none d-sm-inline">Proprietários</span>
       <% end %>
     <% end %>
-    <button type="button" class="btn btn-white border d-flex align-items-center justify-content-center bg-white" data-bs-toggle="modal" data-bs-target="#habitationsExportModal">
-      <i class="bi bi-download me-2"></i><span>Exportar</span>
-    </button>
+    <% if current_admin_user&.admin? || current_admin_user&.profile&.name == "Administrativo" %>
+      <button type="button" class="btn btn-white border d-flex align-items-center justify-content-center bg-white" data-bs-toggle="modal" data-bs-target="#habitationsExportModal">
+        <i class="bi bi-download me-2"></i><span>Exportar</span>
+      </button>
+    <% end %>
     <%= link_to new_admin_habitation_path, class: "btn btn-primary d-flex align-items-center justify-content-center fw-bold shadow-sm" do %>
       <i class="bi bi-plus-lg me-2"></i><span>Novo Imóvel</span>
     <% end %>
@@ -549,7 +551,7 @@
                                  }
                                } %>
                 </div>
-                <% if current_admin_user&.admin? %>
+                <% if current_admin_user&.admin? || current_admin_user&.profile&.name == "Administrativo" %>
                   <div class="col-md-3">
                     <label class="form-label small fw-bold text-muted text-uppercase">Corretor</label>
                     <%= f.select :corretor_id,
@@ -680,7 +682,7 @@
             <div class="px-3 py-2 bg-light fw-semibold">Selecione os campos para exportação</div>
             <div style="max-height: 340px; overflow-y: auto;">
               <% @export_fields.each do |field_key, field_label| %>
-                <% next if !current_admin_user&.admin? && field_key == "proprietario" %>
+                <% next if !(current_admin_user&.admin? || current_admin_user&.profile&.name == "Administrativo") && field_key == "proprietario" %>
                 <label class="d-flex align-items-center gap-2 px-3 py-2 border-bottom small">
                   <%= check_box_tag "fields[]", field_key, @default_export_fields.include?(field_key), class: "form-check-input mt-0" %>
                   <span><%= field_label %></span>
@@ -844,7 +846,7 @@
   active_filter_chips << "Garagens permuta ≥ #{params[:permuta_min_garagens]}" if params[:permuta_min_garagens].present?
   active_filter_chips << "Empreendimento: #{params[:empreendimento_codigo]}" if params[:empreendimento_codigo].present?
   active_filter_chips << "Corretor: #{params[:corretor_id]}" if params[:corretor_id].present?
-  active_filter_chips << "Proprietário: #{params[:proprietor_id]}" if current_admin_user&.admin? && params[:proprietor_id].present?
+  active_filter_chips << "Proprietário: #{params[:proprietor_id]}" if (current_admin_user&.admin? || current_admin_user&.profile&.name == "Administrativo") && params[:proprietor_id].present?
   active_filter_chips << "Região foco?: #{params[:regiao_foco]}" if params[:regiao_foco].present?
   active_filter_chips << "Meus imóveis" if @ownership_scope == "mine"
   active_filter_chips << "Pendente de revisão" if @intake_review == "pending"
