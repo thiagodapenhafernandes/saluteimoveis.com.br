@@ -39,6 +39,35 @@ RSpec.describe "Admin::AccessAuditLogs", type: :request do
     expect(response.body).to include("Auditoria de Acessos")
     expect(response.body).to include("Senha inválida")
     expect(response.body).to include("IPs únicos")
+    expect(response.body).to include("Limpar")
+  end
+
+  it "filtra auditoria por perfil, usuário, dispositivo e rota" do
+    broker_profile = Profile.create!(name: "Corretor filtro #{SecureRandom.hex(4)}", permissions: Profile.default_permissions_for("Corretor"))
+    manager_profile = Profile.create!(name: "Gerente filtro #{SecureRandom.hex(4)}", permissions: Profile.default_permissions_for("Gerente"))
+    broker = create(:admin_user, profile: broker_profile, name: "Broker Auditado")
+    manager = create(:admin_user, profile: manager_profile, name: "Manager Auditado")
+    broker_log = create(:access_audit_log, admin_user: broker, event_type: "access_denied", result: "denied", device_type: "Celular", browser: "Chrome", controller_name: "admin/leads", action_name: "index", path: "/admin/leads?status=novo")
+    create(:access_audit_log, admin_user: manager, event_type: "login", result: "allowed", reason: "Motivo que não deve aparecer", device_type: "Computador", browser: "Safari", controller_name: "admin/habitations", action_name: "index", path: "/admin/habitations")
+
+    sign_in admin
+
+    get admin_access_audit_logs_path, params: {
+      profile_id: broker_profile.id,
+      admin_user_id: broker.id,
+      device_type: "Celular",
+      browser: "Chrome",
+      access_controller: "admin/leads",
+      access_action: "index",
+      path: "/admin/leads"
+    }
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(broker_log.reason)
+    expect(response.body).to include("Broker Auditado")
+    expect(response.body).not_to include("Motivo que não deve aparecer")
+    expect(response.body).to include("/admin/leads")
+    expect(response.body).to include("status=novo")
   end
 
   it "records allowed administrative page access" do

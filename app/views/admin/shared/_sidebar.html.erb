@@ -85,7 +85,7 @@
       </li>
     <% end %>
 
-    <!-- Campo: check-ins, pedidos manuais, auditoria, settings -->
+    <!-- Campo: check-ins, pedidos manuais, settings -->
     <% if can_access.call(:view, :field_checkins) %>
       <li class="sidebar-menu-item">
         <%= link_to admin_field_check_ins_path, class: (controller_path == 'admin/field/check_ins') ? 'active' : '' do %>
@@ -102,25 +102,9 @@
       </li>
     <% end %>
 
-    <% if can_access.call(:view, :field_audit) %>
-      <li class="sidebar-menu-item">
-        <%= link_to admin_field_audit_logs_path, class: (controller_path == 'admin/field/audit_logs') ? 'active' : '' do %>
-          <i class="bi bi-shield-lock-fill"></i><span>Auditoria de Campo</span>
-        <% end %>
-      </li>
-    <% end %>
-
-    <% if can_access.call(:manage, :field_settings) %>
-      <li class="sidebar-menu-item">
-        <%= link_to edit_admin_field_settings_path, class: (controller_path == 'admin/field_settings') ? 'active' : '' do %>
-          <i class="bi bi-toggles2"></i><span>Ativar/desativar Campo</span>
-        <% end %>
-      </li>
-    <% end %>
-
     <!-- Marketing -->
     <% if can_access.call(:manage, :marketing) %>
-      <% marketing_controllers = ['landing_pages', 'marketing_campaigns', 'marketing_opportunities', 'marketing_properties', 'marketing_alerts', 'marketing_tools', 'seo_dashboard', 'seo_settings', 'banners', 'home_sections', 'contact_settings', 'layout_settings', 'footer_settings', 'home_settings'] %>
+      <% marketing_controllers = ['landing_pages', 'marketing_campaigns', 'marketing_opportunities', 'marketing_properties', 'marketing_alerts', 'marketing_tools', 'seo_dashboard', 'seo_settings', 'seo_redirects', 'banners', 'home_sections', 'contact_settings', 'layout_settings', 'footer_settings', 'home_settings'] %>
       <li class="sidebar-menu-item">
         <a href="#submenu-marketing" data-bs-toggle="collapse" class="d-flex justify-content-between align-items-center <%= marketing_controllers.include?(controller_name) ? '' : 'collapsed' %>">
           <span><i class="bi bi-megaphone"></i><span class="ms-2">Marketing e Conteúdo</span></span>
@@ -145,6 +129,7 @@
             <li class="sidebar-menu-item"><%= link_to edit_admin_layout_setting_path, class: controller_name == 'layout_settings' ? 'active' : '' do %><i class="bi bi-palette"></i><span>Aparência</span><% end %></li>
             <li class="sidebar-menu-item"><%= link_to edit_admin_footer_setting_path, class: controller_name == 'footer_settings' ? 'active' : '' do %><i class="bi bi-layout-sidebar"></i><span>Rodapé</span><% end %></li>
             <li class="sidebar-menu-item"><%= link_to edit_admin_home_setting_path, class: controller_name == 'home_settings' ? 'active' : '' do %><i class="bi bi-house-door"></i><span>Home</span><% end %></li>
+            <li class="sidebar-menu-item"><%= link_to admin_seo_redirects_path, class: controller_name == 'seo_redirects' ? 'active' : '' do %><i class="bi bi-signpost-split"></i><span>Redirecionamentos SEO</span><% end %></li>
           </ul>
         </div>
       </li>
@@ -183,13 +168,19 @@
     <% end %>
 
     <!-- Administração -->
-    <% if can_access.call(:view, :corretores) || can_access.call(:manage, :perfis) || can_access.call(:view, :metas_captacao) || can_access.call(:view, :catalogos) %>
+    <%
+      admin_controllers = ['admin_users', 'profiles', 'captacao_goals', 'attribute_options', 'access_security', 'field_settings', 'access_audit_logs', 'data_export_audit_logs']
+      admin_context = admin_controllers.include?(controller_name) || controller_path == 'admin/field/audit_logs'
+      audit_menu_visible = can_access.call(:view, :field_audit) || can_access.call(:view, :access_audit) || can_access.call(:view, :data_export_audit)
+      security_menu_visible = can_access.call(:manage, :access_security) || can_access.call(:manage, :field_settings)
+    %>
+    <% if can_access.call(:view, :corretores) || can_access.call(:manage, :perfis) || can_access.call(:view, :metas_captacao) || can_access.call(:view, :catalogos) || audit_menu_visible || security_menu_visible %>
       <li class="sidebar-menu-item">
-        <a href="#submenu-admin" data-bs-toggle="collapse" class="d-flex justify-content-between align-items-center <%= ['admin_users', 'profiles', 'captacao_goals', 'attribute_options'].include?(controller_name) ? '' : 'collapsed' %>">
+        <a href="#submenu-admin" data-bs-toggle="collapse" class="d-flex justify-content-between align-items-center <%= admin_context ? '' : 'collapsed' %>">
           <span><i class="bi bi-shield-lock-fill"></i><span class="ms-2">Administração</span></span>
           <i class="bi bi-chevron-down small"></i>
         </a>
-        <div class="collapse <%= ['admin_users', 'profiles', 'captacao_goals', 'attribute_options'].include?(controller_name) ? 'show' : '' %>" id="submenu-admin">
+        <div class="collapse <%= admin_context ? 'show' : '' %>" id="submenu-admin">
           <ul class="sidebar-menu ps-3 mt-1 bg-light rounded">
             <% if can_access.call(:view, :corretores) %>
               <li class="sidebar-menu-item"><%= link_to admin_admin_users_path, class: controller_name == 'admin_users' ? 'active' : '' do %><i class="bi bi-people"></i><span>Corretores</span><% end %></li>
@@ -202,6 +193,27 @@
             <% end %>
             <% if can_access.call(:view, :catalogos) %>
               <li class="sidebar-menu-item"><%= link_to admin_attribute_options_path, class: controller_name == 'attribute_options' ? 'active' : '' do %><i class="bi bi-tags"></i><span>Catálogos Dinâmicos</span><% end %></li>
+            <% end %>
+            <% if security_menu_visible %>
+              <li class="px-3 pt-2 pb-1 small text-uppercase text-muted fw-bold">Segurança</li>
+            <% end %>
+            <% if can_access.call(:manage, :access_security) %>
+              <li class="sidebar-menu-item"><%= link_to admin_access_security_path, class: controller_name == 'access_security' ? 'active' : '' do %><i class="bi bi-fingerprint"></i><span>Segurança de Acesso</span><% end %></li>
+            <% end %>
+            <% if can_access.call(:manage, :field_settings) %>
+              <li class="sidebar-menu-item"><%= link_to edit_admin_field_settings_path, class: controller_name == 'field_settings' ? 'active' : '' do %><i class="bi bi-toggles2"></i><span>Configurações de Campo</span><% end %></li>
+            <% end %>
+            <% if audit_menu_visible %>
+              <li class="px-3 pt-2 pb-1 small text-uppercase text-muted fw-bold">Auditorias</li>
+            <% end %>
+            <% if can_access.call(:view, :field_audit) %>
+              <li class="sidebar-menu-item"><%= link_to admin_field_audit_logs_path, class: controller_path == 'admin/field/audit_logs' ? 'active' : '' do %><i class="bi bi-shield-lock-fill"></i><span>Auditoria de Campo</span><% end %></li>
+            <% end %>
+            <% if can_access.call(:view, :access_audit) %>
+              <li class="sidebar-menu-item"><%= link_to admin_access_audit_logs_path, class: controller_name == 'access_audit_logs' ? 'active' : '' do %><i class="bi bi-person-lock"></i><span>Auditoria de Acessos</span><% end %></li>
+            <% end %>
+            <% if can_access.call(:view, :data_export_audit) %>
+              <li class="sidebar-menu-item"><%= link_to admin_data_export_audit_logs_path, class: controller_name == 'data_export_audit_logs' ? 'active' : '' do %><i class="bi bi-file-earmark-arrow-down"></i><span>Auditoria de Exportações</span><% end %></li>
             <% end %>
           </ul>
         </div>

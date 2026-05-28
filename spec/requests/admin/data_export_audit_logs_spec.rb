@@ -41,5 +41,28 @@ RSpec.describe "Admin::DataExportAuditLogs", type: :request do
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("Auditoria de Exportações")
     expect(response.body).to include("Proprietários")
+    expect(response.body).to include("Limpar")
+  end
+
+  it "filtra exportações por perfil, usuário, formato e arquivo" do
+    broker_profile = Profile.create!(name: "Perfil export #{SecureRandom.hex(4)}", permissions: Profile.default_permissions_for("Corretor"))
+    other_profile = Profile.create!(name: "Outro export #{SecureRandom.hex(4)}", permissions: Profile.default_permissions_for("Gerente"))
+    broker = create(:admin_user, profile: broker_profile, name: "Exportador Certo")
+    other = create(:admin_user, profile: other_profile, name: "Exportador Errado")
+
+    create(:data_export_audit_log, admin_user: broker, format: "csv_semicolon", filename: "captações-maio.csv", resource_name: "captacoes")
+    create(:data_export_audit_log, admin_user: other, format: "pdf", filename: "imoveis.pdf", resource_name: "habitations")
+
+    get admin_data_export_audit_logs_path, params: {
+      profile_id: broker_profile.id,
+      admin_user_id: broker.id,
+      data_format: "csv_semicolon",
+      filename: "captações"
+    }
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Exportador Certo")
+    expect(response.body).to include("captações-maio.csv")
+    expect(response.body).not_to include("imoveis.pdf")
   end
 end

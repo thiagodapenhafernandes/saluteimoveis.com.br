@@ -125,10 +125,42 @@
       <div class="col-6 col-md-3">
         <label class="form-label small text-muted mb-1">Corretor</label>
         <%= select_tag :admin_user_id,
-                       options_from_collection_for_select(@available_users, :id, :name, params[:admin_user_id]),
+                       options_from_collection_for_select(@available_users, :id, ->(user) { "#{user.name} · #{user.email}" }, params[:admin_user_id]),
                        class: "form-select form-select-sm",
                        include_blank: "Todos",
+                       data: { controller: "tom-select", tom_select_options_value: { placeholder: "Buscar corretor..." } },
                        onchange: "this.form.submit()" %>
+      </div>
+      <div class="col-6 col-md-3">
+        <label class="form-label small text-muted mb-1">Perfil</label>
+        <%= select_tag :profile_id,
+                       options_from_collection_for_select(@available_profiles, :id, :name, params[:profile_id]),
+                       class: "form-select form-select-sm",
+                       include_blank: "Todos",
+                       data: { controller: "tom-select", tom_select_options_value: { placeholder: "Buscar perfil..." } },
+                       onchange: "this.form.submit()" %>
+      </div>
+      <div class="col-6 col-md-3">
+        <label class="form-label small text-muted mb-1">Executado por</label>
+        <%= select_tag :actor_admin_user_id,
+                       options_from_collection_for_select(@available_actors, :id, ->(user) { "#{user.name} · #{user.email}" }, params[:actor_admin_user_id]),
+                       class: "form-select form-select-sm",
+                       include_blank: "Todos",
+                       data: { controller: "tom-select", tom_select_options_value: { placeholder: "Buscar usuário..." } },
+                       onchange: "this.form.submit()" %>
+      </div>
+      <div class="col-6 col-md-3">
+        <label class="form-label small text-muted mb-1">Loja</label>
+        <%= select_tag :store_id,
+                       options_from_collection_for_select(@available_stores, :id, :name, params[:store_id]),
+                       class: "form-select form-select-sm",
+                       include_blank: "Todas",
+                       data: { controller: "tom-select", tom_select_options_value: { placeholder: "Buscar loja..." } },
+                       onchange: "this.form.submit()" %>
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label small text-muted mb-1">IP</label>
+        <%= text_field_tag :ip, params[:ip], class: "form-control form-control-sm", placeholder: "000.000.000.000" %>
       </div>
       <div class="col-6 col-md-2">
         <label class="form-label small text-muted mb-1">De</label>
@@ -140,9 +172,7 @@
       </div>
       <div class="col-12 col-md-2 d-flex gap-2">
         <%= submit_tag "Aplicar", class: "btn btn-primary btn-sm flex-fill" %>
-        <% if params[:action_filter].present? || params[:admin_user_id].present? || params[:start_date].present? || params[:end_date].present? %>
-          <%= link_to "Limpar", admin_field_audit_logs_path, class: "btn btn-outline-secondary btn-sm" %>
-        <% end %>
+        <%= link_to "Limpar", admin_field_audit_logs_path, class: "btn btn-outline-secondary btn-sm" %>
       </div>
     <% end %>
   </div>
@@ -206,7 +236,7 @@
       <div class="text-center text-muted py-5">
         <i class="bi bi-inbox" style="font-size: 2.5rem;"></i>
         <p class="mt-2 mb-0">Nenhum evento encontrado com esses filtros.</p>
-        <% if params[:action_filter].present? || params[:admin_user_id].present? || params[:start_date].present? || params[:end_date].present? %>
+        <% if params[:action_filter].present? || params[:admin_user_id].present? || params[:profile_id].present? || params[:actor_admin_user_id].present? || params[:store_id].present? || params[:ip].present? || params[:start_date].present? || params[:end_date].present? %>
           <%= link_to "Limpar filtros", admin_field_audit_logs_path, class: "btn btn-sm btn-outline-primary mt-3" %>
         <% end %>
       </div>

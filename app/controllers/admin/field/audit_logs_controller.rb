@@ -11,13 +11,12 @@ module Admin
 
         scope = scope.where(action: params[:action_filter]) if params[:action_filter].present?
         scope = scope.where(admin_user_id: params[:admin_user_id]) if params[:admin_user_id].present?
-
-        if params[:start_date].present?
-          scope = scope.where("created_at >= ?", parse_date(params[:start_date])&.beginning_of_day)
-        end
-        if params[:end_date].present?
-          scope = scope.where("created_at <= ?", parse_date(params[:end_date])&.end_of_day)
-        end
+        scope = scope.joins(:admin_user).where(admin_users: { profile_id: params[:profile_id] }) if params[:profile_id].present?
+        scope = scope.where(actor_admin_user_id: params[:actor_admin_user_id]) if params[:actor_admin_user_id].present?
+        scope = scope.joins(:check_in).where(check_ins: { store_id: params[:store_id] }) if params[:store_id].present?
+        scope = scope.where(ip: params[:ip]) if params[:ip].present?
+        scope = scope.where("created_at >= ?", parse_date(params[:start_date]).beginning_of_day) if parse_date(params[:start_date])
+        scope = scope.where("created_at <= ?", parse_date(params[:end_date]).end_of_day) if parse_date(params[:end_date])
 
         @logs = scope.paginate(page: params[:page], per_page: 40)
 
@@ -32,7 +31,10 @@ module Admin
 
         # Para os filtros
         @available_actions = CheckinAuditLog::ACTIONS
-        @available_users   = AdminUser.where(id: CheckinAuditLog.distinct.pluck(:admin_user_id).compact).order(:name)
+        @available_users   = AdminUser.order(:name)
+        @available_actors  = AdminUser.where(id: CheckinAuditLog.distinct.pluck(:actor_admin_user_id).compact).order(:name)
+        @available_profiles = Profile.order(:name)
+        @available_stores = Store.order(:name)
       end
 
       def show
@@ -42,6 +44,8 @@ module Admin
       private
 
       def parse_date(str)
+        return if str.blank?
+
         Date.parse(str.to_s)
       rescue ArgumentError, TypeError
         nil
