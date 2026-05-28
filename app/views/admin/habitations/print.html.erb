@@ -283,32 +283,36 @@
         </table>
 
       <% else %>
-        <table>
-          <thead>
-            <tr>
-              <th>Referência</th>
-              <th>Imóvel</th>
-              <th>Status</th>
-              <th>Categoria</th>
-              <th>Cidade/Bairro</th>
-              <th class="right">Venda</th>
-              <th class="right">Locação</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% @habitations.each do |habitation| %>
+        <% pages = @report_pages_data.presence || [@habitations] %>
+        <% pages.each_with_index do |records, page_index| %>
+          <table>
+            <thead>
               <tr>
-                <td><%= habitation.codigo %></td>
-                <td><%= habitation.display_title %></td>
-                <td><%= habitation.status %></td>
-                <td><%= habitation.categoria %></td>
-                <td><%= [habitation.cidade, habitation.bairro].compact.join(" - ") %></td>
-                <td class="right"><%= habitation.valor_venda_formatted %></td>
-                <td class="right"><%= habitation.valor_locacao_formatted %></td>
+                <th>Referência</th>
+                <th>Imóvel</th>
+                <th>Status</th>
+                <th>Categoria</th>
+                <th>Cidade/Bairro</th>
+                <th class="right">Venda</th>
+                <th class="right">Locação</th>
               </tr>
-            <% end %>
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              <% records.each do |habitation| %>
+                <tr>
+                  <td><%= habitation.codigo %></td>
+                  <td><%= habitation.display_title %></td>
+                  <td><%= habitation.status %></td>
+                  <td><%= habitation.categoria %></td>
+                  <td><%= [habitation.cidade, habitation.bairro].compact.join(" - ") %></td>
+                  <td class="right"><%= habitation.valor_venda_formatted %></td>
+                  <td class="right"><%= habitation.valor_locacao_formatted %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+          <% if page_index < pages.size - 1 %><div class="page-break"></div><% end %>
+        <% end %>
       <% end %>
 
       <div class="footer-url">https://saluteimoveis.com</div>

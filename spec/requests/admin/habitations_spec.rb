@@ -32,6 +32,25 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).not_to include(draft.titulo_anuncio)
   end
 
+  it "abre os relatórios de impressão do menu principal" do
+    create(:habitation, codigo: "PRINT-#{SecureRandom.hex(6)}", categoria: "Apartamento", titulo_anuncio: "Imóvel residencial para impressão")
+    create(:habitation, codigo: "PRINT-#{SecureRandom.hex(6)}", categoria: "Sala Comercial", titulo_anuncio: "Imóvel comercial para impressão")
+    create(:habitation, codigo: "PRINT-#{SecureRandom.hex(6)}", categoria: "Terreno", titulo_anuncio: "Terreno para impressão")
+
+    %w[
+      photos_sheet
+      client_sheet_commercial
+      client_sheet_residential
+      client_sheet_land
+      vitrine_sheet
+    ].each do |report_type|
+      get print_admin_habitations_path(report_type: report_type, full_print: "1")
+
+      expect(response).to have_http_status(:ok), "esperava abrir o relatório #{report_type}"
+      expect(response.body).to include(Admin::HabitationsController::REPORT_TYPES.fetch(report_type).upcase)
+    end
+  end
+
   it "salva o imóvel completo e libera a captação para o corretor publicar" do
     intake = create(:habitation, :broker_intake, admin_user: admin, codigo: "REL-#{SecureRandom.hex(6)}", intake_status: "submitted_for_admin_review")
     intake.create_address!(
