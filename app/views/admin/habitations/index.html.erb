@@ -971,6 +971,11 @@
                        <h5 class="card-title fw-bold text-dark mb-1" style="font-family: 'Outfit', sans-serif;"><%= imovel.bairro %> <span class="text-muted fw-light mx-1">•</span> <%= imovel.nome_empreendimento.presence || imovel.titulo_anuncio %></h5>
                        <div class="small font-monospace text-muted mt-1">
                           REF: <span class="fw-bold text-dark"><%= imovel.codigo %></span>
+                          <% if imovel.codigo.present? && imovel.imovel_dwv.to_s != "Sim" %>
+                            <span class="badge bg-light text-secondary border ms-2 fw-semibold" title="Código de referência do imóvel na Vista" style="font-size: 0.65rem;">
+                              Vista: <%= imovel.codigo %>
+                            </span>
+                          <% end %>
                           <span class="badge bg-primary-subtle text-primary border-0 ms-2 text-uppercase" style="font-size: 0.65rem;"><%= imovel.status || 'VENDA' %></span>
                           <span class="text-muted ms-1">• <%= imovel.categoria %></span>
                        </div>
