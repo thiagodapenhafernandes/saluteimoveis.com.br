@@ -45,24 +45,24 @@
 
 <ul class="nav nav-tabs mb-4" id="accessSecurityTabs" role="tablist">
   <li class="nav-item" role="presentation">
-    <button class="nav-link active" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings-pane" type="button" role="tab">
+    <button class="nav-link <%= @active_tab == "settings" ? "active" : "" %>" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings-pane" type="button" role="tab">
       Configurações
     </button>
   </li>
   <li class="nav-item" role="presentation">
-    <button class="nav-link" id="rules-tab" data-bs-toggle="tab" data-bs-target="#rules-pane" type="button" role="tab">
+    <button class="nav-link <%= @active_tab == "rules" ? "active" : "" %>" id="rules-tab" data-bs-toggle="tab" data-bs-target="#rules-pane" type="button" role="tab">
       Regras de IP
     </button>
   </li>
   <li class="nav-item" role="presentation">
-    <button class="nav-link" id="devices-tab" data-bs-toggle="tab" data-bs-target="#devices-pane" type="button" role="tab">
+    <button class="nav-link <%= @active_tab == "devices" ? "active" : "" %>" id="devices-tab" data-bs-toggle="tab" data-bs-target="#devices-pane" type="button" role="tab">
       Aparelhos
     </button>
   </li>
 </ul>
 
 <div class="tab-content">
-  <div class="tab-pane fade show active" id="settings-pane" role="tabpanel" aria-labelledby="settings-tab">
+  <div class="tab-pane fade <%= @active_tab == "settings" ? "show active" : "" %>" id="settings-pane" role="tabpanel" aria-labelledby="settings-tab">
     <div class="card border-0 shadow-sm mb-4">
       <div class="card-header bg-white py-3">
         <h2 class="h5 mb-0 fw-bold">Regras gerais para corretores</h2>
@@ -87,7 +87,7 @@
     </div>
   </div>
 
-  <div class="tab-pane fade" id="rules-pane" role="tabpanel" aria-labelledby="rules-tab">
+  <div class="tab-pane fade <%= @active_tab == "rules" ? "show active" : "" %>" id="rules-pane" role="tabpanel" aria-labelledby="rules-tab">
     <div class="card border-0 shadow-sm mb-4">
       <div class="card-header bg-white py-3">
         <h2 class="h5 mb-0 fw-bold">Nova regra de IP</h2>
@@ -116,11 +116,11 @@
           </div>
           <div class="col-md-6">
             <%= f.label :profile_id, "Perfil", class: "form-label fw-semibold" %>
-            <%= f.collection_select :profile_id, @profiles, :id, :name, { prompt: "Somente quando aplicar para Perfil" }, { class: "form-select" } %>
+            <%= f.collection_select :profile_id, @profiles, :id, :name, { prompt: "Somente quando aplicar para Perfil" }, { class: "form-select", data: { controller: "tom-select", tom_select_options_value: { placeholder: "Buscar perfil..." } } } %>
           </div>
           <div class="col-md-6">
             <%= f.label :admin_user_id, "Usuário", class: "form-label fw-semibold" %>
-            <%= f.collection_select :admin_user_id, @admin_users, :id, :name, { prompt: "Somente quando aplicar para Usuário" }, { class: "form-select" } %>
+            <%= f.select :admin_user_id, @admin_users.map { |user| ["#{user.name} · #{user.email}", user.id] }, { prompt: "Somente quando aplicar para Usuário" }, { class: "form-select", data: { controller: "tom-select", tom_select_options_value: { placeholder: "Buscar usuário..." } } } %>
           </div>
           <div class="col-12">
             <%= f.submit "Adicionar regra", class: "btn btn-primary" %>
@@ -132,6 +132,40 @@
     <div class="card border-0 shadow-sm">
       <div class="card-header bg-white py-3">
         <h2 class="h5 mb-0 fw-bold">Regras cadastradas</h2>
+      </div>
+      <div class="card-body border-bottom">
+        <%= form_with url: admin_access_security_path, method: :get, local: true, class: "row g-2 align-items-end" do %>
+          <div class="col-md-2">
+            <%= label_tag :rule_type, "Tipo", class: "form-label small fw-bold text-muted text-uppercase" %>
+            <%= select_tag :rule_type, options_for_select([["Todos", ""], *AccessControlRule::RULE_TYPES.map { |key, label| [label, key] }], params[:rule_type]), class: "form-select form-select-sm" %>
+          </div>
+          <div class="col-md-2">
+            <%= label_tag :scope_type, "Aplicar para", class: "form-label small fw-bold text-muted text-uppercase" %>
+            <%= select_tag :scope_type, options_for_select([["Todos", ""], *AccessControlRule::SCOPE_TYPES.map { |key, label| [label, key] }], params[:scope_type]), class: "form-select form-select-sm" %>
+          </div>
+          <div class="col-md-2">
+            <%= label_tag :rule_enabled, "Status", class: "form-label small fw-bold text-muted text-uppercase" %>
+            <%= select_tag :rule_enabled, options_for_select([["Todos", ""], ["Ativa", "true"], ["Inativa", "false"]], params[:rule_enabled]), class: "form-select form-select-sm" %>
+          </div>
+          <div class="col-md-2">
+            <%= label_tag :rule_profile_id, "Perfil", class: "form-label small fw-bold text-muted text-uppercase" %>
+            <%= select_tag :rule_profile_id, options_from_collection_for_select(@profiles, :id, :name, params[:rule_profile_id]), include_blank: "Todos", class: "form-select form-select-sm", data: { controller: "tom-select", tom_select_options_value: { placeholder: "Buscar perfil..." } } %>
+          </div>
+          <div class="col-md-2">
+            <%= label_tag :rule_admin_user_id, "Usuário", class: "form-label small fw-bold text-muted text-uppercase" %>
+            <%= select_tag :rule_admin_user_id, options_from_collection_for_select(@admin_users, :id, ->(user) { "#{user.name} · #{user.email}" }, params[:rule_admin_user_id]), include_blank: "Todos", class: "form-select form-select-sm", data: { controller: "tom-select", tom_select_options_value: { placeholder: "Buscar usuário..." } } %>
+          </div>
+          <div class="col-md-2">
+            <%= label_tag :rule_ip, "IP contém", class: "form-label small fw-bold text-muted text-uppercase" %>
+            <%= text_field_tag :rule_ip, params[:rule_ip], class: "form-control form-control-sm", placeholder: "127.0.0.1" %>
+          </div>
+          <div class="col-md-2 d-grid">
+            <%= submit_tag "Filtrar", class: "btn btn-primary btn-sm" %>
+          </div>
+          <div class="col-md-2 d-grid">
+            <%= link_to "Limpar", admin_access_security_path(anchor: "rules-pane"), class: "btn btn-outline-secondary btn-sm" %>
+          </div>
+        <% end %>
       </div>
       <div class="table-responsive">
         <table class="table align-middle mb-0">
@@ -178,10 +212,44 @@
     </div>
   </div>
 
-  <div class="tab-pane fade" id="devices-pane" role="tabpanel" aria-labelledby="devices-tab">
+  <div class="tab-pane fade <%= @active_tab == "devices" ? "show active" : "" %>" id="devices-pane" role="tabpanel" aria-labelledby="devices-tab">
     <div class="card border-0 shadow-sm" id="devices">
       <div class="card-header bg-white py-3">
         <h2 class="h5 mb-0 fw-bold">Aparelhos identificados</h2>
+      </div>
+      <div class="card-body border-bottom">
+        <%= form_with url: admin_access_security_path, method: :get, local: true, class: "row g-2 align-items-end" do %>
+          <div class="col-md-2">
+            <%= label_tag :device_status, "Status", class: "form-label small fw-bold text-muted text-uppercase" %>
+            <%= select_tag :device_status, options_for_select([["Todos", ""], *TrustedDevice::STATUSES.map { |key, label| [label, key] }], params[:device_status]), class: "form-select form-select-sm" %>
+          </div>
+          <div class="col-md-2">
+            <%= label_tag :device_profile_id, "Perfil", class: "form-label small fw-bold text-muted text-uppercase" %>
+            <%= select_tag :device_profile_id, options_from_collection_for_select(@profiles, :id, :name, params[:device_profile_id]), include_blank: "Todos", class: "form-select form-select-sm", data: { controller: "tom-select", tom_select_options_value: { placeholder: "Buscar perfil..." } } %>
+          </div>
+          <div class="col-md-3">
+            <%= label_tag :device_admin_user_id, "Usuário", class: "form-label small fw-bold text-muted text-uppercase" %>
+            <%= select_tag :device_admin_user_id, options_from_collection_for_select(@admin_users, :id, ->(user) { "#{user.name} · #{user.email}" }, params[:device_admin_user_id]), include_blank: "Todos", class: "form-select form-select-sm", data: { controller: "tom-select", tom_select_options_value: { placeholder: "Buscar usuário..." } } %>
+          </div>
+          <div class="col-md-2">
+            <%= label_tag :device_type, "Dispositivo", class: "form-label small fw-bold text-muted text-uppercase" %>
+            <%= select_tag :device_type, options_for_select([["Todos", ""]] + @available_device_types.map { |value| [value, value] }, params[:device_type]), class: "form-select form-select-sm", data: { controller: "tom-select", tom_select_options_value: { placeholder: "Buscar dispositivo..." } } %>
+          </div>
+          <div class="col-md-2">
+            <%= label_tag :device_browser, "Navegador", class: "form-label small fw-bold text-muted text-uppercase" %>
+            <%= select_tag :device_browser, options_for_select([["Todos", ""]] + @available_browsers.map { |value| [value, value] }, params[:device_browser]), class: "form-select form-select-sm", data: { controller: "tom-select", tom_select_options_value: { placeholder: "Buscar navegador..." } } %>
+          </div>
+          <div class="col-md-2">
+            <%= label_tag :device_ip, "IP", class: "form-label small fw-bold text-muted text-uppercase" %>
+            <%= text_field_tag :device_ip, params[:device_ip], class: "form-control form-control-sm", placeholder: "127.0.0.1" %>
+          </div>
+          <div class="col-md-2 d-grid">
+            <%= submit_tag "Filtrar", class: "btn btn-primary btn-sm" %>
+          </div>
+          <div class="col-md-2 d-grid">
+            <%= link_to "Limpar", admin_access_security_path(anchor: "devices"), class: "btn btn-outline-secondary btn-sm" %>
+          </div>
+        <% end %>
       </div>
       <div class="table-responsive">
         <table class="table align-middle mb-0">
