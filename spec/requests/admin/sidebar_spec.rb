@@ -21,11 +21,13 @@ RSpec.describe "Admin sidebar", type: :request do
     expect(response.body).to include("Auditoria de Acessos")
     expect(response.body).to include("Auditoria de Exportações")
     expect(response.body).to include("Redirecionamentos SEO")
+    expect(response.body).to include("Trackeamento")
     expect(response.body).to include(admin_access_security_path)
     expect(response.body).to include(edit_admin_field_settings_path)
     expect(response.body).to include(admin_field_audit_logs_path)
     expect(response.body).to include(admin_access_audit_logs_path)
     expect(response.body).to include(admin_data_export_audit_logs_path)
     expect(response.body).to include(admin_seo_redirects_path)
+    expect(response.body).to include(admin_tracking_integration_path)
   end
 end

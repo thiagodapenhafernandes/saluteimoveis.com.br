@@ -92,6 +92,7 @@
     
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
+    <%= render "layouts/tracking_head" %>
 
     <%# Critical Third Party Styles %>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" media="print" onload="this.media='all'">
@@ -125,6 +126,7 @@
         data-lead-capture-enabled-value="<%= WebhookSetting.active.where(lead_capture_enabled: true).exists? %>"
         data-lead-capture-phone-settings-value="<%= json_escape(WhatsappBusinessIntegration.site_phone_settings.to_json) %>"
         data-lead-capture-share-token-value="<%= @lead_share_token %>">
+    <%= render "layouts/tracking_body" %>
     <%= render 'layouts/header' %>
     
     <main role="main">
