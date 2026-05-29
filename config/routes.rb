@@ -49,6 +49,7 @@ Rails.application.routes.draw do
       post :generate_batch
     end
     resource :google_integration, only: [:show, :update]
+    resource :tracking_integration, only: [:show, :update]
     get :seo_dashboard, to: "seo_dashboard#index"
     get :marketing_opportunities, to: "marketing_opportunities#index"
     get :marketing_properties, to: "marketing_properties#index"
