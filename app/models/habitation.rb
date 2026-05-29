@@ -52,11 +52,27 @@ class Habitation < ApplicationRecord
   }.freeze
 
   PUBLIC_STATUSES = ['Venda', 'Aluguel', 'Locação', 'Locacao'].freeze
+  NUMERIC_CODIGO_SQL = "codigo ~ '^[0-9]+$'".freeze
+  VISTA_REFERENCE_CODIGO_SQL = "#{NUMERIC_CODIGO_SQL} AND COALESCE(imovel_dwv, '') <> 'Sim'".freeze
 
   def self.normalize_status(value)
     return nil if value.blank?
     key = value.to_s.strip.downcase
     STATUS_NORMALIZATION_MAP[key] || value.to_s.strip
+  end
+
+  def self.highest_numeric_codigo
+    where(NUMERIC_CODIGO_SQL).maximum("codigo::bigint").to_i
+  end
+
+  def self.highest_vista_reference_codigo
+    where(VISTA_REFERENCE_CODIGO_SQL).maximum("codigo::bigint").to_i
+  end
+
+  def self.next_automatic_codigo
+    next_code = [highest_numeric_codigo, highest_vista_reference_codigo].max + 1
+    next_code += 1 while exists?(codigo: next_code.to_s)
+    next_code.to_s
   end
 
   SITUATIONS = [
@@ -1080,12 +1096,7 @@ class Habitation < ApplicationRecord
   def assign_codigo_automaticamente
     return if codigo.present?
 
-    # Gera sequência numérica para cadastro manual sem colidir com códigos DWV (prefixados).
-    last_numeric = Habitation.where("codigo ~ '^[0-9]+$'").maximum("codigo::bigint").to_i
-    next_code = last_numeric + 1
-    next_code += 1 while Habitation.exists?(codigo: next_code.to_s)
-
-    self.codigo = next_code.to_s
+    self.codigo = self.class.next_automatic_codigo
   end
 
   def slug_candidates
