@@ -54,7 +54,7 @@ class LoftSyncJob < ApplicationJob
       replace_photos: true,
       replace_documents: true,
       download_files: false,
-      workers: ENV.fetch("LOFT_SYNC_WORKERS", "4").to_i,
+      workers: ENV.fetch("LOFT_SYNC_WORKERS", "1").to_i,
       progress_callback: lambda do |progress|
         status_service.update_progress!(
           progress: progress[:percent].to_i.clamp(5, 99),
