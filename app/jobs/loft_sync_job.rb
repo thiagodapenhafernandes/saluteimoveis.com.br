@@ -43,48 +43,46 @@ class LoftSyncJob < ApplicationJob
     codes = empreendimentos + unidades
 
     dwv_codes = Habitation.where(codigo: codes, imovel_dwv: "Sim").pluck(:codigo).map(&:to_s).to_set
+    codes_to_sync = codes.reject { |code| dwv_codes.include?(code.to_s) }
+    existing_codes = Habitation.where(codigo: codes_to_sync).pluck(:codigo).map(&:to_s).to_set
 
-    created = 0
-    updated = 0
-    errors_count = 0
-    skipped_dwv = 0
-    processed = 0
-    total = codes.size
-
-    codes.each do |code|
-      if dwv_codes.include?(code.to_s)
-        skipped_dwv += 1
-        processed += 1
-        progress = total.positive? ? ((processed.to_f / total.to_f) * 100).round : 100
-        status_service.update_progress!(progress: progress, message: "Sincronizando imóveis Loft (#{processed}/#{total})...")
-        next
+    result = Vista::PropertyReconciliationService.new(
+      codigos: codes_to_sync,
+      dry_run: false,
+      host: host,
+      key: token,
+      replace_photos: true,
+      replace_documents: true,
+      download_files: false,
+      workers: ENV.fetch("LOFT_SYNC_WORKERS", "4").to_i,
+      progress_callback: lambda do |progress|
+        status_service.update_progress!(
+          progress: progress[:percent].to_i.clamp(5, 99),
+          message: "Reconciliação Vista (#{progress[:current]}/#{progress[:total]}) | atualizados=#{progress[:updated]} | ignorados=#{progress[:skipped]} | erros=#{progress[:failed]}"
+        )
       end
+    ).call
 
-      result = SyncPropertyService.new(
-        code,
-        host: host,
-        token: token,
-        force_empreendimento: parent_codes.include?(code)
-      ).perform
-      created += 1 if result[:created]
-      updated += 1 if result[:updated]
-      errors_count += 1 unless result[:success]
-      processed += 1
-      progress = total.positive? ? ((processed.to_f / total.to_f) * 100).round : 100
-      status_service.update_progress!(progress: progress, message: "Sincronizando imóveis Loft (#{processed}/#{total})...")
-    rescue => e
-      errors_count += 1
-      processed += 1
-      Rails.logger.error("[LoftSyncJob] codigo=#{code} erro=#{e.message}")
-    end
+    updated_codes = result.rows.select { |row| row[:status] == "updated" }.map { |row| row[:codigo].to_s }
+    created = updated_codes.count { |code| !existing_codes.include?(code) }
+    updated = updated_codes.size - created
+    errors_count = result.failed
+    skipped_dwv = dwv_codes.size
+    processed = result.scanned + skipped_dwv
+    hidden_missing = normalized_mode == "full" ? hide_missing_from_vista_api!(codes) : 0
 
     message = [
-      "Loft sync (#{normalized_mode}) concluído",
+      "Reconciliação Vista (#{normalized_mode}) concluída",
       "processados=#{processed}",
       "criados=#{created}",
       "atualizados=#{updated}",
       "pulados_dwv=#{skipped_dwv}",
+      "ocultados_fora_api=#{hidden_missing}",
       "erros=#{errors_count}",
+      "fotos_reaproveitadas=#{result.photos_reused}",
+      "fotos_pendentes_download=#{result.photos_pending_download}",
+      "documentos_reaproveitados=#{result.documents_reused}",
+      "documentos_pendentes_download=#{result.documents_pending_download}",
       "total_remoto=#{listing[:remote_total]}",
       ("triggered_by=#{triggered_by_id}" if triggered_by_id.present?)
     ].compact.join(" | ")
@@ -97,8 +95,14 @@ class LoftSyncJob < ApplicationJob
         created: created,
         updated: updated,
         skipped_dwv: skipped_dwv,
+        hidden_missing: hidden_missing,
         errors_count: errors_count,
-        remote_total: listing[:remote_total]
+        remote_total: listing[:remote_total],
+        photos_reused: result.photos_reused,
+        photos_pending_download: result.photos_pending_download,
+        documents_reused: result.documents_reused,
+        documents_pending_download: result.documents_pending_download,
+        report_path: result.report_path
       }
     )
   rescue => e
@@ -106,5 +110,23 @@ class LoftSyncJob < ApplicationJob
     raise e
   ensure
     lock_service&.release(lock_owner)
+  end
+
+  private
+
+  def hide_missing_from_vista_api!(api_codes)
+    now = Time.current
+    Habitation
+      .where(Habitation::VISTA_REFERENCE_CODIGO_SQL)
+      .where.not(codigo: api_codes.map(&:to_s))
+      .where("exibir_no_site_flag = TRUE OR exibir_no_site_salute_flag = TRUE OR last_sync_status <> ?", "missing_from_vista_api")
+      .update_all(
+        exibir_no_site_flag: false,
+        exibir_no_site_salute_flag: false,
+        last_sync_status: "missing_from_vista_api",
+        last_sync_message: "Ocultado porque não retornou na API Vista em #{now.strftime("%d/%m/%Y %H:%M")}",
+        last_sync_at: now,
+        updated_at: now
+      )
   end
 end

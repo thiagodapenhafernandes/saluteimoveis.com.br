@@ -80,17 +80,38 @@ class Admin::LoftIntegrationsController < Admin::BaseController
     code = params[:property_code].to_s.strip
     return redirect_to(admin_loft_integrations_path, alert: "Informe o código do imóvel.") if code.blank?
 
-    result = SyncPropertyService.new(code, host: current_host, token: current_token).perform
-    if result[:success]
+    result = Vista::PropertyReconciliationService.new(
+      codigos: [code],
+      dry_run: false,
+      host: current_host,
+      key: current_token,
+      replace_photos: true,
+      replace_documents: true,
+      download_files: false,
+      workers: 1
+    ).call
+    row = result.rows.first || {}
+
+    if row[:status] == "updated"
       Loft::SyncStatusService.new.mark_completed!(
         mode: "property",
-        message: "Imóvel #{code} sincronizado.",
-        stats: { processed: 1, created: (result[:created] ? 1 : 0), updated: (result[:updated] ? 1 : 0), errors_count: 0 }
+        message: "Imóvel #{code} reconciliado pela API Vista.",
+        stats: {
+          processed: 1,
+          updated: 1,
+          errors_count: 0,
+          photos_api: row[:photos_api],
+          photos_reused: row[:photos_reused],
+          photos_pending_download: row[:photos_pending_download],
+          documents_reused: row[:documents_reused],
+          documents_pending_download: row[:documents_pending_download]
+        }
       )
-      redirect_to admin_loft_integrations_path, notice: "Imóvel #{code} sincronizado com sucesso."
+      redirect_to admin_loft_integrations_path, notice: "Imóvel #{code} reconciliado com sucesso pela API Vista."
     else
-      Loft::SyncStatusService.new.mark_failed!(mode: "property", message: "Falha no imóvel #{code}: #{result[:error]}")
-      redirect_to admin_loft_integrations_path, alert: "Falha ao sincronizar imóvel #{code}: #{result[:error]}"
+      reason = row[:reason].presence || row[:errors].presence || "sem retorno válido da API"
+      Loft::SyncStatusService.new.mark_failed!(mode: "property", message: "Falha no imóvel #{code}: #{reason}")
+      redirect_to admin_loft_integrations_path, alert: "Falha ao reconciliar imóvel #{code}: #{reason}"
     end
   rescue => e
     Loft::SyncStatusService.new.mark_failed!(mode: "property", message: "Falha no imóvel #{code}: #{e.message}")
@@ -100,17 +121,17 @@ class Admin::LoftIntegrationsController < Admin::BaseController
   def sync_now
     ensure_enabled_and_credentials!
     LoftSyncJob.perform_later(mode: "full", batch_size: Setting.get("loft_sync_batch_size", "100").to_i, triggered_by_id: current_admin_user.id)
-    redirect_to admin_loft_integrations_path, notice: "Sincronização de imóveis Loft iniciada em segundo plano."
+    redirect_to admin_loft_integrations_path, notice: "Reconciliação completa pela API Vista iniciada em segundo plano."
   rescue => e
-    redirect_to admin_loft_integrations_path, alert: "Falha ao iniciar sync Loft: #{e.message}"
+    redirect_to admin_loft_integrations_path, alert: "Falha ao iniciar reconciliação Vista: #{e.message}"
   end
 
   def sync_batch
     ensure_enabled_and_credentials!
     LoftSyncJob.perform_later(mode: "batch", batch_size: Setting.get("loft_sync_batch_size", "100").to_i, triggered_by_id: current_admin_user.id)
-    redirect_to admin_loft_integrations_path, notice: "Sincronização em lote Loft iniciada."
+    redirect_to admin_loft_integrations_path, notice: "Reconciliação em lote pela API Vista iniciada."
   rescue => e
-    redirect_to admin_loft_integrations_path, alert: "Falha ao iniciar lote Loft: #{e.message}"
+    redirect_to admin_loft_integrations_path, alert: "Falha ao iniciar lote Vista: #{e.message}"
   end
 
   def sync_images_now

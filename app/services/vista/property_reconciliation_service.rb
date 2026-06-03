@@ -6,7 +6,7 @@ require "rest-client"
 module Vista
   class PropertyReconciliationService
     MAIN_FIELDS = %w[
-      Codigo Referencia ImoCodigo ImoPlaca ImoReferenciaExterna CodigoEmpresa CodigoCategoria CodigoAgencia
+      Codigo Referencia ImoCodigo ImoPlaca ImoReferenciaExterna CodigoEmpresa CodigoCategoria CodigoAgencia CodigoEmp CodigoEmpreendimento
       TipoEndereco Endereco Numero Complemento Bloco Bairro BairroComercial Cidade UF CEP Pais Imediacoes
       Latitude Longitude GMapsLatitude GMapsLongitude Empreendimento Categoria CategoriaImovel CategoriaMestre CategoriaGrupo
       Status FinalidadeStatus Venda Situacao Ocupacao EstadoConservacaoImovel Topografia
@@ -198,14 +198,12 @@ module Vista
     end
 
     def reconcile_codigo(codigo)
-      habitation = find_habitation_for_vista_codigo(codigo)
-      return base_row(codigo).merge(status: "skipped", reason: "habitation_not_found") unless habitation
-
       api = fetch_api(codigo)
       photos = photo_rows(api["Foto"])
       media_codes = media_codes_for(api, photos)
       return base_row(codigo).merge(status: "skipped", reason: "api_empty") unless api_has_property_data?(api, photos)
 
+      habitation = find_habitation_for_vista_codigo(codigo) || build_habitation_for_api(codigo, api)
       owner = resolve_proprietor(api)
       broker = resolve_broker(api)
       before = snapshot(habitation)
@@ -264,6 +262,15 @@ module Vista
 
       Habitation.find_by(vista_codigo: normalized_codigo) ||
         Habitation.find_by(codigo: normalized_codigo)
+    end
+
+    def build_habitation_for_api(codigo, api)
+      Habitation.new(
+        codigo: value(api["Codigo"]).presence || codigo.to_s.strip,
+        categoria: value(api["Categoria"]).presence || "Apartamento",
+        status: Habitation.normalize_status(value(api["Status"])).presence || "Venda",
+        skip_auto_audit: true
+      )
     end
 
     def fetch_api(codigo)
@@ -364,13 +371,14 @@ module Vista
         imediacoes: split_list(api["Imediacoes"]),
         latitude: decimal(api["Latitude"]) || decimal(api["GMapsLatitude"]),
         longitude: decimal(api["Longitude"]) || decimal(api["GMapsLongitude"]),
+        codigo_empreendimento: codigo_empreendimento_from_api(api, habitation),
         nome_empreendimento: value(api["Empreendimento"]),
         titulo_anuncio: value(api["TituloSite"]),
         descricao_web: value(api["DescricaoWeb"]),
         dormitorios_qtd: integer(api["Dormitorios"]),
         suites_qtd: integer(api["Suites"]),
         demi_suites_qtd: integer(api["DemiSuite"]),
-        banheiros_qtd: integer(api["TotalBanheiros"]),
+        banheiros_qtd: bathrooms_count(api),
         vagas_qtd: integer(api["Vagas"]),
         salas_qtd: integer(api["Salas"]),
         varandas_qtd: integer(api["QtdVarandas"]),
@@ -402,7 +410,7 @@ module Vista
         categoria_grupo: value(api["CategoriaGrupo"]),
         area_terreno_m2: decimal(api["AreaTerreno"]),
         area_util_m2: decimal(api["AreaConstruida"]),
-        valor_total_aluguel_cents: money_cents(api["ValorTotalAluguel"]),
+        valor_total_aluguel_cents: total_rent_cents(api),
         valor_venda_anterior_cents: money_cents(api["ValorVendaAnterior"]),
         valor_locacao_anterior_cents: money_cents(api["ValorLocacaoAnterior"]),
         valor_por_m2_cents: money_cents(api["ValorVendaM2"]),
@@ -594,13 +602,23 @@ module Vista
         ordered_attachment_ids << attachment.id
       end
 
-      if @replace_photos && ordered_attachment_ids.any?
-        stale = ActiveStorage::Attachment.where(record: habitation, name: "photos").where.not(id: ordered_attachment_ids.uniq)
+      if @replace_photos
+        stale = if ordered_attachment_ids.any?
+                  photos_attachment_scope(habitation).where.not(id: ordered_attachment_ids.uniq)
+                else
+                  photos_attachment_scope(habitation)
+                end
+
         counters[:photos_detached] += stale.count
         stale.destroy_all
+        habitation.update!(photo_ids_order: ordered_attachment_ids.uniq)
       end
 
-      habitation.update!(photo_ids_order: ordered_attachment_ids.uniq) if ordered_attachment_ids.any?
+      habitation.update!(photo_ids_order: ordered_attachment_ids.uniq) if ordered_attachment_ids.any? && !@replace_photos
+    end
+
+    def photos_attachment_scope(habitation)
+      ActiveStorage::Attachment.where(record: habitation, name: "photos")
     end
 
     def sync_documents!(habitation, codigo, media_codes, counters, failures)
@@ -624,8 +642,9 @@ module Vista
           end
         end
 
-      if @replace_documents && expected_attachment_ids.any?
-        stale = ActiveStorage::Attachment.where(record: habitation, name: "autorizacoes_venda").where.not(id: expected_attachment_ids.uniq)
+      if @replace_documents
+        stale = ActiveStorage::Attachment.where(record: habitation, name: "autorizacoes_venda")
+        stale = stale.where.not(id: expected_attachment_ids.uniq) if expected_attachment_ids.any?
         counters[:documents_detached] += stale.count
         stale.destroy_all
       end
@@ -722,21 +741,52 @@ module Vista
       return if code.blank?
 
       proprietor = Proprietor.find_by(vista_code: code)
-      return proprietor if proprietor
+      attrs = proprietor_attrs(api, code)
+      if proprietor
+        proprietor.update!(attrs.compact_blank)
+        return proprietor
+      end
 
-      Proprietor.create!(
-        vista_code: code,
-        name: value(api["Proprietario"]) || owner_data(api)&.dig("Nome") || "Proprietário #{code}",
-        email: owner_data(api)&.dig("Email"),
-        mobile_phone: owner_data(api)&.dig("Celular"),
-        business_phone: owner_data(api)&.dig("FoneComercial"),
-        residential_phone: owner_data(api)&.dig("FoneResidencial")
-      )
+      Proprietor.create!(attrs.merge(vista_code: code, name: attrs[:name].presence || "Proprietário #{code}"))
     end
 
     def owner_data(api)
       data = api["proprietarios"]
       data.is_a?(Hash) ? data.values.first : Array(data).first
+    end
+
+    def proprietor_attrs(api, code)
+      data = owner_data(api).is_a?(Hash) ? owner_data(api) : {}
+      {
+        name: value(api["Proprietario"]) || value(data["Nome"]) || "Proprietário #{code}",
+        email: value(data["EmailResidencial"]) || value(data["EmailComercial"]),
+        phone_primary: value(data["FonePrincipal"]),
+        mobile_phone: value(data["Celular"]) || value(data["CelularConjuge"]) || value(data["FonePrincipal"]),
+        business_phone: value(data["FoneComercial"]),
+        residential_phone: value(data["FoneResidencial"]),
+        cpf_cnpj: value(data["CPFCNPJ"]),
+        rg_ie: value(data["RG"]),
+        issuing_authority: value(data["RGEmissor"]),
+        birth_date: date(data["DataNascimento"]) || date(data["Nascimento"]),
+        nationality: value(data["Nacionalidade"]),
+        profession: value(data["Profissao"]),
+        marital_status: value(data["EstadoCivil"]),
+        notes: value(data["Observacoes"]) || value(data["ObservacoesProp"]),
+        registered_at: date(data["DataCadastro"]),
+        address_type: value(data["EnderecoTipo"]),
+        street: value(data["EnderecoResidencial"]) || value(data["EnderecoComercial"]),
+        number: value(data["EnderecoNumero"]),
+        complement: value(data["EnderecoComplemento"]),
+        block: value(data["Bloco"]),
+        neighborhood: value(data["BairroResidencial"]) || value(data["BairroComercial"]),
+        city: value(data["CidadeResidencial"]) || value(data["CidadeComercial"]),
+        uf: value(data["UFResidencial"]) || value(data["UFComercial"]),
+        cep: value(data["CEPResidencial"]) || value(data["CEPComercial"]),
+        spouse_name: value(data["NomeConjuge"]),
+        spouse_email: value(data["EmailConjuge"]),
+        spouse_phone: value(data["CelularConjuge"]),
+        spouse_cpf_cnpj: value(data["CPFConjuge"])
+      }
     end
 
     def resolve_broker(api)
@@ -911,6 +961,15 @@ module Vista
       return "Empreendimento" if value(api["Categoria"]).to_s.casecmp("Empreendimento").zero?
 
       "Unitário"
+    end
+
+    def codigo_empreendimento_from_api(api, habitation)
+      return if habitation_type(api) == "Empreendimento"
+
+      code = value(api["CodigoEmpreendimento"]) || value(api["CodigoEmp"])
+      return if code.blank? || code == value(api["Codigo"])
+
+      Habitation.empreendimentos.exists?(codigo: code) ? code : nil
     end
 
     def location_highlights(api)
@@ -1194,6 +1253,14 @@ module Vista
       raw_value.present? ? raw_value.to_i : nil
     end
 
+    def bathrooms_count(api)
+      integer(api["BanheiroSocialQtd"]) || integer(api["TotalBanheiros"])
+    end
+
+    def total_rent_cents(api)
+      money_cents(api["ValorLocacao"])
+    end
+
     def decimal(raw)
       raw_value = value(raw)
       return if raw_value.blank?
@@ -1206,6 +1273,15 @@ module Vista
     def money_cents(raw)
       amount = decimal(raw)
       amount ? (amount * 100).round.to_i : nil
+    end
+
+    def date(raw)
+      raw_value = value(raw)
+      return if raw_value.blank? || raw_value == "0000-00-00"
+
+      Date.parse(raw_value)
+    rescue ArgumentError
+      nil
     end
 
     def datetime(raw)
