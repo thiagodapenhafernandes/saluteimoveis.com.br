@@ -1227,11 +1227,6 @@ class Admin::HabitationsController < Admin::BaseController
 
     permitted.delete(:intake_status) unless @habitation&.broker_intake? && can_manage_intake_status?(@habitation)
 
-    # Campos presentes no formulário, mas ainda sem coluna no schema atual.
-    # São descartados para evitar UnknownAttributeError ao inicializar o model.
-    permitted.delete(:salas_qtd)
-    permitted.delete(:varandas_qtd)
-
     permitted
   end
 
@@ -1370,6 +1365,7 @@ class Admin::HabitationsController < Admin::BaseController
       :agenciador, :captador_commission_percentage, :broker_commission_percentage,
       :salute_rental_management_flag, :home_corporate_flag, :home_corporate_position,
       :key_location, :key_location_notes, :ordered_photo_ids, :intake_status,
+      :use_development_photos_flag,
       videos: [], plantas: [], fotos_empreendimento: [], photos: [],
       fichas_cadastro: [], autorizacoes_venda: [],
       meta_keywords: [],

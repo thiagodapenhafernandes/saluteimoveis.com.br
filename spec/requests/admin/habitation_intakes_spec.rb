@@ -40,6 +40,27 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(response.body).not_to include("Exportar planilha")
   end
 
+  it "exibe mini dashboard com totais das captações visíveis" do
+    create(:habitation, :broker_intake, admin_user: admin, codigo: "CAP-#{SecureRandom.hex(4)}", intake_status: "draft", intake_modalidade: "venda", categoria: "Apartamento")
+    create(:habitation, :broker_intake, admin_user: admin, codigo: "CAP-#{SecureRandom.hex(4)}", intake_status: "returned_to_broker", intake_modalidade: "locacao_anual", categoria: "Sala Comercial")
+    create(:habitation, :broker_intake, admin_user: admin, codigo: "CAP-#{SecureRandom.hex(4)}", intake_status: "submitted_for_admin_review", intake_modalidade: "ambos", categoria: "Terreno")
+    create(:habitation, :broker_intake, admin_user: admin, codigo: "CAP-#{SecureRandom.hex(4)}", intake_status: "admin_approved", intake_modalidade: "locacao_diaria", categoria: "Apartamento")
+    create(:habitation, :broker_intake, admin_user: admin, codigo: "CAP-#{SecureRandom.hex(4)}", intake_status: "published", intake_modalidade: "venda", categoria: "Apartamento", exibir_no_site_flag: true)
+
+    get admin_captacoes_path
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Total")
+    expect(response.body).to include("Rascunhos")
+    expect(response.body).to include("Em revisão")
+    expect(response.body).to include("Aprovadas")
+    expect(response.body).to include("Publicadas")
+    expect(response.body).to include("Devolvidas")
+    expect(response.body).to include("Residencial: 3")
+    expect(response.body).to include("Sala comercial: 1")
+    expect(response.body).to include("Terreno: 1")
+  end
+
   it "exporta planilha de captações para perfil administrativo" do
     administrative_profile = Profile.find_or_initialize_by(name: "Administrativo")
     administrative_profile.permissions = Profile.default_permissions_for("Administrativo")

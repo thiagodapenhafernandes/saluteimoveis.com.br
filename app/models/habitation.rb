@@ -76,7 +76,8 @@ class Habitation < ApplicationRecord
   end
 
   SITUATIONS = [
-    'Pré Lançamento', 'Lançamento', 'Construção', 'Pronto para Morar'
+    'Pré Lançamento', 'Lançamento', 'Construção', 'Pronto para Morar',
+    'Novo', 'Usado'
   ].freeze
 
   INTAKE_ORIGIN_BROKER = "broker_intake".freeze
@@ -142,7 +143,7 @@ class Habitation < ApplicationRecord
   
   # Novos Enums (Gap Analysis)
   OCUPACAO_STATUS = ["Desocupado", "Ocupado", "Inquilino", "Proprietário", "Reservado"].freeze
-  ESTADO_CONSERVACAO = ["Novo", "Seminovo", "Usado", "Reformado", "Original", "Em Obras", "Na Planta"].freeze
+  ESTADO_CONSERVACAO = ["Novo", "Ótimo", "Bom", "Regular", "Seminovo", "Usado", "Reformado", "Original", "Em Obras", "Na Planta"].freeze
   TOPOGRAFIA_OPTIONS = ["Plano", "Aclive", "Declive", "Irregular"].freeze
   FOTO_CLASSIFICACAO = ["Profissionais", "Boas", "Aceitáveis", "Amadoras", "Não tem fotos"].freeze
   KEY_LOCATION_OPTIONS = ["Imobiliária", "Corretor(a)", "Proprietário", "Zelador", "Portaria", "Inquilino", "Outro"].freeze
@@ -211,6 +212,7 @@ class Habitation < ApplicationRecord
   belongs_to :constructor, optional: true
   belongs_to :proprietor, optional: true
   belongs_to :admin_reviewed_by, class_name: "AdminUser", optional: true
+  has_many :habitation_interactions, dependent: :nullify
   
   has_many :units, 
     class_name: 'Habitation',
@@ -646,63 +648,48 @@ class Habitation < ApplicationRecord
   
   # Retorna a primeira imagem do imóvel (Hash format)
   def primary_image
-    # DWV must prefer JSON URLs; Vista/manual can prefer ActiveStorage.
-    if !dwv_property? && photos.attached?
-      path = blob_path_for(ordered_photos.first)
-      return { 'url' => path } if path.present?
-    end
-
-    images = if empreendimento?
-               fotos_empreendimento.present? ? fotos_empreendimento : pictures
-             else
-               pictures
-             end
-    
-    return nil unless images.is_a?(Array) && images.any?
-    
-    pic = images.first
-    pic.is_a?(Hash) ? pic : { 'url' => pic }
+    public_image_sources.first
   end
 
   def public_image_sources
+    own_sources = own_public_image_sources
+    return own_sources if own_sources.present?
+
+    return [] unless use_development_photos?
+
+    empreendimento&.own_public_image_sources || []
+  end
+
+  def own_public_image_sources
     attached_images = ordered_photos.map { |photo| { "attachment" => photo, "url" => blob_path_for(photo) } }
-
-    images = if empreendimento?
-               fotos_empreendimento.present? ? fotos_empreendimento : pictures
-             else
-               pictures
-             end
-
-    api_images = if images.is_a?(Array)
-                   images.map { |pic| pic.is_a?(Hash) ? pic : { "url" => pic } }
-                 else
-                 []
-               end
+    api_images = image_payload_sources
 
     return api_images.presence || attached_images if dwv_property?
 
     attached_images.presence || api_images
   end
+
+  def use_development_photos?
+    use_development_photos_flag? && !empreendimento? && codigo_empreendimento.present?
+  end
   
   # Retorna todas as imagens (Hash format)
   def all_images
-    attached_images = ordered_photos.map { |p| blob_path_for(p) }.compact.map { |path| { 'url' => path } }
-    
+    public_image_sources
+  end
+
+  def image_payload_sources
     images = if empreendimento?
                fotos_empreendimento.present? ? fotos_empreendimento : pictures
              else
                pictures
              end
-    
-    api_images = if images.is_a?(Array)
-                   images.map { |pic| pic.is_a?(Hash) ? pic : { 'url' => pic } }
-                 else
-                   []
-                 end
-    
-    return api_images.presence || attached_images if dwv_property?
 
-    attached_images + api_images
+    if images.is_a?(Array)
+      images.map { |pic| pic.is_a?(Hash) ? pic : { "url" => pic } }
+    else
+      []
+    end
   end
 
   def blob_path_for(attachment)
@@ -1175,7 +1162,7 @@ class Habitation < ApplicationRecord
   end
 
   def has_public_photo?
-    (pictures.is_a?(Array) && pictures.any?) || photos.attached?
+    public_image_sources.any?
   end
 
   def has_public_price?

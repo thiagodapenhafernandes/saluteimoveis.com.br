@@ -1571,6 +1571,25 @@
        <div class="card border-0 shadow-sm mb-4">
          <div class="card-body p-3 p-md-4" data-controller="photo-upload">
             <h6 class="small fw-semibold text-uppercase text-muted mb-3">Fotos</h6>
+            <% linked_development = habitation.empreendimento if habitation.codigo_empreendimento.present? %>
+            <% if linked_development.present? %>
+              <div class="alert alert-light border d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4">
+                <div>
+                  <div class="fw-semibold small mb-1">
+                    <i class="bi bi-building me-1 text-primary"></i>
+                    Fotos do empreendimento vinculado
+                  </div>
+                  <div class="text-muted small">
+                    Este imóvel está vinculado a <strong><%= linked_development.nome_empreendimento.presence || linked_development.codigo %></strong>.
+                    Se não houver fotos próprias, ele pode usar as fotos desse empreendimento.
+                  </div>
+                </div>
+                <div class="form-check form-switch m-0">
+                  <%= f.check_box :use_development_photos_flag, class: "form-check-input", role: "switch" %>
+                  <%= f.label :use_development_photos_flag, "Usar fotos do empreendimento", class: "form-check-label small fw-semibold" %>
+                </div>
+              </div>
+            <% end %>
             <div class="mb-4 text-center p-5 border border-dashed rounded bg-light">
                <% if can?(:manage, :imoveis) %>
                  <div class="row justify-content-center mb-3">
@@ -1621,6 +1640,19 @@
                            </div>
                         <% end %>
                      <% end %>
+                  <% end %>
+
+                  <% if habitation.use_development_photos? && linked_development.present? && habitation.own_public_image_sources.blank? %>
+                    <% linked_development.own_public_image_sources.first(12).each do |pic| %>
+                      <div class="col-6 col-md-3 col-lg-2">
+                        <div class="position-relative ratio ratio-1x1 group-hover">
+                          <%= image_tag public_image_url(pic), class: "rounded border w-100 h-100 object-fit-cover opacity-75" %>
+                          <div class="position-absolute top-0 end-0 p-1">
+                            <span class="badge bg-info text-dark border shadow-sm" title="Foto herdada do empreendimento">Empreendimento</span>
+                          </div>
+                        </div>
+                      </div>
+                    <% end %>
                   <% end %>
             </div>
          </div>
