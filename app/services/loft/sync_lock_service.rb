@@ -49,6 +49,28 @@ module Loft
       end
     end
 
+    def refresh(owner_token)
+      return false if owner_token.blank?
+
+      ensure_lock_row!
+
+      refreshed = false
+      lock_record.with_lock do
+        payload = parse_payload(lock_record.value)
+        return false unless payload["owner"] == owner_token
+
+        lock_record.update!(
+          value: payload.merge(
+            "locked_at" => Time.current.iso8601,
+            "locked_until" => (Time.current + @lease).iso8601
+          ).to_json
+        )
+        refreshed = true
+      end
+
+      refreshed
+    end
+
     private
 
     def ensure_lock_row!
