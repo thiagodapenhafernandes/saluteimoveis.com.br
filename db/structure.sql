@@ -1,4 +1,4 @@
-\restrict 2mdapwrMpWwV9mzOULrwmBR3Dw3FfT3xZSAjNrSQk9bjPCITN6tHG06bF4If9R7
+\restrict ACg8yrZucGpRsX2D5MonXkPMQIfZgbWF4WyQq49mbVxLqSByKYgv19tw97PDidJ
 
 -- Dumped from database version 17.9 (Homebrew)
 -- Dumped by pg_dump version 17.9 (Homebrew)
@@ -398,7 +398,30 @@ CREATE TABLE public.admin_users (
     default_store_id bigint,
     active boolean DEFAULT true NOT NULL,
     require_ip_allowlist boolean DEFAULT false NOT NULL,
-    require_trusted_device boolean DEFAULT false NOT NULL
+    require_trusted_device boolean DEFAULT false NOT NULL,
+    display_on_site boolean DEFAULT true NOT NULL,
+    vista_import_batch_id bigint,
+    vista_payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    vista_agenciador boolean DEFAULT false NOT NULL,
+    source_created_on date,
+    source_departed_on date,
+    last_login_at timestamp(6) without time zone,
+    source_photo_path character varying,
+    cpf_cnpj character varying,
+    rg_ie character varying,
+    nationality character varying,
+    gender character varying,
+    marital_status character varying,
+    address_type character varying,
+    street character varying,
+    number character varying,
+    complement character varying,
+    neighborhood character varying,
+    secondary_phone character varying,
+    team_code character varying,
+    capture_goal integer,
+    rental_capture_goal integer,
+    sales_goal_cents bigint
 );
 
 
@@ -751,6 +774,116 @@ ALTER SEQUENCE public.checkin_audit_logs_id_seq OWNED BY public.checkin_audit_lo
 
 
 --
+-- Name: client_interactions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.client_interactions (
+    id bigint NOT NULL,
+    vista_import_batch_id bigint,
+    source_table character varying NOT NULL,
+    source_key character varying NOT NULL,
+    proprietor_id bigint,
+    habitation_id bigint,
+    admin_user_id bigint,
+    vista_client_code character varying,
+    vista_habitation_code character varying,
+    vista_agent_code character varying,
+    subject character varying,
+    body text,
+    interaction_type character varying,
+    activity_type_id character varying,
+    occurred_at timestamp(6) without time zone,
+    return_at timestamp(6) without time zone,
+    pending boolean DEFAULT false NOT NULL,
+    automatic boolean DEFAULT false NOT NULL,
+    lead boolean DEFAULT false NOT NULL,
+    launch boolean DEFAULT false NOT NULL,
+    acceptance character varying,
+    visit_status character varying,
+    lost_reason character varying,
+    capture_vehicle character varying,
+    proposal_value_cents bigint,
+    business_id character varying,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    crm_contact_id bigint
+);
+
+
+--
+-- Name: client_interactions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.client_interactions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: client_interactions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.client_interactions_id_seq OWNED BY public.client_interactions.id;
+
+
+--
+-- Name: client_property_interests; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.client_property_interests (
+    id bigint NOT NULL,
+    vista_import_batch_id bigint,
+    source_table character varying NOT NULL,
+    source_key character varying NOT NULL,
+    proprietor_id bigint,
+    habitation_id bigint,
+    admin_user_id bigint,
+    vista_client_code character varying,
+    vista_habitation_code character varying,
+    vista_agent_code character varying,
+    interest_type character varying,
+    status character varying,
+    notes text,
+    selected boolean DEFAULT false NOT NULL,
+    awaited boolean DEFAULT false NOT NULL,
+    lead boolean DEFAULT false NOT NULL,
+    started_at timestamp(6) without time zone,
+    ended_at timestamp(6) without time zone,
+    consulted_at timestamp(6) without time zone,
+    last_search_at timestamp(6) without time zone,
+    business_id character varying,
+    criteria jsonb DEFAULT '{}'::jsonb NOT NULL,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    crm_contact_id bigint
+);
+
+
+--
+-- Name: client_property_interests_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.client_property_interests_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: client_property_interests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.client_property_interests_id_seq OWNED BY public.client_property_interests.id;
+
+
+--
 -- Name: constructors; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -821,6 +954,126 @@ CREATE SEQUENCE public.contact_settings_id_seq
 --
 
 ALTER SEQUENCE public.contact_settings_id_seq OWNED BY public.contact_settings.id;
+
+
+--
+-- Name: crm_appointments; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.crm_appointments (
+    id bigint NOT NULL,
+    vista_import_batch_id bigint,
+    source_table character varying NOT NULL,
+    source_key character varying NOT NULL,
+    proprietor_id bigint,
+    habitation_id bigint,
+    admin_user_id bigint,
+    vista_client_code character varying,
+    vista_habitation_code character varying,
+    vista_agent_code character varying,
+    title character varying,
+    description text,
+    appointment_type character varying,
+    priority character varying,
+    location character varying,
+    starts_at timestamp(6) without time zone,
+    ends_at timestamp(6) without time zone,
+    completed_at timestamp(6) without time zone,
+    created_in_source_at timestamp(6) without time zone,
+    task boolean DEFAULT false NOT NULL,
+    completed boolean DEFAULT false NOT NULL,
+    all_day boolean DEFAULT false NOT NULL,
+    private boolean DEFAULT false NOT NULL,
+    deleted boolean DEFAULT false NOT NULL,
+    visit_status character varying,
+    google_calendar_id character varying,
+    business_id character varying,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    crm_contact_id bigint,
+    reminder_minutes integer,
+    sms_client boolean DEFAULT false NOT NULL,
+    sms_owner boolean DEFAULT false NOT NULL,
+    synced_with_source boolean DEFAULT false NOT NULL,
+    source_updated_at timestamp(6) without time zone
+);
+
+
+--
+-- Name: crm_appointments_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.crm_appointments_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: crm_appointments_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.crm_appointments_id_seq OWNED BY public.crm_appointments.id;
+
+
+--
+-- Name: crm_contacts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.crm_contacts (
+    id bigint NOT NULL,
+    vista_import_batch_id bigint,
+    vista_code character varying NOT NULL,
+    name character varying NOT NULL,
+    email character varying,
+    phone_primary character varying,
+    mobile_phone character varying,
+    residential_phone character varying,
+    business_phone character varying,
+    cpf_cnpj character varying,
+    rg_ie character varying,
+    contact_type character varying,
+    is_client boolean DEFAULT false NOT NULL,
+    is_owner boolean DEFAULT false NOT NULL,
+    is_buyer boolean DEFAULT false NOT NULL,
+    is_referenced_owner boolean DEFAULT false NOT NULL,
+    capture_vehicle character varying,
+    registered_at timestamp(6) without time zone,
+    notes text,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    source_status character varying,
+    source_updated_at timestamp(6) without time zone,
+    potential_value_cents bigint,
+    favorite boolean DEFAULT false NOT NULL,
+    restricted boolean DEFAULT false NOT NULL,
+    receive_information boolean DEFAULT false NOT NULL,
+    show_email_to_client boolean DEFAULT false NOT NULL,
+    show_phone_on_web boolean DEFAULT false NOT NULL
+);
+
+
+--
+-- Name: crm_contacts_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.crm_contacts_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: crm_contacts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.crm_contacts_id_seq OWNED BY public.crm_contacts.id;
 
 
 --
@@ -1041,9 +1294,9 @@ CREATE TABLE public.habitations (
     garden_flag boolean,
     quadra_mar_flag boolean,
     sem_mobilia_flag boolean,
-    valor_venda_anterior_cents integer,
-    valor_total_aluguel_cents integer,
-    valor_promocional_cents integer,
+    valor_venda_anterior_cents bigint,
+    valor_total_aluguel_cents bigint,
+    valor_promocional_cents bigint,
     construtora character varying,
     proprietario character varying,
     inscricao_imobiliaria character varying,
@@ -1114,13 +1367,13 @@ CREATE TABLE public.habitations (
     proprietor_id bigint,
     home_corporate_flag boolean DEFAULT false NOT NULL,
     home_corporate_position integer,
-    valor_aceito_permuta_cents integer,
+    valor_aceito_permuta_cents bigint,
     aceita_permuta_veiculo_flag boolean DEFAULT false NOT NULL,
     aceita_permuta_imovel_flag boolean DEFAULT false NOT NULL,
     aceita_permuta_outros_flag boolean DEFAULT false NOT NULL,
     tipo_veiculo_aceito_permuta character varying,
     ano_minimo_veiculo_aceito_permuta integer,
-    permuta_valor_cents integer,
+    permuta_valor_cents bigint,
     permuta_localizacao character varying,
     permuta_dormitorios_qtd integer,
     permuta_suites_qtd integer,
@@ -1129,8 +1382,8 @@ CREATE TABLE public.habitations (
     zona character varying,
     aceita_doacao_flag boolean DEFAULT false NOT NULL,
     condicoes_negociacao text,
-    valor_locacao_anterior_cents integer,
-    saldo_devedor_cents integer,
+    valor_locacao_anterior_cents bigint,
+    saldo_devedor_cents bigint,
     numero_prestacoes integer,
     responsavel_reserva character varying,
     zelador_nome character varying,
@@ -1173,7 +1426,16 @@ CREATE TABLE public.habitations (
     intake_step character varying DEFAULT 'intro'::character varying NOT NULL,
     motivo_venda character varying,
     intake_modalidade character varying,
-    intake_group_uuid character varying
+    intake_group_uuid character varying,
+    vista_import_batch_id bigint,
+    vista_payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    vista_codigo character varying,
+    vista_imo_codigo character varying,
+    vista_imo_placa character varying,
+    vista_referencia_externa character varying,
+    salas_qtd integer,
+    varandas_qtd integer,
+    use_development_photos_flag boolean DEFAULT false NOT NULL
 );
 
 
@@ -1437,7 +1699,17 @@ CREATE TABLE public.habitation_broker_assignments (
     commission_value numeric(10,2),
     observations text,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    vista_import_batch_id bigint,
+    vista_payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    vista_source_key character varying,
+    source_created_at timestamp(6) without time zone,
+    sale_commission_percentage numeric(10,2),
+    rental_commission_percentage numeric(10,2),
+    rental_cancellation_commission_percentage numeric(10,2),
+    sale_commission_cents bigint,
+    rental_commission_cents bigint,
+    rental_cancellation_commission_cents bigint
 );
 
 
@@ -1458,6 +1730,63 @@ CREATE SEQUENCE public.habitation_broker_assignments_id_seq
 --
 
 ALTER SEQUENCE public.habitation_broker_assignments_id_seq OWNED BY public.habitation_broker_assignments.id;
+
+
+--
+-- Name: habitation_interactions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.habitation_interactions (
+    id bigint NOT NULL,
+    vista_import_batch_id bigint,
+    source_table character varying NOT NULL,
+    source_key character varying NOT NULL,
+    habitation_id bigint,
+    proprietor_id bigint,
+    admin_user_id bigint,
+    vista_habitation_code character varying,
+    vista_client_code character varying,
+    vista_agent_code character varying,
+    subject character varying,
+    body text,
+    interaction_type character varying,
+    activity_type_id character varying,
+    occurred_at timestamp(6) without time zone,
+    started_at timestamp(6) without time zone,
+    pending boolean DEFAULT false NOT NULL,
+    automatic boolean DEFAULT false NOT NULL,
+    private boolean DEFAULT false NOT NULL,
+    proposal boolean DEFAULT false NOT NULL,
+    status character varying,
+    advertised character varying,
+    published_vehicle character varying,
+    key_requester character varying,
+    proposal_value_cents bigint,
+    business_id character varying,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    crm_contact_id bigint
+);
+
+
+--
+-- Name: habitation_interactions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.habitation_interactions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: habitation_interactions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.habitation_interactions_id_seq OWNED BY public.habitation_interactions.id;
 
 
 --
@@ -1850,7 +2179,9 @@ CREATE TABLE public.leads (
     distribution_rule_id bigint,
     admin_user_id bigint,
     share_token character varying,
-    shared_by_admin_user_id bigint
+    shared_by_admin_user_id bigint,
+    vista_import_batch_id bigint,
+    vista_payload jsonb DEFAULT '{}'::jsonb NOT NULL
 );
 
 
@@ -2338,7 +2669,18 @@ CREATE TABLE public.proprietors (
     spouse_name character varying,
     spouse_email character varying,
     spouse_phone character varying,
-    spouse_cpf_cnpj character varying
+    spouse_cpf_cnpj character varying,
+    vista_import_batch_id bigint,
+    vista_payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    source_status character varying,
+    source_updated_at timestamp(6) without time zone,
+    potential_value_cents bigint,
+    favorite boolean DEFAULT false NOT NULL,
+    restricted boolean DEFAULT false NOT NULL,
+    receive_information boolean DEFAULT false NOT NULL,
+    show_email_to_client boolean DEFAULT false NOT NULL,
+    show_phone_on_web boolean DEFAULT false NOT NULL,
+    spouse_birth_date date
 );
 
 
@@ -3220,6 +3562,135 @@ ALTER SEQUENCE public.user_meta_integrations_id_seq OWNED BY public.user_meta_in
 
 
 --
+-- Name: vista_file_assets; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.vista_file_assets (
+    id bigint NOT NULL,
+    vista_import_batch_id bigint NOT NULL,
+    vista_raw_record_id bigint,
+    habitation_id bigint,
+    table_name character varying NOT NULL,
+    kind character varying NOT NULL,
+    status character varying DEFAULT 'pending'::character varying NOT NULL,
+    codigo_imovel character varying,
+    codigo_cliente character varying,
+    codigo_corretor character varying,
+    source_path character varying NOT NULL,
+    source_url character varying,
+    filename character varying NOT NULL,
+    active_storage_name character varying,
+    active_storage_attachment_id bigint,
+    "position" integer,
+    attempts integer DEFAULT 0 NOT NULL,
+    downloaded_at timestamp(6) without time zone,
+    error_message text,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    active_storage_key character varying,
+    storage_checksum character varying,
+    storage_byte_size bigint,
+    storage_content_type character varying,
+    storage_service_name character varying,
+    reused_at timestamp(6) without time zone
+);
+
+
+--
+-- Name: vista_file_assets_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.vista_file_assets_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: vista_file_assets_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.vista_file_assets_id_seq OWNED BY public.vista_file_assets.id;
+
+
+--
+-- Name: vista_import_batches; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.vista_import_batches (
+    id bigint NOT NULL,
+    dump_dir character varying NOT NULL,
+    status character varying DEFAULT 'pending'::character varying NOT NULL,
+    started_at timestamp(6) without time zone,
+    finished_at timestamp(6) without time zone,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    error_message text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: vista_import_batches_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.vista_import_batches_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: vista_import_batches_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.vista_import_batches_id_seq OWNED BY public.vista_import_batches.id;
+
+
+--
+-- Name: vista_raw_records; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.vista_raw_records (
+    id bigint NOT NULL,
+    vista_import_batch_id bigint NOT NULL,
+    table_name character varying NOT NULL,
+    row_index integer NOT NULL,
+    source_key character varying,
+    codigo_imovel character varying,
+    codigo_cliente character varying,
+    codigo_corretor character varying,
+    payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: vista_raw_records_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.vista_raw_records_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: vista_raw_records_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.vista_raw_records_id_seq OWNED BY public.vista_raw_records.id;
+
+
+--
 -- Name: webhook_settings; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -3252,6 +3723,56 @@ CREATE SEQUENCE public.webhook_settings_id_seq
 --
 
 ALTER SEQUENCE public.webhook_settings_id_seq OWNED BY public.webhook_settings.id;
+
+
+--
+-- Name: whatsapp_business_integrations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.whatsapp_business_integrations (
+    id bigint NOT NULL,
+    connected_by_admin_user_id bigint,
+    waba_id character varying,
+    phone_number_id character varying,
+    business_id character varying,
+    access_token text,
+    status character varying DEFAULT 'disconnected'::character varying NOT NULL,
+    last_event character varying,
+    last_error_code character varying,
+    last_error_message character varying,
+    meta_session_id character varying,
+    connected_at timestamp(6) without time zone,
+    token_expires_at timestamp(6) without time zone,
+    signup_payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    default_whatsapp_number character varying,
+    sale_whatsapp_number character varying,
+    rent_whatsapp_number character varying,
+    sale_rent_whatsapp_number character varying,
+    sale_requires_lead_form boolean DEFAULT true NOT NULL,
+    rent_requires_lead_form boolean DEFAULT true NOT NULL,
+    sale_rent_requires_lead_form boolean DEFAULT true NOT NULL
+);
+
+
+--
+-- Name: whatsapp_business_integrations_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.whatsapp_business_integrations_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: whatsapp_business_integrations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.whatsapp_business_integrations_id_seq OWNED BY public.whatsapp_business_integrations.id;
 
 
 --
@@ -3360,6 +3881,20 @@ ALTER TABLE ONLY public.checkin_audit_logs ALTER COLUMN id SET DEFAULT nextval('
 
 
 --
+-- Name: client_interactions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.client_interactions ALTER COLUMN id SET DEFAULT nextval('public.client_interactions_id_seq'::regclass);
+
+
+--
+-- Name: client_property_interests id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.client_property_interests ALTER COLUMN id SET DEFAULT nextval('public.client_property_interests_id_seq'::regclass);
+
+
+--
 -- Name: constructors id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -3371,6 +3906,20 @@ ALTER TABLE ONLY public.constructors ALTER COLUMN id SET DEFAULT nextval('public
 --
 
 ALTER TABLE ONLY public.contact_settings ALTER COLUMN id SET DEFAULT nextval('public.contact_settings_id_seq'::regclass);
+
+
+--
+-- Name: crm_appointments id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.crm_appointments ALTER COLUMN id SET DEFAULT nextval('public.crm_appointments_id_seq'::regclass);
+
+
+--
+-- Name: crm_contacts id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.crm_contacts ALTER COLUMN id SET DEFAULT nextval('public.crm_contacts_id_seq'::regclass);
 
 
 --
@@ -3441,6 +3990,13 @@ ALTER TABLE ONLY public.habitation_audit_logs ALTER COLUMN id SET DEFAULT nextva
 --
 
 ALTER TABLE ONLY public.habitation_broker_assignments ALTER COLUMN id SET DEFAULT nextval('public.habitation_broker_assignments_id_seq'::regclass);
+
+
+--
+-- Name: habitation_interactions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.habitation_interactions ALTER COLUMN id SET DEFAULT nextval('public.habitation_interactions_id_seq'::regclass);
 
 
 --
@@ -3766,10 +4322,38 @@ ALTER TABLE ONLY public.user_meta_integrations ALTER COLUMN id SET DEFAULT nextv
 
 
 --
+-- Name: vista_file_assets id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vista_file_assets ALTER COLUMN id SET DEFAULT nextval('public.vista_file_assets_id_seq'::regclass);
+
+
+--
+-- Name: vista_import_batches id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vista_import_batches ALTER COLUMN id SET DEFAULT nextval('public.vista_import_batches_id_seq'::regclass);
+
+
+--
+-- Name: vista_raw_records id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vista_raw_records ALTER COLUMN id SET DEFAULT nextval('public.vista_raw_records_id_seq'::regclass);
+
+
+--
 -- Name: webhook_settings id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.webhook_settings ALTER COLUMN id SET DEFAULT nextval('public.webhook_settings_id_seq'::regclass);
+
+
+--
+-- Name: whatsapp_business_integrations id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.whatsapp_business_integrations ALTER COLUMN id SET DEFAULT nextval('public.whatsapp_business_integrations_id_seq'::regclass);
 
 
 --
@@ -3901,6 +4485,22 @@ ALTER TABLE ONLY public.checkin_audit_logs
 
 
 --
+-- Name: client_interactions client_interactions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.client_interactions
+    ADD CONSTRAINT client_interactions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: client_property_interests client_property_interests_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.client_property_interests
+    ADD CONSTRAINT client_property_interests_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: constructors constructors_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3914,6 +4514,22 @@ ALTER TABLE ONLY public.constructors
 
 ALTER TABLE ONLY public.contact_settings
     ADD CONSTRAINT contact_settings_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: crm_appointments crm_appointments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.crm_appointments
+    ADD CONSTRAINT crm_appointments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: crm_contacts crm_contacts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.crm_contacts
+    ADD CONSTRAINT crm_contacts_pkey PRIMARY KEY (id);
 
 
 --
@@ -3994,6 +4610,14 @@ ALTER TABLE ONLY public.habitation_audit_logs
 
 ALTER TABLE ONLY public.habitation_broker_assignments
     ADD CONSTRAINT habitation_broker_assignments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: habitation_interactions habitation_interactions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.habitation_interactions
+    ADD CONSTRAINT habitation_interactions_pkey PRIMARY KEY (id);
 
 
 --
@@ -4373,11 +4997,50 @@ ALTER TABLE ONLY public.user_meta_integrations
 
 
 --
+-- Name: vista_file_assets vista_file_assets_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vista_file_assets
+    ADD CONSTRAINT vista_file_assets_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: vista_import_batches vista_import_batches_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vista_import_batches
+    ADD CONSTRAINT vista_import_batches_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: vista_raw_records vista_raw_records_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vista_raw_records
+    ADD CONSTRAINT vista_raw_records_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: webhook_settings webhook_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.webhook_settings
     ADD CONSTRAINT webhook_settings_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: whatsapp_business_integrations whatsapp_business_integrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.whatsapp_business_integrations
+    ADD CONSTRAINT whatsapp_business_integrations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: idx_cpi_client_habitation_codes; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_cpi_client_habitation_codes ON public.client_property_interests USING btree (vista_client_code, vista_habitation_code);
 
 
 --
@@ -4444,10 +5107,52 @@ CREATE INDEX idx_habitations_venda_status ON public.habitations USING btree (val
 
 
 --
+-- Name: idx_hba_on_vista_payload; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_hba_on_vista_payload ON public.habitation_broker_assignments USING gin (vista_payload);
+
+
+--
+-- Name: idx_hba_vista_batch_source_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_hba_vista_batch_source_key ON public.habitation_broker_assignments USING btree (vista_import_batch_id, vista_source_key) WHERE (vista_source_key IS NOT NULL);
+
+
+--
+-- Name: idx_on_connected_by_admin_user_id_2487a8ba72; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_on_connected_by_admin_user_id_2487a8ba72 ON public.whatsapp_business_integrations USING btree (connected_by_admin_user_id);
+
+
+--
 -- Name: idx_on_portal_external_listing_id_a9202d155f; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX idx_on_portal_external_listing_id_a9202d155f ON public.portal_integration_events USING btree (portal, external_listing_id);
+
+
+--
+-- Name: idx_on_vista_client_code_occurred_at_61bc0ad3da; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_on_vista_client_code_occurred_at_61bc0ad3da ON public.habitation_interactions USING btree (vista_client_code, occurred_at);
+
+
+--
+-- Name: idx_on_vista_habitation_code_occurred_at_914b53c11a; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_on_vista_habitation_code_occurred_at_914b53c11a ON public.habitation_interactions USING btree (vista_habitation_code, occurred_at);
+
+
+--
+-- Name: idx_on_vista_habitation_code_occurred_at_965a8d5412; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_on_vista_habitation_code_occurred_at_965a8d5412 ON public.client_interactions USING btree (vista_habitation_code, occurred_at);
 
 
 --
@@ -4476,6 +5181,27 @@ CREATE INDEX idx_store_shifts_agent_day_active ON public.store_shifts USING btre
 --
 
 CREATE UNIQUE INDEX idx_unique_active_checkin_per_user ON public.check_ins USING btree (admin_user_id) WHERE (status = 0);
+
+
+--
+-- Name: idx_vista_file_assets_lookup_for_reuse; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_vista_file_assets_lookup_for_reuse ON public.vista_file_assets USING btree (vista_import_batch_id, kind, codigo_imovel, filename);
+
+
+--
+-- Name: idx_vista_file_assets_unique_source; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_vista_file_assets_unique_source ON public.vista_file_assets USING btree (vista_import_batch_id, table_name, source_path);
+
+
+--
+-- Name: idx_vista_raw_records_batch_table_row; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_vista_raw_records_batch_table_row ON public.vista_raw_records USING btree (vista_import_batch_id, table_name, row_index);
 
 
 --
@@ -4626,6 +5352,13 @@ CREATE INDEX index_admin_users_on_default_store_id ON public.admin_users USING b
 
 
 --
+-- Name: index_admin_users_on_display_on_site; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_admin_users_on_display_on_site ON public.admin_users USING btree (display_on_site);
+
+
+--
 -- Name: index_admin_users_on_email; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4661,10 +5394,31 @@ CREATE UNIQUE INDEX index_admin_users_on_reset_password_token ON public.admin_us
 
 
 --
+-- Name: index_admin_users_on_team_code; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_admin_users_on_team_code ON public.admin_users USING btree (team_code);
+
+
+--
 -- Name: index_admin_users_on_vista_id; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_admin_users_on_vista_id ON public.admin_users USING btree (vista_id);
+
+
+--
+-- Name: index_admin_users_on_vista_import_batch_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_admin_users_on_vista_import_batch_id ON public.admin_users USING btree (vista_import_batch_id);
+
+
+--
+-- Name: index_admin_users_on_vista_payload; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_admin_users_on_vista_payload ON public.admin_users USING gin (vista_payload);
 
 
 --
@@ -4840,6 +5594,230 @@ CREATE INDEX index_checkin_audit_logs_on_admin_user_id_and_created_at ON public.
 --
 
 CREATE INDEX index_checkin_audit_logs_on_check_in_id ON public.checkin_audit_logs USING btree (check_in_id);
+
+
+--
+-- Name: index_client_interactions_on_admin_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_client_interactions_on_admin_user_id ON public.client_interactions USING btree (admin_user_id);
+
+
+--
+-- Name: index_client_interactions_on_crm_contact_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_client_interactions_on_crm_contact_id ON public.client_interactions USING btree (crm_contact_id);
+
+
+--
+-- Name: index_client_interactions_on_habitation_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_client_interactions_on_habitation_id ON public.client_interactions USING btree (habitation_id);
+
+
+--
+-- Name: index_client_interactions_on_metadata; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_client_interactions_on_metadata ON public.client_interactions USING gin (metadata);
+
+
+--
+-- Name: index_client_interactions_on_proprietor_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_client_interactions_on_proprietor_id ON public.client_interactions USING btree (proprietor_id);
+
+
+--
+-- Name: index_client_interactions_on_source_table_and_source_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_client_interactions_on_source_table_and_source_key ON public.client_interactions USING btree (source_table, source_key);
+
+
+--
+-- Name: index_client_interactions_on_vista_client_code_and_occurred_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_client_interactions_on_vista_client_code_and_occurred_at ON public.client_interactions USING btree (vista_client_code, occurred_at);
+
+
+--
+-- Name: index_client_interactions_on_vista_import_batch_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_client_interactions_on_vista_import_batch_id ON public.client_interactions USING btree (vista_import_batch_id);
+
+
+--
+-- Name: index_client_property_interests_on_admin_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_client_property_interests_on_admin_user_id ON public.client_property_interests USING btree (admin_user_id);
+
+
+--
+-- Name: index_client_property_interests_on_criteria; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_client_property_interests_on_criteria ON public.client_property_interests USING gin (criteria);
+
+
+--
+-- Name: index_client_property_interests_on_crm_contact_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_client_property_interests_on_crm_contact_id ON public.client_property_interests USING btree (crm_contact_id);
+
+
+--
+-- Name: index_client_property_interests_on_habitation_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_client_property_interests_on_habitation_id ON public.client_property_interests USING btree (habitation_id);
+
+
+--
+-- Name: index_client_property_interests_on_metadata; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_client_property_interests_on_metadata ON public.client_property_interests USING gin (metadata);
+
+
+--
+-- Name: index_client_property_interests_on_proprietor_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_client_property_interests_on_proprietor_id ON public.client_property_interests USING btree (proprietor_id);
+
+
+--
+-- Name: index_client_property_interests_on_source_table_and_source_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_client_property_interests_on_source_table_and_source_key ON public.client_property_interests USING btree (source_table, source_key);
+
+
+--
+-- Name: index_client_property_interests_on_vista_import_batch_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_client_property_interests_on_vista_import_batch_id ON public.client_property_interests USING btree (vista_import_batch_id);
+
+
+--
+-- Name: index_crm_appointments_on_admin_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_crm_appointments_on_admin_user_id ON public.crm_appointments USING btree (admin_user_id);
+
+
+--
+-- Name: index_crm_appointments_on_crm_contact_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_crm_appointments_on_crm_contact_id ON public.crm_appointments USING btree (crm_contact_id);
+
+
+--
+-- Name: index_crm_appointments_on_habitation_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_crm_appointments_on_habitation_id ON public.crm_appointments USING btree (habitation_id);
+
+
+--
+-- Name: index_crm_appointments_on_metadata; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_crm_appointments_on_metadata ON public.crm_appointments USING gin (metadata);
+
+
+--
+-- Name: index_crm_appointments_on_proprietor_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_crm_appointments_on_proprietor_id ON public.crm_appointments USING btree (proprietor_id);
+
+
+--
+-- Name: index_crm_appointments_on_source_table_and_source_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_crm_appointments_on_source_table_and_source_key ON public.crm_appointments USING btree (source_table, source_key);
+
+
+--
+-- Name: index_crm_appointments_on_source_updated_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_crm_appointments_on_source_updated_at ON public.crm_appointments USING btree (source_updated_at);
+
+
+--
+-- Name: index_crm_appointments_on_vista_client_code_and_starts_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_crm_appointments_on_vista_client_code_and_starts_at ON public.crm_appointments USING btree (vista_client_code, starts_at);
+
+
+--
+-- Name: index_crm_appointments_on_vista_habitation_code_and_starts_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_crm_appointments_on_vista_habitation_code_and_starts_at ON public.crm_appointments USING btree (vista_habitation_code, starts_at);
+
+
+--
+-- Name: index_crm_appointments_on_vista_import_batch_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_crm_appointments_on_vista_import_batch_id ON public.crm_appointments USING btree (vista_import_batch_id);
+
+
+--
+-- Name: index_crm_contacts_on_is_owner_and_is_referenced_owner; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_crm_contacts_on_is_owner_and_is_referenced_owner ON public.crm_contacts USING btree (is_owner, is_referenced_owner);
+
+
+--
+-- Name: index_crm_contacts_on_metadata; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_crm_contacts_on_metadata ON public.crm_contacts USING gin (metadata);
+
+
+--
+-- Name: index_crm_contacts_on_potential_value_cents; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_crm_contacts_on_potential_value_cents ON public.crm_contacts USING btree (potential_value_cents);
+
+
+--
+-- Name: index_crm_contacts_on_source_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_crm_contacts_on_source_status ON public.crm_contacts USING btree (source_status);
+
+
+--
+-- Name: index_crm_contacts_on_vista_code; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_crm_contacts_on_vista_code ON public.crm_contacts USING btree (vista_code);
+
+
+--
+-- Name: index_crm_contacts_on_vista_import_batch_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_crm_contacts_on_vista_import_batch_id ON public.crm_contacts USING btree (vista_import_batch_id);
 
 
 --
@@ -5036,6 +6014,62 @@ CREATE INDEX index_habitation_broker_assignments_on_admin_user_id ON public.habi
 --
 
 CREATE INDEX index_habitation_broker_assignments_on_habitation_id ON public.habitation_broker_assignments USING btree (habitation_id);
+
+
+--
+-- Name: index_habitation_broker_assignments_on_vista_import_batch_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitation_broker_assignments_on_vista_import_batch_id ON public.habitation_broker_assignments USING btree (vista_import_batch_id);
+
+
+--
+-- Name: index_habitation_interactions_on_admin_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitation_interactions_on_admin_user_id ON public.habitation_interactions USING btree (admin_user_id);
+
+
+--
+-- Name: index_habitation_interactions_on_crm_contact_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitation_interactions_on_crm_contact_id ON public.habitation_interactions USING btree (crm_contact_id);
+
+
+--
+-- Name: index_habitation_interactions_on_habitation_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitation_interactions_on_habitation_id ON public.habitation_interactions USING btree (habitation_id);
+
+
+--
+-- Name: index_habitation_interactions_on_metadata; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitation_interactions_on_metadata ON public.habitation_interactions USING gin (metadata);
+
+
+--
+-- Name: index_habitation_interactions_on_proprietor_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitation_interactions_on_proprietor_id ON public.habitation_interactions USING btree (proprietor_id);
+
+
+--
+-- Name: index_habitation_interactions_on_source_table_and_source_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_habitation_interactions_on_source_table_and_source_key ON public.habitation_interactions USING btree (source_table, source_key);
+
+
+--
+-- Name: index_habitation_interactions_on_vista_import_batch_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitation_interactions_on_vista_import_batch_id ON public.habitation_interactions USING btree (vista_import_batch_id);
 
 
 --
@@ -5382,6 +6416,48 @@ CREATE INDEX index_habitations_on_valor_venda_cents ON public.habitations USING 
 
 
 --
+-- Name: index_habitations_on_vista_codigo; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_vista_codigo ON public.habitations USING btree (vista_codigo);
+
+
+--
+-- Name: index_habitations_on_vista_imo_codigo; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_vista_imo_codigo ON public.habitations USING btree (vista_imo_codigo);
+
+
+--
+-- Name: index_habitations_on_vista_imo_placa; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_vista_imo_placa ON public.habitations USING btree (vista_imo_placa);
+
+
+--
+-- Name: index_habitations_on_vista_import_batch_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_vista_import_batch_id ON public.habitations USING btree (vista_import_batch_id);
+
+
+--
+-- Name: index_habitations_on_vista_payload; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_vista_payload ON public.habitations USING gin (vista_payload);
+
+
+--
+-- Name: index_habitations_on_vista_referencia_externa; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_vista_referencia_externa ON public.habitations USING btree (vista_referencia_externa);
+
+
+--
 -- Name: index_home_hero_slides_on_home_setting_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -5498,6 +6574,20 @@ CREATE INDEX index_leads_on_share_token ON public.leads USING btree (share_token
 --
 
 CREATE INDEX index_leads_on_shared_by_admin_user_id ON public.leads USING btree (shared_by_admin_user_id);
+
+
+--
+-- Name: index_leads_on_vista_import_batch_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_leads_on_vista_import_batch_id ON public.leads USING btree (vista_import_batch_id);
+
+
+--
+-- Name: index_leads_on_vista_payload; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_leads_on_vista_payload ON public.leads USING gin (vista_payload);
 
 
 --
@@ -5739,6 +6829,13 @@ CREATE INDEX index_proprietors_on_name ON public.proprietors USING btree (name);
 
 
 --
+-- Name: index_proprietors_on_source_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_proprietors_on_source_status ON public.proprietors USING btree (source_status);
+
+
+--
 -- Name: index_proprietors_on_spouse_cpf_cnpj; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -5764,6 +6861,20 @@ CREATE INDEX index_proprietors_on_spouse_name ON public.proprietors USING btree 
 --
 
 CREATE INDEX index_proprietors_on_vista_code ON public.proprietors USING btree (vista_code);
+
+
+--
+-- Name: index_proprietors_on_vista_import_batch_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_proprietors_on_vista_import_batch_id ON public.proprietors USING btree (vista_import_batch_id);
+
+
+--
+-- Name: index_proprietors_on_vista_payload; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_proprietors_on_vista_payload ON public.proprietors USING gin (vista_payload);
 
 
 --
@@ -6264,6 +7375,139 @@ CREATE INDEX index_user_meta_integrations_on_admin_user_id ON public.user_meta_i
 
 
 --
+-- Name: index_vista_file_assets_on_active_storage_attachment_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_vista_file_assets_on_active_storage_attachment_id ON public.vista_file_assets USING btree (active_storage_attachment_id);
+
+
+--
+-- Name: index_vista_file_assets_on_active_storage_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_vista_file_assets_on_active_storage_key ON public.vista_file_assets USING btree (active_storage_key);
+
+
+--
+-- Name: index_vista_file_assets_on_codigo_imovel_and_kind; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_vista_file_assets_on_codigo_imovel_and_kind ON public.vista_file_assets USING btree (codigo_imovel, kind);
+
+
+--
+-- Name: index_vista_file_assets_on_habitation_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_vista_file_assets_on_habitation_id ON public.vista_file_assets USING btree (habitation_id);
+
+
+--
+-- Name: index_vista_file_assets_on_metadata; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_vista_file_assets_on_metadata ON public.vista_file_assets USING gin (metadata);
+
+
+--
+-- Name: index_vista_file_assets_on_status_and_kind; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_vista_file_assets_on_status_and_kind ON public.vista_file_assets USING btree (status, kind);
+
+
+--
+-- Name: index_vista_file_assets_on_vista_import_batch_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_vista_file_assets_on_vista_import_batch_id ON public.vista_file_assets USING btree (vista_import_batch_id);
+
+
+--
+-- Name: index_vista_file_assets_on_vista_raw_record_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_vista_file_assets_on_vista_raw_record_id ON public.vista_file_assets USING btree (vista_raw_record_id);
+
+
+--
+-- Name: index_vista_import_batches_on_dump_dir; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_vista_import_batches_on_dump_dir ON public.vista_import_batches USING btree (dump_dir);
+
+
+--
+-- Name: index_vista_import_batches_on_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_vista_import_batches_on_status ON public.vista_import_batches USING btree (status);
+
+
+--
+-- Name: index_vista_raw_records_on_payload; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_vista_raw_records_on_payload ON public.vista_raw_records USING gin (payload);
+
+
+--
+-- Name: index_vista_raw_records_on_table_name_and_codigo_cliente; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_vista_raw_records_on_table_name_and_codigo_cliente ON public.vista_raw_records USING btree (table_name, codigo_cliente);
+
+
+--
+-- Name: index_vista_raw_records_on_table_name_and_codigo_corretor; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_vista_raw_records_on_table_name_and_codigo_corretor ON public.vista_raw_records USING btree (table_name, codigo_corretor);
+
+
+--
+-- Name: index_vista_raw_records_on_table_name_and_codigo_imovel; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_vista_raw_records_on_table_name_and_codigo_imovel ON public.vista_raw_records USING btree (table_name, codigo_imovel);
+
+
+--
+-- Name: index_vista_raw_records_on_table_name_and_source_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_vista_raw_records_on_table_name_and_source_key ON public.vista_raw_records USING btree (table_name, source_key);
+
+
+--
+-- Name: index_vista_raw_records_on_vista_import_batch_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_vista_raw_records_on_vista_import_batch_id ON public.vista_raw_records USING btree (vista_import_batch_id);
+
+
+--
+-- Name: index_whatsapp_business_integrations_on_phone_number_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_whatsapp_business_integrations_on_phone_number_id ON public.whatsapp_business_integrations USING btree (phone_number_id);
+
+
+--
+-- Name: index_whatsapp_business_integrations_on_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_whatsapp_business_integrations_on_status ON public.whatsapp_business_integrations USING btree (status);
+
+
+--
+-- Name: index_whatsapp_business_integrations_on_waba_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_whatsapp_business_integrations_on_waba_id ON public.whatsapp_business_integrations USING btree (waba_id);
+
+
+--
 -- Name: access_audit_logs access_audit_logs_no_update; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -6371,6 +7615,14 @@ ALTER TABLE ONLY public.leads
 
 
 --
+-- Name: client_interactions fk_rails_217d5c3605; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.client_interactions
+    ADD CONSTRAINT fk_rails_217d5c3605 FOREIGN KEY (crm_contact_id) REFERENCES public.crm_contacts(id);
+
+
+--
 -- Name: seo_focus_keywords fk_rails_23d9a9ce43; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6387,11 +7639,27 @@ ALTER TABLE ONLY public.portal_integration_events
 
 
 --
+-- Name: client_property_interests fk_rails_25d4f01b1f; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.client_property_interests
+    ADD CONSTRAINT fk_rails_25d4f01b1f FOREIGN KEY (habitation_id) REFERENCES public.habitations(id);
+
+
+--
 -- Name: habitation_share_links fk_rails_2772a86517; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.habitation_share_links
     ADD CONSTRAINT fk_rails_2772a86517 FOREIGN KEY (admin_user_id) REFERENCES public.admin_users(id);
+
+
+--
+-- Name: crm_appointments fk_rails_277c650c4d; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.crm_appointments
+    ADD CONSTRAINT fk_rails_277c650c4d FOREIGN KEY (crm_contact_id) REFERENCES public.crm_contacts(id);
 
 
 --
@@ -6408,6 +7676,14 @@ ALTER TABLE ONLY public.seo_change_logs
 
 ALTER TABLE ONLY public.checkin_audit_logs
     ADD CONSTRAINT fk_rails_281c7e6935 FOREIGN KEY (check_in_id) REFERENCES public.check_ins(id);
+
+
+--
+-- Name: client_interactions fk_rails_3070096ac7; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.client_interactions
+    ADD CONSTRAINT fk_rails_3070096ac7 FOREIGN KEY (proprietor_id) REFERENCES public.proprietors(id);
 
 
 --
@@ -6451,11 +7727,27 @@ ALTER TABLE ONLY public.access_control_rules
 
 
 --
+-- Name: leads fk_rails_3b8845bac5; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.leads
+    ADD CONSTRAINT fk_rails_3b8845bac5 FOREIGN KEY (vista_import_batch_id) REFERENCES public.vista_import_batches(id);
+
+
+--
 -- Name: distribution_rule_agents fk_rails_43433f55b6; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.distribution_rule_agents
     ADD CONSTRAINT fk_rails_43433f55b6 FOREIGN KEY (distribution_rule_id) REFERENCES public.distribution_rules(id);
+
+
+--
+-- Name: vista_file_assets fk_rails_434988960e; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vista_file_assets
+    ADD CONSTRAINT fk_rails_434988960e FOREIGN KEY (vista_import_batch_id) REFERENCES public.vista_import_batches(id);
 
 
 --
@@ -6480,6 +7772,14 @@ ALTER TABLE ONLY public.habitations
 
 ALTER TABLE ONLY public.solid_queue_blocked_executions
     ADD CONSTRAINT fk_rails_4cd34e2228 FOREIGN KEY (job_id) REFERENCES public.solid_queue_jobs(id) ON DELETE CASCADE;
+
+
+--
+-- Name: vista_file_assets fk_rails_4efde7904b; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vista_file_assets
+    ADD CONSTRAINT fk_rails_4efde7904b FOREIGN KEY (habitation_id) REFERENCES public.habitations(id);
 
 
 --
@@ -6515,11 +7815,27 @@ ALTER TABLE ONLY public.ai_property_suggestions
 
 
 --
+-- Name: crm_appointments fk_rails_53de7c076e; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.crm_appointments
+    ADD CONSTRAINT fk_rails_53de7c076e FOREIGN KEY (admin_user_id) REFERENCES public.admin_users(id);
+
+
+--
 -- Name: location_pings fk_rails_550bb129fb; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.location_pings
     ADD CONSTRAINT fk_rails_550bb129fb FOREIGN KEY (admin_user_id) REFERENCES public.admin_users(id);
+
+
+--
+-- Name: client_property_interests fk_rails_5562a97d6c; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.client_property_interests
+    ADD CONSTRAINT fk_rails_5562a97d6c FOREIGN KEY (crm_contact_id) REFERENCES public.crm_contacts(id);
 
 
 --
@@ -6547,11 +7863,27 @@ ALTER TABLE ONLY public.home_section_items
 
 
 --
+-- Name: client_interactions fk_rails_5d58b5c954; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.client_interactions
+    ADD CONSTRAINT fk_rails_5d58b5c954 FOREIGN KEY (vista_import_batch_id) REFERENCES public.vista_import_batches(id);
+
+
+--
 -- Name: home_hero_slides fk_rails_612e24602a; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.home_hero_slides
     ADD CONSTRAINT fk_rails_612e24602a FOREIGN KEY (home_setting_id) REFERENCES public.home_settings(id);
+
+
+--
+-- Name: proprietors fk_rails_63e65bb6ac; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.proprietors
+    ADD CONSTRAINT fk_rails_63e65bb6ac FOREIGN KEY (vista_import_batch_id) REFERENCES public.vista_import_batches(id);
 
 
 --
@@ -6568,6 +7900,14 @@ ALTER TABLE ONLY public.checkin_audit_logs
 
 ALTER TABLE ONLY public.seo_page_visits
     ADD CONSTRAINT fk_rails_6b14e26baa FOREIGN KEY (seo_setting_id) REFERENCES public.seo_settings(id);
+
+
+--
+-- Name: habitation_interactions fk_rails_6e8270cc0c; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.habitation_interactions
+    ADD CONSTRAINT fk_rails_6e8270cc0c FOREIGN KEY (admin_user_id) REFERENCES public.admin_users(id);
 
 
 --
@@ -6595,11 +7935,27 @@ ALTER TABLE ONLY public.solid_queue_ready_executions
 
 
 --
+-- Name: crm_appointments fk_rails_822455f468; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.crm_appointments
+    ADD CONSTRAINT fk_rails_822455f468 FOREIGN KEY (proprietor_id) REFERENCES public.proprietors(id);
+
+
+--
 -- Name: habitation_broker_assignments fk_rails_837051d439; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.habitation_broker_assignments
     ADD CONSTRAINT fk_rails_837051d439 FOREIGN KEY (admin_user_id) REFERENCES public.admin_users(id);
+
+
+--
+-- Name: habitation_interactions fk_rails_8531aa2028; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.habitation_interactions
+    ADD CONSTRAINT fk_rails_8531aa2028 FOREIGN KEY (crm_contact_id) REFERENCES public.crm_contacts(id);
 
 
 --
@@ -6651,11 +8007,27 @@ ALTER TABLE ONLY public.manual_checkin_requests
 
 
 --
+-- Name: habitation_interactions fk_rails_91361f264a; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.habitation_interactions
+    ADD CONSTRAINT fk_rails_91361f264a FOREIGN KEY (proprietor_id) REFERENCES public.proprietors(id);
+
+
+--
 -- Name: footer_stores fk_rails_937ebd4dbd; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.footer_stores
     ADD CONSTRAINT fk_rails_937ebd4dbd FOREIGN KEY (footer_setting_id) REFERENCES public.footer_settings(id);
+
+
+--
+-- Name: habitations fk_rails_97c90c12c7; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.habitations
+    ADD CONSTRAINT fk_rails_97c90c12c7 FOREIGN KEY (vista_import_batch_id) REFERENCES public.vista_import_batches(id);
 
 
 --
@@ -6675,11 +8047,27 @@ ALTER TABLE ONLY public.manual_checkin_requests
 
 
 --
+-- Name: crm_appointments fk_rails_9b331a5646; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.crm_appointments
+    ADD CONSTRAINT fk_rails_9b331a5646 FOREIGN KEY (vista_import_batch_id) REFERENCES public.vista_import_batches(id);
+
+
+--
 -- Name: solid_queue_claimed_executions fk_rails_9cfe4d4944; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.solid_queue_claimed_executions
     ADD CONSTRAINT fk_rails_9cfe4d4944 FOREIGN KEY (job_id) REFERENCES public.solid_queue_jobs(id) ON DELETE CASCADE;
+
+
+--
+-- Name: crm_contacts fk_rails_a0d5f4035f; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.crm_contacts
+    ADD CONSTRAINT fk_rails_a0d5f4035f FOREIGN KEY (vista_import_batch_id) REFERENCES public.vista_import_batches(id);
 
 
 --
@@ -6723,11 +8111,27 @@ ALTER TABLE ONLY public.photography_schedule_blocks
 
 
 --
+-- Name: client_property_interests fk_rails_b98e81d5c7; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.client_property_interests
+    ADD CONSTRAINT fk_rails_b98e81d5c7 FOREIGN KEY (vista_import_batch_id) REFERENCES public.vista_import_batches(id);
+
+
+--
 -- Name: marketing_campaigns fk_rails_bac0f15c01; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.marketing_campaigns
     ADD CONSTRAINT fk_rails_bac0f15c01 FOREIGN KEY (admin_user_id) REFERENCES public.admin_users(id);
+
+
+--
+-- Name: client_property_interests fk_rails_bd88596118; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.client_property_interests
+    ADD CONSTRAINT fk_rails_bd88596118 FOREIGN KEY (proprietor_id) REFERENCES public.proprietors(id);
 
 
 --
@@ -6787,6 +8191,14 @@ ALTER TABLE ONLY public.solid_queue_scheduled_executions
 
 
 --
+-- Name: vista_raw_records fk_rails_c87e7e92c0; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vista_raw_records
+    ADD CONSTRAINT fk_rails_c87e7e92c0 FOREIGN KEY (vista_import_batch_id) REFERENCES public.vista_import_batches(id);
+
+
+--
 -- Name: store_shifts fk_rails_c9e77c3011; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6811,6 +8223,14 @@ ALTER TABLE ONLY public.seo_change_logs
 
 
 --
+-- Name: crm_appointments fk_rails_d75fe772c7; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.crm_appointments
+    ADD CONSTRAINT fk_rails_d75fe772c7 FOREIGN KEY (habitation_id) REFERENCES public.habitations(id);
+
+
+--
 -- Name: seo_conversion_events fk_rails_d8efb77461; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6827,11 +8247,27 @@ ALTER TABLE ONLY public.admin_users
 
 
 --
+-- Name: habitation_broker_assignments fk_rails_dc25c47a24; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.habitation_broker_assignments
+    ADD CONSTRAINT fk_rails_dc25c47a24 FOREIGN KEY (vista_import_batch_id) REFERENCES public.vista_import_batches(id);
+
+
+--
 -- Name: location_pings fk_rails_e12dc32194; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.location_pings
     ADD CONSTRAINT fk_rails_e12dc32194 FOREIGN KEY (check_in_id) REFERENCES public.check_ins(id);
+
+
+--
+-- Name: client_property_interests fk_rails_e2de1e8832; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.client_property_interests
+    ADD CONSTRAINT fk_rails_e2de1e8832 FOREIGN KEY (admin_user_id) REFERENCES public.admin_users(id);
 
 
 --
@@ -6843,6 +8279,14 @@ ALTER TABLE ONLY public.admin_users
 
 
 --
+-- Name: whatsapp_business_integrations fk_rails_e73641bd15; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.whatsapp_business_integrations
+    ADD CONSTRAINT fk_rails_e73641bd15 FOREIGN KEY (connected_by_admin_user_id) REFERENCES public.admin_users(id);
+
+
+--
 -- Name: manual_checkin_requests fk_rails_e7ad16aecb; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6851,11 +8295,51 @@ ALTER TABLE ONLY public.manual_checkin_requests
 
 
 --
+-- Name: client_interactions fk_rails_e8902714fa; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.client_interactions
+    ADD CONSTRAINT fk_rails_e8902714fa FOREIGN KEY (habitation_id) REFERENCES public.habitations(id);
+
+
+--
+-- Name: client_interactions fk_rails_e8a5984373; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.client_interactions
+    ADD CONSTRAINT fk_rails_e8a5984373 FOREIGN KEY (admin_user_id) REFERENCES public.admin_users(id);
+
+
+--
+-- Name: habitation_interactions fk_rails_e9d6bd4b59; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.habitation_interactions
+    ADD CONSTRAINT fk_rails_e9d6bd4b59 FOREIGN KEY (vista_import_batch_id) REFERENCES public.vista_import_batches(id);
+
+
+--
+-- Name: habitation_interactions fk_rails_ea8d35a43f; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.habitation_interactions
+    ADD CONSTRAINT fk_rails_ea8d35a43f FOREIGN KEY (habitation_id) REFERENCES public.habitations(id);
+
+
+--
 -- Name: distribution_rules fk_rails_ec979d2a3e; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.distribution_rules
     ADD CONSTRAINT fk_rails_ec979d2a3e FOREIGN KEY (checkin_store_id) REFERENCES public.stores(id);
+
+
+--
+-- Name: admin_users fk_rails_ecf9739b53; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.admin_users
+    ADD CONSTRAINT fk_rails_ecf9739b53 FOREIGN KEY (vista_import_batch_id) REFERENCES public.vista_import_batches(id);
 
 
 --
@@ -6872,6 +8356,14 @@ ALTER TABLE ONLY public.lead_activities
 
 ALTER TABLE ONLY public.leads
     ADD CONSTRAINT fk_rails_f3159e7558 FOREIGN KEY (admin_user_id) REFERENCES public.admin_users(id);
+
+
+--
+-- Name: vista_file_assets fk_rails_fdbde1c8b5; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vista_file_assets
+    ADD CONSTRAINT fk_rails_fdbde1c8b5 FOREIGN KEY (vista_raw_record_id) REFERENCES public.vista_raw_records(id);
 
 
 --
@@ -6894,11 +8386,27 @@ ALTER TABLE ONLY public.push_subscriptions
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 2mdapwrMpWwV9mzOULrwmBR3Dw3FfT3xZSAjNrSQk9bjPCITN6tHG06bF4If9R7
+\unrestrict ACg8yrZucGpRsX2D5MonXkPMQIfZgbWF4WyQq49mbVxLqSByKYgv19tw97PDidJ
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260602193000'),
+('20260601092500'),
+('20260531194000'),
+('20260530212000'),
+('20260530205000'),
+('20260530200000'),
+('20260530190000'),
+('20260530183000'),
+('20260530170000'),
+('20260530152000'),
+('20260530123000'),
+('20260527191000'),
+('20260527190500'),
+('20260527173158'),
+('20260523155636'),
+('20260523152839'),
 ('20260522211000'),
 ('20260522174500'),
 ('20260522173500'),

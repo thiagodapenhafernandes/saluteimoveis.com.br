@@ -21,6 +21,93 @@
   </div>
 </div>
 
+<% dashboard = @captacoes_dashboard || {} %>
+<div class="row g-3 mb-3">
+  <div class="col-6 col-lg-2">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body py-3">
+        <div class="small text-muted fw-semibold text-uppercase">Total</div>
+        <div class="h3 mb-0"><%= dashboard[:total].to_i %></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body py-3">
+        <div class="small text-muted fw-semibold text-uppercase">Rascunhos</div>
+        <div class="h3 mb-0 text-warning"><%= dashboard[:draft].to_i %></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body py-3">
+        <div class="small text-muted fw-semibold text-uppercase">Em revisão</div>
+        <div class="h3 mb-0 text-primary"><%= dashboard[:submitted_for_admin_review].to_i %></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body py-3">
+        <div class="small text-muted fw-semibold text-uppercase">Aprovadas</div>
+        <div class="h3 mb-0 text-info"><%= dashboard[:admin_approved].to_i %></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body py-3">
+        <div class="small text-muted fw-semibold text-uppercase">Publicadas</div>
+        <div class="h3 mb-0 text-success"><%= dashboard[:published].to_i %></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body py-3">
+        <div class="small text-muted fw-semibold text-uppercase">Devolvidas</div>
+        <div class="h3 mb-0 text-danger"><%= dashboard[:returned_to_broker].to_i %></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body py-3">
+    <div class="row g-3 small">
+      <div class="col-md-3">
+        <div class="text-muted fw-semibold text-uppercase mb-1">Tipos</div>
+        <div class="d-flex flex-wrap gap-2">
+          <span class="badge bg-light text-dark border">Residencial: <%= dashboard.dig(:property_kinds, :residencial).to_i %></span>
+          <span class="badge bg-light text-dark border">Sala comercial: <%= dashboard.dig(:property_kinds, :sala_comercial).to_i %></span>
+          <span class="badge bg-light text-dark border">Terreno: <%= dashboard.dig(:property_kinds, :terreno).to_i %></span>
+        </div>
+      </div>
+      <div class="col-md-5">
+        <div class="text-muted fw-semibold text-uppercase mb-1">Modalidades</div>
+        <div class="d-flex flex-wrap gap-2">
+          <span class="badge bg-info-subtle text-info border">Venda: <%= dashboard.dig(:modalities, :venda).to_i %></span>
+          <span class="badge bg-warning-subtle text-warning border">Locação: <%= dashboard.dig(:modalities, :locacao_anual).to_i %></span>
+          <span class="badge bg-success-subtle text-success border">Ambos: <%= dashboard.dig(:modalities, :ambos).to_i %></span>
+          <span class="badge bg-primary-subtle text-primary border">Temporada: <%= dashboard.dig(:modalities, :locacao_diaria).to_i %></span>
+          <% if dashboard.dig(:modalities, :blank).to_i.positive? %>
+            <span class="badge bg-light text-dark border">Sem modalidade: <%= dashboard.dig(:modalities, :blank).to_i %></span>
+          <% end %>
+        </div>
+      </div>
+      <div class="col-md-2">
+        <div class="text-muted fw-semibold text-uppercase mb-1">Últimos 7 dias</div>
+        <div class="fw-bold"><%= dashboard[:last_7_days].to_i %> captações</div>
+      </div>
+      <div class="col-md-2">
+        <div class="text-muted fw-semibold text-uppercase mb-1">Sem fotos</div>
+        <div class="fw-bold"><%= dashboard[:missing_photos].to_i %> captações</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Filtros -->
 <div class="card shadow-sm border-0 mb-3">
   <div class="card-body py-3">

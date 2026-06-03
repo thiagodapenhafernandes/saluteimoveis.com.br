@@ -117,6 +117,7 @@ module AttributeOptions
       "brinquedoteca" => "Brinquedoteca",
       "churrasqueira condominio" => "Churrasqueira condomínio",
       "circuito fechado t v" => "Circuito fechado TV",
+      "circuito fechado tv" => "Circuito fechado TV",
       "circuito interno tv" => "Circuito interno TV",
       "deposito" => "Depósito",
       "elevador" => "Elevador",

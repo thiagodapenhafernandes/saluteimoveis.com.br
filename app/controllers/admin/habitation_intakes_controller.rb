@@ -14,6 +14,7 @@ module Admin
     def index
       @status = params[:status].presence
       @q = params[:q].to_s.strip
+      build_index_dashboard
       @habitations = filtered_intakes_scope.includes(:admin_user, :admin_reviewed_by, :address)
       @habitations = @habitations.order(updated_at: :desc).paginate(page: params[:page], per_page: 20)
       @captacoes = @habitations
@@ -272,6 +273,43 @@ module Admin
       end
 
       scope
+    end
+
+    def build_index_dashboard
+      scope = scoped_intakes
+      status_counts = scope.group(:intake_status).count
+      modality_counts = scope.group(:intake_modalidade).count
+      total = scope.count
+      commercial_count = scope.where(
+        "categoria ILIKE :sala OR categoria ILIKE :loja OR categoria ILIKE :comercial",
+        sala: "%Sala%",
+        loja: "%Loja%",
+        comercial: "%Comercial%"
+      ).count
+      land_count = scope.where("categoria ILIKE ?", "%Terreno%").count
+
+      @captacoes_dashboard = {
+        total: total,
+        draft: status_counts[nil].to_i + status_counts["draft"].to_i,
+        returned_to_broker: status_counts["returned_to_broker"].to_i,
+        submitted_for_admin_review: status_counts["submitted_for_admin_review"].to_i,
+        admin_approved: status_counts["admin_approved"].to_i,
+        published: status_counts["published"].to_i,
+        last_7_days: scope.where(created_at: 7.days.ago.beginning_of_day..Time.current).count,
+        missing_photos: scope.where("pictures IS NULL OR pictures = '[]'::jsonb").count,
+        property_kinds: {
+          residencial: [total - commercial_count - land_count, 0].max,
+          sala_comercial: commercial_count,
+          terreno: land_count
+        },
+        modalities: {
+          venda: modality_counts["venda"].to_i,
+          locacao_anual: modality_counts["locacao_anual"].to_i,
+          ambos: modality_counts["ambos"].to_i,
+          locacao_diaria: modality_counts["locacao_diaria"].to_i,
+          blank: modality_counts[nil].to_i
+        }
+      }
     end
 
     def export_filters
