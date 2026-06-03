@@ -127,12 +127,17 @@ module Vista
       @workers.times.map do
         Thread.new do
           loop do
-            codigo = queue.pop(true)
-            ActiveRecord::Base.connection_pool.with_connection do
-              process_codigo(codigo, result, result_mutex, started_at)
+            begin
+              codigo = queue.pop(true)
+            rescue ThreadError
+              break
             end
-          rescue ThreadError
-            break
+
+            begin
+              process_codigo(codigo, result, result_mutex, started_at)
+            ensure
+              ActiveRecord::Base.connection_handler.clear_active_connections!
+            end
           end
         end
       end.each(&:join)
