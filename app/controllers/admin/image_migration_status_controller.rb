@@ -68,9 +68,7 @@ class Admin::ImageMigrationStatusController < Admin::BaseController
   private
 
   def build_status
-    source_scope = Habitation
-      .where.not(imovel_dwv: "Sim")
-      .where("jsonb_typeof(pictures) = ? AND jsonb_array_length(pictures) > 0", "array")
+    source_scope = api_picture_source_scope
 
     total_properties = source_scope.count
     properties_with_photos = source_scope.joins(:photos_attachments).distinct.count
@@ -122,23 +120,35 @@ class Admin::ImageMigrationStatusController < Admin::BaseController
   end
 
   def public_vista_first_scope
-    Habitation
-      .where.not(imovel_dwv: "Sim")
+    api_picture_source_scope
       .where(exibir_no_site_flag: true)
       .where(status: PUBLIC_STATUSES)
-      .where("jsonb_typeof(pictures) = ? AND jsonb_array_length(pictures) > 0", "array")
       .where.missing(:photos_attachments)
+  end
+
+  def api_picture_source_scope
+    Vista::ApiPictureMaterializationService.default_scope
   end
 
   def worker_status
     pid = read_integer(pid_file)
     running = pid.present? && process_running?(pid)
+    cleanup_stale_pid_file(pid) if pid.present? && !running
 
     {
       running: running,
-      pid: pid,
+      pid: running ? pid : nil,
       status: running ? "Rodando" : "Parado"
     }
+  end
+
+  def cleanup_stale_pid_file(pid)
+    return unless pid_file.exist?
+    return unless read_integer(pid_file) == pid
+
+    pid_file.delete
+  rescue
+    nil
   end
 
   def process_running?(pid)
@@ -244,9 +254,7 @@ class Admin::ImageMigrationStatusController < Admin::BaseController
   end
 
   def build_status_for_run_start
-    source_scope = Habitation
-      .where.not(imovel_dwv: "Sim")
-      .where("jsonb_typeof(pictures) = ? AND jsonb_array_length(pictures) > 0", "array")
+    source_scope = api_picture_source_scope
 
     {
       pending_properties: source_scope.where.missing(:photos_attachments).count,

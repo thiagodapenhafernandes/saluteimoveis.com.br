@@ -60,9 +60,7 @@ namespace :vista_files do
 
   desc "Materializa fotos em Habitation.pictures como anexos ActiveStorage, reaproveitando blobs existentes por filename"
   task materialize_api_photos: :environment do
-    scope = Habitation
-      .where.not(tipo: "Empreendimento")
-      .where("jsonb_typeof(pictures) = 'array' AND jsonb_array_length(pictures) > 0")
+    scope = Vista::ApiPictureMaterializationService.default_scope
     scope = scope.where(codigo: ENV["CODIGO"].to_s.split(",").map(&:strip).reject(&:blank?)) if ENV["CODIGO"].present?
     attached_ids = ActiveStorage::Attachment.where(record_type: "Habitation", name: "photos").select(:record_id)
     scope = scope.where.not(id: attached_ids) if ActiveModel::Type::Boolean.new.cast(ENV.fetch("ONLY_WITHOUT_ATTACHED", "false"))

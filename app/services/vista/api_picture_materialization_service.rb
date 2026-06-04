@@ -65,7 +65,7 @@ module Vista
 
     def self.default_scope
       Habitation
-        .where.not(tipo: "Empreendimento")
+        .where.not(imovel_dwv: "Sim")
         .where("jsonb_typeof(pictures) = 'array' AND jsonb_array_length(pictures) > 0")
     end
 
