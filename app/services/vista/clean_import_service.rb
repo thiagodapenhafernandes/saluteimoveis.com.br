@@ -402,7 +402,7 @@ module Vista
         valor_locacao_cents: money_cents(row["VALOR_ALUGUEL"]) || money_cents(row["VLR_ALUGUEL"]),
         valor_condominio_cents: money_cents(row["VLR_CONDOMINIO"]),
         valor_iptu_cents: money_cents(row["VLR_IPTU"]),
-        valor_total_aluguel_cents: money_cents(row["VLR_TOTAL_ALUGUEL"]),
+        valor_total_aluguel_cents: rent_total_cents(row),
         valor_promocional_cents: money_cents(row["VALOR_PROMOCIONAL"]),
         valor_venda_anterior_cents: money_cents(row["VENDA_ANTERIOR"]),
         valor_locacao_anterior_cents: money_cents(row["ALUGUEL_ANTERIOR"]),
@@ -861,6 +861,13 @@ module Vista
       (amount * 100).round.to_i if amount
     rescue ArgumentError
       nil
+    end
+
+    def rent_total_cents(row)
+      rent_cents = money_cents(row["VALOR_ALUGUEL"]) || money_cents(row["VLR_ALUGUEL"])
+      return 0 unless rent_cents.to_i.positive?
+
+      money_cents(row["VLR_TOTAL_ALUGUEL"]) || rent_cents
     end
 
     def date(raw)

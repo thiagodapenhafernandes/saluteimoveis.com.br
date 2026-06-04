@@ -12,6 +12,11 @@ export default class extends Controller {
     const condo = this.parseCurrency(this.condoTarget.value)
     const iptu = this.parseCurrency(this.iptuTarget.value)
 
+    if (rent <= 0) {
+      this.totalTarget.value = this.formatCurrency(0)
+      return
+    }
+
     const total = rent + condo + iptu
 
     this.totalTarget.value = this.formatCurrency(total)

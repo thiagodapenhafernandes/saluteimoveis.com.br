@@ -283,7 +283,7 @@ module Vista
         valor_locacao_cents: money_cents(row["VALOR_ALUGUEL"]) || money_cents(row["VLR_ALUGUEL"]),
         valor_condominio_cents: money_cents(row["VLR_CONDOMINIO"]),
         valor_iptu_cents: money_cents(row["VLR_IPTU"]),
-        valor_total_aluguel_cents: money_cents(row["VLR_TOTAL_ALUGUEL"]),
+        valor_total_aluguel_cents: rent_total_cents(row),
         titulo_anuncio: present_value(row["TITULO_SITE"]) || present_value(row["TITULO_WEB"]) || default_title(row, category),
         descricao_web: present_value(row["DESCRICAO_PARA_WEB"]) || present_value(row["TEXTO_ANUNCIO"]),
         descricao_interna: present_value(row["OBS"]),
@@ -472,6 +472,13 @@ module Vista
       return nil unless decimal&.positive?
 
       (decimal * 100).round.to_i
+    end
+
+    def rent_total_cents(row)
+      rent_cents = money_cents(row["VALOR_ALUGUEL"]) || money_cents(row["VLR_ALUGUEL"])
+      return 0 unless rent_cents.to_i.positive?
+
+      money_cents(row["VLR_TOTAL_ALUGUEL"]) || rent_cents
     end
 
     def date_value(value)
