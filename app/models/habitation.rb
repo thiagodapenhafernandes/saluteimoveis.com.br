@@ -657,7 +657,7 @@ class Habitation < ApplicationRecord
 
     return [] unless use_development_photos?
 
-    empreendimento&.own_public_image_sources || []
+    empreendimento&.own_public_image_sources.presence || development_image_payload_sources
   end
 
   def own_public_image_sources
@@ -690,6 +690,12 @@ class Habitation < ApplicationRecord
     else
       []
     end
+  end
+
+  def development_image_payload_sources
+    return [] unless fotos_empreendimento.is_a?(Array)
+
+    fotos_empreendimento.map { |pic| pic.is_a?(Hash) ? pic : { "url" => pic } }
   end
 
   def blob_path_for(attachment)

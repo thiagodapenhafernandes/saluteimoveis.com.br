@@ -75,8 +75,8 @@ module Habitation::SearchScopes
       )
     }
     
-    # Scope para imóveis com fotos públicas. Unidades comuns não devem entrar na
-    # listagem usando fotos_empreendimento, pois a página pública não as exibe.
+    # Scope para imóveis com fotos públicas. Unidades só contam fotos do
+    # empreendimento quando o fallback foi explicitamente ativado.
     scope :with_photos, -> { 
       where(
         "((COALESCE(habitations.tipo, '') = 'Empreendimento' AND (" \
@@ -85,6 +85,16 @@ module Habitation::SearchScopes
         "  EXISTS (SELECT 1 FROM active_storage_attachments WHERE active_storage_attachments.record_id = habitations.id AND active_storage_attachments.record_type = 'Habitation')" \
         ")) OR (COALESCE(habitations.tipo, '') <> 'Empreendimento' AND (" \
         "  (jsonb_typeof(pictures) = 'array' AND jsonb_array_length(pictures) > 0) OR " \
+        "  (use_development_photos_flag = TRUE AND jsonb_typeof(fotos_empreendimento) = 'array' AND jsonb_array_length(fotos_empreendimento) > 0) OR " \
+        "  (use_development_photos_flag = TRUE AND EXISTS (" \
+        "    SELECT 1 FROM habitations developments " \
+        "    WHERE developments.codigo = habitations.codigo_empreendimento " \
+        "      AND (" \
+        "        (jsonb_typeof(developments.pictures) = 'array' AND jsonb_array_length(developments.pictures) > 0) OR " \
+        "        (jsonb_typeof(developments.fotos_empreendimento) = 'array' AND jsonb_array_length(developments.fotos_empreendimento) > 0) OR " \
+        "        EXISTS (SELECT 1 FROM active_storage_attachments dev_attachments WHERE dev_attachments.record_id = developments.id AND dev_attachments.record_type = 'Habitation')" \
+        "      )" \
+        "  )) OR " \
         "  EXISTS (SELECT 1 FROM active_storage_attachments WHERE active_storage_attachments.record_id = habitations.id AND active_storage_attachments.record_type = 'Habitation')" \
         ")))"
       ) 

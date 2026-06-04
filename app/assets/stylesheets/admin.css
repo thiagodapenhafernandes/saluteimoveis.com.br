@@ -178,7 +178,7 @@ html:has(body.admin-layout) {
   background: white;
   border-bottom: 1px solid #e5e7eb;
   padding: calc(12px + env(safe-area-inset-top, 0px)) calc(24px + env(safe-area-inset-right, 0px)) 12px calc(24px + env(safe-area-inset-left, 0px));
-  position: sticky;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
@@ -187,6 +187,7 @@ html:has(body.admin-layout) {
   justify-content: space-between;
   align-items: center;
   min-height: calc(64px + env(safe-area-inset-top, 0px));
+  height: calc(var(--admin-navbar-height) + env(safe-area-inset-top, 0px));
   width: 100%;
   max-width: 100vw;
 }
@@ -273,10 +274,10 @@ html:has(body.admin-layout) {
   width: 260px;
   background: white;
   border-right: 1px solid #e5e7eb;
-  height: calc(100vh - var(--admin-navbar-height));
+  height: calc(100vh - var(--admin-navbar-height) - env(safe-area-inset-top, 0px));
   position: fixed;
   left: 0;
-  top: var(--admin-navbar-height);
+  top: calc(var(--admin-navbar-height) + env(safe-area-inset-top, 0px));
   overflow-y: auto;
   padding: 20px 0;
   z-index: 900;
@@ -333,10 +334,6 @@ html:has(body.admin-layout) {
 }
 
 @media (min-width: 768px) {
-  .admin-navbar {
-    position: fixed;
-  }
-
   .admin-content {
     min-height: 100vh;
     padding-top: calc(var(--admin-navbar-height) + 1.25rem);

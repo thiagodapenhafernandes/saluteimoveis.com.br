@@ -67,12 +67,28 @@ class Admin::HabitationsController < Admin::BaseController
     "proprietario" => "Proprietario",
     "codigo_empreendimento" => "Cod empreendimento"
   }.freeze
+  SORT_OPTIONS = {
+    "data_cadastro_crm" => { label: "Mais recentes", column: "data_cadastro_crm", default_direction: "desc" },
+    "codigo" => { label: "Referência", column: "codigo", default_direction: "asc" },
+    "categoria" => { label: "Categoria", column: "categoria", default_direction: "asc" },
+    "endereco" => { label: "Endereço", column: "endereco", default_direction: "asc" },
+    "numero" => { label: "Endereço número", column: "numero", default_direction: "asc" },
+    "complemento" => { label: "Endereço complemento", column: "complemento", default_direction: "asc" },
+    "dormitorios_qtd" => { label: "Dormitório", column: "dormitorios_qtd", default_direction: "desc" },
+    "valor_venda_cents" => { label: "Valor venda", column: "valor_venda_cents", default_direction: "desc" },
+    "valor_locacao_cents" => { label: "Valor aluguel", column: "valor_locacao_cents", default_direction: "desc" },
+    "bairro_comercial" => { label: "Bairro comercial", column: "bairro_comercial", default_direction: "asc" },
+    "nome_empreendimento" => { label: "Empreendimento", column: "nome_empreendimento", default_direction: "asc" },
+    "valor_m2_aluguel" => { label: "Valor M2 aluguel", column: "valor_por_m2_cents", default_direction: "desc" },
+    "valor_por_m2_cents" => { label: "Valor M2 venda", column: "valor_por_m2_cents", default_direction: "desc" },
+    "valor_total_aluguel_cents" => { label: "Valor total aluguel", column: "valor_total_aluguel_cents", default_direction: "desc" }
+  }.freeze
 
   before_action :set_habitation, only: [:edit, :update, :destroy, :generate_ai_preview, :format_ai_suggestion, :apply_ai_suggestion]
   before_action :authorize_habitation_edit!, only: [:edit, :update]
 
   before_action :load_autocomplete_data, only: [:new, :edit, :create, :update]
-  helper_method :can_view_proprietor_data?, :can_edit_habitation?
+  helper_method :can_view_proprietor_data?, :can_edit_habitation?, :sort_options
   helper_method :can_release_intake_to_broker?, :can_manage_intake_status?
 
   def index
@@ -497,13 +513,19 @@ class Admin::HabitationsController < Admin::BaseController
   end
 
   def sort_column
-    Habitation.column_names.include?(params[:sort]) ? params[:sort] : "data_cadastro_crm"
+    sort_options.fetch(params[:sort].presence, sort_options["data_cadastro_crm"])[:column]
   end
 
   def sort_direction
-    %w[asc desc].include?(params[:direction]) ? params[:direction] : "desc"
+    return params[:direction] if %w[asc desc].include?(params[:direction])
+
+    sort_options.fetch(params[:sort].presence, sort_options["data_cadastro_crm"])[:default_direction]
   end
   helper_method :sort_column, :sort_direction
+
+  def sort_options
+    SORT_OPTIONS
+  end
 
   def set_habitation
     @habitation = Habitation.find(params[:id])

@@ -1,5 +1,4 @@
-<aside class="admin-sidebar">
-  <%
+<%
     vista_soft_context = controller_name == 'habitations' && params[:sort] == 'last_sync_at'
     can_access = lambda do |action, resource|
       if respond_to?(:can?)
@@ -12,7 +11,7 @@
       false
     end
   %>
-  <ul class="sidebar-menu">
+<ul class="sidebar-menu">
 
     <!-- 1. Dashboard -->
     <% if can_access.call(:view, :dashboard) %>
@@ -221,5 +220,4 @@
       </li>
     <% end %>
 
-  </ul>
-</aside>
+</ul>

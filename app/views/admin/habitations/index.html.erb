@@ -1,4 +1,206 @@
 <style>
+  .habitations-filter-workspace {
+    border: 1px solid rgba(226, 232, 240, 0.9) !important;
+    border-radius: 14px;
+    overflow: hidden;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  }
+  .habitations-filter-master {
+    padding: 1rem 1.15rem;
+    background:
+      radial-gradient(circle at top left, rgba(13, 110, 253, 0.055), transparent 28rem),
+      #ffffff;
+  }
+  .filter-master-layout {
+    display: grid;
+    grid-template-columns: minmax(280px, 1.6fr) minmax(260px, 1.05fr) minmax(180px, 0.55fr);
+    gap: 0.85rem;
+    align-items: stretch;
+  }
+  .filter-pane {
+    min-width: 0;
+    border: 1px solid #e2e8f0;
+    background: rgba(255, 255, 255, 0.86);
+    border-radius: 12px;
+    padding: 0.8rem;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.035);
+  }
+  .filter-pane-primary {
+    border-color: rgba(191, 161, 95, 0.38);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 252, 245, 0.82));
+  }
+  .filter-pane-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.55rem;
+    color: #0f172a;
+    font-size: 0.9rem;
+  }
+  .filter-pane-kicker {
+    display: inline-flex;
+    color: #64748b;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .filter-search-input .form-control,
+  .filter-search-input .input-group-text,
+  .filter-inline-fields .form-select,
+  .filter-action-stack .btn {
+    min-height: 42px;
+  }
+  .filter-inline-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.65rem;
+  }
+  .filter-action-stack {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.55rem;
+  }
+  .filter-action-stack .btn {
+    border-radius: 10px;
+  }
+  .filter-detail-collapse {
+    background: #f8fafc;
+  }
+  .habitations-filter-detail {
+    padding: 1rem 1.15rem;
+  }
+  .filter-detail-grid {
+    display: grid;
+    grid-template-columns: minmax(280px, 1.35fr) minmax(300px, 1fr) minmax(220px, 0.7fr);
+    gap: 0.85rem;
+    align-items: start;
+  }
+  .filter-detail-section {
+    min-width: 0;
+    border: 1px solid #e8eef5;
+    border-radius: 12px;
+    background: #fcfdff;
+    padding: 0.85rem;
+  }
+  .filter-detail-section__title {
+    color: #64748b;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 0.65rem;
+  }
+  .filter-location-grid {
+    display: grid;
+    grid-template-columns: minmax(160px, 1.3fr) minmax(72px, 0.45fr) minmax(110px, 0.55fr);
+    gap: 0.55rem;
+  }
+  .filter-location-grid .wide,
+  .filter-business-grid .wide,
+  .filter-date-grid .wide {
+    grid-column: span 2;
+  }
+  .filter-business-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
+  }
+  .filter-price-pair {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(90px, 1fr));
+    gap: 0.45rem;
+  }
+  .filter-date-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
+  }
+  .filter-date-grid .form-control {
+    min-width: 0;
+  }
+  .habitations-filter-detail .row.g-3 {
+    --bs-gutter-x: 0.65rem;
+    --bs-gutter-y: 0.65rem;
+  }
+  .habitations-filter-detail .form-label {
+    margin-bottom: 0.25rem;
+  }
+  .habitations-filter-detail .form-control,
+  .habitations-filter-detail .form-select,
+  .habitations-filter-detail .input-group-text {
+    min-height: 36px;
+    font-size: 0.84rem;
+  }
+  .habitations-filter-detail .filter-multi-compact {
+    min-height: 36px;
+    height: 38px;
+    overflow: hidden;
+  }
+  .habitations-filter-detail details {
+    border-color: #e2e8f0 !important;
+    background: #ffffff !important;
+    border-radius: 12px !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+  .habitations-filter-detail details > summary {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    min-height: 42px;
+  }
+  .habitations-filter-detail details > summary::-webkit-details-marker {
+    display: none;
+  }
+  .habitations-filter-detail details > summary::after {
+    content: "\F282";
+    font-family: "bootstrap-icons";
+    margin-left: auto;
+    font-size: 0.85rem;
+    color: #64748b;
+    transition: transform 0.18s ease;
+  }
+  .habitations-filter-detail details[open] > summary::after {
+    transform: rotate(180deg);
+  }
+  .habitations-filter-detail details > div {
+    max-height: 58vh;
+    overflow-y: auto;
+  }
+  .habitations-filter-detail .border.rounded-3.p-3 {
+    padding: 0.85rem !important;
+    background: #fcfdff;
+    border-color: #e8eef5 !important;
+  }
+  .habitations-filter-detail h6 {
+    font-size: 0.82rem;
+    letter-spacing: 0.02em;
+  }
+  .habitations-filter-detail .form-check {
+    margin-bottom: 0.25rem;
+  }
+  .habitations-filter-detail .form-check-label {
+    font-size: 0.82rem;
+  }
+  @media (max-width: 1199.98px) {
+    .filter-master-layout {
+      grid-template-columns: 1fr 1fr;
+    }
+    .filter-detail-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+    .filter-detail-section-dates {
+      grid-column: 1 / -1;
+    }
+    .filter-pane-actions {
+      grid-column: 1 / -1;
+    }
+    .filter-action-stack {
+      grid-template-columns: minmax(160px, 1fr) minmax(140px, 0.6fr);
+    }
+  }
   /* Mobile-specific tweaks for /admin/habitations */
   @media (max-width: 767.98px) {
     .habitations-header { flex-direction: column !important; align-items: stretch !important; gap: .75rem; }
@@ -23,6 +225,29 @@
     .habitations-results-actions .btn { font-size: .8rem; padding: .35rem .6rem; }
 
     /* Filter card compactação */
+    .filter-master-layout,
+    .filter-detail-grid,
+    .filter-location-grid,
+    .filter-business-grid,
+    .filter-date-grid,
+    .filter-inline-fields,
+    .filter-action-stack,
+    .filter-price-pair {
+      grid-template-columns: 1fr;
+    }
+    .filter-detail-section-dates,
+    .filter-location-grid .wide,
+    .filter-business-grid .wide,
+    .filter-date-grid .wide {
+      grid-column: auto;
+    }
+    .habitations-filter-master,
+    .habitations-filter-detail {
+      padding: .85rem;
+    }
+    .filter-pane {
+      padding: .75rem;
+    }
     .habitations-filter-card .form-label { font-size: .7rem; margin-bottom: .25rem; }
     .habitations-filter-card .form-control,
     .habitations-filter-card .form-select { font-size: .9rem; }
@@ -88,8 +313,8 @@
   clear_extras_params = request.query_parameters.except(*extra_filter_keys, "page")
 %>
 
-<div class="card shadow-sm mb-4 border-0 habitations-filter-card" data-controller="collapse">
-  <div class="card-body">
+<div class="card shadow-sm mb-4 border-0 habitations-filter-card habitations-filter-workspace" data-controller="collapse">
+  <div class="card-body habitations-filter-master">
     <%= form_with url: admin_habitations_path, method: :get, local: true do |f| %>
       <%= hidden_field_tag :sort, params[:sort] if params[:sort].present? %>
       <%= hidden_field_tag :direction, params[:direction] if params[:direction].present? %>
@@ -97,35 +322,59 @@
       <%= hidden_field_tag :ownership, @ownership_scope if @ownership_scope.present? %>
       <%= hidden_field_tag :intake_review, @intake_review if @intake_review.present? %>
 
-      <div class="row g-3 align-items-end">
-        <div class="col-lg-5 col-md-12">
+      <div class="filter-master-layout">
+        <div class="filter-pane filter-pane-primary">
+          <div class="filter-pane-heading">
+            <span class="filter-pane-kicker">Busca</span>
+            <strong>Localizar imóvel</strong>
+          </div>
           <label class="form-label small fw-bold text-muted text-uppercase">Palavra-chave</label>
-          <div class="input-group">
+          <div class="input-group filter-search-input">
             <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-            <%= f.text_field :q, value: params[:q], class: "form-control border-start-0", placeholder: "Código, Empreendimento, Endereço..." %>
+            <%= f.text_field :q, value: params[:q], class: "form-control border-start-0", placeholder: "Código, empreendimento, endereço..." %>
           </div>
         </div>
-        <div class="col-lg-2 col-md-4">
-          <label class="form-label small fw-bold text-muted text-uppercase">Status</label>
-          <%= f.select :status, @filter_statuses, { include_blank: "Todos", selected: params[:status] }, class: "form-select" %>
+
+        <div class="filter-pane filter-pane-secondary">
+          <div class="filter-pane-heading">
+            <span class="filter-pane-kicker">Recorte</span>
+            <strong>Tipo e status</strong>
+          </div>
+          <div class="filter-inline-fields">
+            <div>
+              <label class="form-label small fw-bold text-muted text-uppercase">Status</label>
+              <%= f.select :status, @filter_statuses, { include_blank: "Todos", selected: params[:status] }, class: "form-select" %>
+            </div>
+            <div>
+              <label class="form-label small fw-bold text-muted text-uppercase">Categoria</label>
+              <%= f.select :categoria, @filter_categories, { include_blank: "Todas", selected: params[:categoria] }, class: "form-select" %>
+            </div>
+          </div>
         </div>
-        <div class="col-lg-2 col-md-4">
-          <label class="form-label small fw-bold text-muted text-uppercase">Categoria</label>
-          <%= f.select :categoria, @filter_categories, { include_blank: "Todas", selected: params[:categoria] }, class: "form-select" %>
-        </div>
-        <div class="col-lg-3 col-md-4 d-flex gap-2">
-          <button class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center <%= extras_open ? '' : 'collapsed' %>"
-                  type="button"
-                  data-action="click->collapse#toggle"
-                  data-collapse-target="button"
-                  aria-expanded="<%= extras_open %>">
-            <i class="bi bi-sliders me-2"></i>
-            Mais filtros
-            <% if active_extra_filters_count.positive? %>
-              <span class="badge rounded-pill bg-primary ms-2"><%= active_extra_filters_count %></span>
+
+        <div class="filter-pane filter-pane-actions">
+          <div class="filter-pane-heading">
+            <span class="filter-pane-kicker">Operação</span>
+            <strong><%= active_extra_filters_count.positive? ? "#{active_extra_filters_count} extras ativos" : "Filtros rápidos" %></strong>
+          </div>
+          <div class="filter-action-stack">
+            <button class="btn btn-outline-primary d-flex align-items-center justify-content-center <%= extras_open ? '' : 'collapsed' %>"
+                    type="button"
+                    data-action="click->collapse#toggle"
+                    data-collapse-target="button"
+                    aria-expanded="<%= extras_open %>">
+              <i class="bi bi-sliders me-2"></i>
+              Detalhes
+              <% if active_extra_filters_count.positive? %>
+                <span class="badge rounded-pill bg-primary ms-2"><%= active_extra_filters_count %></span>
+              <% end %>
+            </button>
+            <%= f.submit "Aplicar", class: "btn btn-primary fw-bold" %>
+            <%= link_to admin_habitations_path, class: "btn btn-light border fw-semibold d-flex align-items-center justify-content-center" do %>
+              <i class="bi bi-x-circle me-2"></i>
+              Limpar
             <% end %>
-          </button>
-          <%= f.submit "Aplicar", class: "btn btn-primary px-4 fw-bold" %>
+          </div>
         </div>
       </div>
 
@@ -141,12 +390,15 @@
     <% end %>
   </div>
 
-  <div class="collapse <%= extras_open ? 'show' : '' %> border-top" data-collapse-target="content">
-    <div class="card-body bg-white">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h6 class="mb-0 fw-bold text-primary">
-          <i class="bi bi-funnel me-2"></i>Filtros de busca
-        </h6>
+  <div class="collapse <%= extras_open ? 'show' : '' %> border-top filter-detail-collapse" data-collapse-target="content">
+    <div class="card-body bg-white habitations-filter-detail">
+      <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+        <div>
+          <span class="filter-pane-kicker">Detalhamento</span>
+          <h6 class="mb-0 fw-bold text-primary">
+            <i class="bi bi-funnel me-2"></i>Refinar catálogo
+          </h6>
+        </div>
         <%= link_to "Limpar extras", admin_habitations_path(clear_extras_params), class: "btn btn-link text-decoration-none text-muted fw-semibold small p-0" %>
       </div>
 
@@ -160,102 +412,116 @@
         <%= hidden_field_tag :ownership, @ownership_scope if @ownership_scope.present? %>
         <%= hidden_field_tag :intake_review, @intake_review if @intake_review.present? %>
 
-        <div class="row g-3">
-          <div class="col-md-2">
-            <label class="form-label small fw-bold text-muted text-uppercase">Rua</label>
-            <%= f.text_field :logradouro, value: params[:logradouro], class: "form-control", placeholder: "Ex: Avenida Brasil" %>
-          </div>
-          <div class="col-md-1">
-            <label class="form-label small fw-bold text-muted text-uppercase">Número</label>
-            <%= f.text_field :numero, value: params[:numero], class: "form-control", placeholder: "Ex: 123" %>
-          </div>
-          <div class="col-md-2">
-            <label class="form-label small fw-bold text-muted text-uppercase">CEP</label>
-            <%= f.text_field :cep, value: params[:cep], class: "form-control", placeholder: "Ex: 88330-590" %>
-          </div>
-          <div class="col-md-2">
-            <label class="form-label small fw-bold text-muted text-uppercase">Cidade</label>
-            <%= f.select :cidade, @filter_cities, { include_blank: "Todas", selected: params[:cidade] }, class: "form-select" %>
-          </div>
-          <div class="col-md-2">
-            <label class="form-label small fw-bold text-muted text-uppercase">Bairro</label>
-            <%= f.text_field :bairro, value: params[:bairro], class: "form-control", placeholder: "Ex: Centro" %>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small fw-bold text-muted text-uppercase">Bairro comercial</label>
-            <%= f.select :bairro_comercial,
-                         @filter_bairros_comerciais,
-                         { include_blank: "Todos", selected: params[:bairro_comercial] },
-                         {
-                           class: "form-select",
-                           data: {
-                             controller: "tom-select",
-                             tom_select_create_value: true,
-                             placeholder: "Ex: Barra"
-                           }
-                         } %>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small fw-bold text-muted text-uppercase">Situação</label>
-            <%= f.select :situacao, @filter_situacoes, { include_blank: "Todas", selected: params[:situacao] }, class: "form-select" %>
-          </div>
-
-          <div class="col-md-3">
-            <label class="form-label small fw-bold text-muted text-uppercase">Preço Reduzido</label>
-            <%= f.select :promotion_status,
-                         [["Com preço reduzido", "with_promo"], ["Sem preço reduzido", "without_promo"]],
-                         { include_blank: "Todos", selected: params[:promotion_status] },
-                         class: "form-select" %>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small fw-bold text-muted text-uppercase">Aceita Permuta</label>
-            <%= f.select :accepts_exchange,
-                         [["Sim", "1"], ["Não", "0"]],
-                         { include_blank: "Todos", selected: params[:accepts_exchange] },
-                         class: "form-select" %>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small fw-bold text-muted text-uppercase">Onde estão as chaves</label>
-            <%= f.select :key_location, @filter_key_locations, { include_blank: "Todos", selected: params[:key_location] }, class: "form-select" %>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small fw-bold text-muted text-uppercase">Adm. Locação Salute</label>
-            <%= f.select :salute_rental_management,
-                         [["Sim", "1"], ["Não", "0"]],
-                         { include_blank: "Todos", selected: params[:salute_rental_management] },
-                         class: "form-select" %>
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label small fw-bold text-muted text-uppercase">Preço Mín.</label>
-            <div class="input-group">
-              <span class="input-group-text bg-white">R$</span>
-              <%= f.text_field :min_price, value: params[:min_price], class: "form-control money-mask", placeholder: "0,00" %>
+        <div class="filter-detail-grid">
+          <section class="filter-detail-section">
+            <div class="filter-detail-section__title">Localização</div>
+            <div class="filter-location-grid">
+              <div class="wide">
+                <label class="form-label small fw-bold text-muted text-uppercase">Rua</label>
+                <%= f.text_field :logradouro, value: params[:logradouro], class: "form-control", placeholder: "Ex: Avenida Brasil" %>
+              </div>
+              <div>
+                <label class="form-label small fw-bold text-muted text-uppercase">Número</label>
+                <%= f.text_field :numero, value: params[:numero], class: "form-control", placeholder: "123" %>
+              </div>
+              <div>
+                <label class="form-label small fw-bold text-muted text-uppercase">CEP</label>
+                <%= f.text_field :cep, value: params[:cep], class: "form-control", placeholder: "88330-590" %>
+              </div>
+              <div>
+                <label class="form-label small fw-bold text-muted text-uppercase">Cidade</label>
+                <%= f.select :cidade, @filter_cities, { include_blank: "Todas", selected: params[:cidade] }, class: "form-select" %>
+              </div>
+              <div>
+                <label class="form-label small fw-bold text-muted text-uppercase">Bairro</label>
+                <%= f.text_field :bairro, value: params[:bairro], class: "form-control", placeholder: "Centro" %>
+              </div>
+              <div class="wide">
+                <label class="form-label small fw-bold text-muted text-uppercase">Bairro comercial</label>
+                <%= f.select :bairro_comercial,
+                             @filter_bairros_comerciais,
+                             { include_blank: "Todos", selected: params[:bairro_comercial] },
+                             {
+                               class: "form-select",
+                               data: {
+                                 controller: "tom-select",
+                                 tom_select_create_value: true,
+                                 placeholder: "Ex: Barra"
+                               }
+                             } %>
+              </div>
             </div>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label small fw-bold text-muted text-uppercase">Preço Máx.</label>
-            <div class="input-group">
-              <span class="input-group-text bg-white">R$</span>
-              <%= f.text_field :max_price, value: params[:max_price], class: "form-control money-mask", placeholder: "S/ Limite" %>
+          </section>
+
+          <section class="filter-detail-section">
+            <div class="filter-detail-section__title">Negócio</div>
+            <div class="filter-business-grid">
+              <div>
+                <label class="form-label small fw-bold text-muted text-uppercase">Situação</label>
+                <%= f.select :situacao, @filter_situacoes, { include_blank: "Todas", selected: params[:situacao] }, class: "form-select" %>
+              </div>
+              <div>
+                <label class="form-label small fw-bold text-muted text-uppercase">Preço reduzido</label>
+                <%= f.select :promotion_status,
+                             [["Com preço reduzido", "with_promo"], ["Sem preço reduzido", "without_promo"]],
+                             { include_blank: "Todos", selected: params[:promotion_status] },
+                             class: "form-select" %>
+              </div>
+              <div>
+                <label class="form-label small fw-bold text-muted text-uppercase">Aceita permuta</label>
+                <%= f.select :accepts_exchange,
+                             [["Sim", "1"], ["Não", "0"]],
+                             { include_blank: "Todos", selected: params[:accepts_exchange] },
+                             class: "form-select" %>
+              </div>
+              <div>
+                <label class="form-label small fw-bold text-muted text-uppercase">Chaves</label>
+                <%= f.select :key_location, @filter_key_locations, { include_blank: "Todos", selected: params[:key_location] }, class: "form-select" %>
+              </div>
+              <div>
+                <label class="form-label small fw-bold text-muted text-uppercase">Adm. locação</label>
+                <%= f.select :salute_rental_management,
+                             [["Sim", "1"], ["Não", "0"]],
+                             { include_blank: "Todos", selected: params[:salute_rental_management] },
+                             class: "form-select" %>
+              </div>
+              <div class="wide">
+                <label class="form-label small fw-bold text-muted text-uppercase">Preço</label>
+                <div class="filter-price-pair">
+                  <div class="input-group">
+                    <span class="input-group-text bg-white">R$</span>
+                    <%= f.text_field :min_price, value: params[:min_price], class: "form-control money-mask", placeholder: "Mín." %>
+                  </div>
+                  <div class="input-group">
+                    <span class="input-group-text bg-white">R$</span>
+                    <%= f.text_field :max_price, value: params[:max_price], class: "form-control money-mask", placeholder: "Máx." %>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small fw-bold text-muted text-uppercase">Cadastro de</label>
-            <%= f.date_field :captacao_inicio, value: params[:captacao_inicio], class: "form-control" %>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small fw-bold text-muted text-uppercase">Cadastro até</label>
-            <%= f.date_field :captacao_fim, value: params[:captacao_fim], class: "form-control" %>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small fw-bold text-muted text-uppercase">Atualização de</label>
-            <%= f.date_field :atualizacao_inicio, value: params[:atualizacao_inicio], class: "form-control" %>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small fw-bold text-muted text-uppercase">Atualização até</label>
-            <%= f.date_field :atualizacao_fim, value: params[:atualizacao_fim], class: "form-control" %>
-          </div>
+          </section>
+
+          <section class="filter-detail-section filter-detail-section-dates">
+            <div class="filter-detail-section__title">Datas</div>
+            <div class="filter-date-grid">
+              <div>
+                <label class="form-label small fw-bold text-muted text-uppercase">Cadastro de</label>
+                <%= f.date_field :captacao_inicio, value: params[:captacao_inicio], class: "form-control" %>
+              </div>
+              <div>
+                <label class="form-label small fw-bold text-muted text-uppercase">Cadastro até</label>
+                <%= f.date_field :captacao_fim, value: params[:captacao_fim], class: "form-control" %>
+              </div>
+              <div>
+                <label class="form-label small fw-bold text-muted text-uppercase">Atualiz. de</label>
+                <%= f.date_field :atualizacao_inicio, value: params[:atualizacao_inicio], class: "form-control" %>
+              </div>
+              <div>
+                <label class="form-label small fw-bold text-muted text-uppercase">Atualiz. até</label>
+                <%= f.date_field :atualizacao_fim, value: params[:atualizacao_fim], class: "form-control" %>
+              </div>
+            </div>
+          </section>
         </div>
 
         <details class="mt-4 border rounded-3 bg-light-subtle" <%= "open" if vista_advanced_open %>>
@@ -289,7 +555,7 @@
                                {},
                                {
                                  multiple: true,
-                                 class: "form-select",
+                                 class: "form-select filter-multi-compact",
                                  data: {
                                    controller: "tom-select",
                                    tom_select_create_value: false,
@@ -305,7 +571,7 @@
                                {},
                                {
                                  multiple: true,
-                                 class: "form-select",
+                                 class: "form-select filter-multi-compact",
                                  data: {
                                    controller: "tom-select",
                                    tom_select_create_value: false,
@@ -320,7 +586,7 @@
                                {},
                                {
                                  multiple: true,
-                                 class: "form-select",
+                                 class: "form-select filter-multi-compact",
                                  data: {
                                    controller: "tom-select",
                                    tom_select_create_value: false,
@@ -335,7 +601,7 @@
                                {},
                                {
                                  multiple: true,
-                                 class: "form-select",
+                                 class: "form-select filter-multi-compact",
                                  data: {
                                    controller: "tom-select",
                                    tom_select_create_value: false,
@@ -786,21 +1052,40 @@
       </ul>
     </div>
     
-    <div class="dropdown" data-controller="dropdown">
-      <button class="btn btn-white btn-sm border dropdown-toggle text-muted" 
-              type="button" 
-              data-action="click->dropdown#toggle"
-              aria-expanded="false">
-        <i class="bi bi-sort-down me-1"></i> Ordenar
-      </button>
-      <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" 
-          data-dropdown-target="menu" 
-          style="right: 0; left: auto; min-width: 200px;">
-        <li><%= link_to "Mais Recentes (Criação)", admin_habitations_path(request.params.merge(sort: 'data_cadastro_crm', direction: 'desc')), class: "dropdown-item small #{params[:sort] == 'data_cadastro_crm' && params[:direction] == 'desc' ? 'active' : ''}" %></li>
-        <li><%= link_to "Mais Antigos (Criação)", admin_habitations_path(request.params.merge(sort: 'data_cadastro_crm', direction: 'asc')), class: "dropdown-item small #{params[:sort] == 'data_cadastro_crm' && params[:direction] == 'asc' ? 'active' : ''}" %></li>
-        <li><hr class="dropdown-divider"></li>
-        <li><%= link_to "Atualizados Recentemente", admin_habitations_path(request.params.merge(sort: 'data_atualizacao_crm', direction: 'desc')), class: "dropdown-item small #{params[:sort] == 'data_atualizacao_crm' ? 'active' : ''}" %></li>
-      </ul>
+    <%
+      current_sort_key = sort_options.key?(params[:sort].to_s) ? params[:sort].to_s : "data_cadastro_crm"
+      current_sort_label = sort_options[current_sort_key][:label]
+      next_sort_direction = sort_direction == "asc" ? "desc" : "asc"
+    %>
+    <div class="d-flex align-items-center gap-1">
+      <div class="dropdown" data-controller="dropdown">
+        <button class="btn btn-white btn-sm border dropdown-toggle text-muted d-flex align-items-center"
+                type="button"
+                data-action="click->dropdown#toggle"
+                aria-expanded="false">
+          <i class="bi bi-sort-down me-1"></i>
+          <span>Ordenar: <strong class="text-dark"><%= current_sort_label %></strong></span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0"
+            data-dropdown-target="menu"
+            style="right: 0; left: auto; min-width: 240px;">
+          <% sort_options.each do |sort_key, sort_config| %>
+            <% active_sort = current_sort_key == sort_key %>
+            <li>
+              <%= link_to admin_habitations_path(request.query_parameters.except("page").merge(sort: sort_key, direction: sort_config[:default_direction])),
+                          class: "dropdown-item small d-flex align-items-center gap-2 #{active_sort ? 'active' : ''}" do %>
+                <i class="bi <%= active_sort ? 'bi-check-lg' : 'bi-dot' %>"></i>
+                <span><%= sort_config[:label] %></span>
+              <% end %>
+            </li>
+          <% end %>
+        </ul>
+      </div>
+      <%= link_to admin_habitations_path(request.query_parameters.except("page").merge(sort: current_sort_key, direction: next_sort_direction)),
+                  class: "btn btn-white btn-sm border text-muted",
+                  title: sort_direction == "asc" ? "Ordenar decrescente" : "Ordenar crescente" do %>
+        <i class="bi bi-sort-<%= sort_direction == "asc" ? "up" : "down" %>"></i>
+      <% end %>
     </div>
   </div>
 </div>
@@ -897,13 +1182,13 @@
                 </div>
               <% end %>
 
-              <div class="mobile-property-actions d-md-none position-absolute end-0 p-2 d-flex flex-column gap-2"
+              <div class="mobile-property-actions admin-property-actions d-md-none position-absolute end-0 p-2 d-flex flex-column gap-2"
                    style="top: <%= bulk_actions_allowed ? '38px' : '0' %>; z-index: 6;"
                    onclick="event.stopPropagation();">
                 <%= render "shared/broker_share_menu", property: imovel %>
 
                 <div class="dropdown" data-controller="dropdown">
-                  <button class="btn btn-light btn-sm rounded-circle dropdown-toggle no-caret mobile-property-action-button"
+                  <button class="btn btn-sm rounded-circle dropdown-toggle no-caret mobile-property-action-button admin-property-actions__button"
                           type="button"
                           aria-expanded="false"
                           data-action="click->dropdown#toggle"
@@ -971,21 +1256,22 @@
                        <h5 class="card-title fw-bold text-dark mb-1" style="font-family: 'Outfit', sans-serif;"><%= imovel.bairro %> <span class="text-muted fw-light mx-1">•</span> <%= imovel.nome_empreendimento.presence || imovel.titulo_anuncio %></h5>
                        <div class="small font-monospace text-muted mt-1">
                           REF: <span class="fw-bold text-dark"><%= imovel.codigo %></span>
-                          <% if imovel.codigo.present? && imovel.imovel_dwv.to_s != "Sim" %>
-                            <span class="badge bg-light text-secondary border ms-2 fw-semibold" title="Código de referência do imóvel na Vista" style="font-size: 0.65rem;">
-                              Vista: <%= imovel.codigo %>
+                          <% if imovel.dwv_property? %>
+                            <span class="badge admin-property-dwv-badge ms-2" title="<%= imovel.codigo_dwv.present? ? "Código DWV: #{imovel.codigo_dwv}" : "Imóvel sincronizado via DWV" %>">
+                              DWV
                             </span>
                           <% end %>
                           <span class="badge bg-primary-subtle text-primary border-0 ms-2 text-uppercase" style="font-size: 0.65rem;"><%= imovel.status || 'VENDA' %></span>
                           <span class="text-muted ms-1">• <%= imovel.categoria %></span>
                        </div>
                     </div>
-                    <div class="d-none d-md-flex align-items-start gap-2">
+                    <div class="admin-property-actions d-none d-md-flex align-items-start gap-2">
                       <%= render "shared/broker_share_menu", property: imovel %>
 
                       <div class="dropdown" data-controller="dropdown">
-                          <button class="btn btn-light btn-sm rounded-circle dropdown-toggle no-caret" 
-                                  type="button" 
+                          <button class="btn btn-sm rounded-circle dropdown-toggle no-caret admin-property-actions__button"
+                                  type="button"
+                                  title="Ações do imóvel"
                                   data-action="click->dropdown#toggle">
                             <i class="bi bi-three-dots-vertical"></i>
                           </button>
@@ -1278,14 +1564,57 @@
   .dropdown-toggle.no-caret::after {
     display: none !important;
   }
-  .mobile-property-action-button {
-    width: 34px;
-    height: 34px;
+  .admin-property-dwv-badge {
+    background: #022b3a;
+    color: #ffffff;
+    border: 1px solid rgba(2, 43, 58, 0.08);
+    border-radius: 999px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    padding: 0.32rem 0.52rem;
+    box-shadow: 0 2px 5px rgba(2, 43, 58, 0.12);
+  }
+  .admin-property-actions {
+    --admin-action-size: 38px;
+  }
+  .admin-property-actions .broker-share__trigger,
+  .admin-property-actions__button {
+    width: var(--admin-action-size);
+    height: var(--admin-action-size);
+    min-width: var(--admin-action-size);
+    padding: 0;
+    border: 1px solid #e2e8f0;
+    border-radius: 999px;
+    background: #f8fafc;
+    color: #022b3a;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid #e5e7eb;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
+    transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+  }
+  .admin-property-actions .broker-share__trigger i,
+  .admin-property-actions__button i {
+    font-size: 0.98rem;
+    line-height: 1;
+  }
+  .admin-property-actions .broker-share__trigger:hover,
+  .admin-property-actions .broker-share__trigger:focus-visible,
+  .admin-property-actions__button:hover,
+  .admin-property-actions__button:focus-visible {
+    background: #ffffff;
+    border-color: #cbd5e1;
+    color: var(--admin-primary);
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.1);
+    transform: translateY(-1px);
+    outline: none;
+  }
+  .mobile-property-action-button {
+    --admin-action-size: 34px;
+  }
+  .mobile-property-actions.admin-property-actions {
+    --admin-action-size: 34px;
   }
   .mobile-property-actions-menu {
     min-width: 150px;

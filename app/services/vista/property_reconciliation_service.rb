@@ -39,6 +39,9 @@ module Vista
       "Foto" => %w[
         Codigo ImagemCodigo Foto FotoOriginal FotoPequena Destaque Ordem Data Descricao Tipo Origem ExibirNoSite ExibirSite
       ],
+      "FotoEmpreendimento" => %w[
+        Codigo Foto FotoPequena Destaque Ordem Data Descricao Tipo ExibirNoSite
+      ],
       "Anexo" => %w[
         Codigo NomeArquivo Arquivo Data Corretor PublicadoNoSite
       ],
@@ -205,6 +208,7 @@ module Vista
     def reconcile_codigo(codigo)
       api = fetch_api(codigo)
       photos = photo_rows(api["Foto"])
+      development_photos = photo_rows(api["FotoEmpreendimento"])
       media_codes = media_codes_for(api, photos)
       return base_row(codigo).merge(status: "skipped", reason: "api_empty") unless api_has_property_data?(api, photos)
 
@@ -219,7 +223,7 @@ module Vista
 
       unless @dry_run
         Habitation.transaction do
-          update_property!(habitation, api, owner, broker, photos)
+          update_property!(habitation, api, owner, broker, photos, development_photos)
           update_address!(habitation, api)
           sync_broker_assignment!(habitation, api, broker)
           sync_photos!(habitation, photos, counters, failed_photos)
@@ -353,9 +357,10 @@ module Vista
       photos.any? || %w[Endereco Numero CEP Empreendimento TituloSite CodigoProprietario Agenciador CodigoCorretor].any? { |field| api[field].present? }
     end
 
-    def update_property!(habitation, api, owner, broker, photos)
+    def update_property!(habitation, api, owner, broker, photos, development_photos)
       features = normalized_feature_hash(api["Caracteristicas"])
       infrastructure = normalized_infrastructure_list(api["InfraEstrutura"])
+      use_development_photos = photos.blank? && development_photos.present? && habitation_type(api) != "Empreendimento"
 
       attrs = compact_attrs(
         categoria: value(api["Categoria"]),
@@ -402,7 +407,9 @@ module Vista
         codigo_corretor: broker&.vista_id || broker_code_from_api(api),
         admin_user_id: broker&.id,
         agenciador: value(api["AdministradoraCondominio"]),
-        pictures: pictures_payload(photos)
+        pictures: pictures_payload(photos),
+        fotos_empreendimento: pictures_payload(development_photos),
+        use_development_photos_flag: use_development_photos
       )
 
       attrs.merge!(
