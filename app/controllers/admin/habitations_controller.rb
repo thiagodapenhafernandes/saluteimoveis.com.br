@@ -1386,7 +1386,7 @@ class Admin::HabitationsController < Admin::BaseController
       :permuta_localizacao, :permuta_dormitorios_qtd, :permuta_suites_qtd, :permuta_garagens_qtd,
       :agenciador, :captador_commission_percentage, :broker_commission_percentage,
       :salute_rental_management_flag, :home_corporate_flag, :home_corporate_position,
-      :key_location, :key_location_notes, :ordered_photo_ids, :intake_status,
+      :key_location, :key_location_notes, :ordered_photo_ids, :ordered_picture_indices, :intake_status,
       :use_development_photos_flag,
       videos: [], plantas: [], fotos_empreendimento: [], photos: [],
       fichas_cadastro: [], autorizacoes_venda: [],

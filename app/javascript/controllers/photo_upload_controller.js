@@ -3,22 +3,26 @@ import Sortable from "sortablejs"
 
 // Connects to data-controller="photo-upload"
 export default class extends Controller {
-  static targets = ["input", "orderInput", "previewContainer"]
+  static targets = ["input", "orderInput", "apiOrderInput", "previewContainer"]
 
   connect() {
+    this.boundHandleDragOver = this.handleDragOver.bind(this)
+    this.boundHandleDrop = this.handleDrop.bind(this)
+    this.boundHandleDragLeave = this.handleDragLeave.bind(this)
+
     this.initSortable()
 
     // Drag and Drop
-    this.element.addEventListener('dragover', this.handleDragOver.bind(this))
-    this.element.addEventListener('drop', this.handleDrop.bind(this))
-    this.element.addEventListener('dragleave', this.handleDragLeave.bind(this))
+    this.element.addEventListener('dragover', this.boundHandleDragOver)
+    this.element.addEventListener('drop', this.boundHandleDrop)
+    this.element.addEventListener('dragleave', this.boundHandleDragLeave)
   }
 
   disconnect() {
     if (this.sortable) this.sortable.destroy()
-    this.element.removeEventListener('dragover', this.handleDragOver.bind(this))
-    this.element.removeEventListener('drop', this.handleDrop.bind(this))
-    this.element.removeEventListener('dragleave', this.handleDragLeave.bind(this))
+    this.element.removeEventListener('dragover', this.boundHandleDragOver)
+    this.element.removeEventListener('drop', this.boundHandleDrop)
+    this.element.removeEventListener('dragleave', this.boundHandleDragLeave)
   }
 
   handleDragOver(e) {
@@ -61,14 +65,21 @@ export default class extends Controller {
   }
 
   updateOrder() {
-    if (!this.hasOrderInputTarget) return
-
-    const ids = Array.from(this.previewContainerTarget.querySelectorAll('.draggable-item'))
+    if (this.hasOrderInputTarget) {
+      const ids = Array.from(this.previewContainerTarget.querySelectorAll('.attached-photo-item'))
       .map(el => el.dataset.id)
       .filter(id => id) // Filter out new uploads (no ID yet) or empty IDs
 
-    this.orderInputTarget.value = ids.join(',')
-    console.log("Updated order:", this.orderInputTarget.value)
+      this.orderInputTarget.value = ids.join(',')
+    }
+
+    if (this.hasApiOrderInputTarget) {
+      const apiIndexes = Array.from(this.previewContainerTarget.querySelectorAll('.api-picture-item'))
+        .map(el => el.dataset.apiIndex)
+        .filter(index => index)
+
+      this.apiOrderInputTarget.value = apiIndexes.join(',')
+    }
   }
 
   preview(event) {
@@ -101,9 +112,5 @@ export default class extends Controller {
 
       reader.readAsDataURL(file)
     })
-  }
-
-  disconnect() {
-    if (this.sortable) this.sortable.destroy()
   }
 }

@@ -2,6 +2,7 @@ require "base64"
 require "csv"
 require "open-uri"
 require "rest-client"
+require "securerandom"
 
 module Vista
   class PropertyReconciliationService
@@ -43,7 +44,7 @@ module Vista
         Codigo Foto FotoPequena Destaque Ordem Data Descricao Tipo ExibirNoSite
       ],
       "Anexo" => %w[
-        Codigo NomeArquivo Arquivo Data Corretor PublicadoNoSite
+        Codigo CodigoAnexo Descricao Anexo Arquivo ExibirNoSite ExibirSite Data
       ],
       "Video" => %w[
         Codigo Video URLVideo UrlVideo Destaque Tipo Ordem
@@ -57,7 +58,12 @@ module Vista
     DEFAULT_FIELDS = (MAIN_FIELDS + ASSOCIATION_FIELDS.map { |name, fields| { name => fields } }).freeze
 
     PHOTO_MARKER = "/vista.imobi/fotos/".freeze
+    DOCUMENT_MARKER = "/vista.imobi/documentos/".freeze
+    DOCUMENT_BASE_URL = "https://cdn.vistahost.com.br/saluteim20174/vista.imobi/documentos/".freeze
     BACKUP_BASE_URL = "https://backup-crm.loft.com.br/saluteim20174/vista.imobi/".freeze
+    API_FILE_ASSET_DUMP_DIR = "api:vista".freeze
+    API_PHOTO_TABLE_NAME = "API_FOTO".freeze
+    API_DOCUMENT_TABLE_NAME = "API_ANEXO".freeze
 
     Result = Struct.new(
       :dry_run, :scanned, :updated, :skipped, :failed, :photos_reused, :photos_downloaded,
@@ -77,6 +83,7 @@ module Vista
       @download_files = ActiveModel::Type::Boolean.new.cast(download_files)
       @workers = normalize_workers(workers)
       @progress_callback = progress_callback
+      @api_file_asset_batch_mutex = Mutex.new
     end
 
     def call
@@ -209,6 +216,7 @@ module Vista
       api = fetch_api(codigo)
       photos = photo_rows(api["Foto"])
       development_photos = photo_rows(api["FotoEmpreendimento"])
+      documents = document_rows(api["Anexo"])
       media_codes = media_codes_for(api, photos)
       return base_row(codigo).merge(status: "skipped", reason: "api_empty") unless api_has_property_data?(api, photos)
 
@@ -227,7 +235,7 @@ module Vista
           update_address!(habitation, api)
           sync_broker_assignment!(habitation, api, broker)
           sync_photos!(habitation, photos, counters, failed_photos)
-          sync_documents!(habitation, codigo, media_codes, counters, failed_documents)
+          sync_documents!(habitation, codigo, media_codes, documents, counters, failed_documents)
           sync_prontuarios!(habitation, api, owner, broker)
         end
       end
@@ -589,29 +597,35 @@ module Vista
     def sync_photos!(habitation, photos, counters, failures)
       ordered_attachment_ids = []
 
-      photos.each do |photo|
+      photos.each_with_index do |photo, index|
         url = photo["Foto"].to_s
+        next if url.blank?
+
         source_path = source_path_from_url(url)
-        asset = find_photo_asset(url, source_path)
+        asset = upsert_photo_asset!(habitation, photo, url, source_path, index)
 
         blob = asset_blob(asset)
+        reused_blob = false
         if blob
           counters[:photos_reused] += 1
+          reused_blob = true
         elsif !@download_files
           counters[:photos_pending_download] += 1
           next
         else
           begin
-            blob = create_blob_from_url(url, File.basename(source_path), nil)
+            blob = create_blob_from_url(url, asset.filename, nil)
             counters[:photos_downloaded] += 1
           rescue StandardError => e
             failures << { source: url, error: e.message }
+            mark_photo_asset_failed!(asset, e)
             next
           end
         end
 
         attachment = attach_blob_once!(habitation, "photos", blob)
         ordered_attachment_ids << attachment.id
+        mark_photo_asset_attached!(asset, attachment, reused: reused_blob)
       end
 
       if @replace_photos
@@ -629,12 +643,84 @@ module Vista
       habitation.update!(photo_ids_order: ordered_attachment_ids.uniq) if ordered_attachment_ids.any? && !@replace_photos
     end
 
+    def api_file_asset_batch
+      return @api_file_asset_batch if @api_file_asset_batch
+
+      @api_file_asset_batch_mutex.synchronize do
+        @api_file_asset_batch ||= VistaImportBatch.where(dump_dir: API_FILE_ASSET_DUMP_DIR).latest_first.first ||
+          VistaImportBatch.create!(dump_dir: API_FILE_ASSET_DUMP_DIR, status: "completed")
+      end
+    end
+
+    def upsert_photo_asset!(habitation, photo, url, source_path, index)
+      source_path = normalized_photo_source_path(habitation, url, source_path)
+      asset = VistaFileAsset.find_or_initialize_by(
+        vista_import_batch: api_file_asset_batch,
+        table_name: API_PHOTO_TABLE_NAME,
+        source_path: source_path
+      )
+      asset.assign_attributes(
+        habitation: habitation,
+        kind: "property_photo",
+        status: asset.status.presence || "pending",
+        codigo_imovel: habitation.codigo,
+        source_url: url,
+        filename: File.basename(source_path),
+        active_storage_name: "photos",
+        position: integer(photo["Ordem"]) || index + 1,
+        metadata: asset.metadata.to_h.merge("api" => photo)
+      )
+      asset.save!
+      asset
+    end
+
+    def normalized_photo_source_path(habitation, url, source_path)
+      path = source_path.presence || parsed_url_path(url)
+      return path if path.present?
+
+      filename = File.basename(url.to_s.split("?").first)
+      filename = "foto-#{SecureRandom.hex(8)}" if filename.blank? || filename == "."
+      ["api", "property_photo", habitation.codigo.presence || habitation.id, filename].join("/")
+    end
+
+    def parsed_url_path(url)
+      URI.parse(url.to_s).path.to_s.delete_prefix("/")
+    rescue URI::InvalidURIError
+      nil
+    end
+
+    def mark_photo_asset_attached!(asset, attachment, reused:)
+      blob = attachment.blob
+      asset.update!(
+        status: "downloaded",
+        active_storage_attachment: attachment,
+        active_storage_key: blob.key,
+        storage_checksum: blob.checksum,
+        storage_byte_size: blob.byte_size,
+        storage_content_type: blob.content_type,
+        storage_service_name: blob.service_name,
+        downloaded_at: Time.current,
+        reused_at: reused ? Time.current : asset.reused_at,
+        error_message: nil
+      )
+    end
+
+    def mark_photo_asset_failed!(asset, error)
+      asset.update!(
+        status: "failed",
+        attempts: asset.attempts + 1,
+        error_message: error.message
+      )
+    end
+
     def photos_attachment_scope(habitation)
       ActiveStorage::Attachment.where(record: habitation, name: "photos")
     end
 
-    def sync_documents!(habitation, codigo, media_codes, counters, failures)
+    def sync_documents!(habitation, codigo, media_codes, documents, counters, failures)
       expected_attachment_ids = []
+      documents.each_with_index { |document, index| upsert_document_asset!(habitation, document, index) }
+
       VistaFileAsset
         .where(kind: "property_document", codigo_imovel: document_codes_for(codigo, media_codes))
         .order(:codigo_imovel, :id)
@@ -662,6 +748,70 @@ module Vista
       end
     end
 
+    def upsert_document_asset!(habitation, document, index)
+      source_url = document_source_url(document)
+      source_path = normalized_document_source_path(habitation, document, source_url)
+      filename = document_filename(document, source_path, source_url)
+      return if source_url.blank? || source_path.blank? || filename.blank?
+
+      asset = VistaFileAsset.find_or_initialize_by(
+        vista_import_batch: api_file_asset_batch,
+        table_name: API_DOCUMENT_TABLE_NAME,
+        source_path: source_path
+      )
+      asset.assign_attributes(
+        habitation: habitation,
+        kind: "property_document",
+        status: asset.status.presence || "pending",
+        codigo_imovel: habitation.codigo,
+        source_url: source_url,
+        filename: filename,
+        active_storage_name: "autorizacoes_venda",
+        position: integer(document["Ordem"]) || index + 1,
+        metadata: asset.metadata.to_h.merge("api" => document)
+      )
+      asset.save!
+    end
+
+    def document_source_url(document)
+      raw = value(document["Arquivo"]) || value(document["Anexo"]) || value(document["URL"]) || value(document["Url"]) || value(document["Link"])
+      return if raw.blank?
+      return raw if raw.match?(%r{\Ahttps?://}i)
+
+      URI.join(DOCUMENT_BASE_URL, raw).to_s
+    rescue URI::InvalidURIError
+      nil
+    end
+
+    def normalized_document_source_path(habitation, document, source_url)
+      raw = value(document["Arquivo"]) || value(document["Anexo"]) || value(document["NomeArquivo"])
+      path = if raw.to_s.match?(%r{\Ahttps?://}i)
+               source_path_from_url(raw, marker: DOCUMENT_MARKER)
+             else
+               raw
+             end
+      path = source_path_from_url(source_url, marker: DOCUMENT_MARKER) if path.blank? || path.match?(%r{\Ahttps?://}i)
+      return path if path.present?
+
+      filename = document_filename(document, nil, source_url)
+      ["api", "property_document", habitation.codigo.presence || habitation.id, filename].join("/")
+    end
+
+    def document_filename(document, source_path, source_url)
+      value(document["NomeArquivo"]).presence ||
+        value(document["Anexo"]).presence ||
+        value(document["Descricao"]).presence ||
+        safe_basename(source_path) ||
+        safe_basename(URI.parse(source_url.to_s).path)
+    rescue URI::InvalidURIError
+      safe_basename(source_url.to_s.split("?").first)
+    end
+
+    def safe_basename(value)
+      filename = File.basename(value.to_s)
+      filename.presence unless filename == "."
+    end
+
     def document_download_pending?(asset, habitation)
       attachment_name = asset.active_storage_name.presence || "autorizacoes_venda"
       asset_blob(asset).blank? && existing_attachment_by_filename(habitation, attachment_name, asset.filename).blank?
@@ -670,7 +820,10 @@ module Vista
     def attach_document_asset!(asset, habitation)
       attachment_name = asset.active_storage_name.presence || "autorizacoes_venda"
       existing = existing_attachment_by_filename(habitation, attachment_name, asset.filename)
-      return [:reused, existing] if existing
+      if existing
+        mark_document_asset_attached!(asset, existing, source_url: asset.source_url, reused: true)
+        return [:reused, existing]
+      end
 
       blob = asset_blob(asset)
       status = :reused
@@ -688,39 +841,57 @@ module Vista
     ensure
       if blob
         attachment = attach_blob_once!(habitation, attachment_name, blob)
-        asset.update!(
-          status: "downloaded",
-          source_url: fallback_url.presence || asset.source_url,
-          active_storage_attachment: attachment,
-          active_storage_key: blob.key,
-          storage_checksum: blob.checksum,
-          storage_byte_size: blob.byte_size,
-          storage_content_type: blob.content_type,
-          storage_service_name: blob.service_name,
-          attempts: asset.attempts + 1,
-          downloaded_at: Time.current,
-          error_message: nil,
-          metadata: asset.metadata.to_h.merge("reconciled_to_codigo" => habitation.codigo)
-        )
+        mark_document_asset_attached!(asset, attachment, source_url: fallback_url.presence || asset.source_url, reused: status == :reused)
       end
 
       return [status, attachment] if blob
     end
 
+    def mark_document_asset_attached!(asset, attachment, source_url:, reused:)
+      blob = attachment.blob
+      asset.update!(
+        status: "downloaded",
+        source_url: source_url,
+        active_storage_attachment: attachment,
+        active_storage_key: blob.key,
+        storage_checksum: blob.checksum,
+        storage_byte_size: blob.byte_size,
+        storage_content_type: blob.content_type,
+        storage_service_name: blob.service_name,
+        attempts: asset.attempts + 1,
+        downloaded_at: Time.current,
+        reused_at: reused ? Time.current : asset.reused_at,
+        error_message: nil,
+        metadata: asset.metadata.to_h.merge("reconciled_to_codigo" => asset.habitation&.codigo)
+      )
+    end
+
     def document_codes_for(codigo, media_codes)
-      codes = media_codes.presence || [codigo]
+      codes = Array(media_codes) + [codigo]
       codes.map(&:to_s).reject(&:blank?).uniq
     end
 
-    def find_photo_asset(url, source_path)
-      VistaFileAsset.where(kind: "property_photo").find_by(source_url: url) ||
-        VistaFileAsset.where(kind: "property_photo").find_by(source_path: source_path)
-    end
-
     def asset_blob(asset)
-      return unless asset&.active_storage_attachment_id.present?
+      return unless asset
 
-      ActiveStorage::Attachment.find_by(id: asset.active_storage_attachment_id)&.blob
+      if asset.active_storage_attachment_id.present?
+        blob = ActiveStorage::Attachment.find_by(id: asset.active_storage_attachment_id)&.blob
+        return blob if blob
+      end
+
+      if asset.active_storage_key.present?
+        blob = ActiveStorage::Blob.find_by(key: asset.active_storage_key)
+        return blob if blob
+      end
+
+      return unless asset.kind == "property_photo" && asset.filename.present?
+
+      ActiveStorage::Blob
+        .joins(:attachments)
+        .where(active_storage_attachments: { record_type: "Habitation", name: "photos" })
+        .where(filename: asset.filename)
+        .order(:id)
+        .first
     end
 
     def attach_blob_once!(record, name, blob)
@@ -842,6 +1013,12 @@ module Vista
       rows = raw.is_a?(Hash) ? raw.values : Array(raw)
       rows.select { |row| row.is_a?(Hash) && row["Foto"].present? }
         .sort_by { |row| integer(row["Ordem"]) || 999_999 }
+    end
+
+    def document_rows(raw)
+      rows = raw.is_a?(Hash) ? raw.values : Array(raw)
+      rows.select { |row| row.is_a?(Hash) && (row["Arquivo"].present? || row["Anexo"].present? || row["NomeArquivo"].present?) }
+        .sort_by { |row| [integer(row["Ordem"]) || 999_999, value(row["Data"]).to_s, value(row["Codigo"]).to_s] }
     end
 
     def prontuario_rows(raw)
@@ -1132,12 +1309,12 @@ module Vista
       duplicate ? nil : code
     end
 
-    def source_path_from_url(url)
+    def source_path_from_url(url, marker: PHOTO_MARKER)
       uri = URI.parse(url.to_s)
       path = uri.path.to_s
-      return path.split(PHOTO_MARKER, 2).last if path.include?(PHOTO_MARKER)
+      return path.split(marker, 2).last if path.include?(marker)
 
-      File.basename(path)
+      path.delete_prefix("/").presence || File.basename(url.to_s)
     rescue URI::InvalidURIError
       File.basename(url.to_s)
     end

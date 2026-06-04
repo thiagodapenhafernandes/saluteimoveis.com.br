@@ -711,6 +711,28 @@ class Habitation < ApplicationRecord
     self.photo_ids_order = ids.compact.map(&:to_i).uniq - [0]
   end
 
+  def ordered_picture_indices=(indices)
+    return unless pictures.is_a?(Array)
+
+    indexes = indices.is_a?(String) ? indices.split(",") : Array(indices)
+    ordered_indexes = indexes.filter_map do |raw_index|
+      raw_index = raw_index.to_s.strip
+      next unless raw_index.match?(/\A\d+\z/)
+
+      index = raw_index.to_i
+      index if index < pictures.length
+    end.uniq
+
+    return if ordered_indexes.blank?
+
+    ordered_pictures = ordered_indexes.map { |index| pictures[index] }
+    remaining_pictures = pictures.each_with_index.filter_map do |picture, index|
+      picture unless ordered_indexes.include?(index)
+    end
+
+    self.pictures = ordered_pictures + remaining_pictures
+  end
+
   def ordered_photos
     return photos unless photo_ids_order.present? && photos.attached?
 

@@ -1299,7 +1299,13 @@
                  <!-- Address -->
                  <div class="d-flex align-items-center text-muted small mb-3">
                     <i class="bi bi-geo-alt me-1"></i>
-                    <%= imovel.endereco %>, <%= imovel.numero %> - <%= imovel.cidade %>/<%= imovel.uf %>
+                    <span>
+                      <%= imovel.endereco %>, <%= imovel.numero %>
+                      <% if imovel.complemento.present? %>
+                        <span class="ms-2 text-dark fw-semibold">Apto. <%= imovel.complemento %></span>
+                      <% end %>
+                      - <%= imovel.cidade %>/<%= imovel.uf %>
+                    </span>
                  </div>
 
                  <!-- Features -->

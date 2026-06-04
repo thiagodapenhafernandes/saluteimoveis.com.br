@@ -58,6 +58,48 @@ namespace :vista_files do
     end
   end
 
+  desc "Materializa fotos em Habitation.pictures como anexos ActiveStorage, reaproveitando blobs existentes por filename"
+  task materialize_api_photos: :environment do
+    scope = Habitation
+      .where.not(tipo: "Empreendimento")
+      .where("jsonb_typeof(pictures) = 'array' AND jsonb_array_length(pictures) > 0")
+    scope = scope.where(codigo: ENV["CODIGO"].to_s.split(",").map(&:strip).reject(&:blank?)) if ENV["CODIGO"].present?
+    attached_ids = ActiveStorage::Attachment.where(record_type: "Habitation", name: "photos").select(:record_id)
+    scope = scope.where.not(id: attached_ids) if ActiveModel::Type::Boolean.new.cast(ENV.fetch("ONLY_WITHOUT_ATTACHED", "false"))
+
+    result = Vista::ApiPictureMaterializationService.new(
+      scope: scope,
+      dry_run: ENV.fetch("DRY_RUN", "true"),
+      replace: ENV.fetch("REPLACE", "false"),
+      limit: ENV["LIMIT"],
+      batch_size: ENV.fetch("BATCH_SIZE", Vista::ApiPictureMaterializationService::DEFAULT_BATCH_SIZE),
+      workers: ENV.fetch("WORKERS", Vista::ApiPictureMaterializationService::DEFAULT_WORKERS)
+    ).call
+
+    puts "Vista API pictures materialization"
+    puts "  Ambiente: #{Rails.env}"
+    puts "  ActiveStorage service: #{Rails.application.config.active_storage.service}"
+    puts "  Dry run: #{result.dry_run}"
+    puts "  Replace: #{result.replace}"
+    puts "  Workers: #{result.workers}"
+    puts "  Imóveis lidos: #{result.properties_scanned}"
+    puts "  Fotos avaliadas: #{result.pictures_scanned}"
+    puts "  Já anexadas: #{result.already_attached}"
+    puts "  Reaproveitadas por filename: #{result.reused}"
+    puts "  Baixadas: #{result.downloaded}"
+    puts "  Pendentes de download: #{result.pending_download}"
+    puts "  Removidas por replace: #{result.detached}"
+    puts "  Falhas: #{result.failed}"
+
+    if result.errors.any?
+      puts "  Erros:"
+      result.errors.first(20).each do |error|
+        puts "    #{error[:codigo]} #{error[:url]}: #{error[:error]}"
+      end
+      puts "    ... #{result.errors.size - 20} erro(s) omitido(s)" if result.errors.size > 20
+    end
+  end
+
   desc "Resume arquivos Vista indexados"
   task summary: :environment do
     puts "Vista file assets summary"
