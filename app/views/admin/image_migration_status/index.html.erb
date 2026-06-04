@@ -1,4 +1,7 @@
 <% worker = @status[:worker] %>
+<% execution = @status[:execution] || {} %>
+<% latest_attachment_at = @status[:latest_attachment_at] %>
+<% file_asset_counts = @status[:file_asset_counts] || {} %>
 
 <div class="container-fluid py-4"
      data-controller="image-migration-status"
@@ -6,118 +9,22 @@
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
     <div>
       <h1 class="mb-1"><i class="bi bi-images me-2"></i>Migração de Imagens</h1>
-      <p class="text-muted mb-0">Acompanhe a cópia das fotos antigas dos imóveis para a nossa base.</p>
+      <p class="text-muted mb-0">Materialize fotos da API Vista no Active Storage/DO Spaces, sem baixar novamente o que já está anexado.</p>
     </div>
+
     <div class="d-flex gap-2">
       <%= button_to admin_sync_image_migration_path,
             method: :post,
             class: "btn btn-primary",
             disabled: worker[:running],
             data: { image_migration_status_target: "syncButton" },
-            form: { class: "d-inline", data: { turbo_confirm: "Iniciar a migração de imagens com as configurações salvas nesta tela?" } } do %>
-        <i class="bi bi-cloud-arrow-up me-2"></i>Iniciar migração
+            form: { class: "d-inline", data: { turbo_confirm: "Iniciar a materialização das fotos com as configurações salvas?" } } do %>
+        <i class="bi bi-play-fill me-2"></i>Iniciar
       <% end %>
+
       <%= link_to admin_image_migration_status_path, class: "btn btn-outline-primary" do %>
-        <i class="bi bi-arrow-clockwise me-2"></i>Recarregar status
+        <i class="bi bi-arrow-clockwise me-2"></i>Atualizar
       <% end %>
-      <%= link_to admin_habitations_path(sort: "last_sync_at", direction: "desc"), class: "btn btn-outline-secondary" do %>
-        <i class="bi bi-arrow-left me-2"></i>Vista Soft
-      <% end %>
-    </div>
-  </div>
-
-  <div class="card border-0 shadow-sm mb-4">
-    <div class="card-body p-4">
-      <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
-        <div>
-          <h5 class="fw-bold mb-1"><i class="bi bi-sliders me-2 text-primary"></i>Configurações da execução</h5>
-          <p class="text-muted small mb-0">Essas opções controlam a próxima execução iniciada por esta tela.</p>
-        </div>
-
-        <%= button_to admin_retry_failed_image_migration_path,
-              method: :post,
-              class: "btn btn-outline-warning",
-              disabled: worker[:running] || @status[:failed_properties].zero?,
-              data: { image_migration_status_target: "retryButton" },
-              form: { class: "d-inline", data: { turbo_confirm: "Reprocessar os imóveis registrados no arquivo de falhas?" } } do %>
-          <i class="bi bi-arrow-repeat me-2"></i>Retry falhas
-        <% end %>
-      </div>
-
-      <%= form_with url: admin_image_migration_configuration_path, method: :patch, scope: :image_migration, local: true do |f| %>
-        <div class="row g-3">
-          <div class="col-lg-4">
-            <%= f.label :mode, "Modo", class: "form-label fw-semibold" %>
-            <%= f.select :mode,
-                  options_for_select(Admin::ImageMigrationStatusController::SYNC_MODES.map { |value, label| [label, value] }, @configuration["mode"]),
-                  {},
-                  class: "form-select" %>
-            <div class="form-text">“Apenas imóveis sem fotos” é o padrão mais seguro para completar pendências.</div>
-          </div>
-
-          <div class="col-sm-6 col-lg-2">
-            <%= f.label :batch_size, "Lote", class: "form-label fw-semibold" %>
-            <%= f.number_field :batch_size, value: @configuration["batch_size"], min: 1, max: 500, class: "form-control" %>
-          </div>
-
-          <div class="col-sm-6 col-lg-2">
-            <%= f.label :sleep_seconds, "Pausa", class: "form-label fw-semibold" %>
-            <div class="input-group">
-              <%= f.number_field :sleep_seconds, value: @configuration["sleep_seconds"], min: 0.5, max: 30, step: 0.5, class: "form-control" %>
-              <span class="input-group-text">s</span>
-            </div>
-          </div>
-
-          <div class="col-sm-6 col-lg-2">
-            <%= f.label :max_cycles, "Máx. ciclos", class: "form-label fw-semibold" %>
-            <%= f.number_field :max_cycles, value: @configuration["max_cycles"], min: 0, max: 10000, class: "form-control" %>
-            <div class="form-text">0 = sem limite.</div>
-          </div>
-
-          <div class="col-sm-6 col-lg-2">
-            <%= f.label :start_id, "ID inicial", class: "form-label fw-semibold" %>
-            <%= f.number_field :start_id, value: @configuration["start_id"], min: 0, class: "form-control" %>
-          </div>
-
-          <div class="col-sm-6 col-lg-2">
-            <%= f.label :max_id, "ID final", class: "form-label fw-semibold" %>
-            <%= f.number_field :max_id, value: @configuration["max_id"], min: 0, class: "form-control" %>
-            <div class="form-text">0 = sem limite.</div>
-          </div>
-
-          <div class="col-sm-6 col-lg-2">
-            <div class="form-check form-switch mt-lg-4 pt-lg-2">
-              <%= f.check_box :loop, { checked: @configuration["loop"] == "true", class: "form-check-input" }, "true", "false" %>
-              <%= f.label :loop, "Rodar até acabar", class: "form-check-label fw-semibold" %>
-            </div>
-          </div>
-
-          <div class="col-sm-6 col-lg-2">
-            <div class="form-check form-switch mt-lg-4 pt-lg-2">
-              <%= f.check_box :skip_analysis, { checked: @configuration["skip_analysis"] == "true", class: "form-check-input" }, "true", "false" %>
-              <%= f.label :skip_analysis, "Pular análise", class: "form-check-label fw-semibold" %>
-            </div>
-          </div>
-
-          <div class="col-sm-6 col-lg-2">
-            <div class="form-check form-switch mt-lg-4 pt-lg-2">
-              <%= f.check_box :dry_run, { checked: @configuration["dry_run"] == "true", class: "form-check-input" }, "true", "false" %>
-              <%= f.label :dry_run, "Simular", class: "form-check-label fw-semibold" %>
-            </div>
-          </div>
-
-          <div class="col-lg-4 d-flex align-items-end">
-            <%= f.submit "Salvar configurações", class: "btn btn-outline-primary w-100" %>
-          </div>
-        </div>
-      <% end %>
-
-      <div class="alert alert-light border small mt-3 mb-0">
-        <strong>Leitura dos modos:</strong>
-        “sem fotos” filtra imóveis sem nenhum anexo;
-        “cursor” continua do último ID;
-        “varrer desde o início” revisita todos os imóveis do intervalo, mas ainda pula arquivos já anexados pelo mesmo nome.
-      </div>
     </div>
   </div>
 
@@ -125,10 +32,11 @@
     <div class="col-xl-3 col-md-6">
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
-          <div class="text-muted small text-uppercase fw-bold mb-2">Progresso por imóvel</div>
+          <div class="text-muted small text-uppercase fw-bold mb-2">Imóveis com fotos</div>
           <div class="display-6 fw-bold mb-1" data-image-migration-status-target="propertyProgressValue"><%= number_to_percentage(@status[:property_progress], precision: 2) %></div>
           <div class="text-muted small">
-            <strong data-image-migration-status-target="propertiesWithPhotos"><%= number_with_delimiter(@status[:properties_with_photos]) %></strong> concluídos de
+            <strong data-image-migration-status-target="propertiesWithPhotos"><%= number_with_delimiter(@status[:properties_with_photos]) %></strong>
+            de
             <strong data-image-migration-status-target="totalProperties"><%= number_with_delimiter(@status[:total_properties]) %></strong>
           </div>
         </div>
@@ -138,9 +46,9 @@
     <div class="col-xl-3 col-md-6">
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
-          <div class="text-muted small text-uppercase fw-bold mb-2">Ainda falta</div>
+          <div class="text-muted small text-uppercase fw-bold mb-2">Pendentes</div>
           <div class="display-6 fw-bold mb-1" data-image-migration-status-target="pendingProperties"><%= number_with_delimiter(@status[:pending_properties]) %></div>
-          <div class="text-muted small">Imóveis com imagens antigas e nenhuma foto migrada.</div>
+          <div class="text-muted small">Imóveis com galeria API/Vista e nenhuma foto anexada.</div>
         </div>
       </div>
     </div>
@@ -151,7 +59,8 @@
           <div class="text-muted small text-uppercase fw-bold mb-2">Fotos anexadas</div>
           <div class="display-6 fw-bold mb-1" data-image-migration-status-target="migratedImages"><%= number_with_delimiter(@status[:migrated_images]) %></div>
           <div class="text-muted small">
-            Estimativa: <span data-image-migration-status-target="imageProgress"><%= number_to_percentage(@status[:image_progress], precision: 2) %></span> das imagens de origem.
+            <span data-image-migration-status-target="imageProgress"><%= number_to_percentage(@status[:image_progress], precision: 2) %></span>
+            do volume estimado de origem.
           </div>
         </div>
       </div>
@@ -162,7 +71,7 @@
         <div class="card-body">
           <div class="text-muted small text-uppercase fw-bold mb-2">Processo</div>
           <div class="h3 fw-bold mb-1">
-            <span class="badge <%= worker[:running] ? "bg-success" : "bg-danger" %>" data-image-migration-status-target="workerBadge">
+            <span class="badge <%= worker[:running] ? "bg-success" : "bg-secondary" %>" data-image-migration-status-target="workerBadge">
               <%= worker[:status] %>
             </span>
           </div>
@@ -170,7 +79,7 @@
             <% if worker[:pid].present? %>
               PID <code><%= worker[:pid] %></code>
             <% else %>
-              Sem PID registrado
+              Sem execução ativa
             <% end %>
           </div>
         </div>
@@ -178,18 +87,78 @@
     </div>
   </div>
 
-  <% execution = @status[:execution] || {} %>
-  <% execution_last_run_at = Time.zone.parse(execution[:last_run_at].to_s) rescue nil %>
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+      <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+        <div>
+          <h5 class="fw-bold mb-1"><i class="bi bi-sliders me-2 text-primary"></i>Próxima execução</h5>
+          <p class="text-muted small mb-0">O padrão processa somente imóveis pendentes. Fotos já anexadas são preservadas e reaproveitadas por nome de arquivo.</p>
+        </div>
+
+        <%= button_to admin_retry_failed_image_migration_path,
+              method: :post,
+              class: "btn btn-outline-warning",
+              disabled: worker[:running] || @status[:failed_properties].zero?,
+              data: { image_migration_status_target: "retryButton" },
+              form: { class: "d-inline", data: { turbo_confirm: "Tentar novamente os imóveis com falhas de fotos API/Vista?" } } do %>
+          <i class="bi bi-arrow-repeat me-2"></i>Retry falhas
+        <% end %>
+      </div>
+
+      <%= form_with url: admin_image_migration_configuration_path, method: :patch, scope: :image_migration, local: true do |f| %>
+        <div class="row g-3 align-items-end">
+          <div class="col-lg-4">
+            <%= f.label :mode, "Escopo", class: "form-label fw-semibold" %>
+            <%= f.select :mode,
+                  options_for_select(Admin::ImageMigrationStatusController::SYNC_MODES.map { |value, label| [label, value] }, @configuration["mode"]),
+                  {},
+                  class: "form-select" %>
+          </div>
+
+          <div class="col-sm-6 col-lg-2">
+            <%= f.label :batch_size, "Lote", class: "form-label fw-semibold" %>
+            <%= f.number_field :batch_size, value: @configuration["batch_size"], min: 1, max: 500, class: "form-control" %>
+          </div>
+
+          <div class="col-sm-6 col-lg-2">
+            <%= f.label :workers, "Workers", class: "form-label fw-semibold" %>
+            <%= f.number_field :workers, value: @configuration["workers"], min: 1, max: 8, class: "form-control" %>
+          </div>
+
+          <div class="col-sm-6 col-lg-2">
+            <div class="form-check form-switch">
+              <%= f.check_box :replace, { checked: @configuration["replace"] == "true", class: "form-check-input" }, "true", "false" %>
+              <%= f.label :replace, "Substituir ordem/anexos", class: "form-check-label fw-semibold" %>
+            </div>
+            <div class="form-text">Use com cuidado: remove fotos fora da galeria API/Vista.</div>
+          </div>
+
+          <div class="col-sm-6 col-lg-2">
+            <div class="form-check form-switch">
+              <%= f.check_box :dry_run, { checked: @configuration["dry_run"] == "true", class: "form-check-input" }, "true", "false" %>
+              <%= f.label :dry_run, "Simular", class: "form-check-label fw-semibold" %>
+            </div>
+          </div>
+
+          <div class="col-lg-3">
+            <%= f.submit "Salvar configurações", class: "btn btn-outline-primary w-100" %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
   <div class="card border-0 shadow-sm mb-4" data-image-migration-status-target="executionPanel">
     <div class="card-body p-4">
       <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
         <div>
-          <div class="text-muted small text-uppercase fw-bold mb-1">Progresso da execução atual</div>
+          <div class="text-muted small text-uppercase fw-bold mb-1">Execução atual</div>
           <h5 class="fw-bold mb-1" data-image-migration-status-target="executionLabel"><%= execution[:label].presence || "Aguardando execução" %></h5>
           <div class="text-muted small">
-            Status: <strong data-image-migration-status-target="executionStatus"><%= execution[:running] ? "Rodando" : "Parado" %></strong>
-            · Ciclo <strong data-image-migration-status-target="executionCycle"><%= number_with_delimiter(execution[:cycle].to_i) %></strong>
-            · Última atualização <strong data-image-migration-status-target="executionLastRunAt"><%= execution_last_run_at.present? ? l(execution_last_run_at, format: :short) : "N/D" %></strong>
+            Status:
+            <strong data-image-migration-status-target="executionStatus"><%= execution[:running] ? "Rodando" : "Parado" %></strong>
+            · Última foto:
+            <strong data-image-migration-status-target="latestAttachmentAt"><%= latest_attachment_at.present? ? l(latest_attachment_at, format: :short) : "N/D" %></strong>
           </div>
         </div>
         <div class="text-end">
@@ -212,22 +181,6 @@
 
       <div class="row g-3 small">
         <div class="col-6 col-lg-2">
-          <div class="text-muted">Sincronizadas</div>
-          <div class="fw-bold" data-image-migration-status-target="executionSynced"><%= number_with_delimiter(execution[:synced].to_i) %></div>
-        </div>
-        <div class="col-6 col-lg-2">
-          <div class="text-muted">Puladas</div>
-          <div class="fw-bold" data-image-migration-status-target="executionSkipped"><%= number_with_delimiter(execution[:skipped].to_i) %></div>
-        </div>
-        <div class="col-6 col-lg-2">
-          <div class="text-muted">Falhas</div>
-          <div class="fw-bold" data-image-migration-status-target="executionFailed"><%= number_with_delimiter(execution[:failed].to_i) %></div>
-        </div>
-        <div class="col-6 col-lg-2">
-          <div class="text-muted">Restantes</div>
-          <div class="fw-bold" data-image-migration-status-target="executionRemaining"><%= number_with_delimiter(execution[:remaining].to_i) %></div>
-        </div>
-        <div class="col-6 col-lg-2">
           <div class="text-muted">Imóveis novos</div>
           <div class="fw-bold" data-image-migration-status-target="executionPropertiesAdded"><%= number_with_delimiter(execution[:properties_added].to_i) %></div>
         </div>
@@ -235,49 +188,47 @@
           <div class="text-muted">Fotos novas</div>
           <div class="fw-bold" data-image-migration-status-target="executionImagesAdded"><%= number_with_delimiter(execution[:images_added].to_i) %></div>
         </div>
+        <div class="col-6 col-lg-2">
+          <div class="text-muted">Restantes</div>
+          <div class="fw-bold" data-image-migration-status-target="executionRemaining"><%= number_with_delimiter(execution[:remaining].to_i) %></div>
+        </div>
+        <div class="col-6 col-lg-2">
+          <div class="text-muted">Falhas</div>
+          <div class="fw-bold" data-image-migration-status-target="executionFailed"><%= number_with_delimiter(execution[:failed].to_i) %></div>
+        </div>
+        <div class="col-6 col-lg-2">
+          <div class="text-muted">Assets baixados</div>
+          <div class="fw-bold" data-image-migration-status-target="downloadedFileAssets"><%= number_with_delimiter(@status[:downloaded_file_assets]) %></div>
+        </div>
+        <div class="col-6 col-lg-2">
+          <div class="text-muted">Assets pendentes</div>
+          <div class="fw-bold" data-image-migration-status-target="pendingFileAssets"><%= number_with_delimiter(@status[:pending_file_assets]) %></div>
+        </div>
       </div>
     </div>
   </div>
 
-  <div class="card border-0 shadow-sm mb-4">
-    <div class="card-body p-4">
-      <div class="d-flex justify-content-between small mb-2">
-        <span>Imóveis concluídos</span>
-        <strong data-image-migration-status-target="globalProgressPercent"><%= number_to_percentage(@status[:property_progress], precision: 2) %></strong>
-      </div>
-      <div class="progress mb-4" style="height: 12px;">
-        <div class="progress-bar bg-success"
-             role="progressbar"
-             style="width: <%= @status[:property_progress] %>%"
-             aria-valuenow="<%= @status[:property_progress] %>"
-             aria-valuemin="0"
-             aria-valuemax="100"
-             data-image-migration-status-target="globalProgressBar"></div>
-      </div>
-
-      <div class="row g-4">
-        <div class="col-lg-6">
-          <h6 class="fw-bold mb-3"><i class="bi bi-list-check me-2 text-primary"></i>Resumo</h6>
+  <div class="row g-3 mb-4">
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body p-4">
+          <h6 class="fw-bold mb-3"><i class="bi bi-list-check me-2 text-primary"></i>Resumo da base</h6>
           <ul class="list-unstyled small mb-0">
             <li class="d-flex justify-content-between py-2 border-bottom">
-              <span>Total de imóveis com imagens antigas</span>
+              <span>Total com galeria API/Vista</span>
               <strong data-image-migration-status-target="summaryTotalProperties"><%= number_with_delimiter(@status[:total_properties]) %></strong>
             </li>
             <li class="d-flex justify-content-between py-2 border-bottom">
-              <span>Imóveis já com fotos na nossa base</span>
+              <span>Já com fotos na nossa base</span>
               <strong data-image-migration-status-target="summaryPropertiesWithPhotos"><%= number_with_delimiter(@status[:properties_with_photos]) %></strong>
             </li>
             <li class="d-flex justify-content-between py-2 border-bottom">
-              <span>Imóveis pendentes</span>
+              <span>Pendentes</span>
               <strong data-image-migration-status-target="summaryPendingProperties"><%= number_with_delimiter(@status[:pending_properties]) %></strong>
             </li>
             <li class="d-flex justify-content-between py-2 border-bottom">
               <span>Pendentes públicos de venda/aluguel</span>
               <strong data-image-migration-status-target="summaryPublicPendingProperties"><%= number_with_delimiter(@status[:public_pending_properties]) %></strong>
-            </li>
-            <li class="d-flex justify-content-between py-2 border-bottom">
-              <span>Públicos ainda renderizando Vista primeiro</span>
-              <strong data-image-migration-status-target="summaryPublicVistaFirstProperties"><%= number_with_delimiter(@status[:public_vista_first_properties]) %></strong>
             </li>
             <li class="d-flex justify-content-between py-2">
               <span>Total estimado de imagens de origem</span>
@@ -285,24 +236,28 @@
             </li>
           </ul>
         </div>
+      </div>
+    </div>
 
-        <div class="col-lg-6">
-          <h6 class="fw-bold mb-3"><i class="bi bi-activity me-2 text-success"></i>Execução</h6>
+    <div class="col-lg-5">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body p-4">
+          <h6 class="fw-bold mb-3"><i class="bi bi-database-check me-2 text-success"></i>Índice API/Vista</h6>
           <ul class="list-unstyled small mb-0">
             <li class="d-flex justify-content-between py-2 border-bottom">
-              <span>Último ID processado</span>
-              <strong data-image-migration-status-target="cursorLastId"><%= @status[:cursor_last_id].presence || "N/D" %></strong>
+              <span>Baixados/anexados</span>
+              <strong data-image-migration-status-target="summaryDownloadedFileAssets"><%= number_with_delimiter(file_asset_counts.fetch("downloaded", 0)) %></strong>
             </li>
             <li class="d-flex justify-content-between py-2 border-bottom">
-              <span>Imóveis com falha registrados</span>
+              <span>Pendentes no índice</span>
+              <strong data-image-migration-status-target="summaryPendingFileAssets"><%= number_with_delimiter(file_asset_counts.fetch("pending", 0)) %></strong>
+            </li>
+            <li class="d-flex justify-content-between py-2 border-bottom">
+              <span>Falhas</span>
               <strong data-image-migration-status-target="failedProperties"><%= number_with_delimiter(@status[:failed_properties]) %></strong>
             </li>
-            <li class="d-flex justify-content-between py-2 border-bottom">
-              <span>Última foto anexada</span>
-              <strong data-image-migration-status-target="latestAttachmentAt"><%= @status[:latest_attachment_at].present? ? l(@status[:latest_attachment_at], format: :short) : "N/D" %></strong>
-            </li>
             <li class="py-2">
-              <span class="text-muted d-block mb-1">Log no servidor</span>
+              <span class="text-muted d-block mb-1">Log da execução</span>
               <code class="small"><%= @status[:paths][:log] %></code>
             </li>
           </ul>
@@ -313,11 +268,10 @@
 
   <% if @status[:failed_properties].positive? %>
     <div class="alert alert-warning">
-      <div class="fw-bold mb-1"><i class="bi bi-exclamation-triangle me-2"></i>Há imóveis para revisar depois</div>
+      <div class="fw-bold mb-1"><i class="bi bi-exclamation-triangle me-2"></i>Há imóveis com falha de materialização</div>
       <div class="small">
-        Alguns downloads retornaram erro na origem. Amostra de IDs:
+        Amostra de IDs:
         <code><%= @status[:failed_sample].join(", ") %></code>.
-        Eles ficam salvos em <code><%= @status[:paths][:failed] %></code> para retry ou análise.
       </div>
     </div>
   <% end %>
@@ -326,7 +280,7 @@
     <div class="alert alert-warning">
       <div class="fw-bold mb-1"><i class="bi bi-exclamation-triangle me-2"></i>Há imóveis públicos usando Vista como fallback</div>
       <div class="small">
-        Esses imóveis ainda não têm foto anexada na nossa base e podem renderizar imagens do Vista.
+        Esses imóveis ainda não têm foto anexada na nossa base.
         Amostra de IDs: <code><%= @status[:public_vista_first_sample].join(", ") %></code>.
       </div>
     </div>
@@ -334,6 +288,6 @@
 
   <div class="alert alert-info mb-0">
     <i class="bi bi-info-circle me-2"></i>
-    Esta tela mede imóveis que já possuem pelo menos uma foto anexada no Active Storage. O site prioriza as imagens anexadas na nossa base e usa URLs antigas apenas quando ainda não existe anexo migrado.
+    A execução usa a galeria da API/Vista como origem, reaproveita fotos já anexadas por nome de arquivo e baixa apenas o que ainda falta no Active Storage/DO Spaces.
   </div>
 </div>

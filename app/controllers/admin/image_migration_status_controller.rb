@@ -3,20 +3,16 @@ class Admin::ImageMigrationStatusController < Admin::BaseController
 
   PUBLIC_STATUSES = ["Venda", "Aluguel"].freeze
   CONFIG_PREFIX = "image_migration.".freeze
+  API_FILE_ASSET_DUMP_DIR = "api:vista".freeze
   SYNC_MODES = {
-    "missing_properties" => "Apenas imóveis sem fotos anexadas",
-    "cursor" => "Continuar do último cursor",
-    "full_scan" => "Varrer desde o início, sem filtrar por anexo"
+    "missing_properties" => "Somente imóveis pendentes",
+    "full_scan" => "Varrer todos os imóveis"
   }.freeze
   DEFAULT_CONFIGURATION = {
     "mode" => "missing_properties",
     "batch_size" => "100",
-    "loop" => "true",
-    "sleep_seconds" => "2",
-    "max_cycles" => "0",
-    "start_id" => "0",
-    "max_id" => "0",
-    "skip_analysis" => "true",
+    "workers" => "4",
+    "replace" => "false",
     "dry_run" => "false"
   }.freeze
 
@@ -84,9 +80,9 @@ class Admin::ImageMigrationStatusController < Admin::BaseController
     total_source_images = source_scope.pick(Arel.sql("COALESCE(SUM(jsonb_array_length(pictures)), 0)::bigint")).to_i
     migrated_images = ActiveStorage::Attachment.where(record_type: "Habitation", name: "photos").count
     latest_attachment_at = ActiveStorage::Attachment.where(record_type: "Habitation", name: "photos").maximum(:created_at)
-    failed_ids = failed_habitation_ids
-    cursor_data = current_cursor_data
     worker = worker_status
+    file_asset_counts = api_photo_file_asset_counts
+    failed_ids = api_photo_failed_habitation_ids
 
     {
       total_properties: total_properties,
@@ -101,20 +97,19 @@ class Admin::ImageMigrationStatusController < Admin::BaseController
       image_progress: percentage([migrated_images, total_source_images].min, total_source_images),
       failed_properties: failed_ids.size,
       failed_sample: failed_ids.first(20),
-      cursor_last_id: cursor_data["last_id"].to_i.presence,
       worker: worker,
       latest_attachment_at: latest_attachment_at,
+      file_asset_counts: file_asset_counts,
+      downloaded_file_assets: file_asset_counts.fetch("downloaded", 0),
+      pending_file_assets: file_asset_counts.fetch("pending", 0),
+      failed_file_assets: file_asset_counts.fetch("failed", 0),
       execution: execution_status(
         worker: worker,
-        cursor_data: cursor_data,
-        source_scope: source_scope,
         pending_properties: pending_properties,
         properties_with_photos: properties_with_photos,
         migrated_images: migrated_images
       ),
       paths: {
-        cursor: cursor_file.to_s,
-        failed: failed_file.to_s,
         log: log_file.to_s
       }
     }
@@ -157,35 +152,23 @@ class Admin::ImageMigrationStatusController < Admin::BaseController
     false
   end
 
-  def failed_habitation_ids
-    return [] unless failed_file.exist?
+  def api_photo_file_assets
+    VistaFileAsset
+      .joins(:vista_import_batch)
+      .where(
+        vista_import_batches: { dump_dir: API_FILE_ASSET_DUMP_DIR },
+        kind: "property_photo"
+      )
+  end
 
-    failed_file.readlines(chomp: true).map(&:to_i).select(&:positive?).uniq
+  def api_photo_file_asset_counts
+    api_photo_file_assets.group(:status).count.transform_keys(&:to_s)
+  end
+
+  def api_photo_failed_habitation_ids
+    api_photo_file_assets.where(status: "failed").where.not(habitation_id: nil).distinct.limit(1000).pluck(:habitation_id)
   rescue
     []
-  end
-
-  def cursor_last_id
-    read_integer(cursor_file, /^last_id:\s*(\d+)/)
-  end
-
-  def current_cursor_data
-    return {} unless cursor_file.exist?
-
-    content = cursor_file.read
-    YAML.safe_load(
-      content,
-      permitted_classes: [Time, ActiveSupport::TimeWithZone, ActiveSupport::TimeZone],
-      aliases: true
-    ) || {}
-  rescue
-    {
-      "last_id" => read_integer(cursor_file, /^last_id:\s*(\d+)/),
-      "cycle" => read_integer(cursor_file, /^cycle:\s*(\d+)/),
-      "synced" => read_integer(cursor_file, /^synced:\s*(\d+)/),
-      "skipped" => read_integer(cursor_file, /^skipped:\s*(\d+)/),
-      "failed" => read_integer(cursor_file, /^failed:\s*(\d+)/)
-    }.compact
   end
 
   def read_integer(path, pattern = /\A\s*(\d+)\s*\z/)
@@ -206,21 +189,13 @@ class Admin::ImageMigrationStatusController < Admin::BaseController
     env = {
       "RAILS_ENV" => Rails.env,
       "BATCH_SIZE" => configuration.fetch("batch_size"),
-      "ONLY_WITHOUT_ATTACHMENTS" => only_without_attachments_for(configuration.fetch("mode")),
-      "RESET_CURSOR" => reset_cursor_for(configuration.fetch("mode")),
-      "LOOP" => configuration.fetch("loop"),
-      "STOP_WHEN_DONE" => "true",
-      "SLEEP_SECONDS" => configuration.fetch("sleep_seconds"),
-      "MAX_CYCLES" => configuration.fetch("max_cycles"),
-      "START_ID" => configuration.fetch("start_id"),
-      "MAX_ID" => configuration.fetch("max_id"),
-      "SKIP_ANALYSIS" => configuration.fetch("skip_analysis"),
-      "DRY_RUN" => configuration.fetch("dry_run"),
-      "CURSOR_FILE" => cursor_file.to_s,
-      "FAILED_FILE" => failed_file.to_s
+      "WORKERS" => configuration.fetch("workers"),
+      "ONLY_WITHOUT_ATTACHED" => only_without_attachments_for(configuration.fetch("mode")),
+      "REPLACE" => configuration.fetch("replace"),
+      "DRY_RUN" => configuration.fetch("dry_run")
     }
 
-    spawn_rake!(env, "images:sync_habitations_to_spaces")
+    spawn_rake!(env, "vista_files:materialize_api_photos")
   end
 
   def start_failed_retry!
@@ -231,12 +206,14 @@ class Admin::ImageMigrationStatusController < Admin::BaseController
     record_run_start!(configuration.merge("mode" => "retry_failed"))
     env = {
       "RAILS_ENV" => Rails.env,
-      "SKIP_ANALYSIS" => configuration.fetch("skip_analysis"),
-      "DRY_RUN" => configuration.fetch("dry_run"),
-      "FAILED_FILE" => failed_file.to_s
+      "BATCH_SIZE" => configuration.fetch("batch_size"),
+      "WORKERS" => configuration.fetch("workers"),
+      "ONLY_WITHOUT_ATTACHED" => "false",
+      "REPLACE" => "false",
+      "DRY_RUN" => configuration.fetch("dry_run")
     }
 
-    spawn_rake!(env, "images:retry_failed_habitations_to_spaces")
+    spawn_rake!(env, "vista_files:materialize_api_photos")
   end
 
   def spawn_rake!(env, task_name)
@@ -258,9 +235,7 @@ class Admin::ImageMigrationStatusController < Admin::BaseController
       "initial_pending_properties" => status.fetch(:pending_properties).to_s,
       "initial_properties_with_photos" => status.fetch(:properties_with_photos).to_s,
       "initial_migrated_images" => status.fetch(:migrated_images).to_s,
-      "initial_cursor_last_id" => status.fetch(:cursor_last_id).to_i.to_s,
-      "configured_start_id" => configuration.fetch("start_id", "0").to_s,
-      "configured_max_id" => configuration.fetch("max_id", "0").to_s
+      "initial_downloaded_file_assets" => status.fetch(:downloaded_file_assets).to_s
     }
 
     values.each do |key, value|
@@ -277,20 +252,16 @@ class Admin::ImageMigrationStatusController < Admin::BaseController
       pending_properties: source_scope.where.missing(:photos_attachments).count,
       properties_with_photos: source_scope.joins(:photos_attachments).distinct.count,
       migrated_images: ActiveStorage::Attachment.where(record_type: "Habitation", name: "photos").count,
-      cursor_last_id: cursor_last_id
+      downloaded_file_assets: api_photo_file_asset_counts.fetch("downloaded", 0)
     }
   end
 
-  def execution_status(worker:, cursor_data:, source_scope:, pending_properties:, properties_with_photos:, migrated_images:)
+  def execution_status(worker:, pending_properties:, properties_with_photos:, migrated_images:)
     mode = Setting.get("#{CONFIG_PREFIX}run.mode", image_migration_configuration.fetch("mode"))
     started_at = Setting.get("#{CONFIG_PREFIX}run.started_at")
     initial_pending = Setting.get("#{CONFIG_PREFIX}run.initial_pending_properties", pending_properties.to_s).to_i
     initial_properties_with_photos = Setting.get("#{CONFIG_PREFIX}run.initial_properties_with_photos", properties_with_photos.to_s).to_i
     initial_migrated_images = Setting.get("#{CONFIG_PREFIX}run.initial_migrated_images", migrated_images.to_s).to_i
-    initial_cursor_last_id = Setting.get("#{CONFIG_PREFIX}run.initial_cursor_last_id", "0").to_i
-    configured_start_id = Setting.get("#{CONFIG_PREFIX}run.configured_start_id", "0").to_i
-    configured_max_id = Setting.get("#{CONFIG_PREFIX}run.configured_max_id", "0").to_i
-    cursor_last_id = cursor_data["last_id"].to_i
 
     progress_payload = if mode == "missing_properties" && initial_pending.positive?
       current = (initial_pending - pending_properties).clamp(0, initial_pending)
@@ -301,29 +272,14 @@ class Admin::ImageMigrationStatusController < Admin::BaseController
         remaining: pending_properties,
         progress: percentage(current, initial_pending)
       }
-    elsif mode == "retry_failed"
-      failed_total = failed_habitation_ids.size
-      failed_current = cursor_data["failed"].to_i
-      synced_current = cursor_data["synced"].to_i
-      current = synced_current + failed_current
-      total = [failed_total, current].max
-      {
-        label: "Retry de imóveis com falha",
-        current: current,
-        total: total,
-        remaining: [failed_total - current, 0].max,
-        progress: percentage(current, total)
-      }
     else
-      max_source_id = configured_max_id.positive? ? configured_max_id : source_scope.maximum(:id).to_i
-      start_id = configured_start_id.positive? ? configured_start_id - 1 : initial_cursor_last_id
-      total = [max_source_id - start_id, 0].max
-      current = (cursor_last_id - start_id).clamp(0, total)
+      current = [properties_with_photos - initial_properties_with_photos, 0].max
+      total = [current + pending_properties, 1].max
       {
-        label: "Varredura por ID",
+        label: "Fotos materializadas nesta execução",
         current: current,
         total: total,
-        remaining: [total - current, 0].max,
+        remaining: pending_properties,
         progress: percentage(current, total)
       }
     end
@@ -332,15 +288,16 @@ class Admin::ImageMigrationStatusController < Admin::BaseController
       mode: mode,
       running: worker[:running],
       started_at: started_at,
-      last_run_at: cursor_data["last_run_at"],
-      cycle: cursor_data["cycle"].to_i,
-      cursor_last_id: cursor_last_id,
-      synced: cursor_data["synced"].to_i,
-      skipped: cursor_data["skipped"].to_i,
-      failed: cursor_data["failed"].to_i,
+      last_run_at: latest_attachment_timestamp,
+      synced: [properties_with_photos - initial_properties_with_photos, 0].max,
+      failed: api_photo_file_asset_counts.fetch("failed", 0),
       properties_added: [properties_with_photos - initial_properties_with_photos, 0].max,
       images_added: [migrated_images - initial_migrated_images, 0].max
     }.merge(progress_payload)
+  end
+
+  def latest_attachment_timestamp
+    ActiveStorage::Attachment.where(record_type: "Habitation", name: "photos").maximum(:created_at)
   end
 
   def image_migration_configuration
@@ -353,12 +310,8 @@ class Admin::ImageMigrationStatusController < Admin::BaseController
     {
       "mode" => SYNC_MODES.key?(raw_params[:mode]) ? raw_params[:mode] : DEFAULT_CONFIGURATION.fetch("mode"),
       "batch_size" => clamp_integer(raw_params[:batch_size], 1, 500, DEFAULT_CONFIGURATION.fetch("batch_size")),
-      "loop" => boolean_string(raw_params[:loop]),
-      "sleep_seconds" => clamp_decimal(raw_params[:sleep_seconds], 0.5, 30.0, DEFAULT_CONFIGURATION.fetch("sleep_seconds")),
-      "max_cycles" => clamp_integer(raw_params[:max_cycles], 0, 10_000, DEFAULT_CONFIGURATION.fetch("max_cycles")),
-      "start_id" => clamp_integer(raw_params[:start_id], 0, 2_147_483_647, DEFAULT_CONFIGURATION.fetch("start_id")),
-      "max_id" => clamp_integer(raw_params[:max_id], 0, 2_147_483_647, DEFAULT_CONFIGURATION.fetch("max_id")),
-      "skip_analysis" => boolean_string(raw_params[:skip_analysis]),
+      "workers" => clamp_integer(raw_params[:workers], 1, 8, DEFAULT_CONFIGURATION.fetch("workers")),
+      "replace" => boolean_string(raw_params[:replace]),
       "dry_run" => boolean_string(raw_params[:dry_run])
     }
   end
@@ -369,12 +322,6 @@ class Admin::ImageMigrationStatusController < Admin::BaseController
     integer.clamp(min, max).to_s
   end
 
-  def clamp_decimal(value, min, max, default)
-    decimal = Float(value.to_s, exception: false)
-    decimal = default.to_f if decimal.nil?
-    decimal.clamp(min, max).to_s
-  end
-
   def boolean_string(value)
     ActiveModel::Type::Boolean.new.cast(value).to_s
   end
@@ -383,20 +330,12 @@ class Admin::ImageMigrationStatusController < Admin::BaseController
     (mode == "missing_properties").to_s
   end
 
-  def reset_cursor_for(mode)
-    %w[missing_properties full_scan].include?(mode).to_s
-  end
-
   def image_migration_setting_description(key)
     {
       "mode" => "Modo de execução da migração de imagens",
       "batch_size" => "Quantidade de imóveis por lote da migração de imagens",
-      "loop" => "Continua processando ciclos até acabar o escopo",
-      "sleep_seconds" => "Pausa entre ciclos da migração de imagens",
-      "max_cycles" => "Limite máximo de ciclos da migração de imagens",
-      "start_id" => "ID inicial opcional da migração de imagens",
-      "max_id" => "ID final opcional da migração de imagens",
-      "skip_analysis" => "Marca blobs como analisados para evitar AnalyzeJob",
+      "workers" => "Quantidade de threads da migração de imagens",
+      "replace" => "Substitui anexos que nao fazem parte da galeria API/Vista",
       "dry_run" => "Simula a migração de imagens sem anexar arquivos"
     }[key]
   end
@@ -405,30 +344,18 @@ class Admin::ImageMigrationStatusController < Admin::BaseController
     params.require(:image_migration).permit(
       :mode,
       :batch_size,
-      :loop,
-      :sleep_seconds,
-      :max_cycles,
-      :start_id,
-      :max_id,
-      :skip_analysis,
+      :workers,
+      :replace,
       :dry_run
     )
   end
 
   def pid_file
-    shared_tmp.join("spaces_images_sync.pid")
-  end
-
-  def cursor_file
-    shared_tmp.join("spaces_habitation_images_cursor.yml")
-  end
-
-  def failed_file
-    shared_tmp.join("spaces_habitation_images_failed_ids.log")
+    shared_tmp.join("api_pictures_materialization.pid")
   end
 
   def log_file
-    shared_log.join("spaces_images_sync.log")
+    shared_log.join("api_pictures_materialization.log")
   end
 
   def shared_tmp

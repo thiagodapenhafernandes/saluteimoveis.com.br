@@ -10,29 +10,25 @@ export default class extends Controller {
     "imageProgress",
     "workerBadge",
     "workerPid",
-    "globalProgressBar",
-    "globalProgressPercent",
     "executionPanel",
     "executionProgressBar",
     "executionProgressPercent",
     "executionLabel",
     "executionDetail",
     "executionStatus",
-    "executionCycle",
-    "executionSynced",
-    "executionSkipped",
     "executionFailed",
     "executionRemaining",
     "executionPropertiesAdded",
     "executionImagesAdded",
-    "executionLastRunAt",
     "summaryTotalProperties",
     "summaryPropertiesWithPhotos",
     "summaryPendingProperties",
     "summaryPublicPendingProperties",
-    "summaryPublicVistaFirstProperties",
     "summaryTotalSourceImages",
-    "cursorLastId",
+    "downloadedFileAssets",
+    "pendingFileAssets",
+    "summaryDownloadedFileAssets",
+    "summaryPendingFileAssets",
     "failedProperties",
     "latestAttachmentAt",
     "syncButton",
@@ -86,14 +82,12 @@ export default class extends Controller {
   render(status) {
     const execution = status.execution || {}
 
-    this.setText(this.propertyProgressValueTarget, this.percent(status.property_progress))
-    this.setText(this.propertiesWithPhotosTarget, this.integer(status.properties_with_photos))
-    this.setText(this.totalPropertiesTarget, this.integer(status.total_properties))
-    this.setText(this.pendingPropertiesTarget, this.integer(status.pending_properties))
-    this.setText(this.migratedImagesTarget, this.integer(status.migrated_images))
-    this.setText(this.imageProgressTarget, this.percent(status.image_progress))
-    this.setText(this.globalProgressPercentTarget, this.percent(status.property_progress))
-    this.setProgress(this.globalProgressBarTarget, status.property_progress)
+    this.setTextIfPresent("propertyProgressValue", this.percent(status.property_progress))
+    this.setTextIfPresent("propertiesWithPhotos", this.integer(status.properties_with_photos))
+    this.setTextIfPresent("totalProperties", this.integer(status.total_properties))
+    this.setTextIfPresent("pendingProperties", this.integer(status.pending_properties))
+    this.setTextIfPresent("migratedImages", this.integer(status.migrated_images))
+    this.setTextIfPresent("imageProgress", this.percent(status.image_progress))
 
     this.renderWorker(status.worker || {})
     this.renderExecution(execution)
@@ -105,30 +99,27 @@ export default class extends Controller {
     if (this.hasWorkerBadgeTarget) {
       this.workerBadgeTarget.textContent = worker.status || "N/D"
       this.workerBadgeTarget.classList.toggle("bg-success", !!worker.running)
-      this.workerBadgeTarget.classList.toggle("bg-danger", !worker.running)
+      this.workerBadgeTarget.classList.toggle("bg-secondary", !worker.running)
+      this.workerBadgeTarget.classList.remove("bg-danger")
     }
 
-    this.setText(this.workerPidTarget, worker.pid ? `PID ${worker.pid}` : "Sem PID registrado")
+    this.setTextIfPresent("workerPid", worker.pid ? `PID ${worker.pid}` : "Sem execução ativa")
   }
 
   renderExecution(execution) {
     const progress = Number(execution.progress || 0)
-    this.setProgress(this.executionProgressBarTarget, progress)
-    this.setText(this.executionProgressPercentTarget, this.percent(progress))
-    this.setText(this.executionLabelTarget, execution.label || "Aguardando execução")
-    this.setText(this.executionStatusTarget, execution.running ? "Rodando" : "Parado")
-    this.setText(this.executionCycleTarget, this.integer(execution.cycle || 0))
-    this.setText(this.executionSyncedTarget, this.integer(execution.synced || 0))
-    this.setText(this.executionSkippedTarget, this.integer(execution.skipped || 0))
-    this.setText(this.executionFailedTarget, this.integer(execution.failed || 0))
-    this.setText(this.executionRemainingTarget, this.integer(execution.remaining || 0))
-    this.setText(this.executionPropertiesAddedTarget, this.integer(execution.properties_added || 0))
-    this.setText(this.executionImagesAddedTarget, this.integer(execution.images_added || 0))
-    this.setText(this.executionLastRunAtTarget, this.dateTime(execution.last_run_at) || "N/D")
+    this.setProgressIfPresent("executionProgressBar", progress)
+    this.setTextIfPresent("executionProgressPercent", this.percent(progress))
+    this.setTextIfPresent("executionLabel", execution.label || "Aguardando execução")
+    this.setTextIfPresent("executionStatus", execution.running ? "Rodando" : "Parado")
+    this.setTextIfPresent("executionFailed", this.integer(execution.failed || 0))
+    this.setTextIfPresent("executionRemaining", this.integer(execution.remaining || 0))
+    this.setTextIfPresent("executionPropertiesAdded", this.integer(execution.properties_added || 0))
+    this.setTextIfPresent("executionImagesAdded", this.integer(execution.images_added || 0))
 
     const current = this.integer(execution.current || 0)
     const total = this.integer(execution.total || 0)
-    this.setText(this.executionDetailTarget, `${current} de ${total}`)
+    this.setTextIfPresent("executionDetail", `${current} de ${total}`)
 
     if (this.hasExecutionProgressBarTarget) {
       this.executionProgressBarTarget.classList.toggle("progress-bar-animated", !!execution.running)
@@ -137,15 +128,17 @@ export default class extends Controller {
   }
 
   renderSummary(status) {
-    this.setText(this.summaryTotalPropertiesTarget, this.integer(status.total_properties))
-    this.setText(this.summaryPropertiesWithPhotosTarget, this.integer(status.properties_with_photos))
-    this.setText(this.summaryPendingPropertiesTarget, this.integer(status.pending_properties))
-    this.setText(this.summaryPublicPendingPropertiesTarget, this.integer(status.public_pending_properties))
-    this.setText(this.summaryPublicVistaFirstPropertiesTarget, this.integer(status.public_vista_first_properties))
-    this.setText(this.summaryTotalSourceImagesTarget, this.integer(status.total_source_images))
-    this.setText(this.cursorLastIdTarget, status.cursor_last_id || "N/D")
-    this.setText(this.failedPropertiesTarget, this.integer(status.failed_properties))
-    this.setText(this.latestAttachmentAtTarget, this.dateTime(status.latest_attachment_at) || "N/D")
+    this.setTextIfPresent("summaryTotalProperties", this.integer(status.total_properties))
+    this.setTextIfPresent("summaryPropertiesWithPhotos", this.integer(status.properties_with_photos))
+    this.setTextIfPresent("summaryPendingProperties", this.integer(status.pending_properties))
+    this.setTextIfPresent("summaryPublicPendingProperties", this.integer(status.public_pending_properties))
+    this.setTextIfPresent("summaryTotalSourceImages", this.integer(status.total_source_images))
+    this.setTextIfPresent("downloadedFileAssets", this.integer(status.downloaded_file_assets))
+    this.setTextIfPresent("pendingFileAssets", this.integer(status.pending_file_assets))
+    this.setTextIfPresent("summaryDownloadedFileAssets", this.integer(status.downloaded_file_assets))
+    this.setTextIfPresent("summaryPendingFileAssets", this.integer(status.pending_file_assets))
+    this.setTextIfPresent("failedProperties", this.integer(status.failed_properties))
+    this.setTextIfPresent("latestAttachmentAt", this.dateTime(status.latest_attachment_at) || "N/D")
   }
 
   renderControls(status) {
@@ -166,6 +159,22 @@ export default class extends Controller {
     const progress = Math.max(0, Math.min(100, Number(value || 0)))
     target.style.width = `${progress}%`
     target.setAttribute("aria-valuenow", progress.toString())
+  }
+
+  setTextIfPresent(name, value) {
+    if (!this[`has${this.capitalize(name)}Target`]) return
+
+    this.setText(this[`${name}Target`], value)
+  }
+
+  setProgressIfPresent(name, value) {
+    if (!this[`has${this.capitalize(name)}Target`]) return
+
+    this.setProgress(this[`${name}Target`], value)
+  }
+
+  capitalize(value) {
+    return value.charAt(0).toUpperCase() + value.slice(1)
   }
 
   integer(value) {
