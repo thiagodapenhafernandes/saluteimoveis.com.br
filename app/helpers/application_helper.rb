@@ -120,7 +120,7 @@ module ApplicationHelper
       "@type" => "RealEstateListing",
       "name" => habitation.display_title,
       "description" => strip_tags(habitation.seo_description.to_s).squish.presence,
-      "url" => property_url(habitation),
+      "url" => request.original_url,
       "identifier" => habitation.codigo,
       "image" => image_urls.presence,
       "address" => listing_address_schema(habitation),
@@ -280,7 +280,7 @@ module ApplicationHelper
       "price" => (price_cents.to_f / 100.0).round(2),
       "priceCurrency" => "BRL",
       "availability" => "https://schema.org/InStock",
-      "url" => property_url(habitation)
+      "url" => request.original_url
     }
   end
 
