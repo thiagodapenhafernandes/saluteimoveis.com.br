@@ -77,10 +77,51 @@ export default class extends Controller {
     if (this.hasApiOrderInputTarget) {
       const apiIndexes = Array.from(this.previewContainerTarget.querySelectorAll('.api-picture-item'))
         .map(el => el.dataset.apiIndex)
-        .filter(index => index)
+        .filter(index => index !== undefined && index !== null && index !== '')
 
       this.apiOrderInputTarget.value = apiIndexes.join(',')
     }
+  }
+
+  setFeatured(event) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    const item = event.currentTarget.closest('.draggable-item')
+    if (!item || !this.hasPreviewContainerTarget) return
+
+    this.previewContainerTarget.prepend(item)
+    this.updateOrder()
+    this.refreshPhotoBadges()
+  }
+
+  refreshPhotoBadges() {
+    const items = Array.from(this.previewContainerTarget.querySelectorAll('.draggable-item'))
+
+    items.forEach((item, index) => {
+      const positionBadge = item.querySelector('[data-photo-position-badge]')
+      if (positionBadge) positionBadge.textContent = `#${index + 1}`
+
+      const featuredContainer = item.querySelector('[data-photo-featured-control]')
+      if (!featuredContainer) return
+
+      if (index === 0) {
+        featuredContainer.innerHTML = `
+          <span class="badge bg-warning text-dark border shadow-sm">
+            <i class="bi bi-star-fill me-1"></i>Destaque
+          </span>
+        `
+      } else {
+        featuredContainer.innerHTML = `
+          <button type="button"
+                  class="media-photo-feature-button btn btn-sm btn-warning border py-0 px-1 fw-semibold"
+                  title="Definir como destaque"
+                  data-action="photo-upload#setFeatured">
+            <i class="bi bi-star"></i>
+          </button>
+        `
+      }
+    })
   }
 
   preview(event) {
@@ -105,9 +146,18 @@ export default class extends Controller {
             <img src="${e.target.result}" class="rounded border object-fit-cover w-100 h-100" alt="${file.name}">
             <div class="media-photo-overlay position-absolute d-flex flex-column justify-content-between p-1">
               <div class="d-flex justify-content-between align-items-start gap-1">
+                <span class="badge bg-dark bg-opacity-75 border shadow-sm" data-photo-position-badge>#</span>
                 <span class="badge bg-success border shadow-sm">Nova</span>
               </div>
-              <div class="d-flex justify-content-end">
+              <div class="d-flex justify-content-between align-items-end gap-1">
+                <span data-photo-featured-control>
+                  <button type="button"
+                          class="media-photo-feature-button btn btn-sm btn-warning border py-0 px-1 fw-semibold"
+                          title="Definir como destaque"
+                          data-action="photo-upload#setFeatured">
+                    <i class="bi bi-star"></i>
+                  </button>
+                </span>
                 <button type="button" class="media-photo-drag-handle btn btn-sm btn-light border py-0 px-1" title="Arrastar foto">
                   <i class="bi bi-grip-vertical"></i>
                 </button>
@@ -116,6 +166,8 @@ export default class extends Controller {
           </div>
         `
         this.previewContainerTarget.appendChild(imgContainer)
+        this.updateOrder()
+        this.refreshPhotoBadges()
       }
 
       reader.readAsDataURL(file)

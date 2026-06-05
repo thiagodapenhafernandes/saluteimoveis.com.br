@@ -3,6 +3,7 @@ require "csv"
 require "open-uri"
 require "rest-client"
 require "securerandom"
+require "set"
 
 module Vista
   class PropertyReconciliationService
@@ -370,6 +371,8 @@ module Vista
       features = normalized_feature_hash(api["Caracteristicas"])
       infrastructure = normalized_infrastructure_list(api["InfraEstrutura"])
       use_development_photos = photos.blank? && development_photos.present? && habitation_type(api) != "Empreendimento"
+      pictures = preserve_picture_order(habitation.pictures, pictures_payload(photos))
+      development_pictures = preserve_picture_order(habitation.fotos_empreendimento, pictures_payload(development_photos))
 
       attrs = compact_attrs(
         categoria: value(api["Categoria"]),
@@ -416,8 +419,8 @@ module Vista
         codigo_corretor: broker&.vista_id || broker_code_from_api(api),
         admin_user_id: broker&.id,
         agenciador: value(api["AdministradoraCondominio"]),
-        pictures: pictures_payload(photos),
-        fotos_empreendimento: pictures_payload(development_photos),
+        pictures: pictures,
+        fotos_empreendimento: development_pictures,
         use_development_photos_flag: use_development_photos
       )
 
@@ -632,19 +635,21 @@ module Vista
         mark_photo_asset_attached!(asset, attachment, reused: reused_blob)
       end
 
+      ordered_attachment_ids = preserve_attachment_order(habitation, ordered_attachment_ids.uniq)
+
       if @replace_photos
         stale = if ordered_attachment_ids.any?
-                  photos_attachment_scope(habitation).where.not(id: ordered_attachment_ids.uniq)
+                  photos_attachment_scope(habitation).where.not(id: ordered_attachment_ids)
                 else
                   photos_attachment_scope(habitation)
                 end
 
         counters[:photos_detached] += stale.count
         stale.destroy_all
-        habitation.update!(photo_ids_order: ordered_attachment_ids.uniq)
+        habitation.update!(photo_ids_order: ordered_attachment_ids)
       end
 
-      habitation.update!(photo_ids_order: ordered_attachment_ids.uniq) if ordered_attachment_ids.any? && !@replace_photos
+      habitation.update!(photo_ids_order: ordered_attachment_ids) if ordered_attachment_ids.any? && !@replace_photos
     end
 
     def api_file_asset_batch
@@ -1011,6 +1016,39 @@ module Vista
           "descricao" => value(photo["Descricao"])
         }
       end
+    end
+
+    def preserve_picture_order(current_pictures, incoming_pictures)
+      return incoming_pictures unless current_pictures.is_a?(Array) && current_pictures.any?
+      return incoming_pictures if incoming_pictures.blank?
+
+      incoming_by_key = incoming_pictures.index_by { |picture| picture_identity_key(picture) }
+      ordered = current_pictures.filter_map { |picture| incoming_by_key.delete(picture_identity_key(picture)) }
+      ordered + incoming_by_key.values
+    end
+
+    def picture_identity_key(picture)
+      return picture.to_s if picture.is_a?(String)
+      return "" unless picture.is_a?(Hash)
+
+      value(picture["codigo_midia_vista"]) ||
+        value(picture["imagem_codigo"]) ||
+        source_path_from_url(picture["url"].presence || picture["Foto"].presence).presence ||
+        value(picture["url"]) ||
+        value(picture["Foto"])
+    end
+
+    def preserve_attachment_order(habitation, incoming_attachment_ids)
+      return incoming_attachment_ids if incoming_attachment_ids.blank?
+
+      current_order = Array(habitation.photo_ids_order).map(&:to_i)
+      return incoming_attachment_ids if current_order.blank?
+
+      incoming_set = incoming_attachment_ids.to_set
+      preserved = current_order.select { |id| incoming_set.include?(id) }
+      return incoming_attachment_ids if preserved.blank?
+
+      preserved + incoming_attachment_ids.reject { |id| preserved.include?(id) }
     end
 
     def photo_rows(raw)
