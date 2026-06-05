@@ -61,6 +61,7 @@ export default class extends Controller {
       persist: false,
       allowEmptyOption: false,
       maxItems: isMultiple ? null : 1,
+      dropdownParent: 'body',
       wrapperClass: 'ts-wrapper p-0',
       onDropdownOpen: () => {
         this.element.closest('.ts-wrapper')?.classList.remove('is-invalid')

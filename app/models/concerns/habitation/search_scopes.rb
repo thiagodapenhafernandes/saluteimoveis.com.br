@@ -257,6 +257,58 @@ module Habitation::SearchScopes
         )
       end
     }
+
+    scope :admin_search_text, ->(query) {
+      sanitized = query.to_s.squish
+      if sanitized.present?
+        phrase = "%#{sanitize_sql_like(sanitized)}%"
+        terms = sanitized
+          .split(/\s+/)
+          .map { |term| term.strip }
+          .reject(&:blank?)
+          .uniq
+          .first(6)
+
+        searchable_text_sql = <<~SQL.squish
+          CONCAT_WS(' ',
+            habitations.codigo,
+            habitations.codigo_empreendimento,
+            habitations.titulo_anuncio,
+            habitations.descricao_web,
+            habitations.nome_empreendimento,
+            COALESCE(NULLIF(TRIM(addresses.tipo_endereco), ''), NULLIF(TRIM(habitations.tipo_endereco), '')),
+            COALESCE(NULLIF(TRIM(addresses.logradouro), ''), NULLIF(TRIM(habitations.endereco), '')),
+            COALESCE(NULLIF(TRIM(addresses.numero), ''), NULLIF(TRIM(habitations.numero), '')),
+            COALESCE(NULLIF(TRIM(addresses.cep), ''), NULLIF(TRIM(habitations.cep), '')),
+            COALESCE(NULLIF(TRIM(addresses.bairro), ''), NULLIF(TRIM(habitations.bairro), '')),
+            COALESCE(NULLIF(TRIM(addresses.bairro_comercial), ''), NULLIF(TRIM(habitations.bairro_comercial), '')),
+            COALESCE(NULLIF(TRIM(addresses.cidade), ''), NULLIF(TRIM(habitations.cidade), '')),
+            COALESCE((
+              SELECT developments.nome_empreendimento
+              FROM habitations developments
+              WHERE developments.codigo = habitations.codigo_empreendimento
+              LIMIT 1
+            ), '')
+          )
+        SQL
+
+        bindings = { admin_search_phrase: phrase }
+        term_conditions = terms.each_with_index.map do |term, index|
+          key = :"admin_search_term_#{index}"
+          bindings[key] = "%#{sanitize_sql_like(term)}%"
+          "unaccent(#{searchable_text_sql}) ILIKE unaccent(:#{key})"
+        end
+
+        token_condition = term_conditions.any? ? " OR (#{term_conditions.join(' AND ')})" : ""
+
+        left_outer_joins(:address).where(
+          "unaccent(#{searchable_text_sql}) ILIKE unaccent(:admin_search_phrase)#{token_condition}",
+          bindings
+        )
+      else
+        all
+      end
+    }
     
     # Busca em características JSONB (frente mar, quadra mar, varanda, etc)
     scope :search_characteristics, ->(query) {
