@@ -57,6 +57,7 @@ export default class extends Controller {
     this.sortable = new Sortable(this.previewContainerTarget, {
       animation: 150,
       ghostClass: 'sortable-ghost',
+      handle: '.media-photo-drag-handle',
       draggable: '.draggable-item',
       onEnd: (evt) => {
         this.updateOrder()
@@ -100,10 +101,17 @@ export default class extends Controller {
         imgContainer.classList.add("col-6", "col-md-3", "col-lg-2", "draggable-item", "new-photo-preview")
 
         imgContainer.innerHTML = `
-          <div class="position-relative ratio ratio-1x1 group-hover cursor-grab">
+          <div class="position-relative ratio ratio-1x1 group-hover media-photo-tile">
             <img src="${e.target.result}" class="rounded border object-fit-cover w-100 h-100" alt="${file.name}">
-            <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-black bg-opacity-25 opacity-0 hover-opacity-100 transition-opacity">
-              <span class="badge bg-success">Nova</span>
+            <div class="media-photo-overlay position-absolute d-flex flex-column justify-content-between p-1">
+              <div class="d-flex justify-content-between align-items-start gap-1">
+                <span class="badge bg-success border shadow-sm">Nova</span>
+              </div>
+              <div class="d-flex justify-content-end">
+                <button type="button" class="media-photo-drag-handle btn btn-sm btn-light border py-0 px-1" title="Arrastar foto">
+                  <i class="bi bi-grip-vertical"></i>
+                </button>
+              </div>
             </div>
           </div>
         `
