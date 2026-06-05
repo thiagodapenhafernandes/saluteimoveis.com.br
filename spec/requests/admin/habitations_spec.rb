@@ -3,6 +3,7 @@ require "tempfile"
 
 RSpec.describe "Admin::Habitations", type: :request do
   include Devise::Test::IntegrationHelpers
+  include ActiveJob::TestHelper
 
   let(:admin) { create(:admin_user, :admin) }
 
@@ -54,6 +55,19 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).not_to include(vista_property.titulo_anuncio)
   end
 
+  it "renderiza o catálogo em layout master-detail com menu lateral por drawer" do
+    create(:habitation, codigo: "LAYOUT-#{SecureRandom.hex(6)}", titulo_anuncio: "Imóvel para layout master detail")
+
+    get admin_habitations_path
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include('body class="admin-layout admin-drawer-catalog-layout"')
+    expect(response.body).to include('class="habitations-master-detail-layout"')
+    expect(response.body).to include('class="habitations-detail-pane"')
+    expect(response.body).to include('class="habitations-master-pane"')
+    expect(response.body).to include('data-bs-target="#adminSidebarOffcanvas"')
+  end
+
   it "abre os relatórios de impressão do menu principal" do
     create(:habitation, codigo: "PRINT-#{SecureRandom.hex(6)}", categoria: "Apartamento", titulo_anuncio: "Imóvel residencial para impressão")
     create(:habitation, codigo: "PRINT-#{SecureRandom.hex(6)}", categoria: "Sala Comercial", titulo_anuncio: "Imóvel comercial para impressão")
@@ -96,6 +110,8 @@ RSpec.describe "Admin::Habitations", type: :request do
         exibir_no_site_flag: "1"
       }
     }
+
+    warn response.body.scan(/(?:alert[^>]*>|invalid-feedback[^>]*>|Já existe|erro|não|falhou|inválid|propriet)[^<]{0,220}/i).uniq.first(30).join("\n")
 
     expect(response).to redirect_to(admin_habitations_path)
     expect(intake.reload).to have_attributes(
@@ -191,6 +207,105 @@ RSpec.describe "Admin::Habitations", type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("Classificação das Fotos:")
+  end
+
+  it "não remove fotos existentes quando o formulário envia upload vazio" do
+    habitation = create(:habitation, codigo: "FOTO-KEEP-#{SecureRandom.hex(6)}", titulo_anuncio: "Título antigo")
+    habitation.create_address!(
+      logradouro: "Rua Fotos",
+      numero: "101",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+    habitation.photos.attach(
+      io: StringIO.new("foto existente"),
+      filename: "existente.jpg",
+      content_type: "image/jpeg"
+    )
+
+    patch admin_habitation_path(habitation), params: {
+      habitation: {
+        titulo_anuncio: "Título sem trocar foto",
+        photos: [""]
+      }
+    }
+
+    expect(response).to redirect_to(admin_habitations_path)
+    expect(habitation.reload.titulo_anuncio).to eq("Título sem trocar foto")
+    expect(habitation.photos.attachments.size).to eq(1)
+    expect(habitation.photos.attachments.first.filename.to_s).to eq("existente.jpg")
+  end
+
+  it "remove fotos anexadas selecionadas ao salvar o imóvel" do
+    habitation = create(:habitation, codigo: "FOTO-DEL-#{SecureRandom.hex(6)}")
+    habitation.create_address!(
+      logradouro: "Rua Fotos",
+      numero: "102",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+    habitation.photos.attach(
+      io: StringIO.new("foto um"),
+      filename: "foto-um.jpg",
+      content_type: "image/jpeg"
+    )
+    habitation.photos.attach(
+      io: StringIO.new("foto dois"),
+      filename: "foto-dois.jpg",
+      content_type: "image/jpeg"
+    )
+    attachments = habitation.photos.attachments.order(:id).to_a
+    habitation.update!(photo_ids_order: attachments.map(&:id))
+
+    perform_enqueued_jobs do
+      patch admin_habitation_path(habitation), params: {
+        habitation: {
+          titulo_anuncio: "Título mantendo uma foto",
+          ordered_photo_ids: attachments.map(&:id).join(","),
+          remove_photo_ids: attachments.first.id.to_s
+        }
+      }
+    end
+
+    expect(response).to redirect_to(admin_habitations_path)
+    habitation.reload
+    expect(habitation.photos.attachments.map(&:id)).to contain_exactly(attachments.second.id)
+    expect(habitation.photo_ids_order).to eq([attachments.second.id])
+    expect(HabitationAuditLog.where(habitation_id: habitation.id, action: "attachments_changed").last.changed_fields).to include("photos_attachments")
+  end
+
+  it "remove fotos da API selecionadas ao salvar o imóvel" do
+    habitation = create(
+      :habitation,
+      codigo: "FOTO-API-#{SecureRandom.hex(6)}",
+      pictures: [
+        { "url" => "https://example.com/um.jpg" },
+        { "url" => "https://example.com/dois.jpg" },
+        { "url" => "https://example.com/tres.jpg" }
+      ]
+    )
+    habitation.create_address!(
+      logradouro: "Rua Fotos",
+      numero: "103",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+
+    patch admin_habitation_path(habitation), params: {
+      habitation: {
+        titulo_anuncio: "Título sem a segunda foto API",
+        remove_picture_indices: "1"
+      }
+    }
+
+    expect(response).to redirect_to(admin_habitations_path)
+    expect(habitation.reload.pictures.map { |picture| picture["url"] }).to eq([
+      "https://example.com/um.jpg",
+      "https://example.com/tres.jpg"
+    ])
   end
 
   it "exibe modal para escolher como concluir o salvamento do cadastro" do

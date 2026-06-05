@@ -315,6 +315,7 @@ class Admin::HabitationsController < Admin::BaseController
   def create
     @habitation = Habitation.new(habitation_params)
     @habitation.skip_auto_audit = true
+    apply_picture_removals_to_memory(@habitation)
     assign_proprietor_from_legacy_fields(@habitation) if current_admin_user&.admin?
 
     unless no_duplicate_address?(@habitation)
@@ -325,6 +326,7 @@ class Admin::HabitationsController < Admin::BaseController
 
     if @habitation.save
       record_habitation_created(@habitation)
+      apply_saved_photo_removals(@habitation)
       redirect_after_habitation_save(@habitation, notice: "Imóvel criado com sucesso.")
     else
       load_autocomplete_data
@@ -343,6 +345,7 @@ class Admin::HabitationsController < Admin::BaseController
     audit_snapshot_before = Habitations::AuditChangeRecorder.snapshot_for(@habitation)
     @habitation.skip_auto_audit = true
     @habitation.assign_attributes(habitation_params)
+    apply_picture_removals_to_memory(@habitation)
     keep_admin_review_intake_hidden
 
     unless no_duplicate_address?(@habitation)
@@ -374,6 +377,7 @@ class Admin::HabitationsController < Admin::BaseController
     apply_intake_status_transition_metadata(@habitation)
     if @habitation.save
       record_habitation_updated(@habitation, before_snapshot: audit_snapshot_before)
+      apply_saved_photo_removals(@habitation)
       notice = releasing_to_broker ? "Imóvel salvo e liberado para o corretor publicar no site." : "Imóvel atualizado com sucesso."
       redirect_after_habitation_save(@habitation, notice: notice)
     else
@@ -482,7 +486,9 @@ class Admin::HabitationsController < Admin::BaseController
     attachment_payload = Habitations::AuditChangeRecorder.attachment_payload(attachment)
     record_habitation_attachment_removed(@habitation, association: association, attachment_payload: attachment_payload)
     attachment.purge_later
-    redirect_to edit_admin_habitation_path(@habitation, anchor: "documents"), notice: "Anexo removido."
+    anchor = association == "photos" ? "media" : "documents"
+    notice = association == "photos" ? "Foto removida." : "Anexo removido."
+    redirect_to edit_admin_habitation_path(@habitation, anchor: anchor), notice: notice
   end
 
   private
@@ -1302,6 +1308,7 @@ class Admin::HabitationsController < Admin::BaseController
 
   def habitation_params
     permitted = params.require(:habitation).permit(*permitted_habitation_fields)
+    strip_blank_photo_uploads!(permitted)
 
     unless current_admin_user&.admin? || owns_all_resource?(:imoveis)
       permitted = permitted.slice(*broker_limited_habitation_fields.map(&:to_s))
@@ -1318,6 +1325,70 @@ class Admin::HabitationsController < Admin::BaseController
     permitted.delete(:intake_status) unless @habitation&.broker_intake? && can_manage_intake_status?(@habitation)
 
     permitted
+  end
+
+  def strip_blank_photo_uploads!(permitted)
+    return permitted unless permitted.key?(:photos)
+
+    valid_photos = Array(permitted[:photos]).reject do |photo|
+      photo.blank? || (photo.respond_to?(:size) && photo.size.to_i.zero?)
+    end
+
+    if valid_photos.blank?
+      permitted.delete(:photos)
+    else
+      permitted[:photos] = valid_photos
+    end
+
+    permitted
+  end
+
+  def apply_picture_removals_to_memory(habitation)
+    indices = selected_picture_indices_for_removal
+    return if indices.blank?
+    return unless habitation.pictures.is_a?(Array)
+
+    habitation.pictures = habitation.pictures.each_with_index.filter_map do |picture, index|
+      picture unless indices.include?(index)
+    end
+  end
+
+  def apply_saved_photo_removals(habitation)
+    attachment_ids = selected_photo_attachment_ids_for_removal
+    return if attachment_ids.blank?
+
+    attachments = habitation.photos.attachments.includes(:blob).where(id: attachment_ids).to_a
+    removed_ids = attachments.map(&:id)
+    return if removed_ids.blank?
+
+    attachments.each do |attachment|
+      attachment_payload = Habitations::AuditChangeRecorder.attachment_payload(attachment)
+      record_habitation_attachment_removed(habitation, association: "photos", attachment_payload: attachment_payload)
+      attachment.purge_later
+    end
+
+    remaining_order = Array(habitation.photo_ids_order).map(&:to_i) - removed_ids
+    habitation.update_column(:photo_ids_order, remaining_order)
+  end
+
+  def selected_photo_attachment_ids_for_removal
+    comma_list_param(:remove_photo_ids).filter_map do |raw_id|
+      raw_id if raw_id.match?(/\A\d+\z/)
+    end.map(&:to_i).uniq
+  end
+
+  def selected_picture_indices_for_removal
+    comma_list_param(:remove_picture_indices).filter_map do |raw_index|
+      raw_index if raw_index.match?(/\A\d+\z/)
+    end.map(&:to_i).uniq
+  end
+
+  def comma_list_param(key)
+    raw_value = params.dig(:habitation, key)
+
+    Array(raw_value).flat_map { |entry| entry.to_s.split(",") }
+      .map(&:strip)
+      .reject(&:blank?)
   end
 
   def load_habitation_audit_logs
