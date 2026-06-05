@@ -1928,7 +1928,8 @@ CREATE TABLE public.home_sections (
     display_order integer,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    order_position integer DEFAULT 0
+    order_position integer DEFAULT 0,
+    property_filters jsonb DEFAULT '{}'::jsonb NOT NULL
 );
 
 
@@ -8393,6 +8394,7 @@ ALTER TABLE ONLY public.push_subscriptions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260605123358'),
 ('20260605093000'),
 ('20260602193000'),
 ('20260601092500'),
