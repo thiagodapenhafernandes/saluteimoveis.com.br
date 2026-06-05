@@ -59,12 +59,23 @@ class Admin::HomeSectionsController < Admin::BaseController
   end
   
   def home_section_params
-    params.require(:home_section).permit(
+    permitted = params.require(:home_section).permit(
       :section_type,
       :title,
       :subtitle,
       :active,
-      :display_order
+      :display_order,
+      :order_position,
+      property_filters: HomeSection::PROPERTY_FILTER_OPTIONS.keys
     )
+    filters = permitted.delete(:property_filters)
+    filters = if filters.respond_to?(:to_unsafe_h)
+                filters.to_unsafe_h
+              elsif filters.respond_to?(:to_h)
+                filters.to_h
+              else
+                {}
+              end
+    permitted.to_h.merge(property_filters: filters)
   end
 end

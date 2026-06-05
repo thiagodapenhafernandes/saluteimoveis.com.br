@@ -1,6 +1,6 @@
 <div class="container-fluid py-4">
   <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="mb-0"><i class="bi bi-layout-text-sidebar"></i> Seções da Homepage</h1>
+    <h1 class="mb-0"><i class="bi bi-layout-text-sidebar"></i> Seções da Página Inicial</h1>
     <%= link_to new_admin_home_section_path, class: "btn btn-primary" do %>
       <i class="bi bi-plus-circle"></i> Nova Seção
     <% end %>
@@ -29,8 +29,15 @@
                   </td>
                   <td>
                     <span class="badge bg-info">
-                      <%= section.section_type.humanize %>
+                      <%= section.section_type_label %>
                     </span>
+                    <% if section.property_filter_labels.any? %>
+                      <div class="d-flex flex-wrap gap-1 mt-2">
+                        <% section.property_filter_labels.each do |label| %>
+                          <span class="badge text-bg-light border"><%= label %></span>
+                        <% end %>
+                      </div>
+                    <% end %>
                   </td>
                   <td>
                     <strong><%= section.title %></strong>
@@ -81,7 +88,7 @@
   <!-- Info Box -->
   <div class="alert alert-info mt-4">
     <i class="bi bi-info-circle"></i>
-    <strong>Dica:</strong> As seções são exibidas na homepage na ordem definida. 
+    <strong>Dica:</strong> As seções são exibidas na página inicial na ordem definida.
     Use o botão de status para ativar/desativar seções sem removê-las. 
     Arraste as linhas para reordenar!
   </div>

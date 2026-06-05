@@ -1,31 +1,40 @@
 class HomeController < ApplicationController
   def index
     # Load active home sections
-    @home_sections = Rails.cache.fetch("home_sections_active_v2", expires_in: 1.hour) do
+    @home_sections = Rails.cache.fetch("home_sections_active_v3", expires_in: 1.hour) do
       HomeSection.active.to_a
     end
     @sections_map = @home_sections.index_by(&:section_type)
     
     # Carrossel de Destaques - 12 imóveis (only if section is active)
-    if @sections_map['featured_properties']&.active?
-      @featured_properties = Habitation.active.featured.with_attached_photos.newest_first.limit(12)
+    if (section = @sections_map["featured_properties"])&.active?
+      @featured_properties = section
+        .apply_property_filters(Habitation.active.featured.with_attached_photos)
+        .newest_first
+        .limit(12)
     end
     
     # Carrossel de Oportunidades - 12 imóveis com desconto (only if section is active)
-    if @sections_map['opportunities']&.active?
-      @opportunity_properties = Habitation.active
-        .with_attached_photos
-        .where('valor_venda_anterior_cents > valor_venda_cents AND valor_venda_cents > 0')
+    if (section = @sections_map["opportunities"])&.active?
+      @opportunity_properties = section
+        .apply_property_filters(
+          Habitation.active
+            .with_attached_photos
+            .where("valor_venda_anterior_cents > valor_venda_cents AND valor_venda_cents > 0")
+        )
         .newest_first
         .limit(12)
     end
     
     # Carrossel de Empreendimentos (only if section is active)
-    if @sections_map['developments']&.active?
-      all_developments = Habitation
-        .empreendimentos_publicos
-        .with_attached_photos
-        .where.not(codigo: nil)
+    if (section = @sections_map["developments"])&.active?
+      all_developments = section
+        .apply_property_filters(
+          Habitation
+            .empreendimentos_publicos
+            .with_attached_photos
+            .where.not(codigo: nil)
+        )
         .newest_first
         .limit(20)
       
@@ -46,8 +55,11 @@ class HomeController < ApplicationController
     end
     
     # Imóveis para Locação (only if section is active)
-    if @sections_map['rentals']&.active?
-      @rental_properties = Habitation.active.for_rent.with_attached_photos.newest_first.limit(6)
+    if (section = @sections_map["rentals"])&.active?
+      @rental_properties = section
+        .apply_property_filters(Habitation.active.for_rent.with_attached_photos)
+        .newest_first
+        .limit(6)
       @corporate_properties = Habitation.active.home_corporate.with_attached_photos.limit(3)
     end
     
