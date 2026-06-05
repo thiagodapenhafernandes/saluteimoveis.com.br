@@ -17,6 +17,7 @@ class Lead < ApplicationRecord
   belongs_to :distribution_rule, optional: true
   has_many :lead_audit_logs
   has_many :activities, class_name: "LeadActivity", dependent: :destroy
+  has_many :seo_conversion_events, dependent: :nullify
   
   after_create :record_audit_create
   after_update :record_audit_update
