@@ -33,6 +33,51 @@ RSpec.describe Habitation::SearchScopes, type: :model do
     end
   end
 
+  describe ".admin_search_text" do
+    it "matches developments and linked units by development name without accents or exact casing" do
+      development = create(
+        :habitation,
+        tipo: "Empreendimento",
+        codigo: "DEV-LABELLE",
+        nome_empreendimento: "La Belle Tour Résidence",
+        titulo_anuncio: "Lançamento no Centro"
+      )
+      unit = create(
+        :habitation,
+        codigo: "UNIT-LABELLE",
+        codigo_empreendimento: development.codigo,
+        nome_empreendimento: nil,
+        titulo_anuncio: "Apartamento 2 suítes"
+      )
+      other = create(:habitation, codigo: "OTHER-RESIDENCE", nome_empreendimento: "Outro Residencial")
+
+      result = Habitation.admin_search_text("belle la")
+
+      expect(result).to include(development, unit)
+      expect(result).not_to include(other)
+    end
+
+    it "matches address fields by street, number, zip code and neighborhood" do
+      matching = create(:habitation, codigo: "ADDR-MATCH", endereco: nil, numero: nil, cep: nil, bairro: nil)
+      Address.create!(
+        addressable: matching,
+        tipo_endereco: "Rua",
+        logradouro: "2000",
+        numero: "120",
+        bairro: "Centro",
+        cidade: "Balneário Camboriú",
+        uf: "SC",
+        cep: "88330-590"
+      )
+      other = create(:habitation, codigo: "ADDR-OTHER", endereco: "Rua 1000", numero: "80", cep: "88330-000", bairro: "Barra Sul")
+
+      result = Habitation.admin_search_text("rua 2000 120 88330-590 centro")
+
+      expect(result).to include(matching)
+      expect(result).not_to include(other)
+    end
+  end
+
   describe ".dependencia_empregada" do
     it "matches Vista characteristics for dependencia de empregada" do
       matching = create(:habitation, caracteristicas: ["Dependência de Empregada"])

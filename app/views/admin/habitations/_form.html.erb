@@ -45,7 +45,8 @@
      data-habitation-form-error-fields-value="<%= json_escape(habitation.errors.attribute_names.map(&:to_s).uniq.to_json) %>"
      data-habitation-duplicate-check-url-value="<%= check_admin_habitation_duplicate_path %>"
      data-habitation-duplicate-check-ignored-id-value="<%= habitation.id %>">
-<%= form_with(model: [:admin, habitation], local: true, class: "needs-validation", style: "min-height: 80vh;", data: { controller: "save-state", action: "submit->save-state#submitting turbo:submit-end->save-state#submitted" }) do |f| %>
+<%= form_with(model: [:admin, habitation], local: true, class: "needs-validation", style: "min-height: 80vh;", data: { controller: "save-state", action: "submit->save-state#submitting turbo:submit-end->save-state#submitted", habitation_save_options_form: true }) do |f| %>
+  <%= hidden_field_tag :save_navigation, "exit", data: { save_state_target: "choice", habitation_save_options_choice: true } %>
   <%
     tab_titles = {
       general: "Visão geral",
@@ -2001,7 +2002,157 @@
       </div>
     </div>
   </div>
+
+  <div class="modal fade" tabindex="-1" aria-labelledby="habitationSaveOptionsTitle" aria-hidden="true" data-save-state-target="modal" data-habitation-save-options-modal="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="habitationSaveOptionsTitle">Como deseja salvar?</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0 text-muted">
+            Escolha se quer continuar editando esta ficha ou voltar para o catálogo depois que o imóvel for salvo.
+          </p>
+        </div>
+        <div class="modal-footer flex-column flex-sm-row align-items-stretch align-items-sm-center">
+          <button type="button" class="btn btn-outline-secondary" data-habitation-save-options-action="cancel">
+            Cancelar
+          </button>
+          <button type="button" class="btn btn-outline-primary" data-habitation-save-options-action="stay">
+            Salvar e permanecer
+          </button>
+          <button type="button" class="btn btn-primary" data-habitation-save-options-action="exit">
+            Salvar e sair
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1080;">
+    <div class="toast align-items-center text-bg-primary border-0" role="status" aria-live="polite" aria-atomic="true" data-save-state-target="toast" data-habitation-save-options-toast="true">
+      <div class="d-flex">
+        <div class="toast-body" data-save-state-target="toastBody" data-habitation-save-options-toast-body="true"></div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Fechar"></button>
+      </div>
+    </div>
+  </div>
 <% end %>
+
+<script>
+  (() => {
+    if (window.saluteHabitationSaveOptionsBound) return;
+    window.saluteHabitationSaveOptionsBound = true;
+
+    const submitters = new WeakMap();
+
+    const bootstrapApi = () => window.bootstrap || (typeof bootstrap !== "undefined" ? bootstrap : null);
+    const findForm = (element) => element?.closest?.("form[data-habitation-save-options-form='true']");
+    const findModal = (form) => form?.querySelector("[data-habitation-save-options-modal='true']");
+    const findToast = (form) => form?.querySelector("[data-habitation-save-options-toast='true']");
+    const findToastBody = (form) => form?.querySelector("[data-habitation-save-options-toast-body='true']");
+    const findChoice = (form) => form?.querySelector("[data-habitation-save-options-choice='true']");
+
+    const showToast = (form, message) => {
+      const toast = findToast(form);
+      const body = findToastBody(form);
+      if (!toast || !body) return;
+
+      body.textContent = message;
+      const bootstrapElement = bootstrapApi();
+
+      if (bootstrapElement?.Toast) {
+        bootstrapElement.Toast.getOrCreateInstance(toast, { delay: 3500 }).show();
+        return;
+      }
+
+      toast.classList.add("show");
+      window.setTimeout(() => toast.classList.remove("show"), 3500);
+    };
+
+    const showModal = (form) => {
+      const modal = findModal(form);
+      const bootstrapElement = bootstrapApi();
+
+      if (modal && bootstrapElement?.Modal) {
+        bootstrapElement.Modal.getOrCreateInstance(modal).show();
+        return;
+      }
+
+      const choiceInput = findChoice(form);
+      if (choiceInput) choiceInput.value = "exit";
+      form.dataset.habitationSaveOptionsConfirmed = "true";
+      requestSubmit(form);
+    };
+
+    const hideModal = (form) => {
+      const modal = findModal(form);
+      const bootstrapElement = bootstrapApi();
+      if (!modal || !bootstrapElement?.Modal) return;
+
+      bootstrapElement.Modal.getOrCreateInstance(modal).hide();
+    };
+
+    const requestSubmit = (form) => {
+      const submitter = submitters.get(form);
+      if (submitter) {
+        form.requestSubmit(submitter);
+      } else {
+        form.requestSubmit();
+      }
+    };
+
+    const submitWithChoice = (form, choice, message) => {
+      const choiceInput = findChoice(form);
+      if (choiceInput) choiceInput.value = choice;
+      form.dataset.habitationSaveOptionsConfirmed = "true";
+      hideModal(form);
+      showToast(form, message);
+      window.setTimeout(() => requestSubmit(form), 200);
+    };
+
+    document.addEventListener("submit", (event) => {
+      const form = findForm(event.target);
+      if (!form) return;
+
+      if (form.dataset.habitationSaveOptionsConfirmed === "true") {
+        form.dataset.habitationSaveOptionsConfirmed = "false";
+        return;
+      }
+
+      if (event.submitter?.name === "release_to_broker_after_save") return;
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      submitters.set(form, event.submitter);
+      showToast(form, "Escolha como deseja concluir o salvamento.");
+      showModal(form);
+    }, true);
+
+    document.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-habitation-save-options-action]");
+      const form = findForm(button);
+      if (!button || !form) return;
+
+      event.preventDefault();
+      const action = button.dataset.habitationSaveOptionsAction;
+
+      if (action === "cancel") {
+        hideModal(form);
+        showToast(form, "Salvamento cancelado. Nenhuma alteração foi enviada.");
+        return;
+      }
+
+      if (action === "stay") {
+        submitWithChoice(form, "stay", "Salvando e permanecendo na ficha de cadastro...");
+        return;
+      }
+
+      submitWithChoice(form, "exit", "Salvando e saindo para o catálogo...");
+    });
+  })();
+</script>
 <%= render "admin/shared/attribute_manager_modal", modal_id: "attributeManagerModal" %>
 
 </div>

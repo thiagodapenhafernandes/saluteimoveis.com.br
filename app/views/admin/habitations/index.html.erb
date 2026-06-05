@@ -2,8 +2,13 @@
   .habitations-filter-workspace {
     border: 1px solid rgba(226, 232, 240, 0.9) !important;
     border-radius: 14px;
-    overflow: hidden;
+    overflow: visible;
     background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  }
+  .habitations-filter-workspace .card-body,
+  .filter-detail-section,
+  .habitations-filter-detail .border.rounded-3.p-3 {
+    overflow: visible;
   }
   .habitations-filter-master {
     padding: 1rem 1.15rem;
@@ -68,6 +73,7 @@
   }
   .filter-detail-collapse {
     background: #f8fafc;
+    border-radius: 0 0 14px 14px;
   }
   .habitations-filter-detail {
     padding: 1rem 1.15rem;
@@ -530,6 +536,56 @@
           </summary>
           <div class="p-3 border-top bg-white rounded-bottom-3">
             <div class="border rounded-3 p-3 mb-3">
+              <h6 class="fw-bold text-secondary mb-3">Localização</h6>
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Empreendimento</label>
+                  <%= f.select :empreendimento_codigo,
+                               @filter_empreendimentos,
+                               { include_blank: "Todos", selected: params[:empreendimento_codigo] },
+                               {
+                                 class: "form-select",
+                                 data: {
+                                   controller: "tom-select",
+                                   tom_select_create_value: false,
+                                   tom_select_options_value: { placeholder: "Selecione empreendimento" }
+                                 }
+                               } %>
+                </div>
+                <% if current_admin_user&.admin? || current_admin_user&.profile&.name == "Administrativo" %>
+                  <div class="col-md-3">
+                    <label class="form-label small fw-bold text-muted text-uppercase">Corretor</label>
+                    <%= f.select :corretor_id,
+                                 @filter_brokers,
+                                 { include_blank: "Todos", selected: params[:corretor_id] },
+                                 {
+                                   class: "form-select",
+                                   data: {
+                                     controller: "tom-select",
+                                     tom_select_create_value: false,
+                                     tom_select_options_value: { placeholder: "Selecione corretor" }
+                                   }
+                                 } %>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label small fw-bold text-muted text-uppercase">Proprietário</label>
+                    <%= f.select :proprietor_id,
+                                 @filter_proprietors,
+                                 { include_blank: "Todas", selected: params[:proprietor_id] },
+                                 {
+                                   class: "form-select",
+                                   data: {
+                                     controller: "tom-select",
+                                     tom_select_create_value: false,
+                                     tom_select_options_value: { placeholder: "Selecione proprietário" }
+                                   }
+                                 } %>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+
+            <div class="border rounded-3 p-3 mb-3">
               <h6 class="fw-bold text-secondary mb-3">Características</h6>
               <div class="row g-3">
                 <div class="col-md-3">
@@ -813,55 +869,6 @@
               </div>
             </div>
 
-            <div class="border rounded-3 p-3">
-              <h6 class="fw-bold text-secondary mb-3">Localização</h6>
-              <div class="row g-3">
-                <div class="col-md-3">
-                  <label class="form-label small fw-bold text-muted text-uppercase">Empreendimento</label>
-                  <%= f.select :empreendimento_codigo,
-                               @filter_empreendimentos,
-                               { include_blank: "Todos", selected: params[:empreendimento_codigo] },
-                               {
-                                 class: "form-select",
-                                 data: {
-                                   controller: "tom-select",
-                                   tom_select_create_value: false,
-                                   tom_select_options_value: { placeholder: "Selecione empreendimento" }
-                                 }
-                               } %>
-                </div>
-                <% if current_admin_user&.admin? || current_admin_user&.profile&.name == "Administrativo" %>
-                  <div class="col-md-3">
-                    <label class="form-label small fw-bold text-muted text-uppercase">Corretor</label>
-                    <%= f.select :corretor_id,
-                                 @filter_brokers,
-                                 { include_blank: "Todos", selected: params[:corretor_id] },
-                                 {
-                                   class: "form-select",
-                                   data: {
-                                     controller: "tom-select",
-                                     tom_select_create_value: false,
-                                     tom_select_options_value: { placeholder: "Selecione corretor" }
-                                   }
-                                 } %>
-                  </div>
-                  <div class="col-md-3">
-                    <label class="form-label small fw-bold text-muted text-uppercase">Proprietário</label>
-                    <%= f.select :proprietor_id,
-                                 @filter_proprietors,
-                                 { include_blank: "Todas", selected: params[:proprietor_id] },
-                                 {
-                                   class: "form-select",
-                                   data: {
-                                     controller: "tom-select",
-                                     tom_select_create_value: false,
-                                     tom_select_options_value: { placeholder: "Selecione proprietário" }
-                                   }
-                                 } %>
-                  </div>
-                <% end %>
-              </div>
-            </div>
           </div>
         </details>
 

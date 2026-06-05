@@ -193,6 +193,43 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include("Classificação das Fotos:")
   end
 
+  it "exibe modal para escolher como concluir o salvamento do cadastro" do
+    habitation = create(:habitation, codigo: "SAVE-MODAL-#{SecureRandom.hex(6)}")
+
+    get edit_admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Como deseja salvar?")
+    expect(response.body).to include("Salvar e permanecer")
+    expect(response.body).to include("Salvar e sair")
+    expect(response.body).to include("Cancelar")
+    expect(response.body).to include("data-habitation-save-options-form")
+    expect(response.body).to include("data-habitation-save-options-action")
+  end
+
+  it "permanece na ficha de cadastro quando solicitado no salvamento" do
+    habitation = create(:habitation, codigo: "SAVE-STAY-#{SecureRandom.hex(6)}", titulo_anuncio: "Título antigo")
+    habitation.create_address!(
+      logradouro: "Rua Salvamento",
+      numero: "123",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+
+    patch admin_habitation_path(habitation), params: {
+      save_navigation: "stay",
+      habitation: {
+        titulo_anuncio: "Título salvo na ficha"
+      }
+    }
+
+    expect(response).to redirect_to(edit_admin_habitation_path(habitation))
+    follow_redirect!
+    expect(response.body).to include("Imóvel atualizado com sucesso. Você permaneceu na ficha de cadastro.")
+    expect(habitation.reload.titulo_anuncio).to eq("Título salvo na ficha")
+  end
+
   it "oculta classificação de fotos da ficha de pré-cadastro do corretor" do
     broker_profile = Profile.create!(
       name: "Corretor #{SecureRandom.hex(6)}",
