@@ -32,6 +32,28 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).not_to include(draft.titulo_anuncio)
   end
 
+  it "filtra somente imóveis do DWV na listagem" do
+    dwv_property = create(
+      :habitation,
+      codigo: "DWV-#{SecureRandom.hex(6)}",
+      titulo_anuncio: "Imóvel vindo do DWV",
+      imovel_dwv: "Sim"
+    )
+    vista_property = create(
+      :habitation,
+      codigo: "VISTA-#{SecureRandom.hex(6)}",
+      titulo_anuncio: "Imóvel vindo da Vista",
+      imovel_dwv: "Nao"
+    )
+
+    get admin_habitations_path(somente_dwv: "1")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Somente imóveis do DWV")
+    expect(response.body).to include(dwv_property.titulo_anuncio)
+    expect(response.body).not_to include(vista_property.titulo_anuncio)
+  end
+
   it "abre os relatórios de impressão do menu principal" do
     create(:habitation, codigo: "PRINT-#{SecureRandom.hex(6)}", categoria: "Apartamento", titulo_anuncio: "Imóvel residencial para impressão")
     create(:habitation, codigo: "PRINT-#{SecureRandom.hex(6)}", categoria: "Sala Comercial", titulo_anuncio: "Imóvel comercial para impressão")

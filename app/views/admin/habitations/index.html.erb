@@ -288,7 +288,7 @@
     festival_salute exibir_no_site_salute tem_placa exclusivo empreendimento_codigo corretor_id proprietor_id regiao_foco
     publicar_imovelweb_2 publicar_netimoveis_2 publicar_lais_ai publicar_loft
     publicar_chaves_na_mao publicar_casa_mineira publicar_imovelweb publicar_viva_real_vrsync
-    captacao_inicio captacao_fim somente_com_imagens somente_sem_imagens
+    captacao_inicio captacao_fim somente_com_imagens somente_sem_imagens somente_dwv
   ] + array_filter_keys
   active_extra_filters_count = extra_filter_keys.count do |key|
     value = params[key]
@@ -304,7 +304,7 @@
     publicar_chaves_na_mao publicar_casa_mineira publicar_imovelweb publicar_viva_real_vrsync
     empreendimento_codigo corretor_id proprietor_id permuta_vehicle permuta_property permuta_others permuta_min_value
     permuta_location permuta_min_dorms permuta_min_suites permuta_min_garagens regiao_foco
-    captacao_inicio captacao_fim somente_com_imagens somente_sem_imagens
+    captacao_inicio captacao_fim somente_com_imagens somente_sem_imagens somente_dwv
   ]
   vista_advanced_open = vista_advanced_keys.any? do |key|
     value = params[key]
@@ -673,6 +673,12 @@
                   <div class="form-check">
                     <%= check_box_tag :exclusivo, "1", params[:exclusivo] == "1", class: "form-check-input", id: "exclusivo_filter_outros" %>
                     <%= label_tag :exclusivo_filter_outros, "Exclusivo", class: "form-check-label" %>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="form-check">
+                    <%= check_box_tag :somente_dwv, "1", params[:somente_dwv] == "1", class: "form-check-input", id: "somente_dwv_filter" %>
+                    <%= label_tag :somente_dwv_filter, "Somente imóveis do DWV", class: "form-check-label" %>
                   </div>
                 </div>
               </div>
@@ -1103,6 +1109,7 @@
   active_filter_chips << "Bairro comercial: #{params[:bairro_comercial]}" if params[:bairro_comercial].present?
   active_filter_chips << "Somente com imagens" if params[:somente_com_imagens] == "1"
   active_filter_chips << "Somente sem imagens" if params[:somente_sem_imagens] == "1"
+  active_filter_chips << "Somente imóveis do DWV" if params[:somente_dwv] == "1"
   active_filter_chips << "Portal: Imovelweb 2" if params[:publicar_imovelweb_2] == "1"
   active_filter_chips << "Portal: Netimoveis 2" if params[:publicar_netimoveis_2] == "1"
   active_filter_chips << "Portal: Lais Ai" if params[:publicar_lais_ai] == "1"

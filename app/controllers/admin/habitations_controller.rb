@@ -708,6 +708,7 @@ class Admin::HabitationsController < Admin::BaseController
     @publicar_viva_real_vrsync = params[:publicar_viva_real_vrsync]
     @somente_com_imagens = params[:somente_com_imagens]
     @somente_sem_imagens = params[:somente_sem_imagens]
+    @somente_dwv = params[:somente_dwv]
     @tem_placa = params[:tem_placa]
     @exclusivo = params[:exclusivo]
     @area_total_min = params[:area_total_min]
@@ -872,6 +873,10 @@ class Admin::HabitationsController < Admin::BaseController
       scope = scope.where(photos_condition)
     elsif @somente_sem_imagens == "1" && @somente_com_imagens != "1"
       scope = scope.where("NOT (#{photos_condition})")
+    end
+
+    if @somente_dwv == "1"
+      scope = scope.where("LOWER(TRIM(COALESCE(habitations.imovel_dwv, ''))) = ?", "sim")
     end
 
     scope = apply_boolean_filter(scope, @tem_placa, :tem_placa_flag)
