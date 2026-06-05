@@ -45,7 +45,7 @@
      data-habitation-form-error-fields-value="<%= json_escape(habitation.errors.attribute_names.map(&:to_s).uniq.to_json) %>"
      data-habitation-duplicate-check-url-value="<%= check_admin_habitation_duplicate_path %>"
      data-habitation-duplicate-check-ignored-id-value="<%= habitation.id %>">
-<%= form_with(model: [:admin, habitation], local: true, class: "needs-validation", style: "min-height: 80vh;", data: { controller: "save-state", action: "submit->save-state#submitting turbo:submit-end->save-state#submitted", habitation_save_options_form: true }) do |f| %>
+<%= form_with(model: [:admin, habitation], local: true, class: "needs-validation habitation-form-shell", data: { controller: "save-state", action: "submit->save-state#submitting turbo:submit-end->save-state#submitted", habitation_save_options_form: true }) do |f| %>
   <%= hidden_field_tag :save_navigation, "exit", data: { save_state_target: "choice", habitation_save_options_choice: true } %>
   <%
     tab_titles = {
@@ -133,7 +133,7 @@
   <% end %>
 
   <!-- Navigation Tabs -->
-  <div class="border-bottom mb-4">
+  <div class="border-bottom mb-4 habitation-tabs-bar">
     <ul class="nav nav-tabs border-0 gap-3" id="habitationTabs" role="tablist">
       <li class="nav-item" role="presentation">
         <button class="nav-link active border-0 bg-transparent py-2 px-1 fw-bold text-primary border-bottom border-2 border-primary" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab" aria-selected="true">
@@ -253,9 +253,6 @@
     }
     .habitation-form-ui .habitation-action-bar {
       z-index: 1000;
-      margin: 0 -1.5rem -1.5rem -1.5rem;
-      padding-left: 1.5rem;
-      padding-right: 1.5rem;
     }
     .habitation-form-ui .habitation-action-buttons {
       display: flex;
@@ -263,9 +260,6 @@
     }
     @media (max-width: 768px) {
       .habitation-form-ui .habitation-action-bar {
-        margin: 0 -0.75rem -0.75rem -0.75rem;
-        padding-left: 0.75rem;
-        padding-right: 0.75rem;
       }
       .habitation-form-ui .habitation-action-inner {
         flex-direction: column;
@@ -315,7 +309,7 @@
   </style>
 
   <!-- Tab Content -->
-  <div class="tab-content" id="habitationTabsContent">
+  <div class="tab-content habitation-tab-content" id="habitationTabsContent">
     
     <!-- Tab: Visão Geral -->
     <div class="tab-pane fade show active" id="general" role="tabpanel" aria-labelledby="general-tab">
@@ -1682,6 +1676,8 @@
                <%= f.hidden_field :ordered_picture_indices,
                    data: { photo_upload_target: "apiOrderInput" },
                    value: api_media_pictures.map { |_pic, index, _url| index }.join(',') %>
+               <%= hidden_field_tag "habitation[remove_photo_ids]", "", data: { photo_upload_target: "removePhotoIdsInput" } %>
+               <%= hidden_field_tag "habitation[remove_picture_indices]", "", data: { photo_upload_target: "removePictureIndicesInput" } %>
             </div>
 
             <div class="row g-3" data-photo-upload-target="previewContainer">
@@ -1714,9 +1710,17 @@
                                 </button>
                               <% end %>
                               </span>
-                              <button type="button" class="media-photo-drag-handle btn btn-sm btn-light border py-0 px-1" title="Arrastar foto">
-                                <i class="bi bi-grip-vertical"></i>
-                              </button>
+                              <span class="d-flex align-items-center gap-1">
+                                <button type="button"
+                                        class="btn btn-sm btn-danger border py-0 px-1"
+                                        title="Remover foto"
+                                        data-action="photo-upload#removeAttached">
+                                  <i class="bi bi-trash"></i>
+                                </button>
+                                <button type="button" class="media-photo-drag-handle btn btn-sm btn-light border py-0 px-1" title="Arrastar foto">
+                                  <i class="bi bi-grip-vertical"></i>
+                                </button>
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -1753,9 +1757,17 @@
                                        </button>
                                      <% end %>
                                      </span>
-                                     <button type="button" class="media-photo-drag-handle btn btn-sm btn-light border py-0 px-1" title="Arrastar foto">
-                                       <i class="bi bi-grip-vertical"></i>
-                                     </button>
+                                     <span class="d-flex align-items-center gap-1">
+                                       <button type="button"
+                                               class="btn btn-sm btn-danger border py-0 px-1"
+                                               title="Remover foto da API"
+                                               data-action="photo-upload#removeApiPicture">
+                                         <i class="bi bi-trash"></i>
+                                       </button>
+                                       <button type="button" class="media-photo-drag-handle btn btn-sm btn-light border py-0 px-1" title="Arrastar foto">
+                                         <i class="bi bi-grip-vertical"></i>
+                                       </button>
+                                     </span>
                                    </div>
                                  </div>
                               </div>

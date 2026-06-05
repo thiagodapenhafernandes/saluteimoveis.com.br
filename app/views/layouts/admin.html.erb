@@ -55,10 +55,17 @@
     </script>
   </head>
 
-  <body class="admin-layout">
+  <%
+    drawer_catalog_layout = controller_path == "admin/habitations" && action_name == "index"
+    body_classes = ["admin-layout"]
+    body_classes << "admin-drawer-catalog-layout" if drawer_catalog_layout
+    sidebar_offcanvas_classes = ["offcanvas", "offcanvas-start", "admin-sidebar-offcanvas"]
+    sidebar_offcanvas_classes << "d-md-none" unless drawer_catalog_layout
+  %>
+  <body class="<%= body_classes.join(' ') %>">
     <!-- Navbar -->
     <nav class="admin-navbar">
-      <button type="button" class="admin-navbar-toggle d-md-none" data-bs-toggle="offcanvas" data-bs-target="#adminSidebarOffcanvas" aria-label="Abrir menu">
+      <button type="button" class="admin-navbar-toggle <%= 'd-md-none' unless drawer_catalog_layout %>" data-bs-toggle="offcanvas" data-bs-target="#adminSidebarOffcanvas" aria-label="Abrir menu">
         <i class="bi bi-list"></i>
       </button>
       <%= link_to((current_admin_user&.admin? ? admin_root_path : field_root_path), class: "admin-navbar-brand") do %>
@@ -76,12 +83,12 @@
     </nav>
 
     <!-- Sidebar desktop (>= md) -->
-    <aside class="admin-sidebar d-none d-md-block">
+    <aside class="admin-sidebar <%= drawer_catalog_layout ? 'd-none' : 'd-none d-md-block' %>">
       <%= render 'admin/shared/sidebar' %>
     </aside>
 
     <!-- Sidebar mobile (offcanvas, < md) -->
-    <div class="offcanvas offcanvas-start admin-sidebar-offcanvas d-md-none" tabindex="-1" id="adminSidebarOffcanvas">
+    <div class="<%= sidebar_offcanvas_classes.join(' ') %>" tabindex="-1" id="adminSidebarOffcanvas">
       <div class="offcanvas-header border-bottom">
         <span class="fw-bold text-primary"><i class="bi bi-speedometer2 me-1"></i>Menu</span>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Fechar"></button>

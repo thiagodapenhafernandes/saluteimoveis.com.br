@@ -333,6 +333,42 @@ html:has(body.admin-layout) {
   overflow-x: clip;
 }
 
+body.admin-drawer-catalog-layout .admin-navbar {
+  justify-content: flex-start;
+  gap: 0.75rem;
+}
+
+body.admin-drawer-catalog-layout .admin-navbar-brand {
+  flex: 0 1 auto;
+}
+
+body.admin-drawer-catalog-layout .admin-navbar-user {
+  margin-left: auto;
+}
+
+body.admin-drawer-catalog-layout .admin-content {
+  margin-left: 0;
+  width: 100%;
+  max-width: 100vw;
+}
+
+body.admin-drawer-catalog-layout .admin-navbar-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  color: #111827;
+  margin-right: 0;
+}
+
+body.admin-drawer-catalog-layout .admin-sidebar-offcanvas {
+  width: min(360px, 88vw) !important;
+}
+
 @media (min-width: 768px) {
   .admin-content {
     min-height: 100vh;
@@ -397,6 +433,96 @@ html:has(body.admin-layout) {
   border-radius: 18px;
   margin: -0.25rem;
   padding: 1rem;
+  height: calc(100vh - var(--admin-navbar-height) - 2.5rem);
+  max-height: calc(100vh - var(--admin-navbar-height) - 2.5rem);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.habitation-form-page > .habitation-edit-header,
+.habitation-form-page > .mb-4 {
+  flex: 0 0 auto;
+}
+
+.habitation-form-page > .mb-4 {
+  margin-bottom: .75rem !important;
+}
+
+.habitation-form-page .habitation-edit-header {
+  margin-bottom: .75rem;
+}
+
+.habitation-form-page .habitation-form-ui {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.habitation-form-page .habitation-form-shell {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.habitation-form-page .habitation-form-shell > .alert {
+  flex: 0 0 auto;
+  margin-bottom: .75rem !important;
+}
+
+.habitation-form-page .habitation-tabs-bar {
+  flex: 0 0 auto;
+  margin-bottom: 0 !important;
+  padding: .35rem .65rem 0;
+  background: #e7ebf0;
+  border: 1px solid #cfd6df;
+  border-bottom: 0 !important;
+  border-radius: 6px 6px 0 0;
+}
+
+.habitation-form-page #habitationTabs {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  gap: .45rem !important;
+}
+
+.habitation-form-page #habitationTabs .nav-link {
+  min-height: 34px;
+  padding: .42rem .62rem !important;
+  border-radius: 4px 4px 0 0;
+  white-space: nowrap;
+}
+
+.habitation-form-page .habitation-tab-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: .75rem;
+  background: #eef2f6;
+  border: 1px solid #cfd6df;
+  border-top: 0;
+}
+
+.habitation-form-page .habitation-tab-content > .tab-pane {
+  min-height: 100%;
+}
+
+.habitation-form-page .habitation-tab-content .card {
+  border-radius: 6px;
+  box-shadow: none !important;
+}
+
+.habitation-form-page .habitation-tab-content .card:last-child,
+.habitation-form-page .habitation-tab-content .form-section:last-child {
+  margin-bottom: 0 !important;
 }
 
 .habitation-form-page .border-bottom {
@@ -445,6 +571,40 @@ html:has(body.admin-layout) {
   background: rgba(255, 255, 255, 0.92) !important;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  flex: 0 0 auto;
+  position: relative !important;
+  bottom: auto !important;
+  margin: 0 !important;
+  padding: .65rem .75rem !important;
+  border: 1px solid #cfd6df !important;
+  border-top: 0 !important;
+  border-radius: 0 0 6px 6px;
+  box-shadow: none !important;
+}
+
+.habitation-form-page .habitation-action-inner {
+  min-height: 38px;
+}
+
+@media (max-width: 767.98px) {
+  .habitation-form-page {
+    height: auto;
+    max-height: none;
+    min-height: calc(100vh - var(--admin-navbar-height) - 1rem);
+    overflow: visible;
+    padding: .75rem;
+  }
+
+  .habitation-form-page .habitation-form-ui,
+  .habitation-form-page .habitation-form-shell,
+  .habitation-form-page .habitation-tab-content {
+    overflow: visible;
+  }
+
+  .habitation-form-page .habitation-tabs-bar {
+    padding-left: .45rem;
+    padding-right: .45rem;
+  }
 }
 
 .seo-settings-page .seo-stat .card-body {

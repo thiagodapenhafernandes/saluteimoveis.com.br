@@ -3,9 +3,18 @@ import Sortable from "sortablejs"
 
 // Connects to data-controller="photo-upload"
 export default class extends Controller {
-  static targets = ["input", "orderInput", "apiOrderInput", "previewContainer"]
+  static targets = [
+    "input",
+    "orderInput",
+    "apiOrderInput",
+    "removePhotoIdsInput",
+    "removePictureIndicesInput",
+    "previewContainer"
+  ]
 
   connect() {
+    this.selectedNewFiles = []
+    this.newFileIdCounter = 0
     this.boundHandleDragOver = this.handleDragOver.bind(this)
     this.boundHandleDrop = this.handleDrop.bind(this)
     this.boundHandleDragLeave = this.handleDragLeave.bind(this)
@@ -60,7 +69,9 @@ export default class extends Controller {
       handle: '.media-photo-drag-handle',
       draggable: '.draggable-item',
       onEnd: (evt) => {
+        this.syncNewFilesFromDom()
         this.updateOrder()
+        this.refreshPhotoBadges()
       }
     })
   }
@@ -91,6 +102,53 @@ export default class extends Controller {
     if (!item || !this.hasPreviewContainerTarget) return
 
     this.previewContainerTarget.prepend(item)
+    this.syncNewFilesFromDom()
+    this.updateOrder()
+    this.refreshPhotoBadges()
+  }
+
+  removeNew(event) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    const item = event.currentTarget.closest('.new-photo-preview')
+    if (!item) return
+
+    const fileId = item.dataset.newFileId
+    this.selectedNewFiles = this.selectedNewFiles.filter(entry => entry.id !== fileId)
+    item.remove()
+
+    this.syncInputFilesFromState()
+    this.updateOrder()
+    this.refreshPhotoBadges()
+  }
+
+  removeAttached(event) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    const item = event.currentTarget.closest('.attached-photo-item')
+    if (!item || !item.dataset.id) return
+    if (!this.hasRemovePhotoIdsInputTarget) return
+
+    this.appendHiddenListValue(this.removePhotoIdsInputTarget, item.dataset.id)
+    item.remove()
+
+    this.updateOrder()
+    this.refreshPhotoBadges()
+  }
+
+  removeApiPicture(event) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    const item = event.currentTarget.closest('.api-picture-item')
+    if (!item || !item.dataset.apiIndex) return
+    if (!this.hasRemovePictureIndicesInputTarget) return
+
+    this.appendHiddenListValue(this.removePictureIndicesInputTarget, item.dataset.apiIndex)
+    item.remove()
+
     this.updateOrder()
     this.refreshPhotoBadges()
   }
@@ -125,52 +183,112 @@ export default class extends Controller {
   }
 
   preview(event) {
-    const files = event.target.files
+    const files = Array.from(event.target.files || [])
 
     // Clear previous NEW previews logic
     const existingPreviews = this.previewContainerTarget.querySelectorAll('.new-photo-preview')
     existingPreviews.forEach(el => el.remove())
+    this.selectedNewFiles = files.map(file => ({
+      id: this.nextNewFileId(),
+      file
+    }))
 
-    if (files.length === 0) return
+    if (files.length === 0) {
+      this.syncInputFilesFromState()
+      this.updateOrder()
+      this.refreshPhotoBadges()
+      return
+    }
 
-    Array.from(files).forEach(file => {
-      const reader = new FileReader()
+    this.selectedNewFiles.forEach(fileEntry => {
+      const file = fileEntry.file
+      const imgContainer = document.createElement("div")
+      const previewUrl = URL.createObjectURL(file)
 
-      reader.onload = (e) => {
-        const imgContainer = document.createElement("div")
-        // Match standard column classes and add draggable-item
-        imgContainer.classList.add("col-6", "col-md-3", "col-lg-2", "draggable-item", "new-photo-preview")
+      // Match standard column classes and add draggable-item
+      imgContainer.classList.add("col-6", "col-md-3", "col-lg-2", "draggable-item", "new-photo-preview")
+      imgContainer.dataset.newFileId = fileEntry.id
 
-        imgContainer.innerHTML = `
-          <div class="position-relative ratio ratio-1x1 group-hover media-photo-tile">
-            <img src="${e.target.result}" class="rounded border object-fit-cover w-100 h-100" alt="${file.name}">
-            <div class="media-photo-overlay position-absolute d-flex flex-column justify-content-between p-1">
-              <div class="d-flex justify-content-between align-items-start gap-1">
-                <span class="badge bg-dark bg-opacity-75 border shadow-sm" data-photo-position-badge>#</span>
-                <span class="badge bg-success border shadow-sm">Nova</span>
-              </div>
-              <div class="d-flex justify-content-between align-items-end gap-1">
-                <span data-photo-featured-control>
-                  <button type="button"
-                          class="media-photo-feature-button btn btn-sm btn-warning border py-0 px-1 fw-semibold"
-                          title="Definir como destaque"
-                          data-action="photo-upload#setFeatured">
-                    <i class="bi bi-star"></i>
-                  </button>
-                </span>
+      imgContainer.innerHTML = `
+        <div class="position-relative ratio ratio-1x1 group-hover media-photo-tile">
+          <img src="${previewUrl}" class="rounded border object-fit-cover w-100 h-100" alt="${this.escapeHtml(file.name)}">
+          <div class="media-photo-overlay position-absolute d-flex flex-column justify-content-between p-1">
+            <div class="d-flex justify-content-between align-items-start gap-1">
+              <span class="badge bg-dark bg-opacity-75 border shadow-sm" data-photo-position-badge>#</span>
+              <span class="badge bg-success border shadow-sm">Nova</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-end gap-1">
+              <span data-photo-featured-control>
+                <button type="button"
+                        class="media-photo-feature-button btn btn-sm btn-warning border py-0 px-1 fw-semibold"
+                        title="Definir como destaque"
+                        data-action="photo-upload#setFeatured">
+                  <i class="bi bi-star"></i>
+                </button>
+              </span>
+              <span class="d-flex align-items-center gap-1">
+                <button type="button"
+                        class="btn btn-sm btn-danger border py-0 px-1"
+                        title="Remover foto selecionada"
+                        data-action="photo-upload#removeNew">
+                  <i class="bi bi-trash"></i>
+                </button>
                 <button type="button" class="media-photo-drag-handle btn btn-sm btn-light border py-0 px-1" title="Arrastar foto">
                   <i class="bi bi-grip-vertical"></i>
                 </button>
-              </div>
+              </span>
             </div>
           </div>
-        `
-        this.previewContainerTarget.appendChild(imgContainer)
-        this.updateOrder()
-        this.refreshPhotoBadges()
-      }
-
-      reader.readAsDataURL(file)
+        </div>
+      `
+      this.previewContainerTarget.appendChild(imgContainer)
     })
+
+    this.syncInputFilesFromState()
+    this.updateOrder()
+    this.refreshPhotoBadges()
+  }
+
+  syncNewFilesFromDom() {
+    if (!this.hasPreviewContainerTarget || this.selectedNewFiles.length === 0) return
+
+    const byId = new Map(this.selectedNewFiles.map(entry => [entry.id, entry]))
+    const orderedIds = Array.from(this.previewContainerTarget.querySelectorAll('.new-photo-preview'))
+      .map(el => el.dataset.newFileId)
+      .filter(id => byId.has(id))
+
+    this.selectedNewFiles = orderedIds.map(id => byId.get(id))
+    this.syncInputFilesFromState()
+  }
+
+  syncInputFilesFromState() {
+    if (!this.hasInputTarget || typeof DataTransfer === "undefined") return
+
+    const dataTransfer = new DataTransfer()
+    this.selectedNewFiles.forEach(entry => dataTransfer.items.add(entry.file))
+    this.inputTarget.files = dataTransfer.files
+  }
+
+  appendHiddenListValue(input, value) {
+    if (!input || !value) return
+
+    const values = input.value
+      .split(',')
+      .map(item => item.trim())
+      .filter(Boolean)
+
+    if (!values.includes(value)) values.push(value)
+    input.value = values.join(',')
+  }
+
+  nextNewFileId() {
+    this.newFileIdCounter += 1
+    return `new-photo-${Date.now()}-${this.newFileIdCounter}`
+  }
+
+  escapeHtml(value) {
+    const span = document.createElement("span")
+    span.textContent = value || ""
+    return span.innerHTML
   }
 }

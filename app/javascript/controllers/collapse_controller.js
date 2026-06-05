@@ -6,9 +6,12 @@ export default class extends Controller {
   toggle(event) {
     event.preventDefault()
     this.contentTarget.classList.toggle("show")
-    this.buttonTarget.classList.toggle("collapsed")
 
     const expanded = this.contentTarget.classList.contains("show")
-    this.buttonTarget.setAttribute("aria-expanded", expanded)
+
+    this.buttonTargets.forEach((button) => {
+      button.classList.toggle("collapsed", !expanded)
+      button.setAttribute("aria-expanded", expanded)
+    })
   }
 }

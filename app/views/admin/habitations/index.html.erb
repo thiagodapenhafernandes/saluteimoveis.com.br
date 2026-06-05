@@ -1,9 +1,95 @@
 <style>
+  .habitations-master-detail-layout {
+    display: grid;
+    grid-template-columns: clamp(320px, 20vw, 360px) minmax(0, 1fr);
+    grid-template-areas: "detail master";
+    gap: 0.85rem;
+    align-items: start;
+    width: 100%;
+    max-width: none;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .habitations-master-pane {
+    grid-area: master;
+    min-width: 0;
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .habitations-detail-pane {
+    grid-area: detail;
+    min-width: 0;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
   .habitations-filter-workspace {
-    border: 1px solid rgba(226, 232, 240, 0.9) !important;
-    border-radius: 14px;
+    border: 1px solid #c9ced6 !important;
+    border-radius: 4px;
     overflow: visible;
-    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    background: #eef0f3;
+    position: relative;
+    height: 100%;
+    max-height: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .filter-sticky-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 8;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 48px;
+    padding: 0.45rem 0.55rem;
+    background: #dedede;
+    border-bottom: 1px solid #c4c8cf;
+  }
+  .filter-sticky-toolbar .btn {
+    min-height: 34px;
+    border-radius: 3px;
+    font-size: 0.86rem;
+    line-height: 1;
+  }
+  .filter-sticky-toolbar .btn-success {
+    --bs-btn-bg: #5f7fa8;
+    --bs-btn-border-color: #5f7fa8;
+    --bs-btn-hover-bg: #526f94;
+    --bs-btn-hover-border-color: #526f94;
+    --bs-btn-active-bg: #496484;
+    --bs-btn-active-border-color: #496484;
+  }
+  .filter-collapse-button {
+    width: auto;
+    min-width: 34px;
+    padding-left: 0.45rem;
+    padding-right: 0.45rem;
+  }
+  .filter-active-counter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.35rem;
+    height: 1.1rem;
+    padding: 0 0.28rem;
+    border-radius: 999px;
+    background: #0d6efd;
+    color: #fff;
+    font-size: 0.62rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .filter-collapse-button.collapsed i {
+    transform: rotate(180deg);
+  }
+  .filter-collapse-button i {
+    display: inline-block;
+    transition: transform 0.18s ease;
   }
   .habitations-filter-workspace .card-body,
   .filter-detail-section,
@@ -11,42 +97,41 @@
     overflow: visible;
   }
   .habitations-filter-master {
-    padding: 1rem 1.15rem;
-    background:
-      radial-gradient(circle at top left, rgba(13, 110, 253, 0.055), transparent 28rem),
-      #ffffff;
+    padding: 0.45rem 0.65rem 0.55rem;
+    background: #eef0f3;
   }
   .filter-master-layout {
     display: grid;
-    grid-template-columns: minmax(280px, 1.6fr) minmax(260px, 1.05fr) minmax(180px, 0.55fr);
-    gap: 0.85rem;
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
     align-items: stretch;
   }
   .filter-pane {
     min-width: 0;
-    border: 1px solid #e2e8f0;
-    background: rgba(255, 255, 255, 0.86);
-    border-radius: 12px;
-    padding: 0.8rem;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.035);
+    border: 0;
+    border-bottom: 1px solid #d2d6dd;
+    background: transparent;
+    border-radius: 0;
+    padding: 0.45rem 0;
+    box-shadow: none;
   }
   .filter-pane-primary {
-    border-color: rgba(191, 161, 95, 0.38);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 252, 245, 0.82));
+    border-color: #d7c69a;
+    background: transparent;
   }
   .filter-pane-heading {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
     gap: 0.75rem;
-    margin-bottom: 0.55rem;
+    margin-bottom: 0.28rem;
     color: #0f172a;
-    font-size: 0.9rem;
+    font-size: 0.78rem;
   }
   .filter-pane-kicker {
     display: inline-flex;
     color: #64748b;
-    font-size: 0.68rem;
+    font-size: 0.62rem;
     font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -54,55 +139,69 @@
   }
   .filter-search-input .form-control,
   .filter-search-input .input-group-text,
-  .filter-inline-fields .form-select,
-  .filter-action-stack .btn {
-    min-height: 42px;
+  .filter-inline-fields .form-select {
+    min-height: 31px;
+    height: 31px;
   }
   .filter-inline-fields {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.65rem;
+    grid-template-columns: 1fr;
+    gap: 0.38rem;
   }
   .filter-action-stack {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 0.55rem;
+    gap: 0.35rem;
+  }
+  .filter-compact-hint {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.35rem 0;
+    border-top: 1px solid #d2d6dd;
+    color: #64748b;
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
   }
   .filter-action-stack .btn {
-    border-radius: 10px;
+    border-radius: 3px;
   }
   .filter-detail-collapse {
-    background: #f8fafc;
-    border-radius: 0 0 14px 14px;
+    background: #eef0f3;
+    border-radius: 0 0 4px 4px;
   }
   .habitations-filter-detail {
-    padding: 1rem 1.15rem;
+    padding: 0.55rem 0.65rem 0.65rem;
+    background: #eef0f3 !important;
   }
   .filter-detail-grid {
     display: grid;
-    grid-template-columns: minmax(280px, 1.35fr) minmax(300px, 1fr) minmax(220px, 0.7fr);
-    gap: 0.85rem;
+    grid-template-columns: 1fr;
+    gap: 0.45rem;
     align-items: start;
   }
   .filter-detail-section {
     min-width: 0;
-    border: 1px solid #e8eef5;
-    border-radius: 12px;
-    background: #fcfdff;
-    padding: 0.85rem;
+    border: 0;
+    border-top: 1px solid #d2d6dd;
+    border-radius: 0;
+    background: transparent;
+    padding: 0.5rem 0 0;
   }
   .filter-detail-section__title {
     color: #64748b;
-    font-size: 0.72rem;
+    font-size: 0.62rem;
     font-weight: 800;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    margin-bottom: 0.65rem;
+    margin-bottom: 0.35rem;
   }
   .filter-location-grid {
     display: grid;
-    grid-template-columns: minmax(160px, 1.3fr) minmax(72px, 0.45fr) minmax(110px, 0.55fr);
-    gap: 0.55rem;
+    grid-template-columns: minmax(0, 1fr) minmax(82px, 0.55fr);
+    gap: 0.35rem;
   }
   .filter-location-grid .wide,
   .filter-business-grid .wide,
@@ -112,50 +211,63 @@
   .filter-business-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.55rem;
+    gap: 0.35rem;
   }
   .filter-price-pair {
     display: grid;
     grid-template-columns: repeat(2, minmax(90px, 1fr));
-    gap: 0.45rem;
+    gap: 0.3rem;
   }
   .filter-date-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.55rem;
+    gap: 0.35rem;
   }
   .filter-date-grid .form-control {
     min-width: 0;
   }
   .habitations-filter-detail .row.g-3 {
-    --bs-gutter-x: 0.65rem;
-    --bs-gutter-y: 0.65rem;
+    --bs-gutter-x: 0.45rem;
+    --bs-gutter-y: 0.38rem;
+  }
+  .habitations-filter-detail .d-flex.justify-content-between.align-items-center.gap-3.mb-3 {
+    margin-bottom: 0.45rem !important;
+  }
+  .habitations-filter-detail .d-flex.justify-content-between.align-items-center.gap-3.mb-3 h6 {
+    font-size: 0.78rem;
   }
   .habitations-filter-detail .form-label {
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.16rem;
   }
   .habitations-filter-detail .form-control,
   .habitations-filter-detail .form-select,
   .habitations-filter-detail .input-group-text {
-    min-height: 36px;
-    font-size: 0.84rem;
+    min-height: 30px;
+    height: 30px;
+    padding-top: 0.2rem;
+    padding-bottom: 0.2rem;
+    font-size: 0.76rem;
+    border-radius: 3px;
   }
   .habitations-filter-detail .filter-multi-compact {
-    min-height: 36px;
-    height: 38px;
+    min-height: 30px;
+    height: 31px;
     overflow: hidden;
   }
   .habitations-filter-detail details {
-    border-color: #e2e8f0 !important;
-    background: #ffffff !important;
-    border-radius: 12px !important;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    border: 0 !important;
+    border-top: 1px solid #d2d6dd !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    box-shadow: none;
   }
   .habitations-filter-detail details > summary {
     list-style: none;
     display: flex;
     align-items: center;
-    min-height: 42px;
+    min-height: 32px;
+    padding: 0.25rem 0 !important;
+    font-size: 0.78rem;
   }
   .habitations-filter-detail details > summary::-webkit-details-marker {
     display: none;
@@ -172,27 +284,183 @@
     transform: rotate(180deg);
   }
   .habitations-filter-detail details > div {
-    max-height: 58vh;
+    max-height: none;
     overflow-y: auto;
+    padding: 0.45rem 0 0 !important;
+  }
+  .habitations-filter-workspace .filter-action-stack {
+    grid-template-columns: 1fr 1fr;
+  }
+  .habitations-filter-workspace .filter-action-stack > button {
+    grid-column: 1 / -1;
+  }
+  .habitations-detail-pane .habitations-filter-card {
+    margin-bottom: 0 !important;
+  }
+  .habitations-detail-pane .habitations-filter-card .card-body {
+    padding: 0.55rem 0.65rem;
+  }
+  .habitations-detail-pane .card {
+    box-shadow: none !important;
+  }
+  .habitations-detail-pane .filter-pane-heading strong {
+    font-size: 0.78rem;
+  }
+  .habitations-detail-pane .filter-pane-kicker {
+    letter-spacing: 0.06em;
+  }
+  .habitations-detail-pane .form-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.03em;
+  }
+  .habitations-detail-pane .btn {
+    white-space: nowrap;
+  }
+  .habitations-detail-pane .filter-detail-collapse {
+    border-top: 0 !important;
+  }
+  .habitations-detail-pane .filter-detail-section:first-child {
+    border-top: 0;
+  }
+  .habitations-detail-pane .filter-pane-actions {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+  .habitations-master-pane .habitations-scopes {
+    margin-bottom: 0.6rem !important;
+  }
+  .habitations-master-pane > .d-flex:first-child {
+    flex: 0 0 auto;
+    margin-bottom: 0.55rem !important;
+  }
+  .habitations-master-pane > .habitations-scopes {
+    flex: 0 0 auto;
+  }
+  .habitations-results-shell {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .habitations-results-header {
+    flex: 0 0 auto;
+    margin-bottom: 0.55rem !important;
+  }
+  .habitations-results-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0 0.25rem 1rem 0;
+  }
+  .habitations-results-list > .row {
+    margin-right: 0;
+  }
+  .habitations-master-pane .property-card-horizontal {
+    border: 1px solid #e6edf5 !important;
+  }
+  .habitations-master-pane .property-card-horizontal .card-body {
+    padding: 1rem 1.2rem !important;
   }
   .habitations-filter-detail .border.rounded-3.p-3 {
-    padding: 0.85rem !important;
-    background: #fcfdff;
-    border-color: #e8eef5 !important;
+    padding: 0.45rem 0 !important;
+    background: transparent;
+    border: 0 !important;
+    border-top: 1px solid #d2d6dd !important;
+    border-radius: 0 !important;
   }
   .habitations-filter-detail h6 {
-    font-size: 0.82rem;
+    font-size: 0.68rem;
     letter-spacing: 0.02em;
+    margin-bottom: 0.35rem !important;
   }
   .habitations-filter-detail .form-check {
-    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.28rem;
+    min-height: 22px;
+    margin-bottom: 0.12rem;
+    padding-left: 0;
+  }
+  .habitations-filter-detail .form-check-input {
+    width: 0.92rem;
+    height: 0.92rem;
+    margin-left: 0;
+    margin-top: 0.08rem;
+    flex: 0 0 auto;
   }
   .habitations-filter-detail .form-check-label {
-    font-size: 0.82rem;
+    font-size: 0.72rem;
+    line-height: 1.17;
+    overflow-wrap: anywhere;
+  }
+  .habitations-filter-detail .row.g-2 {
+    --bs-gutter-x: 0.45rem;
+    --bs-gutter-y: 0.18rem;
+  }
+  .habitations-filter-detail .row.g-2 > [class*="col-"],
+  .habitations-filter-detail .row.g-3 > [class*="col-md-"] {
+    flex: 0 0 auto;
+    width: 50%;
+  }
+  .habitations-filter-detail .row.g-3 > .col-md-2 {
+    width: 33.333333%;
+  }
+  .habitations-filter-detail .row.g-3 > .col-12,
+  .habitations-filter-detail .row.g-3 > .col-md-6 {
+    width: 100%;
+  }
+  .habitations-filter-detail .ts-wrapper,
+  .habitations-filter-detail .ts-control {
+    min-height: 30px;
+    font-size: 0.76rem;
+    border-radius: 3px;
+  }
+  .habitations-filter-detail .ts-control {
+    padding: 0.2rem 0.45rem;
+  }
+  .habitations-filter-detail .ts-dropdown {
+    font-size: 0.78rem;
+  }
+  .habitations-filter-detail .input-group .input-group-text {
+    padding-left: 0.45rem;
+    padding-right: 0.45rem;
+  }
+  body.admin-drawer-catalog-layout .admin-content {
+    margin-left: 0 !important;
+    padding: calc(var(--admin-navbar-height) + 1.35rem) 1rem 0.85rem;
+    width: 100vw;
+    max-width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  body.admin-drawer-catalog-layout .habitations-header {
+    max-width: none;
+    flex: 0 0 auto;
+    margin-bottom: 0.9rem !important;
+  }
+  body.admin-drawer-catalog-layout .admin-content > * {
+    max-width: none;
   }
   @media (max-width: 1199.98px) {
+    .habitations-master-detail-layout {
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        "detail"
+        "master";
+    }
+    .habitations-filter-workspace {
+      position: static;
+      max-height: none;
+      overflow-y: visible;
+    }
     .filter-master-layout {
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(280px, 1.3fr) minmax(220px, 0.9fr) minmax(170px, 0.6fr);
     }
     .filter-detail-grid {
       grid-template-columns: 1fr 1fr;
@@ -205,6 +473,9 @@
     }
     .filter-action-stack {
       grid-template-columns: minmax(160px, 1fr) minmax(140px, 0.6fr);
+    }
+    .habitations-filter-workspace .filter-action-stack > button {
+      grid-column: auto;
     }
   }
   /* Mobile-specific tweaks for /admin/habitations */
@@ -300,7 +571,7 @@
     value = params[key]
     value.is_a?(Array) ? value.reject(&:blank?).any? : value.present?
   end
-  extras_open = active_extra_filters_count.positive?
+  extras_open = true
   vista_advanced_keys = %w[
     situacao face ocupacao_status estado_conservacao area_total_min area_total_max area_privativa_min area_privativa_max
     destaque_web festival_salute exibir_no_site_salute tem_placa exclusivo banheiros dorms suites vagas
@@ -319,9 +590,31 @@
   clear_extras_params = request.query_parameters.except(*extra_filter_keys, "page")
 %>
 
+<div class="habitations-master-detail-layout">
+  <aside class="habitations-detail-pane" aria-label="Filtros do catálogo">
 <div class="card shadow-sm mb-4 border-0 habitations-filter-card habitations-filter-workspace" data-controller="collapse">
+  <%= form_with url: admin_habitations_path, method: :get, local: true do |f| %>
+    <div class="filter-sticky-toolbar">
+      <button class="btn btn-success fw-semibold" type="submit">
+        <i class="bi bi-search me-2"></i>Pesquisar
+      </button>
+      <%= link_to admin_habitations_path, class: "btn btn-link text-muted text-decoration-none fw-semibold px-2" do %>
+        <i class="bi bi-eraser me-1"></i>Limpar
+      <% end %>
+      <button class="btn btn-light border ms-auto filter-collapse-button <%= extras_open ? '' : 'collapsed' %>"
+              type="button"
+              data-action="click->collapse#toggle"
+              data-collapse-target="button"
+              aria-expanded="<%= extras_open %>"
+              title="Abrir ou recolher filtros detalhados">
+        <% if active_extra_filters_count.positive? %>
+          <span class="filter-active-counter me-1"><%= active_extra_filters_count %></span>
+        <% end %>
+        <i class="bi bi-chevron-left"></i>
+      </button>
+    </div>
+
   <div class="card-body habitations-filter-master">
-    <%= form_with url: admin_habitations_path, method: :get, local: true do |f| %>
       <%= hidden_field_tag :sort, params[:sort] if params[:sort].present? %>
       <%= hidden_field_tag :direction, params[:direction] if params[:direction].present? %>
       <%= hidden_field_tag :scope, params[:scope] if params[:scope].present? %>
@@ -358,42 +651,11 @@
           </div>
         </div>
 
-        <div class="filter-pane filter-pane-actions">
-          <div class="filter-pane-heading">
-            <span class="filter-pane-kicker">Operação</span>
-            <strong><%= active_extra_filters_count.positive? ? "#{active_extra_filters_count} extras ativos" : "Filtros rápidos" %></strong>
-          </div>
-          <div class="filter-action-stack">
-            <button class="btn btn-outline-primary d-flex align-items-center justify-content-center <%= extras_open ? '' : 'collapsed' %>"
-                    type="button"
-                    data-action="click->collapse#toggle"
-                    data-collapse-target="button"
-                    aria-expanded="<%= extras_open %>">
-              <i class="bi bi-sliders me-2"></i>
-              Detalhes
-              <% if active_extra_filters_count.positive? %>
-                <span class="badge rounded-pill bg-primary ms-2"><%= active_extra_filters_count %></span>
-              <% end %>
-            </button>
-            <%= f.submit "Aplicar", class: "btn btn-primary fw-bold" %>
-            <%= link_to admin_habitations_path, class: "btn btn-light border fw-semibold d-flex align-items-center justify-content-center" do %>
-              <i class="bi bi-x-circle me-2"></i>
-              Limpar
-            <% end %>
-          </div>
+        <div class="filter-compact-hint">
+          <span>Extras</span>
+          <span><%= active_extra_filters_count.positive? ? "#{active_extra_filters_count} ativos" : "Nenhum ativo" %></span>
         </div>
       </div>
-
-      <% request.query_parameters.except("q", "status", "categoria", "sort", "direction", "scope", "ownership", "intake_review", "page").each do |key, value| %>
-        <% if value.is_a?(Array) %>
-          <% value.reject(&:blank?).each do |entry| %>
-            <%= hidden_field_tag "#{key}[]", entry %>
-          <% end %>
-        <% elsif value.present? %>
-          <%= hidden_field_tag key, value %>
-        <% end %>
-      <% end %>
-    <% end %>
   </div>
 
   <div class="collapse <%= extras_open ? 'show' : '' %> border-top filter-detail-collapse" data-collapse-target="content">
@@ -407,16 +669,6 @@
         </div>
         <%= link_to "Limpar extras", admin_habitations_path(clear_extras_params), class: "btn btn-link text-decoration-none text-muted fw-semibold small p-0" %>
       </div>
-
-      <%= form_with url: admin_habitations_path, method: :get, local: true do |f| %>
-        <%= hidden_field_tag :q, params[:q] if params[:q].present? %>
-        <%= hidden_field_tag :status, params[:status] if params[:status].present? %>
-        <%= hidden_field_tag :categoria, params[:categoria] if params[:categoria].present? %>
-        <%= hidden_field_tag :sort, params[:sort] if params[:sort].present? %>
-        <%= hidden_field_tag :direction, params[:direction] if params[:direction].present? %>
-        <%= hidden_field_tag :scope, params[:scope] if params[:scope].present? %>
-        <%= hidden_field_tag :ownership, @ownership_scope if @ownership_scope.present? %>
-        <%= hidden_field_tag :intake_review, @intake_review if @intake_review.present? %>
 
         <div class="filter-detail-grid">
           <section class="filter-detail-section">
@@ -872,14 +1124,13 @@
           </div>
         </details>
 
-        <div class="d-flex justify-content-end gap-2 mt-4">
-          <%= link_to "Limpar Filtros", admin_habitations_path, class: "btn btn-link text-decoration-none text-muted fw-semibold small" %>
-          <%= f.submit "Aplicar extras", class: "btn btn-primary px-4 fw-bold" %>
-        </div>
-      <% end %>
     </div>
   </div>
+  <% end %>
 </div>
+  </aside>
+
+  <section class="habitations-master-pane" aria-label="Catálogo de imóveis">
 
 <!-- Quick Scopes (Pills) -->
 <%
@@ -992,7 +1243,7 @@
 
 <% filters_json = request.query_parameters.except("page").to_json.html_safe if bulk_actions_allowed %>
 
-<div <% if bulk_actions_allowed %>data-controller="bulk-publish"
+<div class="habitations-results-shell" <% if bulk_actions_allowed %>data-controller="bulk-publish"
      data-bulk-publish-url-value="<%= bulk_publish_admin_habitations_path %>"
      data-bulk-publish-csrf-value="<%= form_authenticity_token %>"
      data-bulk-publish-filtered-total-value="<%= @filtered_count %>"
@@ -1167,6 +1418,7 @@
   active_filter_chips << "Escopo: #{params[:scope]}" if params[:scope].present?
 %>
 
+<div class="habitations-results-list">
 <% if active_filter_chips.any? %>
   <div class="mb-3 d-flex flex-wrap gap-2">
     <% active_filter_chips.each do |chip| %>
@@ -1397,6 +1649,7 @@
 <div class="d-flex justify-content-center mt-5 mb-4">
   <%= will_paginate @habitations, renderer: WillPaginate::ActionView::BootstrapLinkRenderer, class: "shadow-sm" %>
 </div>
+</div>
 
 <!-- Bulk Publish Modal -->
 <div class="modal fade" id="bulkPublishModal" tabindex="-1" aria-hidden="true"
@@ -1573,6 +1826,8 @@
 </div>
 
 </div><!-- /data-controller="bulk-publish" -->
+  </section>
+</div>
 
 <style>
   .uppercase-badge {
