@@ -396,7 +396,7 @@ class Admin::HabitationsController < Admin::BaseController
   end
 
   def sync
-    @habitation = Habitation.find(params[:id])
+    @habitation = find_admin_habitation_param!(params[:id])
     result = SyncPropertyService.new(@habitation.codigo).perform
 
     if result[:success]
@@ -465,7 +465,7 @@ class Admin::HabitationsController < Admin::BaseController
   # Remove um anexo individual (ficha de cadastro ou autorização) do imóvel.
   # Restrito aos imóveis do habitation; valida o nome da associação por allowlist.
   def purge_attachment
-    @habitation = Habitation.find(params[:id])
+    @habitation = find_admin_habitation_param!(params[:id])
     association = params[:association].to_s
     allowed = %w[fichas_cadastro autorizacoes_venda photos]
     unless allowed.include?(association)
@@ -489,9 +489,9 @@ class Admin::HabitationsController < Admin::BaseController
 
   def scope_habitations_by_permission
     return if owns_all_resource?(:imoveis)
-    id = (params[:id] || params[:habitation_id]).to_i
-    return if id.zero?
-    habitation = Habitation.find_by(id: id)
+    identifier = params[:id] || params[:habitation_id]
+    return if identifier.blank?
+    habitation = resolve_admin_habitation_param(identifier)
     unless habitation && property_belongs_to_current_user?(habitation)
       redirect_to admin_habitations_path, alert: "Você não tem acesso a este imóvel."
     end
@@ -528,8 +528,25 @@ class Admin::HabitationsController < Admin::BaseController
   end
 
   def set_habitation
-    @habitation = Habitation.find(params[:id])
+    @habitation = find_admin_habitation_param!(params[:id])
     @habitation.build_address if @habitation.address.nil?
+  end
+
+  def find_admin_habitation_param!(identifier)
+    resolve_admin_habitation_param(identifier) || raise(ActiveRecord::RecordNotFound)
+  end
+
+  def resolve_admin_habitation_param(identifier)
+    identifier = identifier.to_s.strip
+    return if identifier.blank?
+
+    if identifier.match?(/\A\d+\z/)
+      Habitation.find_by(codigo: identifier) || Habitation.find_by(id: identifier)
+    else
+      Habitation.friendly.find(identifier)
+    end
+  rescue ActiveRecord::RecordNotFound
+    nil
   end
 
   def load_ai_suggestion
