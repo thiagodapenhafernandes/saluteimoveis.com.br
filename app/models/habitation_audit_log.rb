@@ -25,6 +25,8 @@ class HabitationAuditLog < ApplicationRecord
     "valor_condominio_cents" => "Condomínio",
     "valor_iptu_cents" => "IPTU",
     "valor_promocional_cents" => "Valor promocional",
+    "valor_comissao_cents" => "Valor da comissão",
+    "valor_livre_proprietario_cents" => "Proprietário (livre)",
     "proprietario" => "Proprietário",
     "proprietario_codigo" => "Código do proprietário",
     "proprietario_email" => "E-mail do proprietário",
@@ -74,6 +76,7 @@ class HabitationAuditLog < ApplicationRecord
 
   CURRENCY_FIELDS = %w[
     valor_venda_cents valor_locacao_cents valor_condominio_cents valor_iptu_cents valor_promocional_cents
+    valor_comissao_cents valor_livre_proprietario_cents
   ].freeze
 
   belongs_to :habitation, optional: true

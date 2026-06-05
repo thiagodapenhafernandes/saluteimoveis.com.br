@@ -1362,6 +1362,8 @@ CREATE TABLE public.habitations (
     captador_commission_percentage numeric(5,2),
     broker_commission_percentage numeric(5,2),
     salute_rental_management_flag boolean DEFAULT false NOT NULL,
+    valor_comissao_cents bigint,
+    valor_livre_proprietario_cents bigint,
     key_location character varying,
     key_location_notes character varying,
     proprietor_id bigint,
@@ -8391,6 +8393,7 @@ ALTER TABLE ONLY public.push_subscriptions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260605093000'),
 ('20260602193000'),
 ('20260601092500'),
 ('20260531194000'),

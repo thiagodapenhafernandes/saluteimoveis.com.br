@@ -64,4 +64,37 @@ RSpec.describe Vista::PropertyReconciliationService do
       expect(total).to eq(750_000)
     end
   end
+
+  describe "commission and rental management mapping" do
+    let(:service) { described_class.new(codigos: ["8573"], dry_run: true) }
+
+    it "uses the positive general commission percentage when the captador percentage is zero" do
+      percentage = service.send(:commission_percentage, "0", "6")
+
+      expect(percentage).to eq(BigDecimal("6"))
+    end
+
+    it "extracts the commission amount from Vista notes when the structured field is zero" do
+      cents = service.send(
+        :commission_amount_cents,
+        {
+          "ValorComissao" => "0",
+          "ObsVenda" => "Tem Administração?  Sim\nValor da comissão: 7500"
+        }
+      )
+
+      expect(cents).to eq(750_000)
+    end
+
+    it "uses Vista notes as a fallback for the Salute rental management flag" do
+      flag = service.send(
+        :rental_management_flag,
+        {
+          "ObsVenda" => "Método de garantia locação: Seguro Fiança\nTem Administração?  Sim"
+        }
+      )
+
+      expect(flag).to be(true)
+    end
+  end
 end

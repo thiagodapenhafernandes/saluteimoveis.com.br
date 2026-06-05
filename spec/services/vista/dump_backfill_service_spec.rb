@@ -39,7 +39,13 @@ RSpec.describe Vista::DumpBackfillService do
             "PLAYGROUD" => "Sim",
             "TIPO_OFERTA_ZAP" => "Destaque",
             "MODELO_CASA_MINEIRA" => "simples",
-            "AC_PERMUTA_VALOR" => "500000"
+            "AC_PERMUTA_VALOR" => "500000",
+            "COMISSAO_CAPTADOR" => "0",
+            "PERCENTUAL_COMISSAO" => "6",
+            "COMISSAO_CORRETOR" => "1.5",
+            "VLR_COMISSAO" => "0",
+            "VLR_LIVRE_PROPRIETARIO" => "131",
+            "OBS_VENDA" => "Tem Administração? Sim\nValor da comissão: 7500"
           }
         ]
       )
@@ -88,6 +94,11 @@ RSpec.describe Vista::DumpBackfillService do
       expect(habitation.publicar_zapimoveis).to be(true)
       expect(habitation.publicar_casa_mineira).to be(true)
       expect(habitation.valor_aceito_permuta_cents).to eq(50_000_000)
+      expect(habitation.captador_commission_percentage).to eq(BigDecimal("6"))
+      expect(habitation.broker_commission_percentage).to eq(BigDecimal("1.5"))
+      expect(habitation.valor_comissao_cents).to eq(750_000)
+      expect(habitation.valor_livre_proprietario_cents).to eq(13_100)
+      expect(habitation.salute_rental_management_flag).to be(true)
       expect(habitation.proprietario_celular).to eq("47 99999-0000")
       expect(habitation.proprietario_email).to eq("proprietario@example.com")
       expect(habitation.corretor_nome).to eq("Maria Corretora")

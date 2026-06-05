@@ -137,6 +137,31 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).not_to include(">Centro<")
   end
 
+  it "exibe telefone do proprietário vinculado quando o imóvel não tem telefone legado" do
+    proprietor = create(
+      :proprietor,
+      name: "Jeanine",
+      phone_primary: "47 98868.0402",
+      mobile_phone: nil,
+      business_phone: nil,
+      residential_phone: nil
+    )
+    habitation = create(
+      :habitation,
+      proprietor: proprietor,
+      proprietario: "Jeanine",
+      proprietario_celular: nil,
+      proprietario_telefone_comercial: nil,
+      proprietario_telefone_residencial: nil
+    )
+
+    get edit_admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Jeanine")
+    expect(response.body).to include("47 98868.0402")
+  end
+
   it "mantém classificação de fotos visível para o administrativo" do
     habitation = create(:habitation, codigo: "FOTO-ADM-#{SecureRandom.hex(6)}")
 
