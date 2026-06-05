@@ -696,6 +696,7 @@ class Admin::HabitationsController < Admin::BaseController
     @empreendimento_codigo = params[:empreendimento_codigo]
     @corretor_id = params[:corretor_id]
     @proprietor_id = can_filter_by_proprietor? ? params[:proprietor_id] : nil
+    @destaque_web = params[:destaque_web]
     @festival_salute = params[:festival_salute]
     @exibir_no_site_salute = params[:exibir_no_site_salute]
     @publicar_imovelweb_2 = params[:publicar_imovelweb_2]
@@ -857,6 +858,7 @@ class Admin::HabitationsController < Admin::BaseController
     scope = scope.where("area_total_m2 <= ?", area_total_max) if area_total_max
     scope = scope.where("area_privativa_m2 >= ?", area_privativa_min) if area_privativa_min
     scope = scope.where("area_privativa_m2 <= ?", area_privativa_max) if area_privativa_max
+    scope = apply_boolean_filter(scope, @destaque_web, :destaque_web_flag)
     scope = apply_boolean_filter(scope, @festival_salute, :festival_salute_flag)
     scope = apply_boolean_filter(scope, @exibir_no_site_salute, :exibir_no_site_salute_flag)
     scope = apply_boolean_filter(scope, @publicar_imovelweb_2, :publicar_imovelweb_2)
@@ -885,6 +887,10 @@ class Admin::HabitationsController < Admin::BaseController
     # Vista popula `caracteristicas` JSONB no formato {"Mobiliado" => "Mobiliado", ...}.
     # Os filtros pill consideram tanto os flags legados quanto o JSONB.
     case @scope
+    when "destaque_web"
+      scope = scope.where(destaque_web_flag: true)
+    when "super_destaque"
+      scope = scope.where(festival_salute_flag: true)
     when "oportunidade"
       scope = scope.opportunity
     when "frente_mar"

@@ -285,7 +285,7 @@
     permuta_vehicle permuta_property permuta_others permuta_min_value permuta_location
     permuta_min_dorms permuta_min_suites permuta_min_garagens
     situacao face ocupacao_status estado_conservacao area_total_min area_total_max area_privativa_min area_privativa_max
-    festival_salute exibir_no_site_salute tem_placa exclusivo empreendimento_codigo corretor_id proprietor_id regiao_foco
+    destaque_web festival_salute exibir_no_site_salute tem_placa exclusivo empreendimento_codigo corretor_id proprietor_id regiao_foco
     publicar_imovelweb_2 publicar_netimoveis_2 publicar_lais_ai publicar_loft
     publicar_chaves_na_mao publicar_casa_mineira publicar_imovelweb publicar_viva_real_vrsync
     captacao_inicio captacao_fim somente_com_imagens somente_sem_imagens somente_dwv
@@ -297,7 +297,7 @@
   extras_open = active_extra_filters_count.positive?
   vista_advanced_keys = %w[
     situacao face ocupacao_status estado_conservacao area_total_min area_total_max area_privativa_min area_privativa_max
-    festival_salute exibir_no_site_salute tem_placa exclusivo banheiros dorms suites vagas
+    destaque_web festival_salute exibir_no_site_salute tem_placa exclusivo banheiros dorms suites vagas
     foto_classificacao
     amenities
     publicar_imovelweb_2 publicar_netimoveis_2 publicar_lais_ai publicar_loft
@@ -632,7 +632,14 @@
               <h6 class="fw-bold text-secondary mb-3">Destaques</h6>
               <div class="row g-3">
                 <div class="col-md-3">
-                  <label class="form-label small fw-bold text-muted text-uppercase">Festival Salute</label>
+                  <label class="form-label small fw-bold text-muted text-uppercase">Destaque Web</label>
+                  <%= f.select :destaque_web,
+                               [["Sim", "1"], ["Não", "0"]],
+                               { include_blank: "Todos", selected: params[:destaque_web] },
+                               class: "form-select" %>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Super Destaque</label>
                   <%= f.select :festival_salute,
                                [["Sim", "1"], ["Não", "0"]],
                                { include_blank: "Todos", selected: params[:festival_salute] },
@@ -896,9 +903,11 @@
 <div class="habitations-scopes d-flex flex-wrap gap-2 mb-4">
   <% 
     scopes = [
+      { key: 'destaque_web', label: 'Destaque Web', icon: 'star-fill' },
+      { key: 'super_destaque', label: 'Super Destaque', icon: 'stars' },
       { key: 'oportunidade', label: 'Oportunidade', icon: 'lightning-fill' },
       { key: 'frente_mar', label: 'Frente Mar', icon: 'building' },
-      { key: 'lancamento', label: 'Lançamento', icon: 'stars' },
+      { key: 'lancamento', label: 'Lançamento', icon: 'rocket-takeoff' },
       { key: 'na_planta', label: 'Na Planta', icon: 'rulers' },
       { key: 'mobiliado', label: 'Mobiliado', icon: 'sofa' },
       { key: 'sacada', label: 'Sacada', icon: 'layout-sidebar' },
@@ -1110,6 +1119,10 @@
   active_filter_chips << "Somente com imagens" if params[:somente_com_imagens] == "1"
   active_filter_chips << "Somente sem imagens" if params[:somente_sem_imagens] == "1"
   active_filter_chips << "Somente imóveis do DWV" if params[:somente_dwv] == "1"
+  active_filter_chips << "Destaque Web: Sim" if params[:destaque_web] == "1"
+  active_filter_chips << "Destaque Web: Não" if params[:destaque_web] == "0"
+  active_filter_chips << "Super Destaque: Sim" if params[:festival_salute] == "1"
+  active_filter_chips << "Super Destaque: Não" if params[:festival_salute] == "0"
   active_filter_chips << "Portal: Imovelweb 2" if params[:publicar_imovelweb_2] == "1"
   active_filter_chips << "Portal: Netimoveis 2" if params[:publicar_netimoveis_2] == "1"
   active_filter_chips << "Portal: Lais Ai" if params[:publicar_lais_ai] == "1"

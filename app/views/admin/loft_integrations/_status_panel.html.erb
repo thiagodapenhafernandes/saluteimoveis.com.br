@@ -46,7 +46,7 @@
               <th>Modo</th>
               <th>Criados</th>
               <th>Atualizados</th>
-              <th>Imagens</th>
+              <th>Fotos</th>
               <th>Erros</th>
             </tr>
           </thead>
@@ -65,7 +65,8 @@
                 <td class="small"><%= item["mode"].presence || "-" %></td>
                 <td class="small"><%= stats["created"].to_i %></td>
                 <td class="small"><%= stats["updated"].to_i %></td>
-                <td class="small"><%= stats["images_synced"].to_i %></td>
+                <% photos_count = stats["images_synced"].presence || (stats["photos_reused"].to_i + stats["photos_downloaded"].to_i + stats["photos_pending_download"].to_i) %>
+                <td class="small" title="Reaproveitadas, baixadas ou pendentes de download"><%= photos_count.to_i %></td>
                 <td class="small"><%= stats["errors_count"].to_i %></td>
               </tr>
             <% end %>

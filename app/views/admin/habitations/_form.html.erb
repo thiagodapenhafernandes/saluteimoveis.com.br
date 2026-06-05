@@ -297,8 +297,12 @@
       pointer-events: none;
     }
     .habitation-form-ui .media-photo-tile .media-photo-overlay .badge,
+    .habitation-form-ui .media-photo-tile .media-photo-feature-button,
     .habitation-form-ui .media-photo-tile .media-photo-drag-handle {
       pointer-events: auto;
+    }
+    .habitation-form-ui .media-photo-feature-button {
+      line-height: 1;
     }
     .habitation-form-ui .media-photo-drag-handle {
       cursor: grab;
@@ -381,168 +385,6 @@
                     <%= f.check_box :imovel_dwv, { class: "form-check-input mt-0" }, "Sim", "Não" %>
                     <span class="small fw-semibold">Imóvel DWV</span>
                   </label>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="form-section mb-3 portal-publication-section">
-            <div class="form-section-header">
-              Publicação em portais
-            </div>
-            <style>
-              .portal-publication-section .portal-option-group .portal-sub-options { display: none; margin-top: 0.5rem; padding: 0.75rem; border: 1px solid #e3e6ef; border-radius: 0.375rem; background-color: #f8f9fc; }
-              .portal-publication-section .portal-option-group:has(> label > input[type="checkbox"]:checked) .portal-sub-options { display: block; }
-              .portal-publication-section .portal-sub-options .portal-sub-options-title { font-size: 0.8rem; font-weight: 600; color: #6c757d; margin-bottom: 0.25rem; }
-              .portal-publication-section .portal-sub-options .portal-sub-options-title + .portal-sub-options-radios { margin-bottom: 0.5rem; }
-              .portal-publication-section .portal-sub-options .form-check { margin-right: 1rem; }
-            </style>
-            <div class="row g-2">
-              <div class="col-md-6">
-                <div class="d-flex flex-column gap-2">
-                  <div class="portal-option-group">
-                    <label class="custom-checkbox-card">
-                      <%= f.check_box :publicar_imovelweb_2, class: "form-check-input mt-0" %>
-                      <span class="small fw-semibold">Publicar Imovelweb 2</span>
-                    </label>
-                    <div class="portal-sub-options">
-                      <div class="portal-sub-options-title">Tipo Publicação Imovelweb 2</div>
-                      <div class="portal-sub-options-radios d-flex flex-wrap">
-                        <% Habitation::IMOVELWEB_TIPO_PUBLICACAO_OPTIONS.each do |(label, val)| %>
-                          <div class="form-check">
-                            <%= f.radio_button :tipo_publicacao_imovelweb_2, val, class: "form-check-input" %>
-                            <%= f.label :tipo_publicacao_imovelweb_2, label, value: val, class: "form-check-label small" %>
-                          </div>
-                        <% end %>
-                      </div>
-                      <div class="portal-sub-options-title">Mostrar Mapa</div>
-                      <div class="portal-sub-options-radios d-flex flex-wrap">
-                        <% Habitation::IMOVELWEB_MOSTRAR_MAPA_OPTIONS.each do |(label, val)| %>
-                          <div class="form-check">
-                            <%= f.radio_button :mostrar_mapa_imovelweb_2, val, class: "form-check-input" %>
-                            <%= f.label :mostrar_mapa_imovelweb_2, label, value: val, class: "form-check-label small" %>
-                          </div>
-                        <% end %>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="portal-option-group">
-                    <label class="custom-checkbox-card">
-                      <%= f.check_box :publicar_netimoveis_2, class: "form-check-input mt-0" %>
-                      <span class="small fw-semibold">Publicar Netimoveis 2</span>
-                    </label>
-                  </div>
-                  <div class="portal-option-group">
-                    <label class="custom-checkbox-card">
-                      <%= f.check_box :publicar_lais_ai, class: "form-check-input mt-0" %>
-                      <span class="small fw-semibold">Publicar Lais Ai</span>
-                    </label>
-                  </div>
-                  <div class="portal-option-group">
-                    <label class="custom-checkbox-card">
-                      <%= f.check_box :publicar_loft, class: "form-check-input mt-0" %>
-                      <span class="small fw-semibold">Publicar Loft</span>
-                    </label>
-                  </div>
-                  <div class="portal-option-group">
-                    <label class="custom-checkbox-card">
-                      <%= f.check_box :publicar_chaves_na_mao, class: "form-check-input mt-0" %>
-                      <span class="small fw-semibold">Publicar Chaves Na Mao</span>
-                    </label>
-                    <div class="portal-sub-options">
-                      <div class="portal-sub-options-title">Destaque Chaves na Mao</div>
-                      <div class="portal-sub-options-radios d-flex flex-wrap">
-                        <% Habitation::CHAVES_NA_MAO_DESTAQUE_OPTIONS.each do |(label, val)| %>
-                          <div class="form-check">
-                            <%= f.radio_button :destaque_chaves_na_mao, val, class: "form-check-input" %>
-                            <%= f.label :destaque_chaves_na_mao, label, value: val, class: "form-check-label small" %>
-                          </div>
-                        <% end %>
-                      </div>
-                      <div class="portal-sub-options-title">Período Locação</div>
-                      <div class="portal-sub-options-radios d-flex flex-wrap">
-                        <% Habitation::CHAVES_NA_MAO_PERIODO_LOCACAO_OPTIONS.each do |(label, val)| %>
-                          <div class="form-check">
-                            <%= f.radio_button :periodo_locacao_chaves_na_mao, val, class: "form-check-input" %>
-                            <%= f.label :periodo_locacao_chaves_na_mao, label, value: val, class: "form-check-label small" %>
-                          </div>
-                        <% end %>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="d-flex flex-column gap-2">
-                  <div class="portal-option-group">
-                    <label class="custom-checkbox-card">
-                      <%= f.check_box :publicar_casa_mineira, class: "form-check-input mt-0" %>
-                      <span class="small fw-semibold">Publicar Casa Mineira</span>
-                    </label>
-                    <div class="portal-sub-options">
-                      <div class="portal-sub-options-title">Modelo Casa Mineira</div>
-                      <div class="portal-sub-options-radios d-flex flex-wrap">
-                        <% Habitation::CASA_MINEIRA_MODELO_OPTIONS.each do |(label, val)| %>
-                          <div class="form-check">
-                            <%= f.radio_button :modelo_casa_mineira, val, class: "form-check-input" %>
-                            <%= f.label :modelo_casa_mineira, label, value: val, class: "form-check-label small" %>
-                          </div>
-                        <% end %>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="portal-option-group">
-                    <label class="custom-checkbox-card">
-                      <%= f.check_box :publicar_imovelweb, class: "form-check-input mt-0" %>
-                      <span class="small fw-semibold">Publicar Imovelweb</span>
-                    </label>
-                    <div class="portal-sub-options">
-                      <div class="portal-sub-options-title">Tipo Publicação Imovelweb</div>
-                      <div class="portal-sub-options-radios d-flex flex-wrap">
-                        <% Habitation::IMOVELWEB_TIPO_PUBLICACAO_OPTIONS.each do |(label, val)| %>
-                          <div class="form-check">
-                            <%= f.radio_button :tipo_publicacao_imovelweb, val, class: "form-check-input" %>
-                            <%= f.label :tipo_publicacao_imovelweb, label, value: val, class: "form-check-label small" %>
-                          </div>
-                        <% end %>
-                      </div>
-                      <div class="portal-sub-options-title">Mostrar Mapa</div>
-                      <div class="portal-sub-options-radios d-flex flex-wrap">
-                        <% Habitation::IMOVELWEB_MOSTRAR_MAPA_OPTIONS.each do |(label, val)| %>
-                          <div class="form-check">
-                            <%= f.radio_button :mostrar_mapa_imovelweb, val, class: "form-check-input" %>
-                            <%= f.label :mostrar_mapa_imovelweb, label, value: val, class: "form-check-label small" %>
-                          </div>
-                        <% end %>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="portal-option-group">
-                    <label class="custom-checkbox-card">
-                      <%= f.check_box :publicar_viva_real_vrsync, class: "form-check-input mt-0" %>
-                      <span class="small fw-semibold">Publicar Viva Real VRSync</span>
-                    </label>
-                    <div class="portal-sub-options">
-                      <div class="portal-sub-options-title">Tipo Publicação Viva Real</div>
-                      <div class="portal-sub-options-radios d-flex flex-wrap">
-                        <% Habitation::VIVA_REAL_TIPO_PUBLICACAO_OPTIONS.each do |(label, val)| %>
-                          <div class="form-check">
-                            <%= f.radio_button :tipo_publicacao_viva_real, val, class: "form-check-input" %>
-                            <%= f.label :tipo_publicacao_viva_real, label, value: val, class: "form-check-label small" %>
-                          </div>
-                        <% end %>
-                      </div>
-                      <div class="portal-sub-options-title">Divulgar Endereço Viva Real</div>
-                      <div class="portal-sub-options-radios d-flex flex-wrap">
-                        <% Habitation::VIVA_REAL_DIVULGAR_ENDERECO_OPTIONS.each do |(label, val)| %>
-                          <div class="form-check">
-                            <%= f.radio_button :divulgar_endereco_viva_real, val, class: "form-check-input" %>
-                            <%= f.label :divulgar_endereco_viva_real, label, value: val, class: "form-check-label small" %>
-                          </div>
-                        <% end %>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
@@ -1553,6 +1395,181 @@
                 </div>
               </template>
 
+          <div class="form-section mb-3 portal-publication-section">
+            <div class="form-section-header d-flex align-items-center justify-content-between gap-2">
+              <span>Publicação em portais</span>
+              <button class="btn btn-sm btn-link text-decoration-none p-0"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#portalPublicationCollapse"
+                      aria-expanded="false"
+                      aria-controls="portalPublicationCollapse">
+                Abrir/fechar <i class="bi bi-chevron-down ms-1"></i>
+              </button>
+            </div>
+            <style>
+              .portal-publication-section .portal-option-group .portal-sub-options { display: none; margin-top: 0.5rem; padding: 0.75rem; border: 1px solid #e3e6ef; border-radius: 0.375rem; background-color: #f8f9fc; }
+              .portal-publication-section .portal-option-group:has(> label > input[type="checkbox"]:checked) .portal-sub-options { display: block; }
+              .portal-publication-section .portal-sub-options .portal-sub-options-title { font-size: 0.8rem; font-weight: 600; color: #6c757d; margin-bottom: 0.25rem; }
+              .portal-publication-section .portal-sub-options .portal-sub-options-title + .portal-sub-options-radios { margin-bottom: 0.5rem; }
+              .portal-publication-section .portal-sub-options .form-check { margin-right: 1rem; }
+            </style>
+            <div class="collapse" id="portalPublicationCollapse">
+              <div class="pt-2">
+                <div class="row g-2">
+              <div class="col-md-6">
+                <div class="d-flex flex-column gap-2">
+                  <div class="portal-option-group">
+                    <label class="custom-checkbox-card">
+                      <%= f.check_box :publicar_imovelweb_2, class: "form-check-input mt-0" %>
+                      <span class="small fw-semibold">Publicar Imovelweb 2</span>
+                    </label>
+                    <div class="portal-sub-options">
+                      <div class="portal-sub-options-title">Tipo Publicação Imovelweb 2</div>
+                      <div class="portal-sub-options-radios d-flex flex-wrap">
+                        <% Habitation::IMOVELWEB_TIPO_PUBLICACAO_OPTIONS.each do |(label, val)| %>
+                          <div class="form-check">
+                            <%= f.radio_button :tipo_publicacao_imovelweb_2, val, class: "form-check-input" %>
+                            <%= f.label :tipo_publicacao_imovelweb_2, label, value: val, class: "form-check-label small" %>
+                          </div>
+                        <% end %>
+                      </div>
+                      <div class="portal-sub-options-title">Mostrar Mapa</div>
+                      <div class="portal-sub-options-radios d-flex flex-wrap">
+                        <% Habitation::IMOVELWEB_MOSTRAR_MAPA_OPTIONS.each do |(label, val)| %>
+                          <div class="form-check">
+                            <%= f.radio_button :mostrar_mapa_imovelweb_2, val, class: "form-check-input" %>
+                            <%= f.label :mostrar_mapa_imovelweb_2, label, value: val, class: "form-check-label small" %>
+                          </div>
+                        <% end %>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="portal-option-group">
+                    <label class="custom-checkbox-card">
+                      <%= f.check_box :publicar_netimoveis_2, class: "form-check-input mt-0" %>
+                      <span class="small fw-semibold">Publicar Netimoveis 2</span>
+                    </label>
+                  </div>
+                  <div class="portal-option-group">
+                    <label class="custom-checkbox-card">
+                      <%= f.check_box :publicar_lais_ai, class: "form-check-input mt-0" %>
+                      <span class="small fw-semibold">Publicar Lais Ai</span>
+                    </label>
+                  </div>
+                  <div class="portal-option-group">
+                    <label class="custom-checkbox-card">
+                      <%= f.check_box :publicar_loft, class: "form-check-input mt-0" %>
+                      <span class="small fw-semibold">Publicar Loft</span>
+                    </label>
+                  </div>
+                  <div class="portal-option-group">
+                    <label class="custom-checkbox-card">
+                      <%= f.check_box :publicar_chaves_na_mao, class: "form-check-input mt-0" %>
+                      <span class="small fw-semibold">Publicar Chaves Na Mao</span>
+                    </label>
+                    <div class="portal-sub-options">
+                      <div class="portal-sub-options-title">Destaque Chaves na Mao</div>
+                      <div class="portal-sub-options-radios d-flex flex-wrap">
+                        <% Habitation::CHAVES_NA_MAO_DESTAQUE_OPTIONS.each do |(label, val)| %>
+                          <div class="form-check">
+                            <%= f.radio_button :destaque_chaves_na_mao, val, class: "form-check-input" %>
+                            <%= f.label :destaque_chaves_na_mao, label, value: val, class: "form-check-label small" %>
+                          </div>
+                        <% end %>
+                      </div>
+                      <div class="portal-sub-options-title">Período Locação</div>
+                      <div class="portal-sub-options-radios d-flex flex-wrap">
+                        <% Habitation::CHAVES_NA_MAO_PERIODO_LOCACAO_OPTIONS.each do |(label, val)| %>
+                          <div class="form-check">
+                            <%= f.radio_button :periodo_locacao_chaves_na_mao, val, class: "form-check-input" %>
+                            <%= f.label :periodo_locacao_chaves_na_mao, label, value: val, class: "form-check-label small" %>
+                          </div>
+                        <% end %>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="d-flex flex-column gap-2">
+                  <div class="portal-option-group">
+                    <label class="custom-checkbox-card">
+                      <%= f.check_box :publicar_casa_mineira, class: "form-check-input mt-0" %>
+                      <span class="small fw-semibold">Publicar Casa Mineira</span>
+                    </label>
+                    <div class="portal-sub-options">
+                      <div class="portal-sub-options-title">Modelo Casa Mineira</div>
+                      <div class="portal-sub-options-radios d-flex flex-wrap">
+                        <% Habitation::CASA_MINEIRA_MODELO_OPTIONS.each do |(label, val)| %>
+                          <div class="form-check">
+                            <%= f.radio_button :modelo_casa_mineira, val, class: "form-check-input" %>
+                            <%= f.label :modelo_casa_mineira, label, value: val, class: "form-check-label small" %>
+                          </div>
+                        <% end %>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="portal-option-group">
+                    <label class="custom-checkbox-card">
+                      <%= f.check_box :publicar_imovelweb, class: "form-check-input mt-0" %>
+                      <span class="small fw-semibold">Publicar Imovelweb</span>
+                    </label>
+                    <div class="portal-sub-options">
+                      <div class="portal-sub-options-title">Tipo Publicação Imovelweb</div>
+                      <div class="portal-sub-options-radios d-flex flex-wrap">
+                        <% Habitation::IMOVELWEB_TIPO_PUBLICACAO_OPTIONS.each do |(label, val)| %>
+                          <div class="form-check">
+                            <%= f.radio_button :tipo_publicacao_imovelweb, val, class: "form-check-input" %>
+                            <%= f.label :tipo_publicacao_imovelweb, label, value: val, class: "form-check-label small" %>
+                          </div>
+                        <% end %>
+                      </div>
+                      <div class="portal-sub-options-title">Mostrar Mapa</div>
+                      <div class="portal-sub-options-radios d-flex flex-wrap">
+                        <% Habitation::IMOVELWEB_MOSTRAR_MAPA_OPTIONS.each do |(label, val)| %>
+                          <div class="form-check">
+                            <%= f.radio_button :mostrar_mapa_imovelweb, val, class: "form-check-input" %>
+                            <%= f.label :mostrar_mapa_imovelweb, label, value: val, class: "form-check-label small" %>
+                          </div>
+                        <% end %>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="portal-option-group">
+                    <label class="custom-checkbox-card">
+                      <%= f.check_box :publicar_viva_real_vrsync, class: "form-check-input mt-0" %>
+                      <span class="small fw-semibold">Publicar Viva Real VRSync</span>
+                    </label>
+                    <div class="portal-sub-options">
+                      <div class="portal-sub-options-title">Tipo Publicação Viva Real</div>
+                      <div class="portal-sub-options-radios d-flex flex-wrap">
+                        <% Habitation::VIVA_REAL_TIPO_PUBLICACAO_OPTIONS.each do |(label, val)| %>
+                          <div class="form-check">
+                            <%= f.radio_button :tipo_publicacao_viva_real, val, class: "form-check-input" %>
+                            <%= f.label :tipo_publicacao_viva_real, label, value: val, class: "form-check-label small" %>
+                          </div>
+                        <% end %>
+                      </div>
+                      <div class="portal-sub-options-title">Divulgar Endereço Viva Real</div>
+                      <div class="portal-sub-options-radios d-flex flex-wrap">
+                        <% Habitation::VIVA_REAL_DIVULGAR_ENDERECO_OPTIONS.each do |(label, val)| %>
+                          <div class="form-check">
+                            <%= f.radio_button :divulgar_endereco_viva_real, val, class: "form-check-input" %>
+                            <%= f.label :divulgar_endereco_viva_real, label, value: val, class: "form-check-label small" %>
+                          </div>
+                        <% end %>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              </div>
+            </div>
+            </div>
+          </div>
+
+
                 <!-- Modal for Adding Broker -->
                 <div class="modal fade" id="addBrokerModal" tabindex="-1" aria-hidden="true" data-habitation-brokers-target="modal">
                   <div class="modal-dialog modal-dialog-centered">
@@ -1606,9 +1623,14 @@
        <div class="card border-0 shadow-sm mb-4">
          <div class="card-body p-3 p-md-4" data-controller="photo-upload fancybox-gallery">
             <% linked_development = habitation.empreendimento if habitation.codigo_empreendimento.present? %>
+            <% attached_media_photos = habitation.photos.attached? ? habitation.ordered_photos.select { |photo| photo.persisted? && photo.blob&.persisted? } : [] %>
+            <% api_media_pictures = (!attached_media_photos.any? && habitation.pictures.is_a?(Array)) ? habitation.pictures.each_with_index.filter_map { |pic, index|
+                 pic_url = pic.is_a?(String) ? pic : (pic.try(:[], "url") || pic.try(:[], "src") || pic.try(:[], "link"))
+                 [pic, index, pic_url] if pic_url.present?
+               } : [] %>
             <% media_gallery_count =
-                 habitation.photos.attachments.size +
-                 (habitation.pictures.is_a?(Array) ? habitation.pictures.count { |pic| (pic.is_a?(String) ? pic : (pic.try(:[], "url") || pic.try(:[], "src") || pic.try(:[], "link"))).present? } : 0) +
+                 attached_media_photos.size +
+                 api_media_pictures.size +
                  ((habitation.use_development_photos? && linked_development.present? && habitation.own_public_image_sources.blank?) ? linked_development.own_public_image_sources.first(12).size : 0) %>
             <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap mb-3">
               <h6 class="small fw-semibold text-uppercase text-muted mb-0">Fotos</h6>
@@ -1655,16 +1677,15 @@
                <%= f.file_field :photos, multiple: true, class: "d-none", 
                    id: "habitation_photos",
                    data: { action: "change->photo-upload#preview", photo_upload_target: "input" } %>
-               <%= f.hidden_field :ordered_photo_ids, data: { photo_upload_target: "orderInput" }, value: f.object.photo_ids_order.join(',') %>
+               <%= f.hidden_field :ordered_photo_ids, data: { photo_upload_target: "orderInput" }, value: attached_media_photos.map(&:id).join(',') %>
                <%= f.hidden_field :ordered_picture_indices,
                    data: { photo_upload_target: "apiOrderInput" },
-                   value: habitation.pictures.is_a?(Array) ? habitation.pictures.each_index.to_a.join(',') : "" %>
+                   value: api_media_pictures.map { |_pic, index, _url| index }.join(',') %>
             </div>
 
             <div class="row g-3" data-photo-upload-target="previewContainer">
-                 <% if habitation.photos.attached? %>
-                    <% habitation.ordered_photos.each_with_index do |photo, index| %>
-                      <% next unless photo.persisted? && photo.blob&.persisted? %>
+                 <% if attached_media_photos.any? %>
+                    <% attached_media_photos.each_with_index do |photo, index| %>
                       <div class="col-6 col-md-3 col-lg-2 draggable-item attached-photo-item" data-id="<%= photo.id %>">
                         <div class="position-relative ratio ratio-1x1 group-hover media-photo-tile">
                           <%= link_to url_for(photo),
@@ -1674,17 +1695,24 @@
                           <% end %>
                           <div class="media-photo-overlay position-absolute d-flex flex-column justify-content-between p-1">
                             <div class="d-flex justify-content-between align-items-start gap-1">
-                              <span class="badge bg-dark bg-opacity-75 border shadow-sm">#<%= index + 1 %></span>
+                              <span class="badge bg-dark bg-opacity-75 border shadow-sm" data-photo-position-badge>#<%= index + 1 %></span>
                               <span class="badge bg-light text-dark border shadow-sm">Ativo</span>
                             </div>
                             <div class="d-flex justify-content-between align-items-end gap-1">
+                              <span data-photo-featured-control>
                               <% if index.zero? %>
                                 <span class="badge bg-warning text-dark border shadow-sm">
                                   <i class="bi bi-star-fill me-1"></i>Destaque
                                 </span>
                               <% else %>
-                                <span></span>
+                                <button type="button"
+                                        class="media-photo-feature-button btn btn-sm btn-warning border py-0 px-1 fw-semibold"
+                                        title="Definir como destaque"
+                                        data-action="photo-upload#setFeatured">
+                                  <i class="bi bi-star"></i>
+                                </button>
                               <% end %>
+                              </span>
                               <button type="button" class="media-photo-drag-handle btn btn-sm btn-light border py-0 px-1" title="Arrastar foto">
                                 <i class="bi bi-grip-vertical"></i>
                               </button>
@@ -1695,11 +1723,9 @@
                     <% end %>
                   <% end %>
                   
-                  <% if habitation.pictures.present? && habitation.pictures.is_a?(Array) %>
-                     <% habitation.pictures.each_with_index do |pic, index| %>
-                        <% pic_url = pic.is_a?(String) ? pic : (pic.try(:[], 'url') || pic.try(:[], 'src') || pic.try(:[], 'link')) %>
-                        <% if pic_url.present? %>
-                           <div class="col-6 col-md-3 col-lg-2 draggable-item api-picture-item" data-api-index="<%= index %>">
+                  <% if api_media_pictures.any? %>
+                     <% api_media_pictures.each_with_index do |(_pic, original_index, pic_url), index| %>
+                           <div class="col-6 col-md-3 col-lg-2 draggable-item api-picture-item" data-api-index="<%= original_index %>">
                               <div class="position-relative ratio ratio-1x1 group-hover media-photo-tile">
                                  <%= link_to pic_url,
                                      class: "d-block w-100 h-100",
@@ -1708,17 +1734,24 @@
                                  <% end %>
                                  <div class="media-photo-overlay position-absolute d-flex flex-column justify-content-between p-1">
                                    <div class="d-flex justify-content-between align-items-start gap-1">
-                                     <span class="badge bg-dark bg-opacity-75 border shadow-sm">#<%= index + 1 %></span>
+                                     <span class="badge bg-dark bg-opacity-75 border shadow-sm" data-photo-position-badge>#<%= index + 1 %></span>
                                      <span class="badge bg-secondary border shadow-sm" title="Vindo da Integração API">API/Vista</span>
                                    </div>
                                    <div class="d-flex justify-content-between align-items-end gap-1">
+                                     <span data-photo-featured-control>
                                      <% if index.zero? && !habitation.photos.attached? %>
                                        <span class="badge bg-warning text-dark border shadow-sm">
                                          <i class="bi bi-star-fill me-1"></i>Destaque
                                        </span>
                                      <% else %>
-                                       <span></span>
+                                       <button type="button"
+                                               class="media-photo-feature-button btn btn-sm btn-warning border py-0 px-1 fw-semibold"
+                                               title="Definir como destaque"
+                                               data-action="photo-upload#setFeatured">
+                                         <i class="bi bi-star"></i>
+                                       </button>
                                      <% end %>
+                                     </span>
                                      <button type="button" class="media-photo-drag-handle btn btn-sm btn-light border py-0 px-1" title="Arrastar foto">
                                        <i class="bi bi-grip-vertical"></i>
                                      </button>
@@ -1726,7 +1759,6 @@
                                  </div>
                               </div>
                            </div>
-                        <% end %>
                      <% end %>
                   <% end %>
 
