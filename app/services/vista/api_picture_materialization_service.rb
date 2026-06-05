@@ -10,6 +10,42 @@ module Vista
     DEFAULT_WORKERS = 1
     API_FILE_ASSET_DUMP_DIR = "api:vista".freeze
     API_PHOTO_TABLE_NAME = "API_FOTO".freeze
+    SOURCE_GALLERY_SQL = <<~SQL.squish.freeze
+      (
+        jsonb_typeof(habitations.pictures) = 'array'
+        AND jsonb_array_length(habitations.pictures) > 0
+      )
+      OR (
+        jsonb_typeof(habitations.fotos_empreendimento) = 'array'
+        AND jsonb_array_length(habitations.fotos_empreendimento) > 0
+        AND (
+          habitations.tipo = 'Empreendimento'
+          OR (
+            habitations.use_development_photos_flag = TRUE
+            AND habitations.codigo_empreendimento IS NOT NULL
+            AND habitations.codigo_empreendimento <> ''
+          )
+        )
+      )
+    SQL
+    SOURCE_IMAGE_COUNT_SQL = <<~SQL.squish.freeze
+      CASE
+        WHEN jsonb_typeof(habitations.pictures) = 'array' AND jsonb_array_length(habitations.pictures) > 0
+          THEN jsonb_array_length(habitations.pictures)
+        WHEN jsonb_typeof(habitations.fotos_empreendimento) = 'array'
+          AND jsonb_array_length(habitations.fotos_empreendimento) > 0
+          AND (
+            habitations.tipo = 'Empreendimento'
+            OR (
+              habitations.use_development_photos_flag = TRUE
+              AND habitations.codigo_empreendimento IS NOT NULL
+              AND habitations.codigo_empreendimento <> ''
+            )
+          )
+          THEN jsonb_array_length(habitations.fotos_empreendimento)
+        ELSE 0
+      END
+    SQL
 
     Result = Struct.new(
       :dry_run,
@@ -66,7 +102,11 @@ module Vista
     def self.default_scope
       Habitation
         .where.not(imovel_dwv: "Sim")
-        .where("jsonb_typeof(pictures) = 'array' AND jsonb_array_length(pictures) > 0")
+        .where(SOURCE_GALLERY_SQL)
+    end
+
+    def self.source_image_count_sql
+      SOURCE_IMAGE_COUNT_SQL
     end
 
     def default_scope
@@ -122,7 +162,7 @@ module Vista
       }
       ordered_attachment_ids = []
 
-      Array(habitation.pictures).each_with_index do |picture, index|
+      source_pictures_for(habitation).each_with_index do |picture, index|
         url = picture_url(picture)
         next if url.blank?
 
@@ -191,6 +231,19 @@ module Vista
 
     def max_workers_for_connection_pool
       [ActiveRecord::Base.connection_pool.size - 1, 1].max
+    end
+
+    def source_pictures_for(habitation)
+      return Array(habitation.pictures) if json_array_present?(habitation.pictures)
+
+      return [] unless json_array_present?(habitation.fotos_empreendimento)
+      return Array(habitation.fotos_empreendimento) if habitation.empreendimento? || habitation.use_development_photos?
+
+      []
+    end
+
+    def json_array_present?(value)
+      value.is_a?(Array) && value.present?
     end
 
     def api_file_asset_batch

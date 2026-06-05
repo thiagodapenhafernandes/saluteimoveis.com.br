@@ -75,7 +75,7 @@ class Admin::ImageMigrationStatusController < Admin::BaseController
     pending_properties = source_scope.where.missing(:photos_attachments).count
     public_pending_properties = source_scope.where(status: PUBLIC_STATUSES).where.missing(:photos_attachments).count
     public_vista_first_properties = public_vista_first_scope.count
-    total_source_images = source_scope.pick(Arel.sql("COALESCE(SUM(jsonb_array_length(pictures)), 0)::bigint")).to_i
+    total_source_images = source_scope.pick(Arel.sql("COALESCE(SUM(#{Vista::ApiPictureMaterializationService.source_image_count_sql}), 0)::bigint")).to_i
     migrated_images = ActiveStorage::Attachment.where(record_type: "Habitation", name: "photos").count
     latest_attachment_at = ActiveStorage::Attachment.where(record_type: "Habitation", name: "photos").maximum(:created_at)
     worker = worker_status
