@@ -8,6 +8,10 @@
 <% has_rent_price = @habitation.valor_locacao_cents.to_i.positive? %>
 <% has_discount = has_sale_price && @habitation.valor_venda_anterior_cents.to_i > @habitation.valor_venda_cents.to_i %>
 
+<% content_for :head do %>
+  <%= json_ld_tag(real_estate_listing_schema(@habitation)) %>
+<% end %>
+
 <div class="bg-gray-50 min-h-screen pb-14 habitation-details" data-property-id="<%= @habitation.id %>">
   <div class="bg-white border-b border-gray-100 py-3 mt-[72px]">
     <div class="container-custom">
@@ -20,10 +24,6 @@
       </div>
     </div>
   </div>
-
-  <script type="application/ld+json">
-    <%= @habitation.structured_data.to_json.html_safe %>
-  </script>
 
   <div class="container-custom pt-8">
     <section class="relative overflow-hidden rounded-2xl bg-white shadow-[0_18px_45px_rgba(15,23,42,0.12)]" data-controller="fancybox-gallery">

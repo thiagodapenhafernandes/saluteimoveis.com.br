@@ -1,3 +1,7 @@
+<% content_for :head do %>
+  <%= json_ld_tag(real_estate_agent_schema) %>
+<% end %>
+
 <!-- Hero Section -->
 <%= render 'hero' %>
 

@@ -89,6 +89,30 @@ RSpec.describe "Habitation details", type: :request do
       expect(response.body).to include("Previsão de entrega")
       expect(response.body).to include("01 de Fevereiro de 2027")
     end
+
+    it "renders the RealEstateListing JSON-LD in the document head" do
+      habitation = create(
+        :habitation,
+        codigo: "8397",
+        slug: "casa-em-condominio-8397",
+        cidade: "Balneário Camboriú",
+        uf: "SC",
+        dormitorios_qtd: 3,
+        banheiros_qtd: 2
+      )
+
+      get habitation_path(habitation)
+
+      expect(response).to have_http_status(:ok)
+      document = Nokogiri::HTML(response.body)
+      script = document.at_css("head script[type='application/ld+json']")
+      payload = JSON.parse(script.text)
+
+      expect(payload["@type"]).to eq("RealEstateListing")
+      expect(payload["identifier"]).to eq("8397")
+      expect(payload["url"]).to eq("http://localhost/imoveis/casa-em-condominio-8397")
+      expect(document.css("body script[type='application/ld+json']")).to be_empty
+    end
   end
 
   describe "GET /empreendimento/:id" do

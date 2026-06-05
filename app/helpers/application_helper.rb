@@ -64,6 +64,74 @@ module ApplicationHelper
     active_storage_public_path(image) || normalize_public_image_url(image)
   end
 
+  def json_ld_tag(payload)
+    tag.script(json_escape(payload.to_json).html_safe, type: "application/ld+json")
+  end
+
+  def real_estate_agent_schema
+    {
+      "@context" => "https://schema.org",
+      "@type" => ["RealEstateAgent", "LocalBusiness"],
+      "name" => "Salute Imóveis",
+      "url" => "https://saluteimoveis.com.br",
+      "logo" => absolute_url_for_asset("salute-imoveis.svg"),
+      "telephone" => "+554733111067",
+      "email" => "contato@saluteimoveis.com",
+      "sameAs" => [
+        "https://www.instagram.com/saluteimoveis/",
+        "https://www.facebook.com/saluteimoveisunicos/",
+        "https://www.youtube.com/channel/UC9BG_PI0pFj-m65sR6KeZtA"
+      ],
+      "location" => [
+        {
+          "@type" => "Place",
+          "name" => "Filial Av. Brasil",
+          "address" => {
+            "@type" => "PostalAddress",
+            "streetAddress" => "Rua 3150, 3160",
+            "addressLocality" => "Balneário Camboriú",
+            "addressRegion" => "SC",
+            "postalCode" => "88330-281",
+            "addressCountry" => "BR"
+          }
+        },
+        {
+          "@type" => "Place",
+          "name" => "Filial Av. Atlântica",
+          "address" => {
+            "@type" => "PostalAddress",
+            "streetAddress" => "Avenida Atlântica, 3750",
+            "addressLocality" => "Balneário Camboriú",
+            "addressRegion" => "SC",
+            "postalCode" => "88330-024",
+            "addressCountry" => "BR"
+          }
+        }
+      ]
+    }
+  end
+
+  def real_estate_listing_schema(habitation)
+    price_cents = habitation.valor_venda_cents.to_i.positive? ? habitation.valor_venda_cents : habitation.valor_locacao_cents
+    image_urls = habitation.public_image_sources.filter_map { |source| absolute_public_url(public_image_url(source)) }
+
+    {
+      "@context" => "https://schema.org",
+      "@type" => "RealEstateListing",
+      "name" => habitation.display_title,
+      "description" => strip_tags(habitation.seo_description.to_s).squish.presence,
+      "url" => property_url(habitation),
+      "identifier" => habitation.codigo,
+      "image" => image_urls.presence,
+      "address" => listing_address_schema(habitation),
+      "geo" => listing_geo_schema(habitation),
+      "floorSize" => listing_floor_size_schema(habitation),
+      "numberOfRooms" => positive_integer_or_nil(habitation.dormitorios_qtd),
+      "numberOfBathroomsTotal" => positive_integer_or_nil(habitation.banheiros_qtd),
+      "offers" => listing_offer_schema(habitation, price_cents)
+    }.compact
+  end
+
   # SEO Helper - Dynamic meta tags
   def seo_meta_tags(page_name = 'home')
     seo = SeoSetting.for_page(page_name)
@@ -155,5 +223,69 @@ module ApplicationHelper
     [uri.path, uri.query.presence && "?#{uri.query}"].compact.join
   rescue URI::InvalidURIError
     value
+  end
+
+  def absolute_url_for_asset(asset_name)
+    asset_url(asset_name)
+  end
+
+  def absolute_public_url(value)
+    return if value.blank?
+    return value if value.match?(%r{\Ahttps?://}i)
+
+    URI.join(request.base_url, value).to_s
+  rescue URI::InvalidURIError
+    nil
+  end
+
+  def listing_address_schema(habitation)
+    return if habitation.cidade.blank?
+
+    {
+      "@type" => "PostalAddress",
+      "streetAddress" => [habitation.tipo_endereco, habitation.endereco, habitation.numero].compact_blank.join(" ").presence,
+      "addressLocality" => habitation.cidade,
+      "addressRegion" => habitation.uf.presence || "SC",
+      "addressCountry" => "BR",
+      "postalCode" => habitation.cep
+    }.compact
+  end
+
+  def listing_geo_schema(habitation)
+    return if habitation.latitude.blank? || habitation.longitude.blank?
+
+    {
+      "@type" => "GeoCoordinates",
+      "latitude" => habitation.latitude.to_f,
+      "longitude" => habitation.longitude.to_f
+    }
+  end
+
+  def listing_floor_size_schema(habitation)
+    area = habitation.area_total_m2.presence || habitation.area_privativa_m2.presence
+    return if area.blank?
+
+    {
+      "@type" => "QuantitativeValue",
+      "value" => area.to_f,
+      "unitCode" => "MTK"
+    }
+  end
+
+  def listing_offer_schema(habitation, price_cents)
+    return unless price_cents.to_i.positive?
+
+    {
+      "@type" => "Offer",
+      "price" => (price_cents.to_f / 100.0).round(2),
+      "priceCurrency" => "BRL",
+      "availability" => "https://schema.org/InStock",
+      "url" => property_url(habitation)
+    }
+  end
+
+  def positive_integer_or_nil(value)
+    integer = value.to_i
+    integer.positive? ? integer : nil
   end
 end
