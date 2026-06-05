@@ -401,7 +401,22 @@ class Habitation < ApplicationRecord
   def unidade_numero = bloco
 
   def proprietario_nome = proprietario
-  def proprietario_telefone = proprietario_celular
+  def proprietario_telefone
+    proprietario_celular.presence ||
+      proprietor&.mobile_phone.presence ||
+      proprietor&.phone_primary.presence ||
+      proprietor&.business_phone.presence ||
+      proprietor&.residential_phone.presence
+  end
+
+  def proprietario_telefone_comercial_display
+    proprietario_telefone_comercial.presence || proprietor&.business_phone
+  end
+
+  def proprietario_telefone_residencial_display
+    proprietario_telefone_residencial.presence || proprietor&.residential_phone
+  end
+
   def proprietario_cpf_cnpj = proprietario_codigo
   def proprietario_cidade = nil
   def proprietario_cidade=(_value); end
@@ -498,7 +513,9 @@ class Habitation < ApplicationRecord
     valor_locacao: :valor_locacao_formatted,
     valor_condominio: :valor_condominio_formatted,
     valor_iptu: :valor_iptu_formatted,
-    saldo_devedor: :saldo_devedor_formatted
+    saldo_devedor: :saldo_devedor_formatted,
+    valor_comissao: :valor_comissao_formatted,
+    valor_livre_proprietario: :valor_livre_proprietario_formatted
   }.each do |method_name, formatted_attribute|
     define_method("#{method_name}=") { |value| public_send("#{formatted_attribute}=", value) }
   end

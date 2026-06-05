@@ -19,6 +19,9 @@ module Vista
         AC_PERMUTA_QNT_DORMITORIOS AC_PERMUTA_QNT_SUITES AC_PERMUTA_QNT_GARAGENS
         ACEITA_PERMUTA_AUTO ACEITA_PERMUTA_OUTROS AC_PERMUTA_TIPO_AUT
         ACEITA_DACAO ANO_MIN_VEICULO_PERMUTA
+        COMISSAO_CAPTADOR COMISSAO_CORRETOR PERCENTUAL_COMISSAO
+        VLR_COMISSAO VLR_LIVRE_PROPRIETARIO COM_ADMINISTRACAO SEM_ADMINISTRACAO
+        OBS_VENDA OBS_LOCACAO OBSERVACOES
       ],
       characteristics: %w[
         ADEGA AGUA_QUENTE ALARME AQUECIMENTO_CENTRAL AQUECIMENTO_ELETRICO
@@ -228,6 +231,11 @@ module Vista
         tipo_veiculo_aceito_permuta: present_value(row["AC_PERMUTA_TIPO_AUT"]),
         ano_minimo_veiculo_aceito_permuta: integer_value(row["ANO_MIN_VEICULO_PERMUTA"]),
         aceita_doacao_flag: yes?(row["ACEITA_DACAO"]),
+        captador_commission_percentage: commission_percentage(row["COMISSAO_CAPTADOR"], row["PERCENTUAL_COMISSAO"]),
+        broker_commission_percentage: decimal_value(row["COMISSAO_CORRETOR"]),
+        valor_comissao_cents: commission_amount_cents(row),
+        valor_livre_proprietario_cents: money_cents(row["VLR_LIVRE_PROPRIETARIO"]),
+        salute_rental_management_flag: rental_management_flag(row),
         publicar_zapimoveis: active_value(row["TIPO_OFERTA_ZAP"]).present?,
         publicar_viva_real_vrsync: active_value(row["TIPO_PUBLICACAO_VIVA_REAL"]).present? || active_value(row["DIVULGAR_ENDERECO_VIVA_REAL"]).present?,
         publicar_imovelweb: active_value(row["TIPO_PUBLICACAO_IMOVELWEB"]).present? || active_value(row["MODELO_IMOVELWEB"]).present? || active_value(row["MOSTRAR_MAPA"]).present?,
@@ -332,6 +340,57 @@ module Vista
       return "nao" if no?(value)
 
       nil
+    end
+
+    def commission_percentage(primary_raw, fallback_raw = nil)
+      primary = decimal_value(primary_raw)
+      fallback = decimal_value(fallback_raw)
+      return primary if primary&.positive?
+      return fallback if fallback&.positive?
+
+      primary || fallback
+    end
+
+    def commission_amount_cents(row)
+      structured_amount = money_cents(row["VLR_COMISSAO"])
+      return structured_amount if structured_amount.to_i.positive?
+
+      amount_from_notes(row, /valor\s+da\s+comiss[aã]o\??\s*:?\s*([\d.,]+)/i)
+    end
+
+    def rental_management_flag(row)
+      return true if yes?(row["COM_ADMINISTRACAO"])
+      return false if yes?(row["SEM_ADMINISTRACAO"])
+
+      boolean_from_notes(row, /tem\s+administra[cç][aã]o\??\s*:?\s*(sim|s|nao|não|n)/i)
+    end
+
+    def amount_from_notes(row, pattern)
+      note_texts(row).each do |text|
+        match = text.match(pattern)
+        next unless match
+
+        cents = money_cents(match[1])
+        return cents if cents.to_i.positive?
+      end
+
+      nil
+    end
+
+    def boolean_from_notes(row, pattern)
+      note_texts(row).each do |text|
+        normalized = I18n.transliterate(text)
+        match = normalized.match(pattern)
+        next unless match
+
+        return %w[sim s].include?(match[1].to_s.downcase)
+      end
+
+      nil
+    end
+
+    def note_texts(row)
+      %w[OBS_VENDA OBS_LOCACAO OBSERVACOES].filter_map { |field| present_value(row[field]) }
     end
 
     def empty_jsonish?(value)

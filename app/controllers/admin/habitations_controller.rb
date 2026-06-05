@@ -1347,6 +1347,7 @@ class Admin::HabitationsController < Admin::BaseController
       :area_privativa_m2, :area_total_m2, :area_terreno_m2, :area_util_m2, 
       :valor_venda_formatted, :valor_locacao_formatted, :valor_condominio_formatted, :valor_iptu_formatted, :valor_por_m2_formatted, 
       :valor_locacao_anterior_formatted, :valor_aceito_permuta_formatted, :permuta_valor_formatted, :saldo_devedor_formatted,
+      :valor_comissao_formatted, :valor_livre_proprietario_formatted,
       :descricao_web, :descricao_interna, :titulo_anuncio, :observacoes, 
       :condicoes_negociacao, :observacoes_visitas,
       :corretor_nome, :corretor_telefone, :corretor_email, :proprietario_codigo,

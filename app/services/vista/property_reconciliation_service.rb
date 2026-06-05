@@ -22,7 +22,8 @@ module Vista
       EEmpreendimento
       AceitaFinanciamento AceitaPermuta AceitaPermutaCarro AceitaPermutaOutro AceitaDacao TipoImovelPermuta
       AceitaPermutaTipoVeiculo AnoMinimoVeicPermuta LocalizacaoPermuta QntDormitoriosPermuta QntSuitesPermuta QntGaragensPermuta
-      ComissaoCaptador ComissaoCorretor PercentualComissao
+      ComissaoCaptador ComissaoCorretor PercentualComissao ValorComissao ValorLivreProprietario
+      ComAdministracao SemAdministracao
       Corretor CorretorNome CodigoCorretor Agenciador CaptadorAccountId Proprietario CodigoProprietario
       FotoDestaque FotoDestaquePequena VideoDestaque URLVideo TourVirtual
       Barra BarraNorte BarraSul Centro FrenteMarAvenidaAtlantica QuadraMar VistaFrenteMar
@@ -503,8 +504,11 @@ module Vista
         permuta_garagens_qtd: integer(api["QntGaragensPermuta"]),
         permuta_valor_cents: money_cents(api["ValorPermutaImovel"]),
         valor_aceito_permuta_cents: money_cents(api["ValorPermutaImovel"]),
-        captador_commission_percentage: decimal(api["ComissaoCaptador"]) || decimal(api["PercentualComissao"]),
+        captador_commission_percentage: commission_percentage(api["ComissaoCaptador"], api["PercentualComissao"]),
         broker_commission_percentage: decimal(api["ComissaoCorretor"]),
+        valor_comissao_cents: commission_amount_cents(api),
+        valor_livre_proprietario_cents: money_cents(api["ValorLivreProprietario"]),
+        salute_rental_management_flag: rental_management_flag(api),
         captador_account_id: value(api["CaptadorAccountId"]),
         tour_virtual: value(api["TourVirtual"]),
         podcast_url: value(api["LinkPodcast"]),
@@ -1196,6 +1200,57 @@ module Vista
 
     def observations_value(api)
       [value(api["ObsVenda"]), value(api["ObsLocacao"]), value(api["InformacaoVenda"]), value(api["TextoAnuncio"])].compact.join("\n\n").presence
+    end
+
+    def commission_percentage(primary_raw, fallback_raw = nil)
+      primary = decimal(primary_raw)
+      fallback = decimal(fallback_raw)
+      return primary if primary&.positive?
+      return fallback if fallback&.positive?
+
+      primary || fallback
+    end
+
+    def commission_amount_cents(api)
+      structured_amount = money_cents(api["ValorComissao"])
+      return structured_amount if structured_amount.to_i.positive?
+
+      amount_from_notes(api, /valor\s+da\s+comiss[aã]o\??\s*:?\s*([\d.,]+)/i)
+    end
+
+    def rental_management_flag(api)
+      return true if yes?(api["ComAdministracao"])
+      return false if yes?(api["SemAdministracao"])
+
+      boolean_from_notes(api, /tem\s+administra[cç][aã]o\??\s*:?\s*(sim|s|nao|não|n)/i)
+    end
+
+    def amount_from_notes(api, pattern)
+      note_texts(api).each do |text|
+        match = text.match(pattern)
+        next unless match
+
+        cents = money_cents(match[1])
+        return cents if cents.to_i.positive?
+      end
+
+      nil
+    end
+
+    def boolean_from_notes(api, pattern)
+      note_texts(api).each do |text|
+        normalized = I18n.transliterate(text)
+        match = normalized.match(pattern)
+        next unless match
+
+        return %w[sim s].include?(match[1].to_s.downcase)
+      end
+
+      nil
+    end
+
+    def note_texts(api)
+      %w[ObsVenda ObsLocacao Observacoes InformacaoVenda TextoAnuncio DescricaoWeb].filter_map { |field| value(api[field]) }
     end
 
     def visit_notes(api)

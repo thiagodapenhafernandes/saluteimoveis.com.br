@@ -461,8 +461,11 @@ module Vista
         topografia: value(row["TOPOGRAFIA"]),
         foto_classificacao: photo_classification(row),
         podcast_url: value(row["LINKPODCAST"]),
-        captador_commission_percentage: decimal(row["COMISSAO_CAPTADOR"]) || decimal(row["PERCENTUAL_COMISSAO"]),
+        captador_commission_percentage: commission_percentage(row["COMISSAO_CAPTADOR"], row["PERCENTUAL_COMISSAO"]),
         broker_commission_percentage: decimal(row["COMISSAO_CORRETOR"]),
+        valor_comissao_cents: commission_amount_cents(row),
+        valor_livre_proprietario_cents: money_cents(row["VLR_LIVRE_PROPRIETARIO"]),
+        salute_rental_management_flag: rental_management_flag(row),
         key_location: key_location(row),
         key_location_notes: value(row["CHAVE"]),
         valor_aceito_permuta_cents: money_cents(row["AC_PERMUTA_VALOR"]),
@@ -833,6 +836,57 @@ module Vista
       return "nao" if value(raw).present?
 
       nil
+    end
+
+    def commission_percentage(primary_raw, fallback_raw = nil)
+      primary = decimal(primary_raw)
+      fallback = decimal(fallback_raw)
+      return primary if primary&.positive?
+      return fallback if fallback&.positive?
+
+      primary || fallback
+    end
+
+    def commission_amount_cents(row)
+      structured_amount = money_cents(row["VLR_COMISSAO"])
+      return structured_amount if structured_amount.to_i.positive?
+
+      amount_from_notes(row, /valor\s+da\s+comiss[aã]o\??\s*:?\s*([\d.,]+)/i)
+    end
+
+    def rental_management_flag(row)
+      return true if yes?(row["COM_ADMINISTRACAO"])
+      return false if yes?(row["SEM_ADMINISTRACAO"])
+
+      boolean_from_notes(row, /tem\s+administra[cç][aã]o\??\s*:?\s*(sim|s|nao|não|n)/i)
+    end
+
+    def amount_from_notes(row, pattern)
+      note_texts(row).each do |text|
+        match = text.match(pattern)
+        next unless match
+
+        cents = money_cents(match[1])
+        return cents if cents.to_i.positive?
+      end
+
+      nil
+    end
+
+    def boolean_from_notes(row, pattern)
+      note_texts(row).each do |text|
+        normalized = I18n.transliterate(text)
+        match = normalized.match(pattern)
+        next unless match
+
+        return %w[sim s].include?(match[1].to_s.downcase)
+      end
+
+      nil
+    end
+
+    def note_texts(row)
+      %w[OBS_VENDA OBS_LOCACAO OBSERVACOES INFO_VENDA TEXTO_ANUNCIO DESCRICAO_WEB].filter_map { |field| value(row[field]) }
     end
 
     def integer(raw)

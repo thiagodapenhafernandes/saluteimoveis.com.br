@@ -86,6 +86,7 @@
           valor_por_m2_formatted valor_venda_anterior_formatted valor_locacao_anterior_formatted
           valor_promocional_formatted proprietario proprietario_codigo proprietario_email proprietario_celular
           proprietario_telefone_comercial proprietario_telefone_residencial captador_commission_percentage
+          valor_comissao_formatted valor_livre_proprietario_formatted
           broker_commission_percentage salute_rental_management_flag home_corporate_flag home_corporate_position
           observacoes responsavel_reserva key_location key_location_notes observacoes_visitas zelador_nome
           zelador_telefone regiao_foco saldo_devedor_formatted numero_prestacoes aceita_permuta_flag valor_aceito_permuta_formatted
@@ -1262,15 +1263,24 @@
                     </div>
                     <div class="col-md-4">
                       <%= f.label :proprietario_celular, "Celular", class: "form-label extra-small fw-bold mb-1" %>
-                      <%= f.text_field :proprietario_celular, class: "form-control form-control-sm", data: { controller: "mask", mask_type_value: "phone" } %>
+                      <%= f.text_field :proprietario_celular,
+                                       value: habitation.proprietario_telefone,
+                                       class: "form-control form-control-sm",
+                                       data: { controller: "mask", mask_type_value: "phone" } %>
                     </div>
                     <div class="col-md-4">
                       <%= f.label :proprietario_telefone_comercial, "F. Comercial", class: "form-label extra-small fw-bold mb-1" %>
-                      <%= f.text_field :proprietario_telefone_comercial, class: "form-control form-control-sm", data: { controller: "mask", mask_type_value: "phone" } %>
+                      <%= f.text_field :proprietario_telefone_comercial,
+                                       value: habitation.proprietario_telefone_comercial_display,
+                                       class: "form-control form-control-sm",
+                                       data: { controller: "mask", mask_type_value: "phone" } %>
                     </div>
                     <div class="col-md-4">
                       <%= f.label :proprietario_telefone_residencial, "F. Residencial", class: "form-label extra-small fw-bold mb-1" %>
-                      <%= f.text_field :proprietario_telefone_residencial, class: "form-control form-control-sm", data: { controller: "mask", mask_type_value: "phone" } %>
+                      <%= f.text_field :proprietario_telefone_residencial,
+                                       value: habitation.proprietario_telefone_residencial_display,
+                                       class: "form-control form-control-sm",
+                                       data: { controller: "mask", mask_type_value: "phone" } %>
                     </div>
                   </div>
                 </div>
@@ -1281,8 +1291,12 @@
                 <h6 class="small fw-semibold text-uppercase text-muted mb-3">Comissão e operação</h6>
                 <div class="row g-2">
                   <div class="col-12">
-                    <%= f.label :agenciador, "Proprietário (livre)", class: "form-label extra-small fw-bold mb-1" %>
-                    <%= f.text_field :agenciador, class: "form-control form-control-sm", placeholder: "Campo livre para negociação/comissão" %>
+                    <%= f.label :valor_livre_proprietario_formatted, "Proprietário (livre)", class: "form-label extra-small fw-bold mb-1" %>
+                    <%= f.text_field :valor_livre_proprietario_formatted, class: "form-control form-control-sm", data: { controller: "mask", mask_type_value: "currency" } %>
+                  </div>
+                  <div class="col-12">
+                    <%= f.label :valor_comissao_formatted, "Valor da comissão", class: "form-label extra-small fw-bold mb-1" %>
+                    <%= f.text_field :valor_comissao_formatted, class: "form-control form-control-sm", data: { controller: "mask", mask_type_value: "currency" } %>
                   </div>
                   <div class="col-6">
                     <%= f.label :captador_commission_percentage, "Comissão Captador (%)", class: "form-label extra-small fw-bold mb-1" %>
