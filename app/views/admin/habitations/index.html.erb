@@ -176,6 +176,10 @@
     padding: 0.55rem 0.65rem 0.65rem;
     background: #eef0f3 !important;
   }
+  .habitations-filter-detail .filter-advanced-body {
+    background: #eef0f3 !important;
+    border-color: #d2d6dd !important;
+  }
   .filter-detail-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -480,10 +484,81 @@
   }
   /* Mobile-specific tweaks for /admin/habitations */
   @media (max-width: 767.98px) {
+    body.admin-drawer-catalog-layout .admin-content {
+      height: auto;
+      max-height: none;
+      min-height: 100vh;
+      overflow: visible;
+      padding: calc(var(--admin-navbar-height) + 1rem) .75rem 1.25rem;
+      width: 100%;
+      max-width: 100%;
+    }
+
+    body.admin-drawer-catalog-layout .admin-content > * {
+      min-width: 0;
+      max-width: 100%;
+    }
+
     .habitations-header { flex-direction: column !important; align-items: stretch !important; gap: .75rem; }
     .habitations-header-actions { flex-wrap: wrap; }
     .habitations-header-actions .btn { flex: 1 1 auto; min-width: 0; font-size: .85rem; padding: .5rem .75rem; }
     .habitations-header h1 { font-size: 1.4rem !important; }
+
+    .habitations-master-detail-layout,
+    .habitations-master-pane,
+    .habitations-detail-pane,
+    .habitations-results-shell,
+    .habitations-results-list {
+      height: auto;
+      max-height: none;
+      min-height: 0;
+      overflow: visible;
+    }
+
+    .habitations-master-pane,
+    .habitations-results-shell {
+      display: block;
+    }
+
+    .habitations-filter-workspace {
+      height: auto;
+      max-height: none;
+      overflow: visible;
+      overscroll-behavior: auto;
+    }
+
+    .filter-sticky-toolbar {
+      top: var(--admin-navbar-height);
+      gap: .35rem;
+      padding: .45rem;
+    }
+
+    .filter-sticky-toolbar .btn {
+      min-height: 38px;
+      font-size: .84rem;
+    }
+
+    .filter-sticky-toolbar .btn-success {
+      flex: 1 1 auto;
+    }
+
+    .filter-sticky-toolbar .btn-link {
+      flex: 0 0 auto;
+    }
+
+    .filter-collapse-button {
+      flex: 0 0 38px;
+      width: 38px;
+      min-width: 38px;
+      padding-left: 0;
+      padding-right: 0;
+    }
+
+    .filter-pane-heading {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: .15rem;
+    }
 
     /* Quick scope pills: scroll horizontal em vez de quebrar linha */
     .habitations-scopes {
@@ -495,11 +570,48 @@
     }
     .habitations-scopes .btn { flex: 0 0 auto; white-space: nowrap; }
 
+    .ownership-toggle {
+      display: grid !important;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      width: 100%;
+    }
+    .ownership-toggle .btn {
+      min-width: 0;
+      white-space: normal;
+      border-radius: 0;
+    }
+    .ownership-toggle .btn:last-child {
+      grid-column: 1 / -1;
+    }
+
     /* Results header: empilha */
     .habitations-results-header { flex-direction: column !important; align-items: stretch !important; gap: .5rem; }
     .habitations-results-header .text-muted { font-size: .8rem; }
-    .habitations-results-actions { flex-wrap: wrap; gap: .5rem; }
-    .habitations-results-actions .btn { font-size: .8rem; padding: .35rem .6rem; }
+    .habitations-results-actions {
+      flex-wrap: nowrap;
+      gap: .5rem;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: .25rem;
+    }
+    .habitations-results-actions > * {
+      flex: 0 0 auto;
+    }
+    .habitations-results-actions .btn { font-size: .8rem; padding: .45rem .6rem; white-space: nowrap; }
+    .habitations-results-list > .d-flex.justify-content-center {
+      justify-content: flex-start !important;
+      max-width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: .35rem;
+    }
+    .habitations-results-list .pagination {
+      flex-wrap: nowrap;
+      margin-bottom: 0;
+    }
+    .habitations-results-list .pagination > * {
+      flex: 0 0 auto;
+    }
 
     /* Filter card compactação */
     .filter-master-layout,
@@ -525,9 +637,55 @@
     .filter-pane {
       padding: .75rem;
     }
+    .habitations-filter-detail details > div {
+      overflow: visible;
+    }
+    .habitations-filter-detail .row.g-2 > [class*="col-"],
+    .habitations-filter-detail .row.g-3 > [class*="col-"],
+    .habitations-filter-detail .row.g-3 > [class*="col-md-"] {
+      width: 100%;
+    }
+    .habitations-filter-detail .d-flex.flex-wrap.gap-3 {
+      gap: .45rem !important;
+    }
     .habitations-filter-card .form-label { font-size: .7rem; margin-bottom: .25rem; }
     .habitations-filter-card .form-control,
-    .habitations-filter-card .form-select { font-size: .9rem; }
+    .habitations-filter-card .form-select {
+      min-height: 42px;
+      height: auto;
+      font-size: .9rem;
+    }
+    .habitations-filter-card .input-group-text {
+      min-height: 42px;
+      height: auto;
+    }
+    .property-card-horizontal {
+      height: auto !important;
+    }
+    .property-card-horizontal .row.g-0.h-100 {
+      height: auto !important;
+    }
+    .property-card-horizontal .col-md-4,
+    .property-card-horizontal .col-lg-3 {
+      height: 220px !important;
+    }
+    .habitations-master-pane .property-card-horizontal .card-body {
+      padding: .85rem !important;
+    }
+    .property-card-horizontal .card-title {
+      font-size: 1rem;
+      line-height: 1.25;
+    }
+    .property-card-horizontal .d-flex.gap-3.mb-4 {
+      flex-wrap: wrap;
+      gap: .55rem !important;
+      margin-bottom: 1rem !important;
+    }
+    .property-card-horizontal .mt-auto.pt-3.border-top {
+      flex-direction: column;
+      align-items: flex-start !important;
+      gap: .75rem;
+    }
   }
 </style>
 
@@ -786,7 +944,7 @@
           <summary class="px-3 py-2 fw-bold text-primary" style="cursor: pointer;">
             <i class="bi bi-grid-3x3-gap me-2"></i>Filtro avançado
           </summary>
-          <div class="p-3 border-top bg-white rounded-bottom-3">
+          <div class="p-3 border-top rounded-bottom-3 filter-advanced-body">
             <div class="border rounded-3 p-3 mb-3">
               <h6 class="fw-bold text-secondary mb-3">Localização</h6>
               <div class="row g-3">
