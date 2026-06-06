@@ -1484,11 +1484,12 @@ class Admin::HabitationsController < Admin::BaseController
       :nome_empreendimento,
       :dormitorios_qtd, :suites_qtd, :salas_qtd, :varandas_qtd, :banheiros_qtd, :hidromassagem_qtd, :vagas_qtd, :elevadores_qtd, 
       :area_privativa_m2, :area_total_m2, :area_terreno_m2, :area_util_m2, 
-      :valor_venda_formatted, :valor_locacao_formatted, :valor_condominio_formatted, :valor_iptu_formatted, :valor_por_m2_formatted, 
+      :valor_venda_formatted, :valor_locacao_formatted, :valor_alugado_terceiros_formatted, :valor_vendido_terceiros_formatted,
+      :valor_condominio_formatted, :valor_iptu_formatted, :valor_por_m2_formatted,
       :valor_locacao_anterior_formatted, :valor_aceito_permuta_formatted, :permuta_valor_formatted, :saldo_devedor_formatted,
       :valor_comissao_formatted, :valor_livre_proprietario_formatted,
       :descricao_web, :descricao_interna, :titulo_anuncio, :observacoes, 
-      :condicoes_negociacao, :observacoes_visitas,
+      :condicoes_negociacao, :observacoes_visitas, :motivo_suspensao,
       :corretor_nome, :corretor_telefone, :corretor_email, :proprietario_codigo,
       :proprietario, :proprietario_celular, :proprietario_telefone_comercial,
       :proprietario_telefone_residencial, :proprietario_email,
@@ -1543,6 +1544,8 @@ class Admin::HabitationsController < Admin::BaseController
       exibir_no_site_flag
       valor_venda_formatted
       valor_locacao_formatted
+      valor_alugado_terceiros_formatted
+      valor_vendido_terceiros_formatted
       valor_promocional_formatted
       valor_condominio_formatted
       valor_iptu_formatted

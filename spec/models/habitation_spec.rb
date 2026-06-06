@@ -26,4 +26,16 @@ RSpec.describe Habitation, type: :model do
       expect(habitation.codigo).to eq("8629")
     end
   end
+
+  describe "third-party commercial values" do
+    it "stores formatted third-party values in cents" do
+      habitation = described_class.new(
+        valor_alugado_terceiros_formatted: "R$ 4.500,00",
+        valor_vendido_terceiros_formatted: "R$ 980.000,00"
+      )
+
+      expect(habitation.valor_alugado_terceiros_cents).to eq(450_000)
+      expect(habitation.valor_vendido_terceiros_cents).to eq(98_000_000)
+    end
+  end
 end

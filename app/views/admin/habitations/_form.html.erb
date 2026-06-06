@@ -27,6 +27,8 @@
       cadastro_categories.find { |_key, values| values.include?(habitation.categoria) }&.first || "imoveis_residenciais"
     end
   show_development_context = habitation.codigo_empreendimento.present? || habitation.proprietor_id.present? || habitation.tipo == "Empreendimento"
+  cadastro_reference_at = habitation.data_cadastro_crm
+  updated_reference_at = habitation.data_atualizacao_crm || habitation.updated_at
   development_lookup = @developments.each_with_object({}) do |development, hash|
     hash[development.codigo.to_s] = {
       nome_empreendimento: development.nome_empreendimento.to_s,
@@ -83,7 +85,8 @@
         elsif %w[infra_estrutura].include?(attribute)
           :infra
         elsif %w[
-          valor_venda_formatted valor_locacao_formatted valor_condominio_formatted valor_iptu_formatted
+          valor_venda_formatted valor_locacao_formatted valor_alugado_terceiros_formatted valor_vendido_terceiros_formatted
+          valor_condominio_formatted valor_iptu_formatted motivo_suspensao
           valor_por_m2_formatted valor_venda_anterior_formatted valor_locacao_anterior_formatted
           valor_promocional_formatted proprietario proprietario_codigo proprietario_email proprietario_celular
           proprietario_telefone_comercial proprietario_telefone_residencial captador_commission_percentage
@@ -340,11 +343,15 @@
                 <div class="row g-2">
                   <div class="col-6">
                     <label class="form-label small text-muted mb-0">Cadastro:</label>
-                    <input type="text" class="form-control form-control-sm bg-light" value="<%= f.object.data_cadastro_crm&.strftime("%d/%m/%Y") %>" readonly>
+                    <input type="text" class="form-control form-control-sm bg-light" value="<%= cadastro_reference_at&.strftime("%d/%m/%Y") %>" readonly>
                   </div>
                   <div class="col-6">
                     <label class="form-label small text-muted mb-0">Atualização:</label>
-                    <input type="text" class="form-control form-control-sm bg-light" value="<%= (f.object.data_atualizacao_crm || f.object.updated_at)&.strftime("%d/%m/%Y") %>" readonly>
+                    <input type="text"
+                           class="form-control form-control-sm bg-light"
+                           value="<%= updated_reference_at ? "#{time_ago_in_words(updated_reference_at)} atrás" : "" %>"
+                           title="<%= updated_reference_at&.strftime("%d/%m/%Y às %H:%M") %>"
+                           readonly>
                   </div>
                 </div>
               </div>
@@ -412,6 +419,12 @@
                 <%= f.label :status, "Status comercial:", class: "form-label small fw-bold mb-1" %>
                 <%= f.select :status, (@status_options.presence || Habitation::STATUS_OPTIONS), { include_blank: true },
                     class: "form-select form-select-sm", data: { controller: "tom-select", placeholder: "Selecione..." } %>
+              </div>
+              <div class="col-md-4">
+                <%= f.label :motivo_suspensao, "Motivo de suspensão:", class: "form-label small fw-bold mb-1" %>
+                <%= f.text_field :motivo_suspensao,
+                    class: "form-control form-control-sm",
+                    placeholder: "Informe quando o status estiver Suspenso" %>
               </div>
               <% if habitation.broker_intake? %>
                 <div class="col-md-3">
@@ -805,6 +818,28 @@
                 <span class="input-group-text">R$</span>
                 <%= f.text_field :valor_iptu_formatted, class: "form-control form-control-sm", 
                     data: { controller: "mask", mask_type_value: "currency", rent_calculator_target: "iptu", action: "input->rent-calculator#calculate keyup->rent-calculator#calculate" } %>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-md-3">
+              <%= f.label :valor_alugado_terceiros_formatted, "Alugado por terceiros:", class: "form-label small fw-bold mb-1" %>
+              <div class="input-group input-group-sm">
+                <span class="input-group-text">R$</span>
+                <%= f.text_field :valor_alugado_terceiros_formatted, class: "form-control form-control-sm", data: { controller: "mask", mask_type_value: "currency" } %>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <%= f.label :valor_vendido_terceiros_formatted, "Vendido por terceiros:", class: "form-label small fw-bold mb-1" %>
+              <div class="input-group input-group-sm">
+                <span class="input-group-text">R$</span>
+                <%= f.text_field :valor_vendido_terceiros_formatted, class: "form-control form-control-sm", data: { controller: "mask", mask_type_value: "currency" } %>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="alert alert-light border small mb-0 py-2">
+                Use estes valores quando o cadastro estiver como <strong>Alugado terceiros</strong> ou <strong>Vendido terceiros</strong>.
               </div>
             </div>
           </div>
@@ -1992,8 +2027,10 @@
   <div class="position-sticky bottom-0 bg-white py-3 border-top mt-4 shadow-lg habitation-action-bar">
     <div class="d-flex justify-content-between align-items-center habitation-action-inner">
       <div class="text-muted small habitation-action-meta">
-        <% if f.object.updated_at %>
-          <i class="bi bi-clock-history me-1"></i> Última atualização: <%= f.object.updated_at.strftime("%d/%m/%Y às %H:%M") %>
+        <% if updated_reference_at %>
+          <i class="bi bi-clock-history me-1"></i>
+          Atualizado há <%= time_ago_in_words(updated_reference_at) %>
+          <span class="d-none d-md-inline">(<%= updated_reference_at.strftime("%d/%m/%Y às %H:%M") %>)</span>
         <% end %>
       </div>
       <div class="habitation-action-buttons">
