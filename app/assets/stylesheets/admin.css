@@ -1498,6 +1498,7 @@ i.spin {
   html,
   body.admin-layout {
     overflow-x: hidden !important;
+    scroll-padding-top: calc(var(--admin-navbar-height) + env(safe-area-inset-top, 0px) + 1rem);
   }
 
   .admin-navbar {
@@ -1519,15 +1520,20 @@ i.spin {
     margin-left: 0 !important;
     width: 100% !important;
     max-width: 100vw !important;
-    padding: 0.875rem calc(0.75rem + env(safe-area-inset-right, 0px)) calc(2rem + env(safe-area-inset-bottom, 0px)) calc(0.75rem + env(safe-area-inset-left, 0px));
-    overflow-x: clip;
+    min-width: 0;
+    padding: calc(var(--admin-navbar-height) + env(safe-area-inset-top, 0px) + 1rem) calc(0.75rem + env(safe-area-inset-right, 0px)) calc(2rem + env(safe-area-inset-bottom, 0px)) calc(0.75rem + env(safe-area-inset-left, 0px));
+    overflow-x: hidden;
   }
 
   .admin-dashboard-page {
-    padding-top: 0.25rem !important;
+    padding-top: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    max-width: 100%;
   }
 
   .admin-content > .row,
+  .admin-content .row,
   .admin-content .row.g-3 {
     max-width: 100%;
     margin-left: 0;
@@ -1535,9 +1541,11 @@ i.spin {
   }
 
   .admin-content > .row > [class*="col-"],
+  .admin-content .row > [class*="col-"],
   .admin-content .row.g-3 > [class*="col-"] {
     padding-left: 0;
     padding-right: 0;
+    min-width: 0;
   }
 
   .admin-content > *,
@@ -1545,14 +1553,93 @@ i.spin {
   .admin-content .modal,
   .admin-content form {
     max-width: 100%;
+    min-width: 0;
+  }
+
+  .admin-content img,
+  .admin-content video,
+  .admin-content canvas,
+  .admin-content svg {
+    max-width: 100%;
+  }
+
+  .admin-content .form-control,
+  .admin-content .form-select,
+  .admin-content .input-group,
+  .admin-content .ts-wrapper,
+  .admin-content .ts-control {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .admin-content .ts-hidden-accessible {
+    clip: rect(0 0 0 0) !important;
+    clip-path: inset(50%) !important;
+    height: 1px !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    white-space: nowrap !important;
+    width: 1px !important;
+  }
+
+  .admin-content .btn {
+    min-width: 0;
+    white-space: normal;
+  }
+
+  .admin-content .badge {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-content > .d-flex.justify-content-between.align-items-center.mb-4 {
+    align-items: stretch !important;
+    flex-direction: column;
+    gap: .85rem;
+  }
+
+  .admin-content > .d-flex.justify-content-between.align-items-center.mb-4 > div {
+    min-width: 0;
+  }
+
+  .admin-content > .d-flex.justify-content-between.align-items-center.mb-4 > .d-flex,
+  .admin-content > .d-flex.justify-content-between.align-items-center.mb-4 > div:last-child {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .admin-content > .d-flex.justify-content-between.align-items-center.mb-4 > .d-flex .btn,
+  .admin-content > .d-flex.justify-content-between.align-items-center.mb-4 > div:last-child .btn {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+
+  .admin-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .admin-header h1,
+  .admin-header h2,
+  .admin-content h1,
+  .admin-content h2 {
+    overflow-wrap: anywhere;
   }
 
   .captacoes-header {
     align-items: flex-start !important;
+    flex-direction: column;
+    gap: .85rem !important;
   }
 
   .captacoes-header > div:first-child {
     min-width: 0;
+  }
+
+  .captacoes-header > .d-flex {
+    width: 100%;
   }
 
   .captacoes-header .btn {
@@ -1676,7 +1763,8 @@ i.spin {
 
   .habitations-results-actions {
     max-width: 100%;
-    overflow: hidden;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .habitations-results-actions .dropdown-menu {
@@ -1690,14 +1778,29 @@ i.spin {
     flex-direction: column;
     align-items: flex-start !important;
     gap: 0.75rem !important;
+    margin-top: 0 !important;
+    max-width: 100%;
+    overflow: hidden;
   }
   .dash-hero h2,
   .capt-dash-hero h2 {
     font-size: 1.35rem !important;
+    line-height: 1.18;
+    overflow-wrap: anywhere;
+  }
+  .dash-hero p,
+  .capt-dash-hero p {
+    overflow-wrap: anywhere;
   }
   .dash-hero .d-flex,
   .capt-dash-hero .d-flex {
     flex-wrap: wrap;
+    width: 100%;
+  }
+  .dash-hero .btn,
+  .capt-dash-hero .btn {
+    flex: 1 1 auto;
+    justify-content: center;
   }
 
   /* KPI cards mais compactos */
@@ -1709,6 +1812,13 @@ i.spin {
   .dash-kpi h3 {
     font-size: 1.5rem;
   }
+  .dash-kpi .card-body > .d-flex:first-child {
+    gap: .75rem;
+  }
+  .dash-kpi .kpi-delta,
+  .dash-kpi .small {
+    overflow-wrap: anywhere;
+  }
 
   /* Cards gerais: menos padding */
   .card-body {
@@ -1718,6 +1828,15 @@ i.spin {
   /* Tabelas horizontalmente roláveis */
   .table-responsive {
     -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    width: 100%;
+  }
+
+  .table-responsive > .table {
+    margin-bottom: 0;
+    min-width: max-content;
   }
 
   /* Form action bottom buttons viram stack */
