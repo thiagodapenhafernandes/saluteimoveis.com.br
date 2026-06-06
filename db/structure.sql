@@ -1,4 +1,4 @@
-\restrict ACg8yrZucGpRsX2D5MonXkPMQIfZgbWF4WyQq49mbVxLqSByKYgv19tw97PDidJ
+\restrict E4Ev7fDaexEHvnFgEk3nJDhrwxsS99YhyIaAYExu6CK7YZZlAEOXkcg2GgiLBcS
 
 -- Dumped from database version 17.9 (Homebrew)
 -- Dumped by pg_dump version 17.9 (Homebrew)
@@ -1362,8 +1362,6 @@ CREATE TABLE public.habitations (
     captador_commission_percentage numeric(5,2),
     broker_commission_percentage numeric(5,2),
     salute_rental_management_flag boolean DEFAULT false NOT NULL,
-    valor_comissao_cents bigint,
-    valor_livre_proprietario_cents bigint,
     key_location character varying,
     key_location_notes character varying,
     proprietor_id bigint,
@@ -1437,7 +1435,12 @@ CREATE TABLE public.habitations (
     vista_referencia_externa character varying,
     salas_qtd integer,
     varandas_qtd integer,
-    use_development_photos_flag boolean DEFAULT false NOT NULL
+    use_development_photos_flag boolean DEFAULT false NOT NULL,
+    valor_comissao_cents bigint,
+    valor_livre_proprietario_cents bigint,
+    motivo_suspensao text,
+    valor_alugado_terceiros_cents bigint,
+    valor_vendido_terceiros_cents bigint
 );
 
 
@@ -8389,11 +8392,12 @@ ALTER TABLE ONLY public.push_subscriptions
 -- PostgreSQL database dump complete
 --
 
-\unrestrict ACg8yrZucGpRsX2D5MonXkPMQIfZgbWF4WyQq49mbVxLqSByKYgv19tw97PDidJ
+\unrestrict E4Ev7fDaexEHvnFgEk3nJDhrwxsS99YhyIaAYExu6CK7YZZlAEOXkcg2GgiLBcS
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260606123000'),
 ('20260605123358'),
 ('20260605093000'),
 ('20260602193000'),

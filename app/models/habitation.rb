@@ -515,7 +515,9 @@ class Habitation < ApplicationRecord
     valor_iptu: :valor_iptu_formatted,
     saldo_devedor: :saldo_devedor_formatted,
     valor_comissao: :valor_comissao_formatted,
-    valor_livre_proprietario: :valor_livre_proprietario_formatted
+    valor_livre_proprietario: :valor_livre_proprietario_formatted,
+    valor_alugado_terceiros: :valor_alugado_terceiros_formatted,
+    valor_vendido_terceiros: :valor_vendido_terceiros_formatted
   }.each do |method_name, formatted_attribute|
     define_method("#{method_name}=") { |value| public_send("#{formatted_attribute}=", value) }
   end

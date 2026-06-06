@@ -20,8 +20,11 @@ class HabitationAuditLog < ApplicationRecord
     "categoria" => "Tipo do imóvel",
     "tipo" => "Modelo do cadastro",
     "situacao" => "Situação",
+    "motivo_suspensao" => "Motivo de suspensão",
     "valor_venda_cents" => "Valor de venda",
     "valor_locacao_cents" => "Valor de locação",
+    "valor_alugado_terceiros_cents" => "Valor alugado por terceiros",
+    "valor_vendido_terceiros_cents" => "Valor vendido por terceiros",
     "valor_condominio_cents" => "Condomínio",
     "valor_iptu_cents" => "IPTU",
     "valor_promocional_cents" => "Valor promocional",
@@ -75,8 +78,8 @@ class HabitationAuditLog < ApplicationRecord
   }.freeze
 
   CURRENCY_FIELDS = %w[
-    valor_venda_cents valor_locacao_cents valor_condominio_cents valor_iptu_cents valor_promocional_cents
-    valor_comissao_cents valor_livre_proprietario_cents
+    valor_venda_cents valor_locacao_cents valor_alugado_terceiros_cents valor_vendido_terceiros_cents
+    valor_condominio_cents valor_iptu_cents valor_promocional_cents valor_comissao_cents valor_livre_proprietario_cents
   ].freeze
 
   belongs_to :habitation, optional: true
