@@ -19,6 +19,9 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("Sem rascunho criado")
     expect(response.body).to include("Iniciar captação")
+    expect(response.body).to include("Tipo de cadastro")
+    expect(response.body).to include("Comerciais e industriais")
+    expect(response.body).to include("Categoria relacionada")
   end
 
   it "exibe exportador de planilha somente para administrador ou administrativo" do
@@ -59,6 +62,23 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(response.body).to include("Residencial: 3")
     expect(response.body).to include("Sala comercial: 1")
     expect(response.body).to include("Terreno: 1")
+  end
+
+  it "usa rótulos claros para enviar análise e publicar no site" do
+    intake = create(:habitation, :broker_intake, admin_user: admin, intake_step: "review", intake_status: "draft")
+
+    get edit_admin_captacao_path(intake, step: "review")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Mandar Análise")
+    expect(response.body).not_to include("Finalizar captação")
+
+    intake.update!(intake_status: "admin_approved")
+    get admin_captacao_path(intake)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Publicar Site")
+    expect(response.body).not_to include("Marcar como publicada")
   end
 
   it "exporta planilha de captações para perfil administrativo" do
@@ -140,7 +160,8 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect {
       post admin_captacoes_path, params: {
         habitation: {
-          property_kind: "terreno",
+          cadastro_type: "terrenos",
+          categoria: "Terreno em Condomínio",
           modalidade: "locacao_anual"
         }
       }
@@ -153,10 +174,23 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
       intake_step: "proprietario",
       exibir_no_site_flag: false,
       admin_user_id: admin.id,
-      categoria: "Terreno",
+      categoria: "Terreno em Condomínio",
       status: "Aluguel",
       intake_modalidade: "locacao_anual"
     )
+  end
+
+  it "mantém compatibilidade com property_kind antigo ao iniciar captação" do
+    post admin_captacoes_path, params: {
+      habitation: {
+        property_kind: "sala_comercial",
+        modalidade: "venda"
+      }
+    }
+
+    intake = Habitation.broker_intakes.order(:created_at).last
+    expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "proprietario"))
+    expect(intake).to have_attributes(categoria: "Sala Comercial", status: "Venda")
   end
 
   it "bloqueia envio para revisão quando faltam campos obrigatórios" do

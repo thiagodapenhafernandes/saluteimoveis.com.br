@@ -55,6 +55,164 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).not_to include(vista_property.titulo_anuncio)
   end
 
+  it "não inclui imóveis apenas vinculados como corretor secundário em Meus imóveis" do
+    broker_profile = Profile.create!(
+      name: "Corretor ownership #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Corretor")
+    )
+    luciana = create(:admin_user, profile: broker_profile, name: "Luciana Indalécio")
+    patricia = create(:admin_user, profile: broker_profile, name: "Patrícia Paula")
+    own_property = create(:habitation, admin_user: luciana, codigo: "OWN-#{SecureRandom.hex(6)}", titulo_anuncio: "Imóvel da Luciana")
+    secondary_property = create(:habitation, admin_user: patricia, codigo: "SEC-#{SecureRandom.hex(6)}", titulo_anuncio: "Imóvel da Patrícia")
+    secondary_property.broker_assignments.create!(admin_user: luciana, role: "captador")
+
+    sign_in luciana
+    get admin_habitations_path(ownership: "mine")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(own_property.titulo_anuncio)
+    expect(response.body).not_to include(secondary_property.titulo_anuncio)
+  end
+
+  it "ordena imóveis novos no topo quando a data de cadastro CRM está vazia" do
+    old_property = create(:habitation, codigo: "OLD-#{SecureRandom.hex(6)}", titulo_anuncio: "Imóvel antigo", data_cadastro_crm: 2.days.ago)
+    new_property = create(:habitation, codigo: "NEW-#{SecureRandom.hex(6)}", titulo_anuncio: "Imóvel novo")
+    new_property.update_column(:data_cadastro_crm, nil)
+
+    get admin_habitations_path(sort: "data_cadastro_crm", direction: "desc")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body.index(new_property.titulo_anuncio)).to be < response.body.index(old_property.titulo_anuncio)
+  end
+
+  it "filtra por rua considerando endereço estruturado e legado" do
+    structured = create(:habitation, codigo: "RUA-EST-#{SecureRandom.hex(6)}", titulo_anuncio: "Imóvel Rua Estruturada")
+    structured.create_address!(
+      tipo_endereco: "Rua",
+      logradouro: "Central Norte",
+      numero: "10",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+    legacy = create(
+      :habitation,
+      codigo: "RUA-LEG-#{SecureRandom.hex(6)}",
+      titulo_anuncio: "Imóvel Rua Legada",
+      endereco: "Avenida Atlântica, 500"
+    )
+
+    get admin_habitations_path(logradouro: "Central Norte")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(structured.titulo_anuncio)
+    expect(response.body).not_to include(legacy.titulo_anuncio)
+
+    get admin_habitations_path(logradouro: "Atlântica")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(legacy.titulo_anuncio)
+    expect(response.body).not_to include(structured.titulo_anuncio)
+  end
+
+  it "inclui nome de prédio sem cadastro de empreendimento no filtro de imóveis" do
+    standalone_unit = create(
+      :habitation,
+      codigo: "PREDIO-UNIT-#{SecureRandom.hex(6)}",
+      tipo: "Unitário",
+      codigo_empreendimento: nil,
+      nome_empreendimento: "Residencial Sem Cadastro",
+      titulo_anuncio: "Unidade com prédio direto"
+    )
+    other_property = create(
+      :habitation,
+      codigo: "PREDIO-OTHER-#{SecureRandom.hex(6)}",
+      tipo: "Unitário",
+      codigo_empreendimento: nil,
+      nome_empreendimento: "Outro Prédio",
+      titulo_anuncio: "Outro imóvel"
+    )
+
+    get admin_habitations_path
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Residencial Sem Cadastro")
+
+    get admin_habitations_path(empreendimento_codigo: "Residencial Sem Cadastro")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(standalone_unit.titulo_anuncio)
+    expect(response.body).not_to include(other_property.titulo_anuncio)
+  end
+
+  it "preserva filtros da listagem ao editar e salvar saindo" do
+    habitation = create(:habitation, codigo: "RET-#{SecureRandom.hex(6)}", titulo_anuncio: "Imóvel com retorno")
+    habitation.create_address!(
+      logradouro: "Rua Retorno",
+      numero: "123",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+    return_path = admin_habitations_path(q: habitation.codigo, status: habitation.status)
+
+    get return_path
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(CGI.escape(return_path))
+
+    get edit_admin_habitation_path(habitation, return_to: return_path)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(ERB::Util.html_escape(return_path))
+
+    patch admin_habitation_path(habitation), params: {
+      return_to: return_path,
+      save_navigation: "exit",
+      habitation: {
+        titulo_anuncio: "Imóvel com retorno atualizado",
+        address_attributes: {
+          id: habitation.address.id,
+          logradouro: "Rua Retorno",
+          numero: "123",
+          bairro: "Centro",
+          cidade: "Balneário Camboriú",
+          uf: "SC"
+        }
+      }
+    }
+
+    expect(response).to redirect_to(return_path)
+  end
+
+  it "não exibe Netimóveis 2 e Loft na área de portais" do
+    get admin_habitations_path
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).not_to include("Publicar Netimoveis 2")
+    expect(response.body).not_to include("Publicar Loft")
+    expect(response.body).not_to include('value="netimoveis_2"')
+    expect(response.body).not_to include('value="loft"')
+  end
+
+  it "remove Praia Brava Balneário Camboriú da lista de bairros comerciais" do
+    create(:habitation, codigo: "BAIRRO-#{SecureRandom.hex(6)}", bairro_comercial: "Praia Brava Balneário Camboriú")
+
+    get admin_habitations_path
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).not_to include("Praia Brava Balneário Camboriú")
+  end
+
+  it "marca cards inativos com classe visual cinza" do
+    inactive = create(:habitation, :unavailable, codigo: "INATIVO-#{SecureRandom.hex(6)}", titulo_anuncio: "Imóvel inativo")
+
+    get admin_habitations_path(q: inactive.codigo)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("property-card--inactive")
+  end
+
   it "renderiza o catálogo em layout master-detail com menu lateral por drawer" do
     create(:habitation, codigo: "LAYOUT-#{SecureRandom.hex(6)}", titulo_anuncio: "Imóvel para layout master detail")
 
@@ -121,6 +279,46 @@ RSpec.describe "Admin::Habitations", type: :request do
       admin_reviewed_by_id: admin.id
     )
     expect(intake.admin_reviewed_at).to be_present
+  end
+
+  it "salva captação revisada internamente sem exibir no site" do
+    intake = create(:habitation, :broker_intake, admin_user: admin, codigo: "INT-#{SecureRandom.hex(6)}", intake_status: "submitted_for_admin_review")
+    intake.create_address!(
+      cep: "88330-000",
+      logradouro: "Rua Interna",
+      numero: "200",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+    intake.autorizacoes_venda.attach(
+      io: StringIO.new("autorizacao"),
+      filename: "autorizacao.txt",
+      content_type: "text/plain"
+    )
+
+    get edit_admin_habitation_path(intake)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Devolver ao corretor publicar")
+    expect(response.body).to include("Salvar Interno")
+    expect(response.body).to include("Salvar e sair")
+
+    patch admin_habitation_path(intake), params: {
+      save_internal_after_save: "1",
+      habitation: {
+        titulo_anuncio: "Apartamento salvo internamente",
+        exibir_no_site_flag: "1"
+      }
+    }
+
+    expect(response).to redirect_to(admin_habitations_path)
+    expect(intake.reload).to have_attributes(
+      intake_status: "admin_approved",
+      titulo_anuncio: "Apartamento salvo internamente",
+      exibir_no_site_flag: false,
+      admin_reviewed_by_id: admin.id
+    )
   end
 
   it "exibe e atualiza o status separado da captação no cadastro completo" do
@@ -345,6 +543,37 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(habitation.reload.titulo_anuncio).to eq("Título salvo na ficha")
   end
 
+  it "atualiza o seletor Exibir no site no cadastro do imóvel" do
+    habitation = create(:habitation, codigo: "SITE-FLAG-#{SecureRandom.hex(6)}", exibir_no_site_flag: false)
+    habitation.create_address!(
+      logradouro: "Rua Site Flag",
+      numero: "10",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+
+    patch admin_habitation_path(habitation), params: {
+      habitation: {
+        titulo_anuncio: habitation.titulo_anuncio,
+        exibir_no_site_flag: "1"
+      }
+    }
+
+    expect(response).to redirect_to(admin_habitations_path)
+    expect(habitation.reload.exibir_no_site_flag).to be(true)
+
+    patch admin_habitation_path(habitation), params: {
+      habitation: {
+        titulo_anuncio: habitation.titulo_anuncio,
+        exibir_no_site_flag: "0"
+      }
+    }
+
+    expect(response).to redirect_to(admin_habitations_path)
+    expect(habitation.reload.exibir_no_site_flag).to be(false)
+  end
+
   it "oculta classificação de fotos da ficha de pré-cadastro do corretor" do
     broker_profile = Profile.create!(
       name: "Corretor #{SecureRandom.hex(6)}",
@@ -366,7 +595,46 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).not_to include("Classificação das Fotos:")
   end
 
-  it "registra auditoria de alteração do imóvel e exibe o botão de histórico" do
+  it "abre cadastro de proprietário em modal no formulário do imóvel" do
+    habitation = create(:habitation, codigo: "PROP-MODAL-#{SecureRandom.hex(6)}")
+
+    get edit_admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include('id="quickProprietorModal"')
+    expect(response.body).to include(new_admin_proprietor_path(embed: "modal"))
+    expect(response.body).not_to include('title="Cadastrar novo proprietário" target="_blank"')
+  end
+
+  it "permite captador visualizar documentos sem anexar ou remover" do
+    broker_profile = Profile.create!(
+      name: "Corretor docs #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Corretor")
+    )
+    broker = create(:admin_user, profile: broker_profile)
+    habitation = create(:habitation, :broker_intake, admin_user: broker, codigo: "DOC-COR-#{SecureRandom.hex(6)}", intake_status: "returned_to_broker")
+    habitation.fichas_cadastro.attach(
+      io: StringIO.new("ficha"),
+      filename: "ficha.txt",
+      content_type: "text/plain"
+    )
+    attachment = habitation.fichas_cadastro.attachments.first
+
+    sign_in broker
+    get edit_admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("ficha.txt")
+    expect(response.body).not_to include("Adicionar arquivos")
+    expect(response.body).not_to include(purge_attachment_admin_habitation_path(habitation, association: "fichas_cadastro", attachment_id: attachment.id))
+
+    delete purge_attachment_admin_habitation_path(habitation, association: "fichas_cadastro", attachment_id: attachment.id)
+
+    expect(response).to redirect_to(edit_admin_habitation_path(habitation, anchor: "documents"))
+    expect(habitation.reload.fichas_cadastro.attachments.count).to eq(1)
+  end
+
+  it "registra auditoria de alteração do imóvel e exibe o botão de timeline" do
     habitation = create(:habitation, codigo: "AUD-#{SecureRandom.hex(6)}", titulo_anuncio: "Título antigo", exibir_no_site_flag: false)
     habitation.create_address!(
       logradouro: "Rua Auditoria",
@@ -394,10 +662,58 @@ RSpec.describe "Admin::Habitations", type: :request do
     get edit_admin_habitation_path(habitation)
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include("Histórico")
+    expect(response.body).to include("Timeline")
     expect(response.body).to include("Título do anúncio")
     expect(response.body).to include("Título antigo")
     expect(response.body).to include("Título novo")
+  end
+
+  it "exibe eventos importados do Vista na timeline do cadastro" do
+    habitation = create(:habitation, codigo: "VISTA-TL-#{SecureRandom.hex(6)}", titulo_anuncio: "Imóvel com timeline Vista")
+    HabitationInteraction.create!(
+      habitation: habitation,
+      admin_user: admin,
+      source_table: "VISTA_API_PRONTUARIO",
+      source_key: "#{habitation.codigo}:123",
+      vista_habitation_code: habitation.codigo,
+      subject: "Atualização importada do Vista",
+      body: "Descrição alterada no prontuário",
+      status: "Concluído",
+      occurred_at: Time.zone.parse("2026-06-01 10:30")
+    )
+
+    get edit_admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Vista")
+    expect(response.body).to include("Atualização importada do Vista")
+    expect(response.body).to include("Descrição alterada no prontuário")
+    expect(response.body).to include("VISTA_API_PRONTUARIO")
+  end
+
+  it "exibe documentos importados do Vista na aba de documentos" do
+    habitation = create(:habitation, codigo: "VISTA-DOC-#{SecureRandom.hex(6)}", titulo_anuncio: "Imóvel com documento Vista")
+    batch = VistaImportBatch.create!(dump_dir: "spec/vista", status: "completed")
+    VistaFileAsset.create!(
+      vista_import_batch: batch,
+      habitation: habitation,
+      table_name: "API_DOCUMENTOS",
+      kind: "property_document",
+      status: "pending",
+      codigo_imovel: habitation.codigo,
+      source_path: "documentos/#{habitation.codigo}/autorizacao.pdf",
+      source_url: "https://arquivos.example.test/autorizacao.pdf",
+      filename: "autorizacao-vista.pdf",
+      active_storage_name: "autorizacoes_venda"
+    )
+
+    get edit_admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Documentos do Vista")
+    expect(response.body).to include("autorizacao-vista.pdf")
+    expect(response.body).to include("Pendente de download")
+    expect(response.body).to include("https://arquivos.example.test/autorizacao.pdf")
   end
 
   it "registra qualquer campo do cadastro do imóvel, mesmo fora da lista principal" do
@@ -480,7 +796,7 @@ RSpec.describe "Admin::Habitations", type: :request do
 
   it "registra vínculo de corretores e publicação em massa no histórico" do
     broker = create(:admin_user, name: "Corretor Auditor")
-    habitation = create(:habitation, codigo: "AUD-BULK-#{SecureRandom.hex(6)}", exibir_no_site_flag: false, publicar_loft: false)
+    habitation = create(:habitation, codigo: "AUD-BULK-#{SecureRandom.hex(6)}", exibir_no_site_flag: false)
     habitation.create_address!(
       logradouro: "Rua Massa",
       numero: "40",
@@ -512,13 +828,13 @@ RSpec.describe "Admin::Habitations", type: :request do
       post bulk_publish_admin_habitations_path, params: {
         selected_ids: [habitation.id],
         action_type: "publicar",
-        channels: %w[site loft]
+        channels: %w[site]
       }
     }.to change(HabitationAuditLog, :count).by(1)
 
     bulk_log = HabitationAuditLog.last
     expect(bulk_log).to have_attributes(action: "bulk_updated", habitation_id: habitation.id)
-    expect(bulk_log.changed_fields).to include("exibir_no_site_flag", "publicar_loft")
+    expect(bulk_log.changed_fields).to include("exibir_no_site_flag")
   end
 
   it "bloqueia cadastro de imóvel com mesma rua, número, prédio e unidade" do

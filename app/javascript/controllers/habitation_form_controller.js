@@ -164,13 +164,18 @@ export default class extends Controller {
   applyCadastroType(fromUser = false) {
     if (!this.hasCadastroTypeTarget || !this.hasCategoryTarget || !this.hasTipoTarget) return
 
-    const typeKey = this.cadastroTypeTarget.value
+    const typeKey = this.selectedCadastroTypeValue()
     const allowedCategories = this.categoriesByTypeValue[typeKey] || []
     const tipoValue = this.tipoByTypeValue[typeKey] || "Unitário"
 
     this.tipoTarget.value = tipoValue
     this.toggleUnitOnly(typeKey !== "empreendimento")
     this.syncCategoryOptions(allowedCategories, fromUser, typeKey)
+  }
+
+  selectedCadastroTypeValue() {
+    const radio = this.cadastroTypeTargets.find((target) => target.type === "radio" && target.checked)
+    return radio?.value || this.cadastroTypeTarget.value
   }
 
   toggleUnitOnly(visible) {

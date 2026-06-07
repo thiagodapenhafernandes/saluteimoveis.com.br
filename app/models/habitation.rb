@@ -101,6 +101,7 @@ class Habitation < ApplicationRecord
   PHOTO_SCHEDULE_URL = "https://calendly.com/fotografias-saluteimoveis/30min".freeze
   MINIMUM_INTAKE_SALE_PRICE_CENTS = 10_000_00
   MINIMUM_INTAKE_RENT_PRICE_CENTS = 100_00
+  STRATEGIC_TAX_PLACEHOLDER_CENTS = [1, 100].freeze
 
   def self.public_property_types
     (where(exibir_no_site_flag: true).distinct.pluck(:categoria).compact + PUBLIC_FILTER_EXTRA_CATEGORIES)
@@ -113,6 +114,10 @@ class Habitation < ApplicationRecord
 
   def self.photography_schedule_url
     Setting.get("photography_schedule_url", "").to_s.strip
+  end
+
+  def inactive_for_admin_card?
+    !exibir_no_site_flag? || status.to_s.match?(/suspenso|vendido|alugado/i)
   end
 
   # INTERNAL_FEATURES = [ ... ] (Deprecated in favor of AttributeOption)
@@ -263,10 +268,12 @@ class Habitation < ApplicationRecord
   
   # Callbacks
   before_validation :assign_codigo_automaticamente, on: :create
+  before_validation :set_data_cadastro_crm, on: :create
   before_validation :normalize_codigo_empreendimento
   before_validation :sync_hierarchy_data
   before_validation :sync_construtora_from_constructor
   before_validation :sanitize_fields
+  before_save :capture_price_reductions
   before_save :sync_flags_from_features
   before_save :sync_intake_answers
   after_save :clear_cache
@@ -437,6 +444,28 @@ class Habitation < ApplicationRecord
   def valor_iptu = valor_iptu_cents.to_i.positive? ? valor_iptu_cents / 100.0 : nil
   def saldo_devedor = saldo_devedor_cents.to_i.positive? ? saldo_devedor_cents / 100.0 : nil
 
+  def displayable_condominio_cents
+    displayable_tax_cents(valor_condominio_cents)
+  end
+
+  def displayable_iptu_cents
+    displayable_tax_cents(valor_iptu_cents)
+  end
+
+  def taxes_included_indicator?
+    displayable_condominio_cents.blank? && displayable_iptu_cents.blank?
+  end
+
+  def rent_discount?
+    valor_locacao_cents.to_i.positive? &&
+      valor_locacao_anterior_cents.to_i > valor_locacao_cents.to_i
+  end
+
+  def sale_discount?
+    valor_venda_cents.to_i.positive? &&
+      valor_venda_anterior_cents.to_i > valor_venda_cents.to_i
+  end
+
   def caracteristicas_imovel = normalize_captacao_list(caracteristicas, category: "feature")
   def caracteristicas_predio = normalize_captacao_list(infra_estrutura, category: "infrastructure")
   def aceita_permuta
@@ -550,6 +579,13 @@ class Habitation < ApplicationRecord
     else
       'Venda'
     end
+  end
+
+  def displayable_tax_cents(value)
+    cents = value.to_i
+    return nil if cents <= 0 || STRATEGIC_TAX_PLACEHOLDER_CENTS.include?(cents)
+
+    cents
   end
 
   def self.portal_publication_column_for(portal_key)
@@ -1214,6 +1250,35 @@ class Habitation < ApplicationRecord
 
   def has_public_price?
     valor_venda_cents.to_i.positive? || valor_locacao_cents.to_i.positive?
+  end
+
+  def set_data_cadastro_crm
+    self.data_cadastro_crm ||= Time.current
+  end
+
+  def capture_price_reductions
+    capture_sale_price_reduction
+    capture_rent_price_reduction
+  end
+
+  def capture_sale_price_reduction
+    return unless will_save_change_to_valor_venda_cents?
+
+    old_cents, new_cents = attribute_change_to_be_saved(:valor_venda_cents).map(&:to_i)
+    return unless old_cents.positive? && new_cents.positive? && new_cents < old_cents
+
+    self.valor_venda_anterior_cents = old_cents
+    self.valor_promocional_cents = new_cents
+  end
+
+  def capture_rent_price_reduction
+    return unless will_save_change_to_valor_locacao_cents?
+
+    old_cents, new_cents = attribute_change_to_be_saved(:valor_locacao_cents).map(&:to_i)
+    return unless old_cents.positive? && new_cents.positive? && new_cents < old_cents
+
+    self.valor_locacao_anterior_cents = old_cents
+    self.valor_promocional_cents = new_cents
   end
   
   def clear_cache

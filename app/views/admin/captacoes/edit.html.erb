@@ -98,7 +98,7 @@
         <% end %>
         <% if @step == "review" %>
           <%= button_tag type: :submit, name: :direction, value: "forward", class: "btn btn-success flex-fill", data: { habitation_duplicate_check_target: "submit" } do %>
-            <i class="bi bi-check-circle me-1"></i>Finalizar captação
+            <i class="bi bi-send-check me-1"></i>Mandar Análise
           <% end %>
         <% else %>
           <%= button_tag type: :submit, name: :direction, value: "forward", class: "btn btn-primary flex-fill", data: { habitation_duplicate_check_target: "submit" } do %>

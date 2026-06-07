@@ -68,7 +68,7 @@ class Admin::HabitationsController < Admin::BaseController
     "codigo_empreendimento" => "Cod empreendimento"
   }.freeze
   SORT_OPTIONS = {
-    "data_cadastro_crm" => { label: "Mais recentes", column: "data_cadastro_crm", default_direction: "desc" },
+    "data_cadastro_crm" => { label: "Mais recentes", column: "COALESCE(habitations.data_cadastro_crm, habitations.created_at)", default_direction: "desc" },
     "codigo" => { label: "Referência", column: "codigo", default_direction: "asc" },
     "categoria" => { label: "Categoria", column: "categoria", default_direction: "asc" },
     "endereco" => { label: "Endereço", column: "endereco", default_direction: "asc" },
@@ -96,7 +96,7 @@ class Admin::HabitationsController < Admin::BaseController
     @sort_column = sort_column
     @sort_direction = sort_direction
     @habitations = filtered_habitations_scope
-                   .order(Arel.sql("habitations.#{@sort_column} #{@sort_direction} NULLS LAST"))
+                   .order(Arel.sql("#{sort_expression} #{@sort_direction} NULLS LAST"))
     @filtered_count = @habitations.count
 
     @habitations = @habitations.paginate(page: params[:page], per_page: 20)
@@ -118,7 +118,7 @@ class Admin::HabitationsController < Admin::BaseController
     @report_generated_at = Time.current
     @full_print_mode = full_print_mode?
 
-    scope = filtered_habitations_scope.order(Arel.sql("habitations.#{@sort_column} #{@sort_direction} NULLS LAST"))
+    scope = filtered_habitations_scope.order(Arel.sql("#{sort_expression} #{@sort_direction} NULLS LAST"))
     ids = sanitized_selected_ids
     scope = scope.where(id: ids) if ids.any?
 
@@ -180,7 +180,7 @@ class Admin::HabitationsController < Admin::BaseController
     @sort_direction = sort_direction
     fields = sanitized_export_fields
 
-    scope = filtered_habitations_scope.order(Arel.sql("habitations.#{@sort_column} #{@sort_direction} NULLS LAST"))
+    scope = filtered_habitations_scope.order(Arel.sql("#{sort_expression} #{@sort_direction} NULLS LAST"))
     ids = sanitized_selected_ids
     scope = scope.where(id: ids) if ids.any?
 
@@ -211,9 +211,7 @@ class Admin::HabitationsController < Admin::BaseController
 
   BULK_PUBLISH_CHANNELS = {
     "site"             => { flag: :exibir_no_site_flag, options: [] },
-    "netimoveis_2"     => { flag: :publicar_netimoveis_2, options: [] },
     "lais_ai"          => { flag: :publicar_lais_ai, options: [] },
-    "loft"             => { flag: :publicar_loft, options: [] },
     "chaves_na_mao"    => { flag: :publicar_chaves_na_mao, options: [:destaque_chaves_na_mao, :periodo_locacao_chaves_na_mao] },
     "casa_mineira"     => { flag: :publicar_casa_mineira, options: [:modelo_casa_mineira] },
     "imovelweb"        => { flag: :publicar_imovelweb, options: [:tipo_publicacao_imovelweb, :mostrar_mapa_imovelweb] },
@@ -337,6 +335,7 @@ class Admin::HabitationsController < Admin::BaseController
 
   def edit
     @page_title = "Editar Imóvel: #{@habitation.codigo}"
+    @return_to_path = safe_admin_habitations_return_path(params[:return_to])
     load_ai_suggestion
     load_habitation_audit_logs
   end
@@ -356,9 +355,10 @@ class Admin::HabitationsController < Admin::BaseController
     end
 
     releasing_to_broker = release_intake_to_broker_requested?
-    if releasing_to_broker
+    saving_internal_intake = save_internal_intake_requested?
+    if releasing_to_broker || saving_internal_intake
       unless can_release_intake_to_broker?(@habitation)
-        redirect_to edit_admin_habitation_path(@habitation), alert: "Você não tem permissão para liberar esta captação."
+        redirect_to edit_admin_habitation_path(@habitation), alert: "Você não tem permissão para concluir esta revisão."
         return
       end
 
@@ -378,7 +378,13 @@ class Admin::HabitationsController < Admin::BaseController
     if @habitation.save
       record_habitation_updated(@habitation, before_snapshot: audit_snapshot_before)
       apply_saved_photo_removals(@habitation)
-      notice = releasing_to_broker ? "Imóvel salvo e liberado para o corretor publicar no site." : "Imóvel atualizado com sucesso."
+      notice = if releasing_to_broker
+                 "Imóvel salvo e devolvido ao corretor para publicar no site."
+               elsif saving_internal_intake
+                 "Imóvel salvo internamente e disponibilizado no catálogo."
+               else
+                 "Imóvel atualizado com sucesso."
+               end
       redirect_after_habitation_save(@habitation, notice: notice)
     else
       load_ai_suggestion
@@ -476,6 +482,10 @@ class Admin::HabitationsController < Admin::BaseController
       redirect_to edit_admin_habitation_path(@habitation, anchor: "documents"), alert: "Anexo inválido."
       return
     end
+    if association.in?(%w[fichas_cadastro autorizacoes_venda]) && !can_manage_internal_documents?
+      redirect_to edit_admin_habitation_path(@habitation, anchor: "documents"), alert: "Você não tem permissão para remover documentos internos."
+      return
+    end
 
     attachment = @habitation.public_send(association).attachments.find_by(id: params[:attachment_id])
     if attachment.nil?
@@ -520,6 +530,11 @@ class Admin::HabitationsController < Admin::BaseController
 
   def sort_column
     sort_options.fetch(params[:sort].presence, sort_options["data_cadastro_crm"])[:column]
+  end
+
+  def sort_expression
+    column = sort_column.to_s
+    column.include?("(") ? column : "habitations.#{column}"
   end
 
   def sort_direction
@@ -637,6 +652,7 @@ class Admin::HabitationsController < Admin::BaseController
                                            .where("#{commercial_neighborhood_sql} IS NOT NULL AND #{commercial_neighborhood_sql} != '.'")
                                            .distinct
                                            .pluck(Arel.sql(commercial_neighborhood_sql))
+                                           .reject { |name| excluded_commercial_neighborhood?(name) }
                                            .sort
     @filter_statuses = Habitation.where("NULLIF(TRIM(status), '') IS NOT NULL AND status != '.'")
                                  .distinct.pluck(:status).sort
@@ -645,11 +661,7 @@ class Admin::HabitationsController < Admin::BaseController
                                        .pluck(:key_location)
                                        .sort
     @filter_key_locations = (Habitation::KEY_LOCATION_OPTIONS + existing_key_locations).uniq
-    @filter_empreendimentos = Habitation.empreendimentos
-                                        .where("NULLIF(TRIM(codigo), '') IS NOT NULL")
-                                        .where("NULLIF(TRIM(nome_empreendimento), '') IS NOT NULL AND nome_empreendimento != '.'")
-                                        .order(nome_empreendimento: :asc)
-                                        .pluck(:nome_empreendimento, :codigo)
+    @filter_empreendimentos = filter_empreendimento_options
     @filter_brokers = AdminUser.order(name: :asc).pluck(:name, :id)
     @filter_proprietors = Proprietor.order(name: :asc).pluck(:name, :id)
     @filter_situacoes = (Habitation::SITUATIONS + Habitation.where("NULLIF(TRIM(situacao), '') IS NOT NULL AND situacao != '.'")
@@ -675,6 +687,10 @@ class Admin::HabitationsController < Admin::BaseController
       .map(&:to_i)
       .reject(&:zero?)
       .uniq
+  end
+
+  def excluded_commercial_neighborhood?(name)
+    I18n.transliterate(name.to_s).squish.downcase == "praia brava balneario camboriu"
   end
 
   def parse_decimal_param(raw_value)
@@ -769,7 +785,11 @@ class Admin::HabitationsController < Admin::BaseController
     scope = scope.where(status: @status) if @status.present? && @status != "Todos"
     scope = scope.where(categoria: @categoria) if @categoria.present? && @categoria != "Todas"
     scope = scope.where(
-      "unaccent(CONCAT_WS(' ', COALESCE(NULLIF(TRIM(addresses.tipo_endereco), ''), NULLIF(TRIM(habitations.tipo_endereco), '')), COALESCE(NULLIF(TRIM(addresses.logradouro), ''), NULLIF(TRIM(habitations.endereco), '')))) ILIKE unaccent(?)",
+      "unaccent(CONCAT_WS(' ', " \
+      "COALESCE(NULLIF(TRIM(addresses.tipo_endereco), ''), NULLIF(TRIM(habitations.tipo_endereco), '')), " \
+      "NULLIF(TRIM(addresses.logradouro), ''), " \
+      "NULLIF(TRIM(habitations.endereco), '')" \
+      ")) ILIKE unaccent(?)",
       "%#{@logradouro}%"
     ) if @logradouro.present?
     scope = scope.where("COALESCE(NULLIF(TRIM(addresses.numero), ''), NULLIF(TRIM(habitations.numero), '')) ILIKE ?", "%#{@numero}%") if @numero.present?
@@ -835,7 +855,12 @@ class Admin::HabitationsController < Admin::BaseController
     scope = scope.where("COALESCE(permuta_suites_qtd, 0) >= ?", @permuta_min_suites.to_i) if @permuta_min_suites.present?
     scope = scope.where("COALESCE(permuta_garagens_qtd, 0) >= ?", @permuta_min_garagens.to_i) if @permuta_min_garagens.present?
     scope = scope.where(key_location: @key_location) if @key_location.present?
-    scope = scope.where("codigo_empreendimento = :codigo OR codigo = :codigo", codigo: @empreendimento_codigo) if @empreendimento_codigo.present?
+    if @empreendimento_codigo.present?
+      scope = scope.where(
+        "codigo_empreendimento = :term OR codigo = :term OR unaccent(nome_empreendimento) = unaccent(:term)",
+        term: @empreendimento_codigo.to_s.strip
+      )
+    end
     if @corretor_id.present?
       broker_name = AdminUser.where(id: @corretor_id).pick(:name).to_s
       scope = scope.left_outer_joins(:broker_assignments)
@@ -953,13 +978,11 @@ class Admin::HabitationsController < Admin::BaseController
 
     broker_name = current_admin_user.name.to_s.strip
     broker_name_condition = broker_name.present? ? " OR habitations.corretor_nome ILIKE :name" : ""
-    scope.left_outer_joins(:broker_assignments)
-         .where(
-           "habitations.admin_user_id = :id OR habitation_broker_assignments.admin_user_id = :id#{broker_name_condition}",
-           id: current_admin_user.id,
-           name: "%#{broker_name}%"
-         )
-         .distinct
+    scope.where(
+      "habitations.admin_user_id = :id#{broker_name_condition}",
+      id: current_admin_user.id,
+      name: "%#{broker_name}%"
+    )
   end
 
   def normalized_report_type
@@ -1098,6 +1121,10 @@ class Admin::HabitationsController < Admin::BaseController
     current_admin_user&.admin? || owns_all_resource?(:imoveis) || can?(:review, :captacoes)
   end
 
+  def can_manage_internal_documents?
+    current_admin_user&.admin? || administrative_profile?
+  end
+
   def no_duplicate_address?(habitation)
     result = HabitationDuplicateChecker.new(
       street: habitation.logradouro,
@@ -1123,12 +1150,24 @@ class Admin::HabitationsController < Admin::BaseController
     params[:release_to_broker_after_save].present?
   end
 
+  def save_internal_intake_requested?
+    params[:save_internal_after_save].present?
+  end
+
   def redirect_after_habitation_save(habitation, notice:)
     if params[:save_navigation].to_s == "stay"
-      redirect_to edit_admin_habitation_path(habitation), notice: "#{notice} Você permaneceu na ficha de cadastro."
+      redirect_to edit_admin_habitation_path(habitation, return_to: safe_admin_habitations_return_path(params[:return_to])), notice: "#{notice} Você permaneceu na ficha de cadastro."
     else
-      redirect_to admin_habitations_path, notice: "#{notice} Você saiu para o catálogo."
+      redirect_to safe_admin_habitations_return_path(params[:return_to]) || admin_habitations_path, notice: "#{notice} Você saiu para o catálogo."
     end
+  end
+
+  def safe_admin_habitations_return_path(value)
+    path = value.to_s
+    return nil if path.blank?
+    return path if path.start_with?(admin_habitations_path)
+
+    nil
   end
 
   def keep_admin_review_intake_hidden
@@ -1393,6 +1432,125 @@ class Admin::HabitationsController < Admin::BaseController
 
   def load_habitation_audit_logs
     @habitation_audit_logs = @habitation.habitation_audit_logs.includes(:admin_user).recent.limit(80)
+    @habitation_vista_timeline_entries = habitation_vista_timeline_entries
+    @habitation_vista_document_assets = VistaFileAsset
+      .where(habitation: @habitation, kind: "property_document")
+      .includes(active_storage_attachment: :blob)
+      .order(Arel.sql("position ASC NULLS LAST"), :id)
+      .limit(80)
+  end
+
+  def habitation_vista_timeline_entries
+    entries = []
+
+    HabitationInteraction.where(habitation: @habitation).includes(:admin_user).order(created_at: :desc).limit(40).each do |interaction|
+      entries << vista_timeline_entry(
+        interaction,
+        type: "Prontuário Vista",
+        title: interaction.subject.presence || interaction.interaction_type.presence || "Interação do Vista",
+        at: interaction.occurred_at || interaction.started_at || interaction.created_at,
+        details: [
+          interaction.body,
+          interaction.status.present? ? "Status: #{interaction.status}" : nil,
+          interaction.proposal_value_cents.to_i.positive? ? "Proposta: #{helpers.number_to_currency(interaction.proposal_value_cents / 100.0, unit: "R$ ", separator: ",", delimiter: ".")}" : nil,
+          interaction.published_vehicle.present? ? "Veículo publicado: #{interaction.published_vehicle}" : nil
+        ]
+      )
+    end
+
+    CrmAppointment.where(habitation: @habitation).includes(:admin_user).order(created_at: :desc).limit(30).each do |appointment|
+      entries << vista_timeline_entry(
+        appointment,
+        type: "Agenda Vista",
+        title: appointment.title.presence || appointment.appointment_type.presence || "Compromisso do Vista",
+        at: appointment.starts_at || appointment.created_in_source_at || appointment.source_updated_at || appointment.created_at,
+        details: [
+          appointment.description,
+          appointment.location.present? ? "Local: #{appointment.location}" : nil,
+          appointment.visit_status.present? ? "Status da visita: #{appointment.visit_status}" : nil,
+          appointment.completed? ? "Concluído" : nil
+        ]
+      )
+    end
+
+    ClientPropertyInterest.where(habitation: @habitation).includes(:admin_user).order(created_at: :desc).limit(30).each do |interest|
+      entries << vista_timeline_entry(
+        interest,
+        type: "Interesse Vista",
+        title: interest.interest_type.presence || "Interesse de cliente no Vista",
+        at: interest.consulted_at || interest.last_search_at || interest.started_at || interest.created_at,
+        details: [
+          interest.status.present? ? "Status: #{interest.status}" : nil,
+          interest.notes,
+          interest.lead? ? "Marcado como lead" : nil,
+          interest.selected? ? "Selecionado" : nil
+        ]
+      )
+    end
+
+    VistaFileAsset.where(habitation: @habitation, kind: "property_document").order(created_at: :desc).limit(20).each do |asset|
+      entries << vista_timeline_entry(
+        asset,
+        type: "Documento Vista",
+        title: asset.filename.presence || "Documento importado do Vista",
+        at: asset.downloaded_at || asset.updated_at || asset.created_at,
+        details: [
+          "Status: #{vista_file_asset_status_label(asset.status)}",
+          asset.error_message.present? ? "Erro: #{asset.error_message}" : nil,
+          asset.source_url.present? ? "Origem: #{asset.source_url}" : nil
+        ]
+      )
+    end
+
+    entries
+      .sort_by { |entry| entry[:at] || Time.zone.at(0) }
+      .reverse
+      .first(80)
+  end
+
+  def vista_timeline_entry(record, type:, title:, at:, details:)
+    {
+      at: at,
+      title: title,
+      type: type,
+      actor: record.respond_to?(:admin_user) ? record.admin_user&.name : nil,
+      source_table: record.respond_to?(:source_table) ? record.source_table : record.table_name,
+      source_key: record.respond_to?(:source_key) ? record.source_key : record.source_path,
+      details: Array(details).map { |detail| detail.to_s.strip }.reject(&:blank?)
+    }
+  end
+
+  def vista_file_asset_status_label(status)
+    {
+      "pending" => "pendente de download",
+      "downloaded" => "baixado",
+      "failed" => "falhou",
+      "skipped" => "ignorado"
+    }.fetch(status.to_s, status.to_s.presence || "desconhecido")
+  end
+
+  def filter_empreendimento_options
+    development_options = Habitation.empreendimentos
+      .where("NULLIF(TRIM(codigo), '') IS NOT NULL")
+      .where("NULLIF(TRIM(nome_empreendimento), '') IS NOT NULL AND nome_empreendimento != '.'")
+      .pluck(:nome_empreendimento, :codigo)
+
+    names_with_development = development_options.map { |name, _code| normalized_filter_text(name) }
+    standalone_options = Habitation
+      .where("NULLIF(TRIM(nome_empreendimento), '') IS NOT NULL AND nome_empreendimento != '.'")
+      .where.not(tipo: "Empreendimento")
+      .distinct
+      .pluck(:nome_empreendimento)
+      .reject { |name| names_with_development.include?(normalized_filter_text(name)) }
+      .map { |name| [name, name] }
+
+    (development_options + standalone_options)
+      .uniq { |name, value| [normalized_filter_text(name), value.to_s] }
+      .sort_by { |name, _value| normalized_filter_text(name) }
+  end
+
+  def normalized_filter_text(value)
+    I18n.transliterate(value.to_s).squish.downcase
   end
 
   def record_habitation_created(habitation)

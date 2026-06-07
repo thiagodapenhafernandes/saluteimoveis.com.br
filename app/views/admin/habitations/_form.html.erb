@@ -37,6 +37,14 @@
     }
   end
   intake_waiting_admin_review = habitation.broker_intake? && habitation.intake_submitted_for_admin_review?
+  can_manage_internal_documents = current_admin_user&.admin? || current_admin_user&.profile&.name == "Administrativo"
+  vista_document_assets = Array(@habitation_vista_document_assets)
+  vista_document_status_labels = {
+    "pending" => "Pendente de download",
+    "downloaded" => "Baixado",
+    "failed" => "Falhou",
+    "skipped" => "Ignorado"
+  }
 %>
 <div class="habitation-form-ui"
      data-controller="attribute-manager habitation-form habitation-duplicate-check"
@@ -49,6 +57,7 @@
      data-habitation-duplicate-check-ignored-id-value="<%= habitation.id %>">
 <%= form_with(model: [:admin, habitation], local: true, class: "needs-validation habitation-form-shell", data: { controller: "save-state", action: "submit->save-state#submitting turbo:submit-end->save-state#submitted", habitation_save_options_form: true }) do |f| %>
   <%= hidden_field_tag :save_navigation, "exit", data: { save_state_target: "choice", habitation_save_options_choice: true } %>
+  <%= hidden_field_tag :return_to, @return_to_path if @return_to_path.present? %>
   <%
     tab_titles = {
       general: "Visão geral",
@@ -296,8 +305,18 @@
     }
     .habitation-form-ui .media-photo-tile .media-photo-overlay .badge,
     .habitation-form-ui .media-photo-tile .media-photo-feature-button,
-    .habitation-form-ui .media-photo-tile .media-photo-drag-handle {
+    .habitation-form-ui .media-photo-tile .media-photo-drag-handle,
+    .habitation-form-ui .media-photo-tile .media-photo-action-button {
       pointer-events: auto;
+    }
+    .habitation-form-ui .media-photo-action-button {
+      align-items: center;
+      display: inline-flex;
+      height: 32px;
+      justify-content: center;
+      line-height: 1;
+      min-width: 32px;
+      padding: 0;
     }
     .habitation-form-ui .media-photo-feature-button {
       line-height: 1;
@@ -532,11 +551,10 @@
                             class: "form-select form-select-sm",
                             data: { controller: "tom-select", placeholder: "Selecione..." }
                         } %>
-                        <%= link_to new_admin_proprietor_path,
+                        <%= link_to new_admin_proprietor_path(embed: "modal"),
                             class: "btn btn-outline-secondary",
                             title: "Cadastrar novo proprietário",
-                            target: "_blank",
-                            rel: "noopener" do %>
+                            data: { bs_toggle: "modal", bs_target: "#quickProprietorModal" } do %>
                           <i class="bi bi-plus"></i>
                         <% end %>
                       </div>
@@ -873,6 +891,70 @@
           </div>
           </div>
 
+        </div>
+
+        <div class="col-12">
+          <div class="card border-0 shadow-sm">
+            <div class="card-body p-3 p-md-4">
+              <div class="d-flex flex-column flex-md-row justify-content-between gap-2 mb-3">
+                <div>
+                  <h6 class="small fw-semibold text-uppercase text-muted mb-1">
+                    <i class="bi bi-database-down me-1"></i> Documentos do Vista
+                  </h6>
+                  <p class="small text-muted mb-0">
+                    Arquivos identificados na integração. Estes itens são rastreáveis pela importação e não devem ser removidos manualmente por aqui.
+                  </p>
+                </div>
+                <span class="badge bg-light text-dark border align-self-start">
+                  <%= vista_document_assets.size %> arquivo(s)
+                </span>
+              </div>
+
+              <% if vista_document_assets.any? %>
+                <ul class="list-group list-group-flush small">
+                  <% vista_document_assets.each do |asset| %>
+                    <% attachment = asset.active_storage_attachment %>
+                    <% link_target = attachment&.blob&.persisted? ? rails_blob_path(attachment, disposition: "attachment") : asset.source_url %>
+                    <% status_label = vista_document_status_labels.fetch(asset.status.to_s, asset.status.to_s.presence || "Desconhecido") %>
+                    <li class="list-group-item d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 px-0">
+                      <div class="d-flex align-items-start gap-2 flex-grow-1">
+                        <i class="bi bi-file-earmark-arrow-down text-primary mt-1"></i>
+                        <div class="min-w-0">
+                          <% if link_target.present? %>
+                            <%= link_to asset.filename,
+                                        link_target,
+                                        target: "_blank",
+                                        rel: "noopener",
+                                        class: "text-decoration-none fw-semibold text-break" %>
+                          <% else %>
+                            <span class="fw-semibold text-break"><%= asset.filename %></span>
+                          <% end %>
+                          <div class="text-muted">
+                            <%= asset.source_path %>
+                          </div>
+                          <% if asset.error_message.present? %>
+                            <div class="text-danger">
+                              <%= asset.error_message %>
+                            </div>
+                          <% end %>
+                        </div>
+                      </div>
+                      <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <span class="badge <%= asset.status == "downloaded" ? "bg-success-subtle text-success border border-success-subtle" : "bg-light text-muted border" %>">
+                          <%= status_label %>
+                        </span>
+                        <% if asset.downloaded_at.present? %>
+                          <span class="text-muted"><%= l(asset.downloaded_at, format: "%d/%m/%Y %H:%M") %></span>
+                        <% end %>
+                      </div>
+                    </li>
+                  <% end %>
+                </ul>
+              <% else %>
+                <p class="small text-muted fst-italic mb-0">Nenhum documento do Vista vinculado a este imóvel.</p>
+              <% end %>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1477,20 +1559,8 @@
                   </div>
                   <div class="portal-option-group">
                     <label class="custom-checkbox-card">
-                      <%= f.check_box :publicar_netimoveis_2, class: "form-check-input mt-0" %>
-                      <span class="small fw-semibold">Publicar Netimoveis 2</span>
-                    </label>
-                  </div>
-                  <div class="portal-option-group">
-                    <label class="custom-checkbox-card">
                       <%= f.check_box :publicar_lais_ai, class: "form-check-input mt-0" %>
                       <span class="small fw-semibold">Publicar Lais Ai</span>
-                    </label>
-                  </div>
-                  <div class="portal-option-group">
-                    <label class="custom-checkbox-card">
-                      <%= f.check_box :publicar_loft, class: "form-check-input mt-0" %>
-                      <span class="small fw-semibold">Publicar Loft</span>
                     </label>
                   </div>
                   <div class="portal-option-group">
@@ -1747,12 +1817,12 @@
                               </span>
                               <span class="d-flex align-items-center gap-1">
                                 <button type="button"
-                                        class="btn btn-sm btn-danger border py-0 px-1"
+                                        class="btn btn-sm btn-danger border media-photo-action-button"
                                         title="Remover foto"
                                         data-action="photo-upload#removeAttached">
                                   <i class="bi bi-trash"></i>
                                 </button>
-                                <button type="button" class="media-photo-drag-handle btn btn-sm btn-light border py-0 px-1" title="Arrastar foto">
+                                <button type="button" class="media-photo-drag-handle btn btn-sm btn-light border media-photo-action-button" title="Arrastar foto">
                                   <i class="bi bi-grip-vertical"></i>
                                 </button>
                               </span>
@@ -1794,12 +1864,12 @@
                                      </span>
                                      <span class="d-flex align-items-center gap-1">
                                        <button type="button"
-                                               class="btn btn-sm btn-danger border py-0 px-1"
+                                               class="btn btn-sm btn-danger border media-photo-action-button"
                                                title="Remover foto da API"
                                                data-action="photo-upload#removeApiPicture">
                                          <i class="bi bi-trash"></i>
                                        </button>
-                                       <button type="button" class="media-photo-drag-handle btn btn-sm btn-light border py-0 px-1" title="Arrastar foto">
+                                       <button type="button" class="media-photo-drag-handle btn btn-sm btn-light border media-photo-action-button" title="Arrastar foto">
                                          <i class="bi bi-grip-vertical"></i>
                                        </button>
                                      </span>
@@ -1875,7 +1945,7 @@
     <div class="tab-pane fade" id="documents" role="tabpanel" aria-labelledby="documents-tab">
       <div class="alert alert-info border-0 small mb-4">
         <i class="bi bi-info-circle me-1"></i>
-        Documentos internos do imóvel — visíveis apenas para a equipe administrativa. Não aparecem no site público.
+        Documentos internos do imóvel. Administrador e Administrativo podem anexar/remover; captadores visualizam sem trocar nem apagar.
       </div>
 
       <div class="row g-3">
@@ -1890,10 +1960,12 @@
                 PDFs ou imagens da ficha física de cadastro do imóvel. Pode anexar vários arquivos.
               </p>
 
-              <div class="mb-3">
-                <%= f.label :fichas_cadastro, "Adicionar arquivos", class: "btn btn-outline-primary btn-sm" %>
-                <%= f.file_field :fichas_cadastro, multiple: true, class: "d-none", id: "habitation_fichas_cadastro" %>
-              </div>
+              <% if can_manage_internal_documents %>
+                <div class="mb-3">
+                  <%= f.label :fichas_cadastro, "Adicionar arquivos", class: "btn btn-outline-primary btn-sm" %>
+                  <%= f.file_field :fichas_cadastro, multiple: true, class: "d-none", id: "habitation_fichas_cadastro" %>
+                </div>
+              <% end %>
 
               <% if habitation.fichas_cadastro.attached? %>
                 <ul class="list-group list-group-flush small">
@@ -1910,7 +1982,7 @@
                           <%= number_to_human_size(attachment.byte_size) rescue '-' %>
                         </span>
                       </div>
-                      <% if habitation.persisted? %>
+                      <% if habitation.persisted? && can_manage_internal_documents %>
                         <%= button_to purge_attachment_admin_habitation_path(habitation, association: "fichas_cadastro", attachment_id: attachment.id),
                                       method: :delete,
                                       class: "btn btn-sm btn-link text-danger p-0 ms-2",
@@ -1939,10 +2011,12 @@
                 Imagens (JPG/PNG) ou PDFs de autorizações assinadas pelo proprietário. Pode anexar várias.
               </p>
 
-              <div class="mb-3">
-                <%= f.label :autorizacoes_venda, "Adicionar arquivos", class: "btn btn-outline-primary btn-sm" %>
-                <%= f.file_field :autorizacoes_venda, multiple: true, class: "d-none", id: "habitation_autorizacoes_venda" %>
-              </div>
+              <% if can_manage_internal_documents %>
+                <div class="mb-3">
+                  <%= f.label :autorizacoes_venda, "Adicionar arquivos", class: "btn btn-outline-primary btn-sm" %>
+                  <%= f.file_field :autorizacoes_venda, multiple: true, class: "d-none", id: "habitation_autorizacoes_venda" %>
+                </div>
+              <% end %>
 
               <% if habitation.autorizacoes_venda.attached? %>
                 <ul class="list-group list-group-flush small">
@@ -1963,7 +2037,7 @@
                           <%= number_to_human_size(attachment.byte_size) rescue '-' %>
                         </span>
                       </div>
-                      <% if habitation.persisted? %>
+                      <% if habitation.persisted? && can_manage_internal_documents %>
                         <%= button_to purge_attachment_admin_habitation_path(habitation, association: "autorizacoes_venda", attachment_id: attachment.id),
                                       method: :delete,
                                       class: "btn btn-sm btn-link text-danger p-0 ms-2",
@@ -2034,19 +2108,37 @@
         <% end %>
       </div>
       <div class="habitation-action-buttons">
-         <%= link_to "Cancelar", admin_habitations_path, class: "btn btn-outline-secondary px-4 px-md-4", data: { save_state_target: "cancelButton" } %>
+         <%= link_to "Cancelar", (@return_to_path || admin_habitations_path), class: "btn btn-outline-secondary px-4 px-md-4", data: { save_state_target: "cancelButton" } %>
          <% if can_release_intake_to_broker?(habitation) %>
            <%= f.button type: "submit",
                         name: "release_to_broker_after_save",
                         value: "1",
                         class: "btn btn-success px-4 px-md-4 fw-bold",
                         data: { habitation_duplicate_check_target: "submit" } do %>
-             Salvar e devolver ao corretor
+             Devolver ao corretor publicar
+           <% end %>
+           <%= f.button type: "submit",
+                        name: "save_internal_after_save",
+                        value: "1",
+                        class: "btn btn-outline-primary px-4 px-md-4 fw-bold",
+                        data: { habitation_duplicate_check_target: "submit" } do %>
+             Salvar Interno
            <% end %>
          <% end %>
-         <%= f.button type: "submit", class: "btn btn-primary px-4 px-md-5 fw-bold", data: { save_state_target: "submitButton", habitation_duplicate_check_target: "submit" } do %>
+         <%= f.button type: "submit",
+                      name: "save_navigation",
+                      value: "stay",
+                      class: "btn btn-primary px-4 px-md-5 fw-bold",
+                      data: { save_state_target: "submitButton", habitation_duplicate_check_target: "submit", habitation_save_options_direct: true } do %>
            <span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true" data-save-state-target="spinner"></span>
-           <span data-save-state-target="label">Salvar Imóvel</span>
+           <span data-save-state-target="label">Salvar</span>
+         <% end %>
+         <%= f.button type: "submit",
+                      name: "save_navigation",
+                      value: "exit",
+                      class: "btn btn-outline-primary px-4 px-md-4 fw-bold",
+                      data: { habitation_duplicate_check_target: "submit", habitation_save_options_direct: true } do %>
+           Salvar e sair
          <% end %>
       </div>
     </div>
@@ -2171,6 +2263,8 @@
       }
 
       if (event.submitter?.name === "release_to_broker_after_save") return;
+      if (event.submitter?.name === "save_internal_after_save") return;
+      if (event.submitter?.dataset?.habitationSaveOptionsDirect === "true") return;
 
       event.preventDefault();
       event.stopImmediatePropagation();
@@ -2203,5 +2297,22 @@
   })();
 </script>
 <%= render "admin/shared/attribute_manager_modal", modal_id: "attributeManagerModal" %>
+
+<div class="modal fade" id="quickProprietorModal" tabindex="-1" aria-labelledby="quickProprietorModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header">
+        <h5 class="modal-title" id="quickProprietorModalLabel">Novo proprietário</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body p-0">
+        <iframe src="<%= new_admin_proprietor_path(embed: "modal") %>"
+                title="Cadastrar novo proprietário"
+                class="w-100 border-0"
+                style="min-height: 78vh;"></iframe>
+      </div>
+    </div>
+  </div>
+</div>
 
 </div>

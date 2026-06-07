@@ -99,7 +99,7 @@
   </div>
 
   <!-- Content -->
-  <div class="pt-4 px-5 flex flex-col flex-1 <%= (property.valor_venda_anterior_cents.present? && property.valor_venda_cents.present? && property.valor_venda_anterior_cents > property.valor_venda_cents) ? 'pb-0' : 'pb-4' %>">
+  <div class="pt-4 px-5 flex flex-col flex-1 <%= (property.sale_discount? || property.rent_discount?) ? 'pb-0' : 'pb-4' %>">
     
     <!-- Location -->
     <div class="flex items-center gap-1.5 text-gray-500 mb-2 text-xs font-medium uppercase tracking-wide">
@@ -122,10 +122,10 @@
       
       # Escolher o preço correto
       current_price = is_rental ? property.valor_locacao_cents : property.valor_venda_cents
-      previous_price = property.valor_venda_anterior_cents # Apenas vendas têm preço anterior
+      previous_price = is_rental ? property.valor_locacao_anterior_cents : property.valor_venda_anterior_cents
     %>
     <div class="mb-4">
-      <% if !is_rental && previous_price.present? && current_price.present? && previous_price > current_price && current_price.to_f > 0 %>
+      <% if previous_price.present? && current_price.present? && previous_price > current_price && current_price.to_f > 0 %>
         <% desconto_percentual = (((previous_price - current_price).to_f / previous_price) * 100).round %>
         
         <!-- Preço Anterior Riscado + Badge de Desconto -->
@@ -212,10 +212,10 @@
 
   </div>
 
-  <!-- Opportunity Banner (Bottom) - Only for reduced sale prices -->
-  <% if property.valor_venda_anterior_cents.present? && property.valor_venda_cents.present? && property.valor_venda_anterior_cents > property.valor_venda_cents && property.valor_venda_cents.to_f > 0 %>
+  <!-- Opportunity Banner (Bottom) - Reduced sale or rent prices -->
+  <% if property.sale_discount? || property.rent_discount? %>
     <div class="w-full bg-green-600 py-2 px-4 flex items-center justify-center">
-      <span class="text-white text-xs font-bold uppercase tracking-widest">OPORTUNIDADE</span>
+      <span class="text-white text-xs font-bold uppercase tracking-widest"><%= property.rent_discount? ? "LOCAÇÃO COM PREÇO REDUZIDO" : "OPORTUNIDADE" %></span>
     </div>
   <% end %>
 
