@@ -27,6 +27,21 @@ RSpec.describe Habitation, type: :model do
     end
   end
 
+  describe "#data_cadastro_crm" do
+    it "sets the registration date on create when it is blank" do
+      habitation = described_class.create!(categoria: "Apartamento")
+
+      expect(habitation.data_cadastro_crm).to be_present
+    end
+
+    it "keeps an imported registration date when present" do
+      imported_at = 3.years.ago.change(usec: 0)
+      habitation = described_class.create!(categoria: "Apartamento", data_cadastro_crm: imported_at)
+
+      expect(habitation.data_cadastro_crm.to_i).to eq(imported_at.to_i)
+    end
+  end
+
   describe "third-party commercial values" do
     it "stores formatted third-party values in cents" do
       habitation = described_class.new(
@@ -36,6 +51,30 @@ RSpec.describe Habitation, type: :model do
 
       expect(habitation.valor_alugado_terceiros_cents).to eq(450_000)
       expect(habitation.valor_vendido_terceiros_cents).to eq(98_000_000)
+    end
+  end
+
+  describe "#capture_price_reductions" do
+    it "stores previous sale price and promotional value when sale price decreases" do
+      habitation = create(:habitation, valor_venda_cents: 1_000_000_00, valor_promocional_cents: nil)
+
+      habitation.update!(valor_venda_cents: 900_000_00)
+
+      expect(habitation).to have_attributes(
+        valor_venda_anterior_cents: 1_000_000_00,
+        valor_promocional_cents: 900_000_00
+      )
+    end
+
+    it "stores previous rent price and promotional value when rent price decreases" do
+      habitation = create(:habitation, valor_venda_cents: 0, valor_locacao_cents: 6_000_00, valor_promocional_cents: nil)
+
+      habitation.update!(valor_locacao_cents: 5_500_00)
+
+      expect(habitation).to have_attributes(
+        valor_locacao_anterior_cents: 6_000_00,
+        valor_promocional_cents: 5_500_00
+      )
     end
   end
 end

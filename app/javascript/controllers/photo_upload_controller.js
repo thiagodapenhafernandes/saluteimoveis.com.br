@@ -132,6 +132,7 @@ export default class extends Controller {
     if (!this.hasRemovePhotoIdsInputTarget) return
 
     this.appendHiddenListValue(this.removePhotoIdsInputTarget, item.dataset.id)
+    item.classList.add('d-none')
     item.remove()
 
     this.updateOrder()
@@ -147,6 +148,7 @@ export default class extends Controller {
     if (!this.hasRemovePictureIndicesInputTarget) return
 
     this.appendHiddenListValue(this.removePictureIndicesInputTarget, item.dataset.apiIndex)
+    item.classList.add('d-none')
     item.remove()
 
     this.updateOrder()

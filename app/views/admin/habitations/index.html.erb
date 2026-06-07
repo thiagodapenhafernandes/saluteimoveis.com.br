@@ -364,6 +364,14 @@
   .habitations-master-pane .property-card-horizontal {
     border: 1px solid #e6edf5 !important;
   }
+  .property-card-horizontal.property-card--inactive {
+    background: #f1f3f5;
+    filter: grayscale(.82);
+    opacity: .78;
+  }
+  .property-card-horizontal.property-card--inactive img {
+    filter: grayscale(1);
+  }
   .habitations-master-pane .property-card-horizontal .card-body {
     padding: 1rem 1.2rem !important;
   }
@@ -528,9 +536,12 @@
     }
 
     .filter-sticky-toolbar {
+      position: sticky !important;
       top: var(--admin-navbar-height);
+      z-index: 30;
       gap: .35rem;
       padding: .45rem;
+      box-shadow: 0 6px 16px rgba(15, 23, 42, .12);
     }
 
     .filter-sticky-toolbar .btn {
@@ -721,7 +732,7 @@
     permuta_min_dorms permuta_min_suites permuta_min_garagens
     situacao face ocupacao_status estado_conservacao area_total_min area_total_max area_privativa_min area_privativa_max
     destaque_web festival_salute exibir_no_site_salute tem_placa exclusivo empreendimento_codigo corretor_id proprietor_id regiao_foco
-    publicar_imovelweb_2 publicar_netimoveis_2 publicar_lais_ai publicar_loft
+    publicar_imovelweb_2 publicar_lais_ai
     publicar_chaves_na_mao publicar_casa_mineira publicar_imovelweb publicar_viva_real_vrsync
     captacao_inicio captacao_fim somente_com_imagens somente_sem_imagens somente_dwv
   ] + array_filter_keys
@@ -735,7 +746,7 @@
     destaque_web festival_salute exibir_no_site_salute tem_placa exclusivo banheiros dorms suites vagas
     foto_classificacao
     amenities
-    publicar_imovelweb_2 publicar_netimoveis_2 publicar_lais_ai publicar_loft
+    publicar_imovelweb_2 publicar_lais_ai
     publicar_chaves_na_mao publicar_casa_mineira publicar_imovelweb publicar_viva_real_vrsync
     empreendimento_codigo corretor_id proprietor_id permuta_vehicle permuta_property permuta_others permuta_min_value
     permuta_location permuta_min_dorms permuta_min_suites permuta_min_garagens regiao_foco
@@ -1196,16 +1207,8 @@
                         <%= label_tag :publicar_imovelweb_2_filter, "Publicar Imovelweb 2", class: "form-check-label" %>
                       </div>
                       <div class="form-check">
-                        <%= check_box_tag :publicar_netimoveis_2, "1", params[:publicar_netimoveis_2] == "1", class: "form-check-input", id: "publicar_netimoveis_2_filter" %>
-                        <%= label_tag :publicar_netimoveis_2_filter, "Publicar Netimoveis 2", class: "form-check-label" %>
-                      </div>
-                      <div class="form-check">
                         <%= check_box_tag :publicar_lais_ai, "1", params[:publicar_lais_ai] == "1", class: "form-check-input", id: "publicar_lais_ai_filter" %>
                         <%= label_tag :publicar_lais_ai_filter, "Publicar Lais Ai", class: "form-check-label" %>
-                      </div>
-                      <div class="form-check">
-                        <%= check_box_tag :publicar_loft, "1", params[:publicar_loft] == "1", class: "form-check-input", id: "publicar_loft_filter" %>
-                        <%= label_tag :publicar_loft_filter, "Publicar Loft", class: "form-check-label" %>
                       </div>
                     </div>
                     <div class="col-md-6">
@@ -1540,9 +1543,7 @@
   active_filter_chips << "Super Destaque: Sim" if params[:festival_salute] == "1"
   active_filter_chips << "Super Destaque: Não" if params[:festival_salute] == "0"
   active_filter_chips << "Portal: Imovelweb 2" if params[:publicar_imovelweb_2] == "1"
-  active_filter_chips << "Portal: Netimoveis 2" if params[:publicar_netimoveis_2] == "1"
   active_filter_chips << "Portal: Lais Ai" if params[:publicar_lais_ai] == "1"
-  active_filter_chips << "Portal: Loft" if params[:publicar_loft] == "1"
   active_filter_chips << "Portal: Chaves Na Mao" if params[:publicar_chaves_na_mao] == "1"
   active_filter_chips << "Portal: Casa Mineira" if params[:publicar_casa_mineira] == "1"
   active_filter_chips << "Portal: Imovelweb" if params[:publicar_imovelweb] == "1"
@@ -1590,11 +1591,12 @@
   <% if @habitations.any? %>
     <% @habitations.each do |imovel| %>
       <% can_manage_this_property = can_edit_habitation?(imovel) %>
+      <% edit_path = edit_admin_habitation_path(imovel, return_to: request.fullpath) %>
       <div class="col-12">
-        <div class="card shadow-sm border-0 overflow-hidden property-card-horizontal"
+        <div class="card shadow-sm border-0 overflow-hidden property-card-horizontal <%= 'property-card--inactive' if imovel.inactive_for_admin_card? %>"
              style="height: 240px; cursor: pointer;"
              data-controller="clickable-card"
-             data-clickable-card-url-value="<%= can_manage_this_property ? edit_admin_habitation_path(imovel) : habitation_path(imovel) %>">
+             data-clickable-card-url-value="<%= can_manage_this_property ? edit_path : habitation_path(imovel) %>">
           <div class="row g-0 h-100">
             <!-- Image Column -->
             <div class="col-md-4 col-lg-3 position-relative h-100">
@@ -1638,7 +1640,7 @@
                     <li><%= link_to "Detalhes", admin_habitation_path(imovel), class: "dropdown-item small" %></li>
                     <li><%= link_to "Ver no Site", habitation_path(imovel), target: "_blank", class: "dropdown-item small" %></li>
                     <% if can_manage_this_property %>
-                      <li><%= link_to "Editar", edit_admin_habitation_path(imovel), class: "dropdown-item small" %></li>
+                      <li><%= link_to "Editar", edit_path, class: "dropdown-item small" %></li>
                     <% end %>
                     <% if current_admin_user&.admin? %>
                       <li><hr class="dropdown-divider"></li>
@@ -1718,7 +1720,7 @@
                             <li><%= link_to "Detalhes", admin_habitation_path(imovel), class: "dropdown-item small" %></li>
                             <li><%= link_to "Ver no Site", habitation_path(imovel), target: "_blank", class: "dropdown-item small" %></li>
                             <% if can_manage_this_property %>
-                              <li><%= link_to "Editar", edit_admin_habitation_path(imovel), class: "dropdown-item small" %></li>
+                              <li><%= link_to "Editar", edit_path, class: "dropdown-item small" %></li>
                             <% end %>
                             <% if current_admin_user&.admin? %>
                               <li><hr class="dropdown-divider"></li>
@@ -1832,9 +1834,7 @@
                     data-action="change->bulk-publish#onChannelChange">
               <option value="">Selecione</option>
               <option value="site">Site da Imobiliária</option>
-              <option value="netimoveis_2">Netimoveis 2</option>
               <option value="lais_ai">Lais Ai</option>
-              <option value="loft">Loft</option>
               <option value="chaves_na_mao">Chaves Na Mão</option>
               <option value="casa_mineira">Casa Mineira</option>
               <option value="imovelweb">Imovelweb</option>

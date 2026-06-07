@@ -223,7 +223,12 @@ module Admin
     end
 
     def initial_intake_params
-      params.require(:habitation).permit(:property_kind, :modalidade).compact_blank
+      attrs = params.require(:habitation).permit(:cadastro_type, :property_kind, :categoria, :modalidade).compact_blank.to_h
+      cadastro_type = attrs.delete("cadastro_type")
+      property_kind = attrs.delete("property_kind")
+      default_category = default_category_for_cadastro_type(cadastro_type.presence || property_kind)
+      attrs["categoria"] = default_category if attrs["categoria"].blank? && default_category.present?
+      attrs
     end
 
     def set_habitation
@@ -632,13 +637,10 @@ module Admin
       attrs = raw.to_h
       normalize_attachment_params!(attrs)
       attrs["intake_step"] = attrs.delete("step") if attrs["step"].present?
+      cadastro_type = attrs.delete("cadastro_type")
       property_kind = attrs.delete("property_kind")
-      mapped_category = case property_kind
-                        when "sala_comercial" then "Sala Comercial"
-                        when "terreno" then "Terreno"
-                        when "residencial" then "Apartamento"
-                        end
-      attrs["categoria"] = mapped_category if mapped_category.present?
+      default_category = default_category_for_cadastro_type(cadastro_type.presence || property_kind)
+      attrs["categoria"] = default_category if attrs["categoria"].blank? && default_category.present?
       if (modalidade = attrs.delete("modalidade")).present?
         attrs["intake_modalidade"] = modalidade
         attrs["status"] = modalidade.in?(%w[locacao_anual locacao_diaria]) ? "Aluguel" : "Venda"
@@ -688,6 +690,15 @@ module Admin
         attrs["address_attributes"]["id"] = @habitation.address.id if @habitation.address.present?
       end
       attrs.except("salas", "sacada", "terraco", "dependencia_empregada", "precisa_reforma", "distancia_praia", "cidade_permuta", "outras_taxas", "dias_visitas", "extras", "proprietario_cidade")
+    end
+
+    def default_category_for_cadastro_type(value)
+      case value
+      when "apartamentos", "residencial" then "Apartamento"
+      when "comerciais_industriais", "sala_comercial" then "Sala Comercial"
+      when "imoveis_residenciais" then "Casa"
+      when "terrenos", "terreno" then "Terreno"
+      end
     end
 
     def normalize_attachment_params!(attrs)

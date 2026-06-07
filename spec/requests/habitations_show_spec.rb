@@ -113,6 +113,77 @@ RSpec.describe "Habitation details", type: :request do
       expect(payload["url"]).to eq("http://localhost/imoveis/casa-em-condominio-8397")
       expect(document.css("body script[type='application/ld+json']")).to be_empty
     end
+
+    it "adds readable spacing to plain text descriptions without spaces after punctuation" do
+      habitation = create(
+        :habitation,
+        codigo: "DESC-SPACE",
+        slug: "descricao-espacada",
+        descricao_web: "Primeira frase.Segunda frase!Terceira frase?"
+      )
+
+      get habitation_path(habitation)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Primeira frase. Segunda frase! Terceira frase?")
+    end
+
+    it "does not show the development name in unit details" do
+      development = create(:habitation, codigo: "DEV-UNIT", tipo: "Empreendimento", nome_empreendimento: "Residencial Oculto")
+      unit = create(
+        :habitation,
+        codigo: "UNIT-DETAIL",
+        slug: "unidade-sem-empreendimento",
+        codigo_empreendimento: development.codigo,
+        nome_empreendimento: "Residencial Oculto",
+        titulo_anuncio: "Apartamento unidade"
+      )
+
+      get habitation_path(unit)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("Residencial Oculto")
+    end
+
+    it "shows included taxes instead of strategic placeholder condominium and IPTU values" do
+      habitation = create(
+        :habitation,
+        codigo: "TAX-INCLUDED",
+        slug: "taxas-inclusas",
+        status: "Aluguel",
+        valor_venda_cents: 0,
+        valor_locacao_cents: 5_000_00,
+        valor_condominio_cents: 1,
+        valor_iptu_cents: 100
+      )
+
+      get habitation_path(habitation)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Taxas inclusas")
+      expect(response.body).not_to include("R$ 0,01")
+      expect(response.body).not_to include("R$ 1,00")
+    end
+
+    it "shows reduced rent in the public details page" do
+      habitation = create(
+        :habitation,
+        codigo: "RENT-DISCOUNT",
+        slug: "locacao-reduzida",
+        status: "Aluguel",
+        valor_venda_cents: 0,
+        valor_locacao_anterior_cents: 6_000_00,
+        valor_locacao_cents: 5_000_00
+      )
+
+      get habitation_path(habitation)
+
+      expect(response).to have_http_status(:ok)
+      page_text = Nokogiri::HTML(response.body).text.squish
+      expect(page_text).to include("Locação com preço reduzido")
+      expect(page_text).to include("R$ 6.000,00")
+      expect(page_text).to include("R$ 5.000,00")
+    end
   end
 
   describe "GET /empreendimento/:id" do

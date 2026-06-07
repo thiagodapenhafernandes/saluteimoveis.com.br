@@ -50,10 +50,21 @@
     color: #64748b;
     background: #f8fafc;
   }
+  .habitation-audit-detail-list {
+    margin: .75rem 0 0;
+    padding-left: 1rem;
+    color: #334155;
+  }
+  .habitation-audit-detail-list li {
+    margin-bottom: .25rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
 </style>
 
 <%
   logs = Array(logs)
+  vista_entries = Array(local_assigns.fetch(:vista_entries, @habitation_vista_timeline_entries))
   publication_logs = logs.select { |log| (log.changed_fields & HabitationAuditLog.publication_fields).any? }
   intake_logs = logs.select { |log| (log.changed_fields & HabitationAuditLog.intake_fields).any? }
 %>
@@ -90,12 +101,18 @@
               Captação <span class="badge bg-light text-dark border ms-1"><%= intake_logs.size %></span>
             </button>
           </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="audit-vista-tab" data-bs-toggle="tab" data-bs-target="#audit-vista" type="button" role="tab">
+              Vista <span class="badge bg-light text-dark border ms-1"><%= vista_entries.size %></span>
+            </button>
+          </li>
         </ul>
 
         <div class="tab-content">
           <%= render "admin/habitations/audit_history_timeline", tab_id: "audit-all", active: true, logs: logs %>
           <%= render "admin/habitations/audit_history_timeline", tab_id: "audit-publication", active: false, logs: publication_logs %>
           <%= render "admin/habitations/audit_history_timeline", tab_id: "audit-intake", active: false, logs: intake_logs %>
+          <%= render "admin/habitations/audit_history_vista_timeline", tab_id: "audit-vista", active: false, entries: vista_entries %>
         </div>
       </div>
     </div>

@@ -6,7 +6,8 @@
 <% area_text = (@habitation.area_total_m2.presence || @habitation.area_privativa_m2.presence) %>
 <% has_sale_price = @habitation.valor_venda_cents.to_i.positive? %>
 <% has_rent_price = @habitation.valor_locacao_cents.to_i.positive? %>
-<% has_discount = has_sale_price && @habitation.valor_venda_anterior_cents.to_i > @habitation.valor_venda_cents.to_i %>
+<% has_discount = @habitation.sale_discount? %>
+<% has_rent_discount = @habitation.rent_discount? %>
 
 <% content_for :head do %>
   <%= json_ld_tag(real_estate_listing_schema(@habitation)) %>
@@ -166,10 +167,11 @@
           <div class="prose prose-gray max-w-none text-gray-600">
             <% description_content = @habitation.display_description %>
             <% if description_content.present? %>
-              <% if description_content.match?(/<[^>]+>/) %>
-                <%= sanitize(description_content, tags: %w[p br strong em b i ul ol li h3 h4 h5 blockquote a], attributes: %w[href target rel]) %>
+              <% normalized_description = description_content.to_s.gsub(/\r\n?/, "\n").gsub(/[ \t]+/, " ").gsub(/([.!?])(?=[^\s<])/, "\\1 ").gsub(/\n{3,}/, "\n\n").strip %>
+              <% if normalized_description.match?(/<[^>]+>/) %>
+                <%= sanitize(normalized_description, tags: %w[p div br strong em b i ul ol li h3 h4 h5 blockquote a], attributes: %w[href target rel]) %>
               <% else %>
-                <%= simple_format(description_content) %>
+                <%= simple_format(normalized_description) %>
               <% end %>
             <% else %>
               <p>Sem descrição disponível.</p>
@@ -230,10 +232,19 @@
               <p class="mt-2 text-sm font-bold text-golden-one"><%= discount_percent %>% de desconto</p>
             <% end %>
           <% elsif has_rent_price %>
+            <% if has_rent_discount %>
+              <p class="mt-3 text-sm font-semibold text-gray-400 line-through">
+                <%= number_to_currency(@habitation.valor_locacao_anterior_cents / 100.0, unit: "R$ ", separator: ",", delimiter: ".") %>
+              </p>
+            <% end %>
             <p class="mt-2 text-4xl font-extrabold text-blue-three">
               <%= number_to_currency(@habitation.valor_locacao_cents / 100.0, unit: "R$ ", separator: ",", delimiter: ".") %>
             </p>
             <p class="text-sm font-semibold text-gray-500">/mês</p>
+            <% if has_rent_discount %>
+              <% rent_discount_percent = ((@habitation.valor_locacao_anterior_cents - @habitation.valor_locacao_cents).to_f / @habitation.valor_locacao_anterior_cents * 100).round(1) %>
+              <p class="mt-2 text-sm font-bold text-golden-one">Locação com preço reduzido · <%= rent_discount_percent %>% de desconto</p>
+            <% end %>
           <% else %>
             <p class="mt-2 text-3xl font-extrabold text-blue-three">Sob consulta</p>
           <% end %>
@@ -249,16 +260,22 @@
               <dt class="text-gray-500">Tipo</dt>
               <dd class="font-bold text-gray-900"><%= @habitation.categoria %></dd>
             </div>
-            <% if @habitation.valor_condominio_cents.to_i.positive? %>
+            <% if @habitation.displayable_condominio_cents.present? %>
               <div class="flex justify-between gap-4">
                 <dt class="text-gray-500">Condomínio</dt>
-                <dd class="font-bold text-gray-900"><%= number_to_currency(@habitation.valor_condominio_cents / 100.0, unit: "R$ ", separator: ",", delimiter: ".") %></dd>
+                <dd class="font-bold text-gray-900"><%= number_to_currency(@habitation.displayable_condominio_cents / 100.0, unit: "R$ ", separator: ",", delimiter: ".") %></dd>
               </div>
             <% end %>
-            <% if @habitation.valor_iptu_cents.to_i.positive? %>
+            <% if @habitation.displayable_iptu_cents.present? %>
               <div class="flex justify-between gap-4">
                 <dt class="text-gray-500">IPTU</dt>
-                <dd class="font-bold text-gray-900"><%= number_to_currency(@habitation.valor_iptu_cents / 100.0, unit: "R$ ", separator: ",", delimiter: ".") %></dd>
+                <dd class="font-bold text-gray-900"><%= number_to_currency(@habitation.displayable_iptu_cents / 100.0, unit: "R$ ", separator: ",", delimiter: ".") %></dd>
+              </div>
+            <% end %>
+            <% if @habitation.taxes_included_indicator? %>
+              <div class="flex justify-between gap-4">
+                <dt class="text-gray-500">Taxas</dt>
+                <dd class="font-bold text-green-700">Taxas inclusas</dd>
               </div>
             <% end %>
           </dl>
@@ -317,7 +334,7 @@
                 <p class="font-bold text-gray-900">Pronto para morar</p>
               </div>
             <% end %>
-            <% if @habitation.nome_empreendimento.present? %>
+            <% if @habitation.nome_empreendimento.present? && !@habitation.unidade? %>
               <div>
                 <p class="text-gray-500">Empreendimento</p>
                 <p class="font-bold text-gray-900"><%= @habitation.nome_empreendimento %></p>
