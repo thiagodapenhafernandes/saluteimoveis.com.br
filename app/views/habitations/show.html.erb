@@ -167,12 +167,7 @@
           <div class="prose prose-gray max-w-none text-gray-600">
             <% description_content = @habitation.display_description %>
             <% if description_content.present? %>
-              <% normalized_description = description_content.to_s.gsub(/\r\n?/, "\n").gsub(/[ \t]+/, " ").gsub(/([.!?])(?=[^\s<])/, "\\1 ").gsub(/\n{3,}/, "\n\n").strip %>
-              <% if normalized_description.match?(/<[^>]+>/) %>
-                <%= sanitize(normalized_description, tags: %w[p div br strong em b i ul ol li h3 h4 h5 blockquote a], attributes: %w[href target rel]) %>
-              <% else %>
-                <%= simple_format(normalized_description) %>
-              <% end %>
+              <%= formatted_habitation_description(description_content) %>
             <% else %>
               <p>Sem descrição disponível.</p>
             <% end %>

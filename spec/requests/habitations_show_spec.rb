@@ -128,6 +128,37 @@ RSpec.describe "Habitation details", type: :request do
       expect(response.body).to include("Primeira frase. Segunda frase! Terceira frase?")
     end
 
+    it "splits a long single-block rich text description into readable paragraphs" do
+      long_description = [
+        "Este apartamento localizado em Barra Norte apresenta uma área privativa ampla e bem distribuída.",
+        "A unidade conta com quatro suítes e ambientes planejados para conforto e privacidade.",
+        "O condomínio disponibiliza piscina coletiva, sala fitness, salão de festas e portaria vinte e quatro horas.",
+        "A localização é estratégica e oferece acesso facilitado à orla, serviços, comércio e opções de lazer.",
+        "Para obter mais detalhes sobre esta oportunidade, entre em contato com nossa equipe especializada.",
+        "A Salute Imóveis está localizada em Balneário Camboriú e atende compradores e vendedores com acompanhamento consultivo.",
+        "O imóvel reúne características importantes para quem busca praticidade, segurança e uma rotina próxima ao mar.",
+        "Os valores e as condições comerciais podem sofrer alteração sem aviso prévio conforme disponibilidade."
+      ].join(" ")
+      habitation = create(
+        :habitation,
+        codigo: "DESC-RICH",
+        slug: "descricao-rica",
+        pictures: [{ "url" => "https://example.com/descricao.jpg" }],
+        descricao_web: %(<div class="trix-content"><div>#{long_description}</div></div>)
+      )
+
+      get habitation_path(habitation)
+
+      expect(response).to have_http_status(:ok)
+      document = Nokogiri::HTML(response.body)
+      description_section = document.css("section").detect { |section| section.text.include?("Descrição") && section.text.include?("Este apartamento localizado") }
+      paragraphs = description_section.css("p").map { |paragraph| paragraph.text.squish }
+
+      expect(paragraphs.size).to be >= 2
+      expect(paragraphs.join(" ")).to include("Este apartamento localizado em Barra Norte")
+      expect(paragraphs.join(" ")).to include("A Salute Imóveis está localizada em Balneário Camboriú")
+    end
+
     it "does not show the development name in unit details" do
       development = create(:habitation, codigo: "DEV-UNIT", tipo: "Empreendimento", nome_empreendimento: "Residencial Oculto")
       unit = create(

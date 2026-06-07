@@ -122,6 +122,22 @@ module HabitationsHelper
   def current_sort_label(sort)
     sort_options.find { |opt| opt[1] == sort }&.first || 'Mais Recentes'
   end
+
+  def formatted_habitation_description(content)
+    description = content.to_s
+      .gsub(/\r\n?/, "\n")
+      .gsub(/[ \t]+/, " ")
+      .gsub(/([.!?])(?=[^\s<])/, "\\1 ")
+      .gsub(/\n{3,}/, "\n\n")
+      .strip
+    return tag.p("Sem descrição disponível.") if description.blank?
+
+    if description.match?(/<[^>]+>/)
+      sanitize(paragraphize_single_block_description(description), tags: %w[p div br strong em b i ul ol li h3 h4 h5 blockquote a], attributes: %w[href target rel class])
+    else
+      simple_format(description)
+    end
+  end
   
   # Toggle característica em array de características
   def toggle_characteristic(current_chars, char)
@@ -135,6 +151,33 @@ module HabitationsHelper
   end
   
   private
+
+  def paragraphize_single_block_description(html)
+    fragment = Nokogiri::HTML::DocumentFragment.parse(html)
+    return html if fragment.css("p, br, ul, ol, li, h3, h4, h5, blockquote").any?
+
+    text = fragment.text.squish
+    return html if text.length < 700
+
+    paragraphs = description_sentences(text).each_with_object([]) do |sentence, memo|
+      if memo.empty? || memo.last.length >= 420 || memo.last.count(".!?") >= 3
+        memo << sentence
+      else
+        memo[-1] = "#{memo.last} #{sentence}"
+      end
+    end
+
+    return html if paragraphs.size < 2
+
+    paragraphs.map { |paragraph| tag.p(paragraph) }.join
+  end
+
+  def description_sentences(text)
+    text
+      .scan(/[^.!?]+[.!?]+(?:["”’])?|[^.!?]+$/)
+      .map(&:strip)
+      .reject(&:blank?)
+  end
   
   def check_jsonb_text(jsonb, *keywords)
     return false unless jsonb.is_a?(Hash)
