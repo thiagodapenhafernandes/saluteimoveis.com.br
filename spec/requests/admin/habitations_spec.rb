@@ -317,12 +317,24 @@ RSpec.describe "Admin::Habitations", type: :request do
   end
 
   it "marca cards inativos com classe visual cinza" do
-    inactive = create(:habitation, :unavailable, codigo: "INATIVO-#{SecureRandom.hex(6)}", titulo_anuncio: "Imóvel inativo")
+    inactive = create(:habitation, codigo: "INATIVO-#{SecureRandom.hex(6)}", status: "Suspenso", titulo_anuncio: "Imóvel inativo")
 
     get admin_habitations_path(q: inactive.codigo)
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include("property-card--inactive")
+    card = Nokogiri::HTML(response.body).css(".property-card-horizontal").find { |node| node.text.include?(inactive.codigo) }
+    expect(card["class"]).to include("property-card--inactive")
+  end
+
+  it "não marca imóvel ativo fora do site como card cinza" do
+    internal = create(:habitation, codigo: "INTERNO-#{SecureRandom.hex(6)}", status: "Aluguel", exibir_no_site_flag: false, titulo_anuncio: "Imóvel interno ativo")
+
+    get admin_habitations_path(q: internal.codigo)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("FORA SITE")
+    card = Nokogiri::HTML(response.body).css(".property-card-horizontal").find { |node| node.text.include?(internal.codigo) }
+    expect(card["class"]).not_to include("property-card--inactive")
   end
 
   it "renderiza o catálogo em layout master-detail com menu lateral por drawer" do

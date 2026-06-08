@@ -54,7 +54,7 @@ class HabitationDuplicateChecker
   end
 
   def active_duplicate_candidate?(habitation)
-    !habitation.inactive_for_admin_card?
+    !habitation.unavailable_for_duplicate_check?
   end
 
   def same_status?(habitation)

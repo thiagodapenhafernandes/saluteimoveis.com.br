@@ -54,6 +54,28 @@ RSpec.describe Habitation, type: :model do
     end
   end
 
+  describe "#inactive_for_admin_card?" do
+    it "does not mark active internal properties as inactive cards" do
+      habitation = described_class.new(status: "Aluguel", exibir_no_site_flag: false)
+
+      expect(habitation).not_to be_inactive_for_admin_card
+    end
+
+    it "marks unavailable statuses as inactive cards" do
+      expect(described_class.new(status: "Suspenso", exibir_no_site_flag: true)).to be_inactive_for_admin_card
+      expect(described_class.new(status: "Vendido terceiros", exibir_no_site_flag: true)).to be_inactive_for_admin_card
+      expect(described_class.new(status: "Alugado imobiliária", exibir_no_site_flag: true)).to be_inactive_for_admin_card
+    end
+  end
+
+  describe "#unavailable_for_duplicate_check?" do
+    it "keeps hidden-from-site properties unavailable for duplicate blocking" do
+      habitation = described_class.new(status: "Aluguel", exibir_no_site_flag: false)
+
+      expect(habitation).to be_unavailable_for_duplicate_check
+    end
+  end
+
   describe "#capture_price_reductions" do
     it "stores previous sale price and promotional value when sale price decreases" do
       habitation = create(:habitation, valor_venda_cents: 1_000_000_00, valor_promocional_cents: nil)

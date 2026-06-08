@@ -119,7 +119,11 @@ class Habitation < ApplicationRecord
   end
 
   def inactive_for_admin_card?
-    !exibir_no_site_flag? || status.to_s.match?(/suspenso|vendido|alugado/i)
+    status.to_s.match?(/suspenso|vendido|alugado/i)
+  end
+
+  def unavailable_for_duplicate_check?
+    !exibir_no_site_flag? || inactive_for_admin_card?
   end
 
   # INTERNAL_FEATURES = [ ... ] (Deprecated in favor of AttributeOption)
