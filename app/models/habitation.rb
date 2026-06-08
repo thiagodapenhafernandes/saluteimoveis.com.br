@@ -85,11 +85,13 @@ class Habitation < ApplicationRecord
   INTAKE_STATUSES = {
     "draft" => "Rascunho",
     "submitted_for_admin_review" => "Em revisão administrativa",
-    "admin_approved" => "Liberado pelo administrativo",
+    "admin_approved" => "Aguardando aceite do corretor",
     "returned_to_broker" => "Devolvido ao corretor",
+    "internal" => "Disponível internamente",
     "published" => "Liberado para site"
   }.freeze
-  CATALOG_VISIBLE_INTAKE_STATUSES = %w[submitted_for_admin_review admin_approved published].freeze
+  CATALOG_VISIBLE_INTAKE_STATUSES = %w[internal published].freeze
+  PENDING_REVIEW_INTAKE_STATUSES = %w[submitted_for_admin_review admin_approved].freeze
   PHOTO_FLOW_CHOICES = {
     "upload" => "Enviar fotos",
     "schedule" => "Agendar fotógrafo"
@@ -285,7 +287,7 @@ class Habitation < ApplicationRecord
 
   scope :broker_intakes, -> { where(intake_origin: INTAKE_ORIGIN_BROKER) }
   scope :pending_admin_review_from_intake, -> {
-    broker_intakes.where(intake_status: "submitted_for_admin_review")
+    broker_intakes.where(intake_status: PENDING_REVIEW_INTAKE_STATUSES)
   }
 
   def step
@@ -293,7 +295,7 @@ class Habitation < ApplicationRecord
   end
 
   def completed?
-    intake_status.in?(%w[submitted_for_admin_review admin_approved published])
+    intake_status.in?(%w[submitted_for_admin_review admin_approved internal published])
   end
 
   def published_on_site?
@@ -610,6 +612,10 @@ class Habitation < ApplicationRecord
 
   def intake_admin_approved?
     intake_status == "admin_approved"
+  end
+
+  def intake_internal?
+    intake_status == "internal"
   end
 
   def intake_published?

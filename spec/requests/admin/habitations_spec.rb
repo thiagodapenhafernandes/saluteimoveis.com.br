@@ -12,25 +12,62 @@ RSpec.describe "Admin::Habitations", type: :request do
     sign_in admin
   end
 
-  it "lista captações finalizadas no menu de imóveis e oculta rascunhos" do
+  it "separa captações restritas da listagem geral de imóveis" do
     draft = create(:habitation, :broker_intake, admin_user: admin, codigo: "DRAFT-#{SecureRandom.hex(6)}", titulo_anuncio: "Captação em rascunho")
     submitted = create(:habitation, :broker_intake, admin_user: admin, codigo: "REV-#{SecureRandom.hex(6)}", intake_status: "submitted_for_admin_review", titulo_anuncio: "Captação finalizada")
     approved = create(:habitation, :broker_intake, admin_user: admin, codigo: "APP-#{SecureRandom.hex(6)}", intake_status: "admin_approved", titulo_anuncio: "Captação aprovada")
+    internal = create(:habitation, :broker_intake, admin_user: admin, codigo: "INT-#{SecureRandom.hex(6)}", intake_status: "internal", titulo_anuncio: "Captação interna")
+    published = create(:habitation, :broker_intake, admin_user: admin, codigo: "PUB-#{SecureRandom.hex(6)}", intake_status: "published", titulo_anuncio: "Captação publicada")
 
     get admin_habitations_path
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("Pendente de revisão")
-    expect(response.body).to include(submitted.titulo_anuncio)
-    expect(response.body).to include(approved.titulo_anuncio)
+    expect(response.body).to include(internal.titulo_anuncio)
+    expect(response.body).to include(published.titulo_anuncio)
+    expect(response.body).not_to include(submitted.titulo_anuncio)
+    expect(response.body).not_to include(approved.titulo_anuncio)
     expect(response.body).not_to include(draft.titulo_anuncio)
 
     get admin_habitations_path(intake_review: "pending", ownership: "all")
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include(submitted.titulo_anuncio)
-    expect(response.body).not_to include(approved.titulo_anuncio)
+    expect(response.body).to include(approved.titulo_anuncio)
     expect(response.body).not_to include(draft.titulo_anuncio)
+    expect(response.body).not_to include(internal.titulo_anuncio)
+    expect(response.body).not_to include(published.titulo_anuncio)
+  end
+
+  it "mostra para o corretor somente suas captações aguardando aceite" do
+    broker_profile = Profile.create!(
+      name: "Corretor revisão #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Corretor")
+    )
+    luciana = create(:admin_user, profile: broker_profile, name: "Luciana Indalécio")
+    patricia = create(:admin_user, profile: broker_profile, name: "Patrícia Paula")
+    own_waiting = create(:habitation, :broker_intake, admin_user: luciana, codigo: "OWN-REV-#{SecureRandom.hex(6)}", intake_status: "admin_approved", titulo_anuncio: "Aguardando aceite Luciana")
+    other_waiting = create(:habitation, :broker_intake, admin_user: patricia, codigo: "OTH-REV-#{SecureRandom.hex(6)}", intake_status: "admin_approved", titulo_anuncio: "Aguardando aceite Patrícia")
+    submitted = create(:habitation, :broker_intake, admin_user: luciana, codigo: "SUB-REV-#{SecureRandom.hex(6)}", intake_status: "submitted_for_admin_review", titulo_anuncio: "Em revisão administrativa Luciana")
+
+    sign_in luciana
+    get admin_habitations_path(intake_review: "pending", ownership: "all")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(own_waiting.titulo_anuncio)
+    expect(response.body).not_to include(other_waiting.titulo_anuncio)
+    expect(response.body).not_to include(submitted.titulo_anuncio)
+    expect(response.body).to include("Aguardando aceite do corretor")
+  end
+
+  it "exibe ações de ficha de papel no novo cadastro administrativo" do
+    get new_admin_habitation_path
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Enviar para corretor")
+    expect(response.body).to include("Salvar Interno")
+    expect(response.body).to include("Salvar")
+    expect(response.body).to include("Salvar e sair")
   end
 
   it "filtra somente imóveis do DWV na listagem" do
@@ -351,7 +388,7 @@ RSpec.describe "Admin::Habitations", type: :request do
     get edit_admin_habitation_path(intake)
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include("Devolver ao corretor publicar")
+    expect(response.body).to include("Devolver para captador")
     expect(response.body).to include("Salvar Interno")
     expect(response.body).to include("Salvar e sair")
 
@@ -365,7 +402,7 @@ RSpec.describe "Admin::Habitations", type: :request do
 
     expect(response).to redirect_to(admin_habitations_path)
     expect(intake.reload).to have_attributes(
-      intake_status: "admin_approved",
+      intake_status: "internal",
       titulo_anuncio: "Apartamento salvo internamente",
       exibir_no_site_flag: false,
       admin_reviewed_by_id: admin.id
@@ -653,8 +690,10 @@ RSpec.describe "Admin::Habitations", type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include('id="quickProprietorModal"')
-    expect(response.body).to include(new_admin_proprietor_path(embed: "modal"))
-    expect(response.body).not_to include('title="Cadastrar novo proprietário" target="_blank"')
+    expect(response.body).to include(quick_create_admin_proprietors_path)
+    expect(response.body).to include("Salvar e selecionar")
+    expect(response.body).not_to include("<iframe")
+    expect(response.body).not_to include(new_admin_proprietor_path(embed: "modal"))
   end
 
   it "permite captador visualizar documentos sem anexar ou remover" do
