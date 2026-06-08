@@ -1592,11 +1592,12 @@
     <% @habitations.each do |imovel| %>
       <% can_manage_this_property = can_edit_habitation?(imovel) %>
       <% edit_path = edit_admin_habitation_path(imovel, return_to: request.fullpath) %>
+      <% details_path = admin_habitation_path(imovel, return_to: request.fullpath) %>
       <div class="col-12">
         <div class="card shadow-sm border-0 overflow-hidden property-card-horizontal <%= 'property-card--inactive' if imovel.inactive_for_admin_card? %>"
              style="height: 240px; cursor: pointer;"
              data-controller="clickable-card"
-             data-clickable-card-url-value="<%= can_manage_this_property ? edit_path : habitation_path(imovel) %>">
+             data-clickable-card-url-value="<%= can_manage_this_property ? edit_path : details_path %>">
           <div class="row g-0 h-100">
             <!-- Image Column -->
             <div class="col-md-4 col-lg-3 position-relative h-100">
@@ -1637,7 +1638,7 @@
                   <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mobile-property-actions-menu"
                       data-dropdown-target="menu"
                       style="right: 0; left: auto;">
-                    <li><%= link_to "Detalhes", admin_habitation_path(imovel), class: "dropdown-item small" %></li>
+                    <li><%= link_to "Detalhes", details_path, class: "dropdown-item small" %></li>
                     <li><%= link_to "Ver no Site", habitation_path(imovel), target: "_blank", class: "dropdown-item small" %></li>
                     <% if can_manage_this_property %>
                       <li><%= link_to "Editar", edit_path, class: "dropdown-item small" %></li>
@@ -1717,7 +1718,7 @@
                           <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" 
                               data-dropdown-target="menu"
                               style="right: 0; left: auto;">
-                            <li><%= link_to "Detalhes", admin_habitation_path(imovel), class: "dropdown-item small" %></li>
+                            <li><%= link_to "Detalhes", details_path, class: "dropdown-item small" %></li>
                             <li><%= link_to "Ver no Site", habitation_path(imovel), target: "_blank", class: "dropdown-item small" %></li>
                             <% if can_manage_this_property %>
                               <li><%= link_to "Editar", edit_path, class: "dropdown-item small" %></li>

@@ -74,6 +74,57 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).not_to include(secondary_property.titulo_anuncio)
   end
 
+  it "abre imóvel de Todos no detalhe interno para corretor sem permissão de edição" do
+    broker_profile = Profile.create!(
+      name: "Corretor todos #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Corretor")
+    )
+    vera = create(:admin_user, profile: broker_profile, name: "Vera Corretora")
+    other_broker = create(:admin_user, profile: broker_profile, name: "Outro Corretor")
+    other_property = create(
+      :habitation,
+      admin_user: other_broker,
+      codigo: "TODOS-#{SecureRandom.hex(6)}",
+      titulo_anuncio: "Imóvel de todos para consulta",
+      proprietario: "Proprietário Restrito"
+    )
+
+    sign_in vera
+    get admin_habitations_path(ownership: "all", q: other_property.codigo)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(other_property.titulo_anuncio)
+    expect(response.body).to include(CGI.escapeHTML(admin_habitation_path(other_property, return_to: request.fullpath)))
+    expect(response.body).not_to include(%(data-clickable-card-url-value="#{CGI.escapeHTML(habitation_path(other_property))}"))
+
+    get admin_habitation_path(other_property, return_to: admin_habitations_path(ownership: "all", q: other_property.codigo))
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Cadastro interno")
+    expect(response.body).to include(other_property.titulo_anuncio)
+    expect(response.body).to include("Dados restritos ao responsável pelo imóvel e ao Administrativo.")
+    expect(response.body).not_to include("Proprietário Restrito")
+
+    get edit_admin_habitation_path(other_property)
+
+    expect(response).to redirect_to(admin_habitations_path)
+
+    patch admin_habitation_path(other_property), params: {
+      habitation: {
+        status: "Aluguel",
+        valor_venda_formatted: "123.000,00",
+        titulo_anuncio: "Tentativa de alteração por outro corretor"
+      }
+    }
+
+    expect(response).to redirect_to(admin_habitations_path)
+    expect(other_property.reload).to have_attributes(
+      status: "Venda",
+      titulo_anuncio: "Imóvel de todos para consulta"
+    )
+    expect(other_property.valor_venda_cents).not_to eq(123_000_00)
+  end
+
   it "ordena imóveis novos no topo quando a data de cadastro CRM está vazia" do
     old_property = create(:habitation, codigo: "OLD-#{SecureRandom.hex(6)}", titulo_anuncio: "Imóvel antigo", data_cadastro_crm: 2.days.ago)
     new_property = create(:habitation, codigo: "NEW-#{SecureRandom.hex(6)}", titulo_anuncio: "Imóvel novo")
@@ -632,6 +683,96 @@ RSpec.describe "Admin::Habitations", type: :request do
 
     expect(response).to redirect_to(edit_admin_habitation_path(habitation, anchor: "documents"))
     expect(habitation.reload.fichas_cadastro.attachments.count).to eq(1)
+  end
+
+  it "bloqueia campos sensíveis para corretor ao editar imóvel atribuído" do
+    broker_profile = Profile.create!(
+      name: "Corretor edição limitada #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Corretor")
+    )
+    broker = create(:admin_user, profile: broker_profile)
+    habitation = create(
+      :habitation,
+      admin_user: broker,
+      codigo: "LOCK-#{SecureRandom.hex(6)}",
+      nome_empreendimento: "Empreendimento Original",
+      titulo_anuncio: "Título Original",
+      descricao_web: "Descrição Original",
+      proprietario: "Proprietário Original",
+      proprietario_email: "original@example.com",
+      valor_venda_cents: 500_000_00
+    )
+    habitation.create_address!(
+      logradouro: "Rua Original",
+      numero: "10",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+    file = Tempfile.new(["ficha-bloqueada", ".txt"])
+    file.write("ficha bloqueada")
+    file.rewind
+
+    sign_in broker
+    get edit_admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    page = Nokogiri::HTML(response.body)
+    expect(page.at_css('input[name="habitation[titulo_anuncio]"]')["readonly"]).to eq("readonly")
+    expect(page.at_css('input[name="habitation[nome_empreendimento]"]')["readonly"]).to eq("readonly")
+    expect(page.at_css('input[name="habitation[proprietario]"]')["readonly"]).to eq("readonly")
+    expect(page.at_css('input[name="habitation[address_attributes][logradouro]"]')["readonly"]).to eq("readonly")
+    expect(response.body).not_to include("Adicionar arquivos")
+
+    patch admin_habitation_path(habitation), params: {
+      habitation: {
+        status: "Aluguel",
+        categoria: "Apartamento",
+        dormitorios_qtd: "3",
+        caracteristicas: ["Mobiliado", "Vista mar"],
+        valor_venda_formatted: "600.000,00",
+        nome_empreendimento: "Empreendimento Alterado",
+        titulo_anuncio: "Título Alterado",
+        descricao_web: "Descrição Alterada",
+        proprietario: "Proprietário Alterado",
+        proprietario_email: "alterado@example.com",
+        fichas_cadastro: [Rack::Test::UploadedFile.new(file.path, "text/plain")],
+        address_attributes: {
+          id: habitation.address.id,
+          logradouro: "Rua Alterada",
+          numero: "99",
+          bairro: "Outro Bairro",
+          cidade: "Itajaí",
+          uf: "SC"
+        }
+      }
+    }
+
+    expect(response).to redirect_to(admin_habitations_path)
+    habitation.reload
+    expect(habitation).to have_attributes(
+      status: "Aluguel",
+      categoria: "Apartamento",
+      dormitorios_qtd: 3,
+      valor_venda_cents: 600_000_00,
+      nome_empreendimento: "Empreendimento Original",
+      titulo_anuncio: "Título Original",
+      proprietario: "Proprietário Original",
+      proprietario_email: "original@example.com"
+    )
+    expect(habitation.caracteristicas).to include("Mobiliado", "Vista mar")
+    expect(habitation.display_description).to include("Descrição Original")
+    expect(habitation.display_description).not_to include("Descrição Alterada")
+    expect(habitation.address.reload).to have_attributes(
+      logradouro: "Rua Original",
+      numero: "10",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú"
+    )
+    expect(habitation.fichas_cadastro).not_to be_attached
+  ensure
+    file&.close
+    file&.unlink
   end
 
   it "registra auditoria de alteração do imóvel e exibe o botão de timeline" do
