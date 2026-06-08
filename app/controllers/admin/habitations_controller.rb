@@ -88,7 +88,7 @@ class Admin::HabitationsController < Admin::BaseController
   before_action :authorize_habitation_edit!, only: [:edit, :update]
 
   before_action :load_autocomplete_data, only: [:new, :edit, :create, :update]
-  helper_method :can_view_proprietor_data?, :can_edit_habitation?, :sort_options
+  helper_method :can_view_proprietor_data?, :can_view_internal_documents?, :can_view_habitation_show_sensitive_data?, :can_edit_habitation?, :sort_options
   helper_method :can_release_intake_to_broker?, :can_manage_intake_status?, :can_complete_admin_intake_review?
 
   def index
@@ -314,6 +314,7 @@ class Admin::HabitationsController < Admin::BaseController
   def show
     @page_title = "Detalhes do Imóvel: #{@habitation.codigo}"
     @return_to_path = safe_admin_habitations_return_path(params[:return_to])
+    load_habitation_vista_document_assets if can_view_habitation_show_sensitive_data?(@habitation)
   end
 
   def create
@@ -1181,6 +1182,20 @@ class Admin::HabitationsController < Admin::BaseController
     property_belongs_to_current_user?(habitation)
   end
 
+  def can_view_internal_documents?(habitation)
+    return true if current_admin_user&.admin? || administrative_profile?
+    return manager_can_view_proprietor_data?(habitation) if manager_profile?
+
+    property_belongs_to_current_user?(habitation)
+  end
+
+  def can_view_habitation_show_sensitive_data?(habitation)
+    return true if current_admin_user&.admin? || administrative_profile?
+    return manager_can_view_proprietor_data?(habitation) if manager_profile?
+
+    property_captured_by_current_user?(habitation)
+  end
+
   def can_edit_habitation?(habitation)
     owns_all_resource?(:imoveis) || property_belongs_to_current_user?(habitation)
   end
@@ -1559,6 +1574,10 @@ class Admin::HabitationsController < Admin::BaseController
   def load_habitation_audit_logs
     @habitation_audit_logs = @habitation.habitation_audit_logs.includes(:admin_user).recent.limit(80)
     @habitation_vista_timeline_entries = habitation_vista_timeline_entries
+    load_habitation_vista_document_assets
+  end
+
+  def load_habitation_vista_document_assets
     @habitation_vista_document_assets = VistaFileAsset
       .where(habitation: @habitation, kind: "property_document")
       .includes(active_storage_attachment: :blob)
@@ -1848,6 +1867,19 @@ class Admin::HabitationsController < Admin::BaseController
     return false unless current_admin_user
     return true if habitation.admin_user_id == current_admin_user.id
     return true if habitation.broker_assignments.loaded? ? habitation.broker_assignments.any? { |assignment| assignment.admin_user_id == current_admin_user.id } : habitation.broker_assignments.exists?(admin_user_id: current_admin_user.id)
+
+    broker_name = current_admin_user.name.to_s.strip
+    broker_name.present? && habitation.corretor_nome.to_s.downcase.include?(broker_name.downcase)
+  end
+
+  def property_captured_by_current_user?(habitation)
+    return false unless current_admin_user
+    return true if habitation.admin_user_id == current_admin_user.id
+    if habitation.broker_assignments.loaded?
+      return true if habitation.broker_assignments.any? { |assignment| assignment.admin_user_id == current_admin_user.id && assignment.role == "captador" }
+    elsif habitation.broker_assignments.exists?(admin_user_id: current_admin_user.id, role: HabitationBrokerAssignment.roles.fetch("captador"))
+      return true
+    end
 
     broker_name = current_admin_user.name.to_s.strip
     broker_name.present? && habitation.corretor_nome.to_s.downcase.include?(broker_name.downcase)

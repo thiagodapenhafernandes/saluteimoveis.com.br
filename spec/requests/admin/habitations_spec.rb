@@ -137,9 +137,9 @@ RSpec.describe "Admin::Habitations", type: :request do
     get admin_habitation_path(other_property, return_to: admin_habitations_path(ownership: "all", q: other_property.codigo))
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include("Cadastro interno")
+    expect(response.body).to include("Identificação e cadastro")
     expect(response.body).to include(other_property.titulo_anuncio)
-    expect(response.body).to include("Dados restritos ao responsável pelo imóvel e ao Administrativo.")
+    expect(response.body).not_to include("Proprietário</div>")
     expect(response.body).not_to include("Proprietário Restrito")
 
     get edit_admin_habitation_path(other_property)
@@ -836,6 +836,117 @@ RSpec.describe "Admin::Habitations", type: :request do
 
     expect(response).to redirect_to(edit_admin_habitation_path(habitation, anchor: "documents"))
     expect(habitation.reload.fichas_cadastro.attachments.count).to eq(1)
+  end
+
+  it "mostra cadastro e fotos no detalhe para corretor não captador sem expor proprietário ou anexos" do
+    broker_profile = Profile.create!(
+      name: "Corretor show restrito #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Corretor")
+    )
+    captador = create(:admin_user, profile: broker_profile, name: "Captador Responsável")
+    other_broker = create(:admin_user, profile: broker_profile, name: "Outro Corretor")
+    habitation = create(
+      :habitation,
+      admin_user: captador,
+      codigo: "SHOW-REST-#{SecureRandom.hex(6)}",
+      titulo_anuncio: "Apartamento completo para show",
+      proprietario: "Proprietário Sigiloso",
+      proprietario_celular: "(47) 99999-9999",
+      nome_empreendimento: "Edifício Visível",
+      area_privativa_m2: 123,
+      tour_virtual: "https://example.com/tour",
+      videos: ["https://example.com/video"],
+      permuta_localizacao: "Balneário Camboriú",
+      tipo_veiculo_aceito_permuta: "SUV",
+      intake_origin: Habitation::INTAKE_ORIGIN_BROKER,
+      intake_status: "internal",
+      vista_referencia_externa: "VISTA-REF-1",
+      praia_brava_flag: true,
+      home_corporate_flag: true,
+      pictures: [{ "url" => "https://example.com/foto-api-show.jpg" }]
+    )
+    habitation.create_address!(
+      logradouro: "Rua Show",
+      numero: "77",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+    habitation.photos.attach(
+      io: StringIO.new("foto local show"),
+      filename: "foto-local-show.jpg",
+      content_type: "image/jpeg"
+    )
+    habitation.fichas_cadastro.attach(
+      io: StringIO.new("documento sigiloso"),
+      filename: "ficha-sigilosa.txt",
+      content_type: "text/plain"
+    )
+    habitation.broker_assignments.create!(
+      admin_user: captador,
+      role: "captador",
+      commission_type: "percentage",
+      commission_value: 4.5,
+      observations: "Vínculo de captação"
+    )
+
+    sign_in other_broker
+    get admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Apartamento completo para show")
+    expect(response.body).to include("Edifício Visível")
+    expect(response.body).to include("Edifício Visível")
+    expect(response.body).to include("https://example.com/foto-api-show.jpg")
+    expect(response.body).to include("foto-local-show.jpg")
+    expect(response.body).to include("data-fancybox")
+    expect(response.body).to include("Responsáveis e vínculos")
+    expect(response.body).to include("Captação e revisão")
+    expect(response.body).to include("Integrações e códigos externos")
+    expect(response.body).to include("Vídeos, plantas e links de mídia")
+    expect(response.body).to include("Permuta")
+    expect(response.body).to include("VISTA-REF-1")
+    expect(response.body).to include("Balneário Camboriú")
+    expect(response.body).to include("SUV")
+    expect(response.body).to include("https://example.com/tour")
+    expect(response.body).to include("https://example.com/video")
+    expect(response.body).to include("Praia Brava")
+    expect(response.body).to include("Home Corporate")
+    expect(response.body).to include("Vínculo de captação")
+    expect(response.body).not_to include("Proprietário Sigiloso")
+    expect(response.body).not_to include("(47) 99999-9999")
+    expect(response.body).not_to include("ficha-sigilosa.txt")
+    expect(response.body).not_to include("Anexos e documentos internos")
+  end
+
+  it "mostra proprietário e anexos no detalhe para o captador do imóvel" do
+    broker_profile = Profile.create!(
+      name: "Corretor show captador #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Corretor")
+    )
+    captador = create(:admin_user, profile: broker_profile, name: "Captador Show")
+    habitation = create(
+      :habitation,
+      admin_user: captador,
+      codigo: "SHOW-CAP-#{SecureRandom.hex(6)}",
+      titulo_anuncio: "Imóvel do captador",
+      proprietario: "Proprietário do Captador",
+      proprietario_email: "proprietario@example.com"
+    )
+    habitation.fichas_cadastro.attach(
+      io: StringIO.new("documento"),
+      filename: "ficha-captador.txt",
+      content_type: "text/plain"
+    )
+
+    sign_in captador
+    get admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Proprietário do Captador")
+    expect(response.body).to include("proprietario@example.com")
+    expect(response.body).to include("Anexos e documentos internos")
+    expect(response.body).to include("ficha-captador.txt")
   end
 
   it "bloqueia campos sensíveis para corretor ao editar imóvel atribuído" do
