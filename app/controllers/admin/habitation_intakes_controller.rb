@@ -560,6 +560,7 @@ module Admin
         number: @habitation.numero,
         building: @habitation.nome_empreendimento,
         unit: @habitation.bloco,
+        status: @habitation.status,
         ignored_id: @habitation.id
       ).call
     end

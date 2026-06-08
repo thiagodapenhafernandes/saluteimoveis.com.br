@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["street", "number", "building", "unit", "status", "submit"]
+  static targets = ["street", "number", "building", "unit", "commercialStatus", "status", "submit"]
   static values = {
     url: String,
     ignoredId: String
@@ -30,8 +30,9 @@ export default class extends Controller {
       const params = new URLSearchParams({
         street: this.streetTarget.value,
         number: this.numberTarget.value,
-        building: this.buildingTarget.value,
-        unit: this.unitTarget.value
+        building: this.targetValue("building"),
+        unit: this.targetValue("unit"),
+        status: this.statusValue()
       })
       if (this.hasIgnoredIdValue && this.ignoredIdValue) params.set("ignored_id", this.ignoredIdValue)
 
@@ -55,13 +56,25 @@ export default class extends Controller {
   }
 
   identityComplete() {
-    if (!this.hasStreetTarget || !this.hasNumberTarget || !this.hasBuildingTarget || !this.hasUnitTarget) return false
+    if (!this.hasStreetTarget || !this.hasNumberTarget) return false
 
-    return [this.streetTarget, this.numberTarget, this.buildingTarget, this.unitTarget]
-      .every((target) => target.value.trim().length > 0)
+    return [this.streetTarget, this.numberTarget].every((target) => target.value.trim().length > 0) &&
+      this.statusValue().trim().length > 0
+  }
+
+  statusValue() {
+    return this.hasCommercialStatusTarget ? this.commercialStatusTarget.value : ""
+  }
+
+  targetValue(name) {
+    const targetName = `${name}Target`
+    const hasTargetName = `has${name.charAt(0).toUpperCase()}${name.slice(1)}Target`
+    return this[hasTargetName] ? this[targetName].value : ""
   }
 
   showDuplicate(matches) {
+    if (!this.hasStatusTarget) return
+
     this.statusTarget.className = "alert alert-danger small mt-2 mb-0"
     const links = matches.map((match) => {
       const code = match.codigo ? `#${match.codigo}` : `ID ${match.id}`
@@ -71,6 +84,8 @@ export default class extends Controller {
   }
 
   showAvailable() {
+    if (!this.hasStatusTarget) return
+
     this.statusTarget.className = "form-text text-success small mt-2"
     this.statusTarget.textContent = "Endereço sem duplicidade encontrada."
   }

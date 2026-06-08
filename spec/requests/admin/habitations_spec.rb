@@ -233,6 +233,30 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).not_to include(other_property.titulo_anuncio)
   end
 
+  it "filtra empreendimento por corretor sem erro de distinct com ordenação" do
+    broker = create(:admin_user, name: "Laudi Cardoso")
+    create(:habitation, codigo: "183", tipo: "Empreendimento", nome_empreendimento: "Residencial 183")
+    matching = create(
+      :habitation,
+      codigo: "EMP-BROKER-#{SecureRandom.hex(6)}",
+      codigo_empreendimento: "183",
+      titulo_anuncio: "Imóvel do corretor filtrado"
+    )
+    other_property = create(
+      :habitation,
+      codigo: "EMP-OTHER-#{SecureRandom.hex(6)}",
+      codigo_empreendimento: "183",
+      titulo_anuncio: "Imóvel de outro corretor"
+    )
+    matching.broker_assignments.create!(admin_user: broker, role: "captador")
+
+    get admin_habitations_path(empreendimento_codigo: "183", corretor_id: broker.id)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(matching.titulo_anuncio)
+    expect(response.body).not_to include(other_property.titulo_anuncio)
+  end
+
   it "preserva filtros da listagem ao editar e salvar saindo" do
     habitation = create(:habitation, codigo: "RET-#{SecureRandom.hex(6)}", titulo_anuncio: "Imóvel com retorno")
     habitation.create_address!(
@@ -521,6 +545,96 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(habitation.reload.titulo_anuncio).to eq("Título sem trocar foto")
     expect(habitation.photos.attachments.size).to eq(1)
     expect(habitation.photos.attachments.first.filename.to_s).to eq("existente.jpg")
+  end
+
+  it "adiciona novas fotos sem substituir fotos anexadas existentes" do
+    habitation = create(:habitation, codigo: "FOTO-APPEND-#{SecureRandom.hex(6)}", titulo_anuncio: "Título antigo")
+    habitation.create_address!(
+      logradouro: "Rua Fotos",
+      numero: "104",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+    habitation.photos.attach(
+      io: StringIO.new("foto existente"),
+      filename: "existente.jpg",
+      content_type: "image/jpeg"
+    )
+    uploaded_photo = Tempfile.new(["nova-foto", ".jpg"])
+    uploaded_photo.write("foto nova")
+    uploaded_photo.rewind
+
+    patch admin_habitation_path(habitation), params: {
+      habitation: {
+        titulo_anuncio: "Título com foto nova",
+        photos: [Rack::Test::UploadedFile.new(uploaded_photo.path, "image/jpeg")]
+      }
+    }
+
+    expect(response).to redirect_to(admin_habitations_path)
+    expect(habitation.reload.photos.attachments.size).to eq(2)
+    expect(habitation.photos.attachments.map { |attachment| attachment.filename.to_s }).to include("existente.jpg")
+  ensure
+    uploaded_photo&.close
+    uploaded_photo&.unlink
+  end
+
+  it "mantém fotos da API ao adicionar fotos anexadas" do
+    api_pictures = [
+      { "url" => "https://example.com/api-um.jpg" },
+      { "url" => "https://example.com/api-dois.jpg" }
+    ]
+    habitation = create(
+      :habitation,
+      codigo: "FOTO-API-KEEP-#{SecureRandom.hex(6)}",
+      titulo_anuncio: "Título antigo",
+      pictures: api_pictures
+    )
+    habitation.create_address!(
+      logradouro: "Rua Fotos",
+      numero: "105",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+    uploaded_photo = Tempfile.new(["foto-local", ".jpg"])
+    uploaded_photo.write("foto local")
+    uploaded_photo.rewind
+
+    patch admin_habitation_path(habitation), params: {
+      habitation: {
+        titulo_anuncio: "Título com API preservada",
+        photos: [Rack::Test::UploadedFile.new(uploaded_photo.path, "image/jpeg")]
+      }
+    }
+
+    expect(response).to redirect_to(admin_habitations_path)
+    habitation.reload
+    expect(habitation.pictures).to eq(api_pictures)
+    expect(habitation.photos.attachments.size).to eq(1)
+  ensure
+    uploaded_photo&.close
+    uploaded_photo&.unlink
+  end
+
+  it "exibe fotos da API junto com fotos anexadas na edição" do
+    habitation = create(
+      :habitation,
+      codigo: "FOTO-MIX-#{SecureRandom.hex(6)}",
+      pictures: [{ "url" => "https://example.com/api-visivel.jpg" }]
+    )
+    habitation.photos.attach(
+      io: StringIO.new("foto local"),
+      filename: "local.jpg",
+      content_type: "image/jpeg"
+    )
+
+    get edit_admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("local.jpg")
+    expect(response.body).to include("https://example.com/api-visivel.jpg")
   end
 
   it "remove fotos anexadas selecionadas ao salvar o imóvel" do
@@ -1064,7 +1178,8 @@ RSpec.describe "Admin::Habitations", type: :request do
       street: "rua 1500",
       number: "100",
       building: "Edificio Aurora",
-      unit: "apto 1203"
+      unit: "apto 1203",
+      status: "Venda"
     }
 
     expect(response).to have_http_status(:ok)
@@ -1072,5 +1187,30 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(payload.fetch("complete")).to eq(true)
     expect(payload.fetch("duplicate")).to eq(true)
     expect(payload.fetch("matches").first.fetch("codigo")).to eq(existing.codigo)
+  end
+
+  it "não retorna duplicidade em tempo real quando status comercial é diferente" do
+    existing = create(:habitation, codigo: "CHK-STATUS-#{SecureRandom.hex(6)}", status: "Venda", nome_empreendimento: "Edifício Aurora", bloco: "1203")
+    existing.create_address!(
+      logradouro: "Rua 1500",
+      numero: "100",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+
+    get check_admin_habitation_duplicate_path, params: {
+      street: "rua 1500",
+      number: "100",
+      building: "Edificio Aurora",
+      unit: "apto 1203",
+      status: "Aluguel"
+    }
+
+    expect(response).to have_http_status(:ok)
+    payload = JSON.parse(response.body)
+    expect(payload.fetch("complete")).to eq(true)
+    expect(payload.fetch("duplicate")).to eq(false)
+    expect(payload.fetch("matches")).to be_empty
   end
 end

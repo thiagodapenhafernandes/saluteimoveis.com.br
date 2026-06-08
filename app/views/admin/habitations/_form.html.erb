@@ -438,7 +438,13 @@
               <div class="col-md-2">
                 <%= f.label :status, "Status comercial:", class: "form-label small fw-bold mb-1" %>
                 <%= f.select :status, (@status_options.presence || Habitation::STATUS_OPTIONS), { include_blank: true },
-                    class: "form-select form-select-sm", data: { controller: "tom-select", placeholder: "Selecione..." } %>
+                    class: "form-select form-select-sm",
+                    data: {
+                      controller: "tom-select",
+                      placeholder: "Selecione...",
+                      habitation_duplicate_check_target: "commercialStatus",
+                      action: "change->habitation-duplicate-check#check"
+                    } %>
               </div>
               <div class="col-md-4">
                 <%= f.label :motivo_suspensao, "Motivo de suspensão:", class: "form-label small fw-bold mb-1" %>
@@ -1760,7 +1766,7 @@
          <div class="card-body p-3 p-md-4" data-controller="photo-upload fancybox-gallery">
             <% linked_development = habitation.empreendimento if habitation.codigo_empreendimento.present? %>
             <% attached_media_photos = habitation.photos.attached? ? habitation.ordered_photos.select { |photo| photo.persisted? && photo.blob&.persisted? } : [] %>
-            <% api_media_pictures = (!attached_media_photos.any? && habitation.pictures.is_a?(Array)) ? habitation.pictures.each_with_index.filter_map { |pic, index|
+            <% api_media_pictures = habitation.pictures.is_a?(Array) ? habitation.pictures.each_with_index.filter_map { |pic, index|
                  pic_url = pic.is_a?(String) ? pic : (pic.try(:[], "url") || pic.try(:[], "src") || pic.try(:[], "link"))
                  [pic, index, pic_url] if pic_url.present?
                } : [] %>
@@ -1808,7 +1814,7 @@
                  <i class="bi bi-images display-4 text-muted"></i>
                </div>
                <h5>Arraste fotos ou clique para selecionar</h5>
-               <p class="text-muted small">Fotos adicionadas aqui sobressaem as da integração API.</p>
+               <p class="text-muted small">Fotos adicionadas aqui serão mantidas junto das fotos atuais. Para remover, use a lixeira sobre a imagem.</p>
                <%= f.label :photos, "Selecionar Arquivos", class: "btn btn-primary" %>
                <%= f.file_field :photos, multiple: true, class: "d-none", 
                    id: "habitation_photos",
@@ -1871,21 +1877,22 @@
                   
                   <% if api_media_pictures.any? %>
                      <% api_media_pictures.each_with_index do |(_pic, original_index, pic_url), index| %>
+                           <% display_index = attached_media_photos.size + index %>
                            <div class="col-6 col-md-3 col-lg-2 draggable-item api-picture-item" data-api-index="<%= original_index %>">
                               <div class="position-relative ratio ratio-1x1 group-hover media-photo-tile">
                                  <%= link_to pic_url,
                                      class: "d-block w-100 h-100",
-                                     data: { fancybox: "habitation-media-gallery", caption: "Foto API/Vista #{index + 1}" } do %>
+                                     data: { fancybox: "habitation-media-gallery", caption: "Foto API/Vista #{display_index + 1}" } do %>
                                    <%= image_tag pic_url, class: "rounded border w-100 h-100 object-fit-cover opacity-75" %>
                                  <% end %>
                                  <div class="media-photo-overlay position-absolute d-flex flex-column justify-content-between p-1">
                                    <div class="d-flex justify-content-between align-items-start gap-1">
-                                     <span class="badge bg-dark bg-opacity-75 border shadow-sm" data-photo-position-badge>#<%= index + 1 %></span>
+                                     <span class="badge bg-dark bg-opacity-75 border shadow-sm" data-photo-position-badge>#<%= display_index + 1 %></span>
                                      <span class="badge bg-secondary border shadow-sm" title="Vindo da Integração API">API/Vista</span>
                                    </div>
                                    <div class="d-flex justify-content-between align-items-end gap-1">
                                      <span data-photo-featured-control>
-                                     <% if index.zero? && !habitation.photos.attached? %>
+                                     <% if display_index.zero? %>
                                        <span class="badge bg-warning text-dark border shadow-sm">
                                          <i class="bi bi-star-fill me-1"></i>Destaque
                                        </span>

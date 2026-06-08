@@ -86,6 +86,9 @@
                   }
                 } do |f| %>
     <%= hidden_field_tag :current_step, @step %>
+    <%= hidden_field_tag :duplicate_check_status,
+                         @captacao.status,
+                         data: { habitation_duplicate_check_target: "commercialStatus" } %>
 
     <%= render "admin/captacoes/steps/#{@step}", f: f, field_state: field_state, field_invalid: field_invalid %>
 

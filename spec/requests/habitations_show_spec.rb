@@ -57,6 +57,23 @@ RSpec.describe "Habitation details", type: :request do
       expect(response.body).not_to include("Entrega")
     end
 
+    it "does not expose broker phone or direct whatsapp link in the responsible attendant card" do
+      broker = create(:admin_user, name: "Eliane Rosa", creci: "CREI24685", phone: "(47) 99905-8447")
+      habitation = create(:habitation, codigo: "BROKER-CARD", slug: "apartamento-broker-card")
+      share_link = HabitationShareLink.create!(habitation: habitation, admin_user: broker)
+
+      get habitation_path(habitation, share_token: share_link.token)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Atendimento com corretor responsável")
+      expect(response.body).to include("Eliane Rosa")
+      expect(response.body).to include("CREI24685")
+      expect(response.body).to include("Falar com corretor")
+      expect(response.body).not_to include("(47) 99905-8447")
+      expect(response.body).not_to include("https://wa.me/5547999058447")
+      expect(response.body).not_to include(">WhatsApp<")
+    end
+
     it "replaces past delivery dates with ready-to-move status when marked as ready" do
       habitation = create(
         :habitation,
