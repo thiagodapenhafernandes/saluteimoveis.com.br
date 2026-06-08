@@ -1,7 +1,8 @@
 module Admin
   class ProprietorsController < BaseController
     require "csv"
-    before_action :require_admin!
+    before_action :require_admin!, except: [:quick_create]
+    before_action :require_admin_or_administrative!, only: [:quick_create]
 
     EXPORT_FIELDS = {
       "name" => "Nome/Denominação",
@@ -159,6 +160,16 @@ module Admin
       end
     end
 
+    def quick_create
+      @proprietor = Proprietor.new(quick_proprietor_params.merge(role: :owner))
+
+      if @proprietor.save
+        render json: { id: @proprietor.id, name: @proprietor.name }, status: :created
+      else
+        render json: { errors: @proprietor.errors.full_messages }, status: :unprocessable_entity
+      end
+    end
+
     def update
       if @proprietor.update(proprietor_params)
         redirect_to admin_proprietors_path, notice: "Proprietário atualizado com sucesso."
@@ -191,6 +202,12 @@ module Admin
       redirect_to admin_proprietors_path, alert: "Proprietário não encontrado."
     end
 
+    def require_admin_or_administrative!
+      return if current_admin_user&.admin? || current_admin_user&.profile&.name == "Administrativo"
+
+      redirect_to admin_root_path, alert: "Acesso negado. Apenas administradores."
+    end
+
     def proprietor_params
       params.require(:proprietor).permit(
         :name, :role, :vista_code, :cpf_cnpj, :rg_ie, :issuing_authority,
@@ -200,6 +217,16 @@ module Admin
         :spouse_name, :spouse_email, :spouse_phone, :spouse_cpf_cnpj,
         :notes, :is_client, :address_type, :street, :number, :complement,
         :block, :uf, :cep, :neighborhood, :city, :profile_image
+      )
+    end
+
+    def quick_proprietor_params
+      params.require(:proprietor).permit(
+        :name,
+        :email,
+        :phone_primary,
+        :mobile_phone,
+        :cpf_cnpj
       )
     end
 

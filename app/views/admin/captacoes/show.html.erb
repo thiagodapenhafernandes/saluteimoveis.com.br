@@ -12,15 +12,10 @@
     <%= link_to admin_captacoes_path, class: "btn btn-outline-secondary btn-sm" do %>
       <i class="bi bi-arrow-left me-1"></i>Voltar
     <% end %>
-    <% if @captacao.intake_admin_approved? %>
+    <% if can_broker_release_to_site?(@captacao) %>
       <%= button_to release_to_site_admin_captacao_path(@captacao), method: :post,
                     class: "btn btn-sm btn-success fw-bold" do %>
         <i class="bi bi-globe me-1"></i>Publicar Site
-      <% end %>
-    <% elsif current_admin_user.admin? %>
-      <%= button_to publish_admin_captacao_path(@captacao), method: :post,
-                    class: "btn btn-sm #{@captacao.published_on_site? ? 'btn-outline-secondary' : 'btn-success'}" do %>
-        <i class="bi bi-globe me-1"></i><%= @captacao.published_on_site? ? "Desmarcar publicada" : "Marcar como publicada" %>
       <% end %>
     <% end %>
   </div>

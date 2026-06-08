@@ -105,11 +105,15 @@
       <% if @habitation.broker_intake? && @habitation.intake_submitted_for_admin_review? %>
         <div class="mt-2">
           <span class="badge bg-primary-subtle text-primary border">Captação finalizada</span>
-          <span class="small text-muted ms-1">Complete o cadastro e devolva para o corretor publicar no site.</span>
+          <span class="small text-muted ms-1">Complete o cadastro e envie para o captador responsável.</span>
         </div>
       <% elsif @habitation.broker_intake? && @habitation.intake_admin_approved? %>
         <div class="mt-2">
-          <span class="badge bg-success-subtle text-success border">Liberado para o corretor</span>
+          <span class="badge bg-warning-subtle text-warning-emphasis border">Aguardando aceite do corretor</span>
+        </div>
+      <% elsif @habitation.broker_intake? && @habitation.intake_internal? %>
+        <div class="mt-2">
+          <span class="badge bg-info-subtle text-info-emphasis border">Disponível internamente</span>
         </div>
       <% end %>
     </div>

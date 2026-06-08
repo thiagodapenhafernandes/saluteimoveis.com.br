@@ -1315,7 +1315,7 @@
   <% if mine_active %>
     <span class="small text-muted">Mostrando imóveis vinculados ao corretor logado.</span>
   <% elsif pending_review_active %>
-    <span class="small text-muted">Captações finalizadas pelo corretor e aguardando revisão administrativa.</span>
+    <span class="small text-muted">Captações em revisão ou aguardando aceite do corretor responsável.</span>
   <% end %>
 </div>
 
@@ -1702,6 +1702,9 @@
                             </span>
                           <% end %>
                           <span class="badge bg-primary-subtle text-primary border-0 ms-2 text-uppercase" style="font-size: 0.65rem;"><%= imovel.status || 'VENDA' %></span>
+                          <% if imovel.broker_intake? %>
+                            <span class="badge bg-warning-subtle text-warning-emphasis border-0 ms-2" style="font-size: 0.65rem;"><%= imovel.intake_status_label %></span>
+                          <% end %>
                           <span class="text-muted ms-1">• <%= imovel.categoria %></span>
                        </div>
                     </div>

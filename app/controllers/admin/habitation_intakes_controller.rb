@@ -9,7 +9,7 @@ module Admin
     before_action :authorize_review!, only: %i[approve return_to_broker]
     before_action :load_form_options, only: %i[edit update]
     layout :resolve_layout
-    helper_method :can_export_captacoes?
+    helper_method :can_export_captacoes?, :can_broker_release_to_site?
 
     def index
       @status = params[:status].presence
@@ -172,6 +172,11 @@ module Admin
     end
 
     def release_to_site
+      unless can_broker_release_to_site?(@habitation)
+        redirect_to admin_captacao_path(@habitation), alert: "Apenas o captador responsável pode publicar no site."
+        return
+      end
+
       unless @habitation.broker_can_release_to_site?
         redirect_to admin_captacao_path(@habitation), alert: "Esta captação ainda não está pronta para liberar no site."
         return
@@ -245,9 +250,22 @@ module Admin
       current_admin_user&.admin? || current_admin_user&.profile&.name == "Administrativo"
     end
 
+    def can_broker_release_to_site?(habitation)
+      return false unless habitation&.intake_admin_approved?
+      return false if current_admin_user&.admin? || administrative_profile? || can?(:review, :captacoes)
+
+      habitation.admin_user_id == current_admin_user&.id
+    end
+
     def scoped_intakes
       scope = Habitation.broker_intakes
-      return scope if owns_all_resource?(:captacoes) || can?(:review, :captacoes)
+      if owns_all_resource?(:captacoes) || can?(:review, :captacoes)
+        return scope.where(
+          "(habitations.intake_status IS NOT NULL AND habitations.intake_status NOT IN (:draft_statuses)) OR habitations.admin_user_id = :user_id",
+          draft_statuses: ["draft"],
+          user_id: current_admin_user.id
+        )
+      end
 
       scope.where(admin_user_id: current_admin_user.id)
     end

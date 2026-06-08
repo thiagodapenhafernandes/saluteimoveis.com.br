@@ -64,9 +64,37 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(response.body).to include("Terreno: 1")
   end
 
-  it "usa rótulos claros para enviar análise e publicar no site" do
-    intake = create(:habitation, :broker_intake, admin_user: admin, intake_step: "review", intake_status: "draft")
+  it "mantém rascunho de ficha de papel visível somente para quem começou" do
+    administrative_profile = Profile.find_or_initialize_by(name: "Administrativo")
+    administrative_profile.permissions = Profile.default_permissions_for("Administrativo")
+    administrative_profile.save!
+    creator = create(:admin_user, profile: administrative_profile, name: "Administrativo Criador")
+    other = create(:admin_user, profile: administrative_profile, name: "Administrativo Outro")
+    own_draft = create(:habitation, :broker_intake, admin_user: creator, intake_status: "draft", titulo_anuncio: "Rascunho do criador")
+    other_draft = create(:habitation, :broker_intake, admin_user: other, intake_status: "draft", titulo_anuncio: "Rascunho de outro usuário")
+    submitted = create(:habitation, :broker_intake, admin_user: other, intake_status: "submitted_for_admin_review", titulo_anuncio: "Ficha em revisão")
 
+    sign_in creator
+    get admin_captacoes_path(status: "draft")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(own_draft.titulo_anuncio)
+    expect(response.body).not_to include(other_draft.titulo_anuncio)
+
+    get admin_captacoes_path
+
+    expect(response.body).to include(submitted.titulo_anuncio)
+  end
+
+  it "usa rótulos claros para enviar análise e publicar no site pelo captador" do
+    broker_profile = Profile.create!(
+      name: "Corretor publicação #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Corretor")
+    )
+    broker = create(:admin_user, profile: broker_profile)
+    intake = create(:habitation, :broker_intake, admin_user: broker, intake_step: "review", intake_status: "draft")
+
+    sign_in broker
     get edit_admin_captacao_path(intake, step: "review")
 
     expect(response).to have_http_status(:ok)
@@ -79,6 +107,12 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("Publicar Site")
     expect(response.body).not_to include("Marcar como publicada")
+
+    sign_in admin
+    get admin_captacao_path(intake)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).not_to include("Publicar Site")
   end
 
   it "exporta planilha de captações para perfil administrativo" do
@@ -455,7 +489,12 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
   end
 
   it "envia, aprova e libera para o site quando a ficha está completa" do
-    intake = create(:habitation, :broker_intake, admin_user: admin)
+    broker_profile = Profile.create!(
+      name: "Corretor fluxo #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Corretor")
+    )
+    broker = create(:admin_user, profile: broker_profile)
+    intake = create(:habitation, :broker_intake, admin_user: broker)
     intake.create_address!(
       cep: "88330-000",
       logradouro: "Rua Central",
@@ -470,14 +509,22 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
       content_type: "text/plain"
     )
 
+    sign_in broker
     post submit_for_review_admin_captacao_path(intake)
     expect(response).to redirect_to(admin_captacao_path(intake))
     expect(intake.reload.intake_status).to eq("submitted_for_admin_review")
 
+    sign_in admin
     post approve_admin_captacao_path(intake), params: { admin_review_notes: "Ok" }
     expect(response).to redirect_to(admin_captacao_path(intake))
     expect(intake.reload.intake_status).to eq("admin_approved")
 
+    post release_to_site_admin_captacao_path(intake)
+    expect(response).to redirect_to(admin_captacao_path(intake))
+    expect(flash[:alert]).to eq("Apenas o captador responsável pode publicar no site.")
+    expect(intake.reload).to have_attributes(intake_status: "admin_approved", exibir_no_site_flag: false)
+
+    sign_in broker
     post release_to_site_admin_captacao_path(intake)
     expect(response).to redirect_to(admin_captacao_path(intake))
     expect(intake.reload).to have_attributes(intake_status: "published", exibir_no_site_flag: true)

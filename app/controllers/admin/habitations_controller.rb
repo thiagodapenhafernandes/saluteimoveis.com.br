@@ -89,7 +89,7 @@ class Admin::HabitationsController < Admin::BaseController
 
   before_action :load_autocomplete_data, only: [:new, :edit, :create, :update]
   helper_method :can_view_proprietor_data?, :can_edit_habitation?, :sort_options
-  helper_method :can_release_intake_to_broker?, :can_manage_intake_status?
+  helper_method :can_release_intake_to_broker?, :can_manage_intake_status?, :can_complete_admin_intake_review?
 
   def index
     load_index_filters
@@ -306,6 +306,7 @@ class Admin::HabitationsController < Admin::BaseController
 
   def new
     @habitation = Habitation.new
+    prepare_admin_paper_intake(@habitation) if admin_paper_intake_form?
     @habitation.build_address
     @page_title = "Novo Imóvel"
   end
@@ -318,8 +319,35 @@ class Admin::HabitationsController < Admin::BaseController
   def create
     @habitation = Habitation.new(habitation_params)
     @habitation.skip_auto_audit = true
+    prepare_admin_paper_intake(@habitation) if admin_paper_intake_form?
     apply_picture_removals_to_memory(@habitation)
+    releasing_to_broker = release_intake_to_broker_requested?
+    saving_internal_intake = save_internal_intake_requested?
+
+    if releasing_to_broker || saving_internal_intake
+      unless can_complete_admin_intake_review?(@habitation)
+        load_autocomplete_data
+        @habitation.errors.add(:base, "Você não tem permissão para concluir esta revisão.")
+        render :new, status: :unprocessable_entity
+        return
+      end
+
+      unless @habitation.intake_ready_for_admin_review?
+        @habitation.intake_missing_requirements.each { |message| @habitation.errors.add(:base, message) }
+        load_autocomplete_data
+        render :new, status: :unprocessable_entity
+        return
+      end
+
+      if releasing_to_broker
+        mark_intake_as_admin_approved(@habitation)
+      else
+        mark_intake_as_internal(@habitation)
+      end
+    end
+
     assign_proprietor_from_legacy_fields(@habitation) if current_admin_user&.admin?
+    apply_intake_status_transition_metadata(@habitation)
 
     unless no_duplicate_address?(@habitation)
       load_autocomplete_data
@@ -330,7 +358,14 @@ class Admin::HabitationsController < Admin::BaseController
     if @habitation.save
       record_habitation_created(@habitation)
       apply_saved_photo_removals(@habitation)
-      redirect_after_habitation_save(@habitation, notice: "Imóvel criado com sucesso.")
+      notice = if releasing_to_broker
+                 "Imóvel salvo e enviado ao captador para publicar no site."
+               elsif saving_internal_intake
+                 "Imóvel salvo internamente e disponibilizado no catálogo."
+               else
+                 "Imóvel criado com sucesso."
+               end
+      redirect_after_habitation_save(@habitation, notice: notice)
     else
       load_autocomplete_data
       render :new, status: :unprocessable_entity
@@ -375,7 +410,11 @@ class Admin::HabitationsController < Admin::BaseController
         return
       end
 
-      mark_intake_as_admin_approved(@habitation)
+      if releasing_to_broker
+        mark_intake_as_admin_approved(@habitation)
+      else
+        mark_intake_as_internal(@habitation)
+      end
     end
 
     assign_proprietor_from_legacy_fields(@habitation) if current_admin_user&.admin?
@@ -384,7 +423,7 @@ class Admin::HabitationsController < Admin::BaseController
       record_habitation_updated(@habitation, before_snapshot: audit_snapshot_before)
       apply_saved_photo_removals(@habitation)
       notice = if releasing_to_broker
-                 "Imóvel salvo e devolvido ao corretor para publicar no site."
+                 "Imóvel salvo e enviado ao captador para publicar no site."
                elsif saving_internal_intake
                  "Imóvel salvo internamente e disponibilizado no catálogo."
                else
@@ -776,14 +815,11 @@ class Admin::HabitationsController < Admin::BaseController
 
   def filtered_habitations_scope
     scope = Habitation.left_outer_joins(:address)
-    scope = scope.where(
-      "habitations.intake_origin IS NULL OR habitations.intake_origin != :broker_origin OR habitations.intake_status IN (:visible_statuses)",
-      broker_origin: Habitation::INTAKE_ORIGIN_BROKER,
-      visible_statuses: Habitation::CATALOG_VISIBLE_INTAKE_STATUSES
-    )
-    scope = apply_ownership_scope(scope)
-    scope = scope.pending_admin_review_from_intake if @intake_review == "pending"
-    scope = restrict_pending_review_to_manager_team(scope) if @intake_review == "pending" && manager_profile? && !administrative_profile? && !current_admin_user&.admin?
+    scope = if @intake_review == "pending"
+              pending_intake_review_scope(scope)
+            else
+              catalog_visible_habitations_scope(scope)
+            end
 
     scope = scope.admin_search_text(@q) if @q.present?
 
@@ -981,6 +1017,12 @@ class Admin::HabitationsController < Admin::BaseController
     return scope if @ownership_scope == "all"
     return scope unless current_admin_user
 
+    scope_for_current_user_properties(scope)
+  end
+
+  def scope_for_current_user_properties(scope)
+    return scope unless current_admin_user
+
     broker_name = current_admin_user.name.to_s.strip
     broker_name_condition = broker_name.present? ? " OR habitations.corretor_nome ILIKE :name" : ""
     scope.where(
@@ -988,6 +1030,27 @@ class Admin::HabitationsController < Admin::BaseController
       id: current_admin_user.id,
       name: "%#{broker_name}%"
     )
+  end
+
+  def catalog_visible_habitations_scope(scope)
+    scope = scope.where(
+      "habitations.intake_origin IS NULL OR habitations.intake_origin != :broker_origin OR habitations.intake_status IN (:visible_statuses)",
+      broker_origin: Habitation::INTAKE_ORIGIN_BROKER,
+      visible_statuses: Habitation::CATALOG_VISIBLE_INTAKE_STATUSES
+    )
+    apply_ownership_scope(scope)
+  end
+
+  def pending_intake_review_scope(scope)
+    scope = scope.broker_intakes.where(intake_status: Habitation::PENDING_REVIEW_INTAKE_STATUSES)
+
+    if can_review_intakes?
+      return restrict_pending_review_to_manager_team(scope) if manager_profile? && !administrative_profile? && !current_admin_user&.admin?
+
+      scope
+    else
+      scope_for_current_user_properties(scope.where(intake_status: "admin_approved"))
+    end
   end
 
   def normalized_report_type
@@ -1113,6 +1176,12 @@ class Admin::HabitationsController < Admin::BaseController
     return false unless habitation&.broker_intake?
     return false unless habitation.intake_submitted_for_admin_review?
 
+    can_complete_admin_intake_review?(habitation)
+  end
+
+  def can_complete_admin_intake_review?(habitation)
+    return false unless habitation&.broker_intake?
+
     current_admin_user&.admin? || owns_all_resource?(:imoveis) || can?(:review, :captacoes)
   end
 
@@ -1177,13 +1246,31 @@ class Admin::HabitationsController < Admin::BaseController
 
   def keep_admin_review_intake_hidden
     return unless @habitation.broker_intake?
-    return if @habitation.intake_published?
+    return if @habitation.intake_internal? || @habitation.intake_published?
 
     @habitation.exibir_no_site_flag = false
   end
 
+  def admin_paper_intake_form?
+    current_admin_user&.admin? || administrative_profile? || can?(:review, :captacoes)
+  end
+
+  def prepare_admin_paper_intake(habitation)
+    habitation.intake_origin ||= Habitation::INTAKE_ORIGIN_BROKER
+    habitation.intake_status ||= "draft"
+    habitation.admin_user ||= current_admin_user
+    habitation.exibir_no_site_flag = false unless habitation.intake_internal? || habitation.intake_published?
+  end
+
   def mark_intake_as_admin_approved(habitation)
     habitation.intake_status = "admin_approved"
+    habitation.admin_reviewed_by = current_admin_user
+    habitation.admin_reviewed_at = Time.current
+    habitation.exibir_no_site_flag = false
+  end
+
+  def mark_intake_as_internal(habitation)
+    habitation.intake_status = "internal"
     habitation.admin_reviewed_by = current_admin_user
     habitation.admin_reviewed_at = Time.current
     habitation.exibir_no_site_flag = false
@@ -1198,6 +1285,10 @@ class Admin::HabitationsController < Admin::BaseController
       habitation.submitted_for_review_at ||= Time.current
       habitation.exibir_no_site_flag = false
     when "admin_approved"
+      habitation.admin_reviewed_by ||= current_admin_user
+      habitation.admin_reviewed_at ||= Time.current
+      habitation.exibir_no_site_flag = false
+    when "internal"
       habitation.admin_reviewed_by ||= current_admin_user
       habitation.admin_reviewed_at ||= Time.current
       habitation.exibir_no_site_flag = false

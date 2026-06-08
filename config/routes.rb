@@ -31,6 +31,7 @@ Rails.application.routes.draw do
       collection do
         get :print
         get :export
+        post :quick_create
       end
     end
 

@@ -556,7 +556,7 @@
                             class: "form-select form-select-sm",
                             data: { controller: "tom-select", placeholder: "Selecione..." }
                         } %>
-                        <%= link_to new_admin_proprietor_path(embed: "modal"),
+                        <%= link_to "#quickProprietorModal",
                             class: "btn btn-outline-secondary",
                             title: "Cadastrar novo proprietário",
                             data: { bs_toggle: "modal", bs_target: "#quickProprietorModal" } do %>
@@ -2145,13 +2145,13 @@
       </div>
       <div class="habitation-action-buttons">
          <%= link_to "Cancelar", (@return_to_path || admin_habitations_path), class: "btn btn-outline-secondary px-4 px-md-4", data: { save_state_target: "cancelButton" } %>
-         <% if can_release_intake_to_broker?(habitation) %>
+         <% if can_release_intake_to_broker?(habitation) || (habitation.new_record? && can_complete_admin_intake_review?(habitation)) %>
            <%= f.button type: "submit",
                         name: "release_to_broker_after_save",
                         value: "1",
                         class: "btn btn-success px-4 px-md-4 fw-bold",
                         data: { habitation_duplicate_check_target: "submit" } do %>
-             Devolver ao corretor publicar
+             <%= habitation.new_record? ? "Enviar para corretor" : "Devolver para captador" %>
            <% end %>
            <%= f.button type: "submit",
                         name: "save_internal_after_save",
@@ -2332,20 +2332,145 @@
     });
   })();
 </script>
+<script>
+  (() => {
+    const form = document.getElementById("quickProprietorForm");
+    if (!form) return;
+
+    const modalElement = document.getElementById("quickProprietorModal");
+    const errorBox = modalElement?.querySelector("[data-quick-proprietor-error]");
+    const submitButton = modalElement?.querySelector('button[form="quickProprietorForm"]');
+
+    const showError = (message) => {
+      if (!errorBox) return;
+      errorBox.textContent = message;
+      errorBox.classList.remove("d-none");
+    };
+
+    const clearError = () => {
+      if (!errorBox) return;
+      errorBox.textContent = "";
+      errorBox.classList.add("d-none");
+    };
+
+    const selectProprietor = ({ id, name }) => {
+      const select = document.getElementById(form.dataset.proprietorSelectId);
+      if (!select) return;
+
+      const value = String(id);
+      if (!select.querySelector(`option[value="${CSS.escape(value)}"]`)) {
+        select.add(new Option(name, value, true, true));
+      }
+
+      select.value = value;
+
+      if (select.tomselect) {
+        select.tomselect.addOption({ value: value, text: name });
+        select.tomselect.setValue(value, true);
+      }
+
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    };
+
+    modalElement?.addEventListener("shown.bs.modal", () => {
+      clearError();
+      form.querySelector("#quick_proprietor_name")?.focus();
+    });
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      clearError();
+      submitButton?.setAttribute("disabled", "disabled");
+
+      try {
+        const response = await fetch(form.action, {
+          method: "POST",
+          headers: {
+            "Accept": "application/json",
+            "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')?.content || ""
+          },
+          body: new FormData(form)
+        });
+        const payload = await response.json();
+
+        if (!response.ok) {
+          showError((payload.errors || ["Não foi possível salvar o proprietário."]).join(" "));
+          return;
+        }
+
+        selectProprietor(payload);
+        form.reset();
+        window.bootstrap?.Modal?.getInstance(modalElement)?.hide();
+      } catch (_error) {
+        showError("Erro de comunicação ao salvar o proprietário.");
+      } finally {
+        submitButton?.removeAttribute("disabled");
+      }
+    });
+  })();
+</script>
 <%= render "admin/shared/attribute_manager_modal", modal_id: "attributeManagerModal" %>
 
 <div class="modal fade" id="quickProprietorModal" tabindex="-1" aria-labelledby="quickProprietorModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+  <div class="modal-dialog modal-md modal-dialog-centered">
     <div class="modal-content border-0 shadow-lg">
       <div class="modal-header">
         <h5 class="modal-title" id="quickProprietorModalLabel">Novo proprietário</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
       </div>
-      <div class="modal-body p-0">
-        <iframe src="<%= new_admin_proprietor_path(embed: "modal") %>"
-                title="Cadastrar novo proprietário"
-                class="w-100 border-0"
-                style="min-height: 78vh;"></iframe>
+      <div class="modal-body">
+        <div class="alert alert-danger d-none small mb-3" data-quick-proprietor-error></div>
+        <form id="quickProprietorForm"
+              action="<%= quick_create_admin_proprietors_path %>"
+              method="post"
+              data-proprietor-select-id="habitation_proprietor_id">
+          <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+          <div class="mb-3">
+            <label for="quick_proprietor_name" class="form-label fw-semibold">Nome do proprietário</label>
+            <input type="text"
+                   class="form-control"
+                   id="quick_proprietor_name"
+                   name="proprietor[name]"
+                   required
+                   autocomplete="name">
+          </div>
+          <div class="row g-2">
+            <div class="col-sm-6">
+              <label for="quick_proprietor_phone" class="form-label small fw-semibold">Telefone principal</label>
+              <input type="text"
+                     class="form-control form-control-sm"
+                     id="quick_proprietor_phone"
+                     name="proprietor[phone_primary]">
+            </div>
+            <div class="col-sm-6">
+              <label for="quick_proprietor_mobile" class="form-label small fw-semibold">Celular</label>
+              <input type="text"
+                     class="form-control form-control-sm"
+                     id="quick_proprietor_mobile"
+                     name="proprietor[mobile_phone]">
+            </div>
+            <div class="col-sm-7">
+              <label for="quick_proprietor_email" class="form-label small fw-semibold">E-mail</label>
+              <input type="email"
+                     class="form-control form-control-sm"
+                     id="quick_proprietor_email"
+                     name="proprietor[email]">
+            </div>
+            <div class="col-sm-5">
+              <label for="quick_proprietor_cpf" class="form-label small fw-semibold">CPF/CNPJ</label>
+              <input type="text"
+                     class="form-control form-control-sm"
+                     id="quick_proprietor_cpf"
+                     name="proprietor[cpf_cnpj]">
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" form="quickProprietorForm" class="btn btn-primary">
+          Salvar e selecionar
+        </button>
       </div>
     </div>
   </div>
