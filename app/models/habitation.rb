@@ -314,6 +314,24 @@ class Habitation < ApplicationRecord
     admin_user
   end
 
+  def primary_captador_assignment
+    assignments = if broker_assignments.loaded?
+                    broker_assignments.reject(&:marked_for_destruction?)
+                  else
+                    broker_assignments.includes(:admin_user)
+                  end
+
+    assignments.find { |assignment| assignment.role == "captador" && assignment.admin_user.present? }
+  end
+
+  def primary_captador
+    primary_captador_assignment&.admin_user || admin_user
+  end
+
+  def primary_captador_name
+    primary_captador&.name.presence || corretor_nome.presence
+  end
+
   def property_kind
     return "terreno" if categoria.to_s.match?(/terreno/i)
     return "sala_comercial" if categoria.to_s.match?(/sala|loja|comercial/i)
@@ -602,6 +620,14 @@ class Habitation < ApplicationRecord
     intake_origin == INTAKE_ORIGIN_BROKER
   end
 
+  def vista_integrated?
+    vista_import_batch_id.present? ||
+      vista_codigo.present? ||
+      vista_imo_codigo.present? ||
+      vista_referencia_externa.present? ||
+      status_vista.present?
+  end
+
   def intake_status_label
     INTAKE_STATUSES[intake_status] || intake_status.to_s.humanize
   end
@@ -726,7 +752,7 @@ class Habitation < ApplicationRecord
   end
 
   def own_public_image_sources
-    attached_images = ordered_photos.map { |photo| { "attachment" => photo, "url" => blob_path_for(photo) } }
+    attached_images = public_ordered_photos.map { |photo| { "attachment" => photo, "url" => blob_path_for(photo) } }
     api_images = image_payload_sources
 
     return api_images.presence || attached_images if dwv_property?
@@ -751,7 +777,10 @@ class Habitation < ApplicationRecord
              end
 
     if images.is_a?(Array)
-      images.map { |pic| pic.is_a?(Hash) ? pic : { "url" => pic } }
+      images.filter_map do |pic|
+        payload = pic.is_a?(Hash) ? pic : { "url" => pic }
+        payload unless picture_hidden_from_site?(payload)
+      end
     else
       []
     end
@@ -760,7 +789,10 @@ class Habitation < ApplicationRecord
   def development_image_payload_sources
     return [] unless fotos_empreendimento.is_a?(Array)
 
-    fotos_empreendimento.map { |pic| pic.is_a?(Hash) ? pic : { "url" => pic } }
+    fotos_empreendimento.filter_map do |pic|
+      payload = pic.is_a?(Hash) ? pic : { "url" => pic }
+      payload unless picture_hidden_from_site?(payload)
+    end
   end
 
   def blob_path_for(attachment)
@@ -774,6 +806,22 @@ class Habitation < ApplicationRecord
     ids = ids.split(',') if ids.is_a?(String)
     # Ensure IDs are integers and unique, reject blanks
     self.photo_ids_order = ids.compact.map(&:to_i).uniq - [0]
+  end
+
+  def site_hidden_photo_ids=(ids)
+    ids = ids.split(",") if ids.is_a?(String)
+    super(Array(ids).filter_map { |id| id.to_s.strip.match?(/\A\d+\z/) ? id.to_i : nil }.uniq)
+  end
+
+  def site_hidden_picture_urls=(urls)
+    return unless pictures.is_a?(Array)
+
+    hidden_urls = Array(urls).flat_map { |url| url.to_s.split(",") }.map(&:strip).reject(&:blank?).uniq
+    self.pictures = pictures.map do |picture|
+      payload = picture.is_a?(Hash) ? picture.deep_dup : { "url" => picture }
+      payload["site_hidden"] = hidden_urls.include?(picture_url_for_visibility(payload))
+      payload
+    end
   end
 
   def ordered_picture_indices=(indices)
@@ -810,6 +858,19 @@ class Habitation < ApplicationRecord
       idx = photo_ids_order.index(photo.id)
       idx || 999999 # Place unordered photos at the end
     end
+  end
+
+  def public_ordered_photos
+    hidden_ids = Array(site_hidden_photo_ids).map(&:to_i)
+    ordered_photos.reject { |photo| hidden_ids.include?(photo.id) }
+  end
+
+  def picture_hidden_from_site?(picture)
+    ActiveModel::Type::Boolean.new.cast(picture.try(:[], "site_hidden") || picture.try(:[], :site_hidden))
+  end
+
+  def picture_url_for_visibility(picture)
+    picture.try(:[], "url") || picture.try(:[], :url) || picture.try(:[], "src") || picture.try(:[], :src) || picture.try(:[], "link") || picture.try(:[], :link)
   end
 
   def sync_intake_answers

@@ -8,6 +8,7 @@ export default class extends Controller {
     "unitOnly",
     "developmentSelect",
     "developmentName",
+    "developmentNameLabel",
     "developmentEditLink",
     "constructorSelect",
     "missingConstructorAlert",
@@ -170,6 +171,7 @@ export default class extends Controller {
 
     this.tipoTarget.value = tipoValue
     this.toggleUnitOnly(typeKey !== "empreendimento")
+    this.syncDevelopmentNameLabel(typeKey)
     this.syncCategoryOptions(allowedCategories, fromUser, typeKey)
   }
 
@@ -182,6 +184,13 @@ export default class extends Controller {
     this.unitOnlyTargets.forEach((element) => {
       element.classList.toggle("d-none", !visible)
     })
+  }
+
+  syncDevelopmentNameLabel(typeKey) {
+    if (!this.hasDevelopmentNameLabelTarget) return
+
+    this.developmentNameLabelTarget.textContent =
+      typeKey === "empreendimento" ? "Nome do empreendimento:" : "Nome do condomínio:"
   }
 
   syncCategoryOptions(allowedCategories, fromUser, typeKey) {

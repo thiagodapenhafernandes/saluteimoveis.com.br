@@ -133,21 +133,24 @@
         </div>
       <% end %>
     </div>
-    <% if @habitation.admin_user.present? %>
-      <% captador = @habitation.admin_user %>
+    <%
+      captador = @habitation.primary_captador
+      captador_name = @habitation.primary_captador_name
+    %>
+    <% if captador_name.present? %>
       <div class="captador-card">
-        <% if captador.avatar.attached? %>
+        <% if captador&.avatar&.attached? %>
           <%= image_tag captador.avatar,
                         class: "captador-avatar shadow-sm",
-                        alt: "Foto de #{captador.name}" %>
+                        alt: "Foto de #{captador_name}" %>
         <% else %>
           <span class="captador-avatar captador-avatar-fallback shadow-sm" aria-hidden="true">
-            <%= captador.name.to_s.split.map { |part| part.first }.join.first(2).presence || "?" %>
+            <%= captador_name.to_s.split.map { |part| part.first }.join.first(2).presence || "?" %>
           </span>
         <% end %>
         <div style="min-width: 0;">
           <div class="captador-label">Captador</div>
-          <div class="captador-name text-truncate"><%= captador.name %></div>
+          <div class="captador-name text-truncate"><%= captador_name %></div>
         </div>
       </div>
     <% end %>

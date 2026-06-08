@@ -36,5 +36,42 @@ RSpec.describe Habitation, type: :model do
 
       expect(first_source["url"]).to eq(vista_picture["url"])
     end
+
+    it "não inclui fotos anexadas marcadas como internas no conjunto público" do
+      habitation = create(:habitation, imovel_dwv: "Nao")
+      habitation.photos.attach(
+        io: StringIO.new("imagem um"),
+        filename: "foto-um.jpg",
+        content_type: "image/jpeg"
+      )
+      habitation.photos.attach(
+        io: StringIO.new("imagem dois"),
+        filename: "foto-dois.jpg",
+        content_type: "image/jpeg"
+      )
+      attachments = habitation.photos.attachments.order(:id).to_a
+      habitation.update!(site_hidden_photo_ids: [attachments.first.id])
+
+      public_attachments = habitation.reload.public_image_sources.filter_map { |source| source["attachment"] }
+
+      expect(public_attachments).to contain_exactly(attachments.second)
+      expect(habitation.photos.attachments.map(&:id)).to contain_exactly(*attachments.map(&:id))
+    end
+
+    it "não inclui fotos da API marcadas como internas no conjunto público" do
+      habitation = create(
+        :habitation,
+        imovel_dwv: "Sim",
+        pictures: [
+          vista_picture,
+          { "url" => "https://cdn.vistahost.com.br/saluteim20174/vista.imobi/fotos/123/interna.jpg", "site_hidden" => true }
+        ]
+      )
+
+      public_urls = habitation.public_image_sources.map { |source| source["url"] }
+
+      expect(public_urls).to contain_exactly(vista_picture["url"])
+      expect(habitation.pictures.size).to eq(2)
+    end
   end
 end

@@ -44,7 +44,7 @@
               </td>
               <td class="text-end">
                 <%= link_to "Ver site", habitation_path(habitation), target: "_blank", rel: "noopener", class: "btn btn-sm btn-outline-secondary" %>
-                <%= link_to "Editar", edit_admin_habitation_path(habitation), class: "btn btn-sm btn-outline-primary" %>
+                <%= link_to admin_habitation_internal_action_label(habitation), admin_habitation_internal_path(habitation), class: "btn btn-sm btn-outline-primary" %>
               </td>
             </tr>
           <% end %>

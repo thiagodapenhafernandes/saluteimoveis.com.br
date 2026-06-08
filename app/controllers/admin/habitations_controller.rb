@@ -109,6 +109,23 @@ class Admin::HabitationsController < Admin::BaseController
     load_filter_data
   end
 
+  def search_by_code
+    code = params[:codigo].to_s.strip
+    if code.blank?
+      redirect_back fallback_location: admin_habitations_path, alert: "Informe o código do imóvel ou empreendimento."
+      return
+    end
+
+    habitation = resolve_admin_habitation_param(code) || Habitation.find_by(codigo_dwv: code)
+    unless habitation
+      redirect_back fallback_location: admin_habitations_path, alert: "Nenhum cadastro encontrado para o código #{code}."
+      return
+    end
+
+    path = can_edit_habitation?(habitation) ? edit_admin_habitation_path(habitation) : admin_habitation_path(habitation)
+    redirect_to path
+  end
+
   def print
     load_index_filters
     @sort_column = sort_column
@@ -832,8 +849,8 @@ class Admin::HabitationsController < Admin::BaseController
 
     scope = scope.admin_search_text(@q) if @q.present?
 
-    scope = scope.where(status: @status) if @status.present? && @status != "Todos"
-    scope = scope.where(categoria: @categoria) if @categoria.present? && @categoria != "Todas"
+    scope = apply_status_filter(scope, @status)
+    scope = apply_category_filter(scope, @categoria)
     scope = scope.where(
       "unaccent(CONCAT_WS(' ', " \
       "COALESCE(NULLIF(TRIM(addresses.tipo_endereco), ''), NULLIF(TRIM(habitations.tipo_endereco), '')), " \
@@ -916,13 +933,13 @@ class Admin::HabitationsController < Admin::BaseController
       scope = scope.where(
         "EXISTS (
            SELECT 1
-           FROM habitation_broker_assignments
-           WHERE habitation_broker_assignments.habitation_id = habitations.id
-             AND habitation_broker_assignments.admin_user_id = :id
-         ) OR habitations.corretor_nome ILIKE :name",
-        id: @corretor_id.to_i,
-        name: "%#{broker_name}%"
-      )
+	         FROM habitation_broker_assignments
+	         WHERE habitation_broker_assignments.habitation_id = habitations.id
+	           AND habitation_broker_assignments.admin_user_id = :id
+	         ) OR habitations.admin_user_id = :id OR habitations.corretor_nome ILIKE :name",
+	        id: @corretor_id.to_i,
+	        name: "%#{broker_name}%"
+	      )
     end
     scope = scope.where(proprietor_id: @proprietor_id) if @proprietor_id.present?
 
@@ -981,50 +998,7 @@ class Admin::HabitationsController < Admin::BaseController
     scope = apply_boolean_filter(scope, @tem_placa, :tem_placa_flag)
     scope = apply_boolean_filter(scope, @exclusivo, :exclusivo_flag)
 
-    # Vista popula `caracteristicas` JSONB no formato {"Mobiliado" => "Mobiliado", ...}.
-    # Os filtros pill consideram tanto os flags legados quanto o JSONB.
-    case @scope
-    when "destaque_web"
-      scope = scope.where(destaque_web_flag: true)
-    when "super_destaque"
-      scope = scope.where(festival_salute_flag: true)
-    when "oportunidade"
-      scope = scope.opportunity
-    when "frente_mar"
-      scope = scope.where(
-        "frente_mar_avenida_atlantica_flag = true OR vista_frente_mar_flag = true OR " \
-        "EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) WHERE value ILIKE '%vista mar%' OR value ILIKE '%frente mar%')"
-      )
-    when "lancamento"
-      scope = scope.where(lancamento_flag: true)
-    when "na_planta"
-      scope = scope.where("situacao ILIKE ? OR situacao = ?", "%Planta%", "Construção")
-    when "mobiliado"
-      scope = scope.where(
-        "mobiliado_flag = true OR " \
-        "EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) WHERE value ILIKE '%mobiliado%')"
-      )
-    when "sacada"
-      scope = scope.where(
-        "varanda_gourmet_flag = true OR " \
-        "EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) WHERE value ILIKE '%sacada%' OR value ILIKE '%varanda%')"
-      )
-    when "dependencia_empregada"
-      scope = scope.dependencia_empregada
-    when "cozinha_gourmet_churrasqueira"
-      scope = scope.cozinha_gourmet_churrasqueira
-    when "sol_manha"
-      scope = scope.sol_manha
-    when "sol_tarde"
-      scope = scope.sol_tarde
-    when "sol_dia_todo"
-      scope = scope.sol_dia_todo
-    when "decorado"
-      scope = scope.where(
-        "decorado_flag = true OR " \
-        "EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) WHERE value ILIKE '%decorad%')"
-      )
-    end
+    scope = apply_quick_scope_filter(scope, @scope)
 
     scope
   end
@@ -1344,6 +1318,76 @@ class Admin::HabitationsController < Admin::BaseController
     end
   end
 
+  def apply_status_filter(scope, raw_status)
+    status = Habitation.normalize_status(raw_status)
+    return scope if status.blank? || status == "Todos"
+
+    scope.where("unaccent(TRIM(habitations.status)) = unaccent(?)", status)
+  end
+
+  def apply_category_filter(scope, raw_category)
+    category = raw_category.to_s.squish
+    return scope if category.blank? || category == "Todas"
+
+    normalized_category = I18n.transliterate(category).downcase
+
+    case normalized_category
+    when "apartamento"
+      scope.where("unaccent(habitations.categoria) ILIKE unaccent(?)", "%apartamento%")
+    when "casa"
+      scope.where("unaccent(habitations.categoria) IN (unaccent('Casa'), unaccent('Casa de Rua'))")
+    when "casa em condominio"
+      scope.where("unaccent(habitations.categoria) ILIKE unaccent(?)", "%casa%condominio%")
+    when "sala comercial"
+      scope.where("unaccent(habitations.categoria) ILIKE unaccent(?)", "%sala%comercial%")
+    when "terreno"
+      scope.where("unaccent(habitations.categoria) ILIKE unaccent(?)", "%terreno%")
+    when "empreendimento"
+      scope.where(tipo: "Empreendimento")
+    when "garden"
+      scope.garden
+    when "diferenciado"
+      scope.diferenciado
+    else
+      scope.where("unaccent(TRIM(habitations.categoria)) = unaccent(?)", category)
+    end
+  end
+
+  def apply_quick_scope_filter(scope, raw_scope)
+    case raw_scope
+    when "destaque_web"
+      scope.where(destaque_web_flag: true)
+    when "super_destaque"
+      scope.where(festival_salute_flag: true)
+    when "oportunidade"
+      scope.opportunity
+    when "frente_mar"
+      apply_front_sea_filter(scope)
+    when "lancamento"
+      scope.where(lancamento_flag: true)
+    when "na_planta"
+      scope.where("unaccent(COALESCE(habitations.situacao, '')) ILIKE unaccent(?) OR unaccent(COALESCE(habitations.situacao, '')) = unaccent(?)", "%Planta%", "Construção")
+    when "mobiliado"
+      apply_catalog_text_feature_filter(scope, "mobiliado", boolean_column: :mobiliado_flag)
+    when "sacada"
+      apply_catalog_text_feature_filter(scope, "sacada", boolean_column: :varanda_gourmet_flag)
+    when "dependencia_empregada"
+      scope.dependencia_empregada
+    when "cozinha_gourmet_churrasqueira"
+      scope.cozinha_gourmet_churrasqueira
+    when "sol_manha"
+      scope.sol_manha
+    when "sol_tarde"
+      scope.sol_tarde
+    when "sol_dia_todo"
+      scope.sol_dia_todo
+    when "decorado"
+      apply_catalog_text_feature_filter(scope, "decorad", boolean_column: :decorado_flag)
+    else
+      scope
+    end
+  end
+
   def apply_price_range_filter(scope)
     return scope unless @min_price.positive? || @max_price.positive?
 
@@ -1379,12 +1423,7 @@ class Admin::HabitationsController < Admin::BaseController
 
     case key
     when /frente mar/
-      scope.where(
-        "frente_mar_avenida_atlantica_flag = true OR vista_frente_mar_flag = true OR " \
-        "(jsonb_typeof(caracteristicas) = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(caracteristicas) value WHERE unaccent(value) ILIKE unaccent('%vista mar%') OR unaccent(value) ILIKE unaccent('%frente mar%'))) OR " \
-        "(jsonb_typeof(caracteristicas) = 'object' AND EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) kv WHERE unaccent(kv.key) ILIKE unaccent('%vista mar%') OR unaccent(kv.value) ILIKE unaccent('%vista mar%') OR unaccent(kv.key) ILIKE unaccent('%frente mar%') OR unaccent(kv.value) ILIKE unaccent('%frente mar%'))) OR " \
-        "EXISTS (SELECT 1 FROM unnest((#{Habitation::SearchScopes::UNIQUE_FEATURES_ARRAY_SQL})) AS feature WHERE unaccent(feature) ILIKE unaccent('%frente mar%'))"
-      )
+      apply_front_sea_filter(scope)
     when /vista frente para o mar/
       scope.where(vista_frente_mar_flag: true)
     when /vista para o mar/
@@ -1432,6 +1471,35 @@ class Admin::HabitationsController < Admin::BaseController
         pattern: pattern
       )
     end
+  end
+
+  def apply_front_sea_filter(scope)
+    scope.where(
+      "habitations.frente_mar_avenida_atlantica_flag IS TRUE OR " \
+      "(jsonb_typeof(habitations.caracteristicas) = 'array' AND EXISTS (" \
+      "  SELECT 1 FROM jsonb_array_elements_text(habitations.caracteristicas) value " \
+      "  WHERE unaccent(value) ILIKE unaccent('%frente mar%')" \
+      ")) OR " \
+      "(jsonb_typeof(habitations.caracteristicas) = 'object' AND EXISTS (" \
+      "  SELECT 1 FROM jsonb_each_text(habitations.caracteristicas) kv " \
+      "  WHERE unaccent(kv.key) ILIKE unaccent('%frente mar%') " \
+      "     OR unaccent(kv.value) ILIKE unaccent('%frente mar%')" \
+      ")) OR " \
+      "EXISTS (" \
+      "  SELECT 1 FROM unnest((#{Habitation::SearchScopes::UNIQUE_FEATURES_ARRAY_SQL})) AS feature " \
+      "  WHERE unaccent(feature) ILIKE unaccent('%frente mar%')" \
+      ")"
+    )
+  end
+
+  def apply_catalog_text_feature_filter(scope, term, boolean_column: nil)
+    fragments = []
+    fragments << "habitations.#{ActiveRecord::Base.connection.quote_column_name(boolean_column)} IS TRUE" if boolean_column.present?
+    fragments << "(jsonb_typeof(habitations.caracteristicas) = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(habitations.caracteristicas) value WHERE unaccent(value) ILIKE unaccent(:term_pattern)))"
+    fragments << "(jsonb_typeof(habitations.caracteristicas) = 'object' AND EXISTS (SELECT 1 FROM jsonb_each_text(habitations.caracteristicas) kv WHERE unaccent(kv.key) ILIKE unaccent(:term_pattern) OR unaccent(kv.value) ILIKE unaccent(:term_pattern)))"
+    fragments << "EXISTS (SELECT 1 FROM unnest((#{Habitation::SearchScopes::UNIQUE_FEATURES_ARRAY_SQL})) AS feature WHERE unaccent(feature) ILIKE unaccent(:term_pattern))"
+
+    scope.where(fragments.join(" OR "), term_pattern: "%#{term}%")
   end
 
   def setup_paginated_report(scope)
@@ -1564,7 +1632,8 @@ class Admin::HabitationsController < Admin::BaseController
     end
 
     remaining_order = Array(habitation.photo_ids_order).map(&:to_i) - removed_ids
-    habitation.update_column(:photo_ids_order, remaining_order)
+    remaining_hidden_ids = Array(habitation.site_hidden_photo_ids).map(&:to_i) - removed_ids
+    habitation.update_columns(photo_ids_order: remaining_order, site_hidden_photo_ids: remaining_hidden_ids)
   end
 
   def selected_photo_attachment_ids_for_removal
@@ -1846,7 +1915,7 @@ class Admin::HabitationsController < Admin::BaseController
       :permuta_localizacao, :permuta_dormitorios_qtd, :permuta_suites_qtd, :permuta_garagens_qtd,
       :agenciador, :captador_commission_percentage, :broker_commission_percentage,
       :salute_rental_management_flag, :home_corporate_flag, :home_corporate_position,
-      :key_location, :key_location_notes, :ordered_photo_ids, :ordered_picture_indices, :intake_status,
+      :key_location, :key_location_notes, :ordered_photo_ids, :ordered_picture_indices, :site_hidden_photo_ids, :site_hidden_picture_urls, :intake_status,
       :use_development_photos_flag,
       videos: [], plantas: [], fotos_empreendimento: [], photos: [],
       fichas_cadastro: [], autorizacoes_venda: [],

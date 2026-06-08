@@ -315,7 +315,7 @@
   ]
 
   internal_fields = [
-    ["Captador", @habitation.admin_user&.name || @habitation.corretor_nome],
+    ["Captador", @habitation.primary_captador_name],
     ["Agenciador", @habitation.agenciador],
     ["Corretor Vista", @habitation.corretor_nome],
     ["Email corretor", @habitation.corretor_email],
@@ -441,7 +441,13 @@
   end
 
   broker_rows = []
-  if @habitation.admin_user.present?
+  captador_assignment_user_ids = @habitation.broker_assignments
+    .reject(&:marked_for_destruction?)
+    .select { |assignment| assignment.role == "captador" }
+    .map(&:admin_user_id)
+    .compact
+
+  if @habitation.admin_user.present? && !captador_assignment_user_ids.include?(@habitation.admin_user_id)
     broker_rows << {
       role: "Captador",
       name: @habitation.admin_user.name,

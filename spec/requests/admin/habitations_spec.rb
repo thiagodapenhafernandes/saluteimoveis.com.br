@@ -70,6 +70,56 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include("Salvar e sair")
   end
 
+  it "exibe no topo o captador vindo dos responsáveis e agenciamento" do
+    captador = create(:admin_user, name: "Luciana Indalécio")
+    habitation = create(
+      :habitation,
+      admin_user: nil,
+      codigo: "CAP-TOP-#{SecureRandom.hex(6)}",
+      titulo_anuncio: "Imóvel com captador por vínculo"
+    )
+    habitation.broker_assignments.create!(admin_user: captador, role: "captador")
+
+    get edit_admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Captador")
+    expect(response.body).to include("Luciana Indalécio")
+    expect(response.body).to include("Captador responsável:")
+    expect(response.body).not_to include("Corretor responsável:")
+  end
+
+  it "exibe nome do empreendimento no cadastro do tipo empreendimento" do
+    development = create(
+      :habitation,
+      tipo: "Empreendimento",
+      categoria: "Empreendimento",
+      codigo: "54",
+      nome_empreendimento: "Empreendimento Centro Cod. 54"
+    )
+
+    get edit_admin_habitation_path(development)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Pesquisar por código/referência")
+    expect(response.body).to include("Nome do empreendimento:")
+    expect(response.body).to include("Empreendimento Centro Cod. 54")
+  end
+
+  it "abre o cadastro pesquisando pelo código" do
+    development = create(
+      :habitation,
+      tipo: "Empreendimento",
+      categoria: "Empreendimento",
+      codigo: "54",
+      nome_empreendimento: "Empreendimento Centro Cod. 54"
+    )
+
+    get search_by_code_admin_habitations_path(codigo: "54")
+
+    expect(response).to redirect_to(edit_admin_habitation_path(development))
+  end
+
   it "filtra somente imóveis do DWV na listagem" do
     dwv_property = create(
       :habitation,
@@ -160,6 +210,133 @@ RSpec.describe "Admin::Habitations", type: :request do
       titulo_anuncio: "Imóvel de todos para consulta"
     )
     expect(other_property.valor_venda_cents).not_to eq(123_000_00)
+  end
+
+  it "abre imóvel próprio na aba Todos em visualização interna, não em edição" do
+    broker_profile = Profile.create!(
+      name: "Corretor todos proprio #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Corretor")
+    )
+    vera = create(:admin_user, profile: broker_profile, name: "Vera Corretora")
+    own_property = create(
+      :habitation,
+      admin_user: vera,
+      codigo: "TODOS-PROP-#{SecureRandom.hex(6)}",
+      titulo_anuncio: "Imóvel próprio na aba todos"
+    )
+
+    sign_in vera
+    get admin_habitations_path(ownership: "all", q: own_property.codigo)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(own_property.titulo_anuncio)
+    expect(response.body).to include(CGI.escapeHTML(admin_habitation_path(own_property, return_to: request.fullpath)))
+    expect(response.body).not_to include(CGI.escapeHTML(edit_admin_habitation_path(own_property, return_to: request.fullpath)))
+  end
+
+  it "combina status, categoria e Frente Mar sem trazer imóveis incompatíveis" do
+    matching = create(
+      :habitation,
+      codigo: "FILTRO-OK-#{SecureRandom.hex(6)}",
+      titulo_anuncio: "Apartamento venda frente mar correto",
+      status: "Venda",
+      categoria: "Apartamento",
+      frente_mar_avenida_atlantica_flag: true
+    )
+    wrong_category = create(
+      :habitation,
+      codigo: "FILTRO-CASA-#{SecureRandom.hex(6)}",
+      titulo_anuncio: "Casa frente mar fora do filtro",
+      status: "Venda",
+      categoria: "Casa",
+      frente_mar_avenida_atlantica_flag: true
+    )
+    wrong_status = create(
+      :habitation,
+      codigo: "FILTRO-ALUGUEL-#{SecureRandom.hex(6)}",
+      titulo_anuncio: "Apartamento aluguel frente mar fora do filtro",
+      status: "Aluguel",
+      categoria: "Apartamento",
+      frente_mar_avenida_atlantica_flag: true
+    )
+    vista_only = create(
+      :habitation,
+      codigo: "FILTRO-VISTA-#{SecureRandom.hex(6)}",
+      titulo_anuncio: "Apartamento vista mar não é frente mar",
+      status: "Venda",
+      categoria: "Apartamento",
+      vista_frente_mar_flag: true,
+      caracteristicas: ["Vista Mar"]
+    )
+
+    get admin_habitations_path(
+      ownership: "all",
+      status: "Venda",
+      categoria: "Apartamento",
+      amenities: ["Frente Mar"]
+    )
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(matching.titulo_anuncio)
+    expect(response.body).not_to include(wrong_category.titulo_anuncio)
+    expect(response.body).not_to include(wrong_status.titulo_anuncio)
+    expect(response.body).not_to include(vista_only.titulo_anuncio)
+  end
+
+  it "aplica o pill Frente Mar com a mesma regra estrita do checkbox" do
+    matching = create(
+      :habitation,
+      codigo: "PILL-FRENTE-#{SecureRandom.hex(6)}",
+      titulo_anuncio: "Apartamento pill frente mar correto",
+      status: "Venda",
+      categoria: "Apartamento Garden",
+      caracteristicas: ["Frente Mar"]
+    )
+    vista_only = create(
+      :habitation,
+      codigo: "PILL-VISTA-#{SecureRandom.hex(6)}",
+      titulo_anuncio: "Apartamento pill vista mar fora",
+      status: "Venda",
+      categoria: "Apartamento",
+      vista_frente_mar_flag: true,
+      caracteristicas: ["Vista Mar"]
+    )
+
+    get admin_habitations_path(
+      ownership: "all",
+      status: "Venda",
+      categoria: "Apartamento",
+      scope: "frente_mar"
+    )
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(matching.titulo_anuncio)
+    expect(response.body).not_to include(vista_only.titulo_anuncio)
+  end
+
+  it "filtra corretor também pelo responsável principal do imóvel" do
+    admin = create(:admin_user, :admin)
+    broker = create(:admin_user, name: "Corretor Principal #{SecureRandom.hex(4)}")
+    other_broker = create(:admin_user, name: "Outro Corretor #{SecureRandom.hex(4)}")
+    owned_by_broker = create(
+      :habitation,
+      admin_user: broker,
+      codigo: "CORRETOR-OK-#{SecureRandom.hex(6)}",
+      titulo_anuncio: "Imóvel do corretor principal"
+    )
+    owned_by_other = create(
+      :habitation,
+      admin_user: other_broker,
+      codigo: "CORRETOR-OUTRO-#{SecureRandom.hex(6)}",
+      titulo_anuncio: "Imóvel de outro corretor"
+    )
+
+    sign_in admin
+    get admin_habitations_path(ownership: "all", corretor_id: broker.id)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(owned_by_broker.titulo_anuncio)
+    expect(response.body).not_to include(owned_by_other.titulo_anuncio)
   end
 
   it "ordena imóveis novos no topo quando a data de cadastro CRM está vazia" do
@@ -778,6 +955,51 @@ RSpec.describe "Admin::Habitations", type: :request do
     ])
   end
 
+  it "salva fotos internas sem removê-las do cadastro" do
+    habitation = create(
+      :habitation,
+      codigo: "FOTO-INTERNA-#{SecureRandom.hex(6)}",
+      pictures: [
+        { "url" => "https://example.com/api-site.jpg" },
+        { "url" => "https://example.com/api-interna.jpg" }
+      ]
+    )
+    habitation.create_address!(
+      logradouro: "Rua Fotos",
+      numero: "106",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+    habitation.photos.attach(
+      io: StringIO.new("foto site"),
+      filename: "foto-site.jpg",
+      content_type: "image/jpeg"
+    )
+    habitation.photos.attach(
+      io: StringIO.new("foto interna"),
+      filename: "foto-interna.jpg",
+      content_type: "image/jpeg"
+    )
+    attachments = habitation.photos.attachments.order(:id).to_a
+
+    patch admin_habitation_path(habitation), params: {
+      habitation: {
+        titulo_anuncio: "Título com fotos internas",
+        site_hidden_photo_ids: attachments.second.id.to_s,
+        site_hidden_picture_urls: "https://example.com/api-interna.jpg"
+      }
+    }
+
+    expect(response).to redirect_to(admin_habitations_path)
+    habitation.reload
+    expect(habitation.photos.attachments.map(&:id)).to contain_exactly(*attachments.map(&:id))
+    expect(habitation.site_hidden_photo_ids).to contain_exactly(attachments.second.id)
+    expect(habitation.pictures.second["site_hidden"]).to eq(true)
+    expect(habitation.public_image_sources.map { |source| source["url"] }).not_to include("https://example.com/api-interna.jpg")
+    expect(habitation.public_image_sources.filter_map { |source| source["attachment"] }).not_to include(attachments.second)
+  end
+
   it "exibe modal para escolher como concluir o salvamento do cadastro" do
     habitation = create(:habitation, codigo: "SAVE-MODAL-#{SecureRandom.hex(6)}")
 
@@ -1189,6 +1411,27 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include("autorizacao-vista.pdf")
     expect(response.body).to include("Pendente de download")
     expect(response.body).to include("https://arquivos.example.test/autorizacao.pdf")
+  end
+
+  it "não exibe bloco de documentos do Vista para imóvel de ficha interna sem integração" do
+    habitation = create(
+      :habitation,
+      :broker_intake,
+      codigo: "FICHA-SEM-VISTA-#{SecureRandom.hex(6)}",
+      titulo_anuncio: "Ficha concluída internamente",
+      intake_status: "internal",
+      vista_import_batch_id: nil,
+      vista_codigo: nil,
+      vista_imo_codigo: nil,
+      vista_referencia_externa: nil,
+      status_vista: nil
+    )
+
+    get edit_admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).not_to include("Documentos do Vista")
+    expect(response.body).not_to include("Nenhum documento do Vista vinculado a este imóvel")
   end
 
   it "registra qualquer campo do cadastro do imóvel, mesmo fora da lista principal" do
