@@ -45,11 +45,27 @@
     .habitation-edit-header {
       padding: .9rem 1rem;
     }
-    .habitation-edit-header .title { font-size: 1.1rem; }
-    .habitation-edit-header .captador-card {
+    .habitation-edit-header {
+      align-items: stretch !important;
+    }
+    .habitation-edit-header .habitation-summary {
       order: 2;
       width: 100%;
+    }
+    .habitation-edit-header .title { font-size: 1.1rem; }
+    .habitation-edit-header .captador-card {
+      order: 1;
+      width: 100%;
       max-width: none;
+      padding: .65rem .75rem;
+      border: 1px solid #dbeafe;
+      border-radius: 12px;
+      background: #eff6ff;
+    }
+    .habitation-edit-header .captador-avatar {
+      width: 38px;
+      height: 38px;
+      flex-basis: 38px;
     }
     .habitation-edit-header .actions {
       order: 3;
@@ -86,7 +102,7 @@
 
 <div class="habitation-form-page">
   <div class="habitation-edit-header d-flex justify-content-between align-items-center gap-3 flex-wrap">
-    <div class="flex-grow-1" style="min-width: 0;">
+    <div class="habitation-summary flex-grow-1" style="min-width: 0;">
       <div class="codigo">
         <i class="bi bi-hash"></i><%= @habitation.codigo %>
         <% if @habitation.status.present? %>

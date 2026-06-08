@@ -186,23 +186,27 @@ export default class extends Controller {
 
   preview(event) {
     const files = Array.from(event.target.files || [])
+    const existingFileKeys = new Set(this.selectedNewFiles.map(entry => this.fileKey(entry.file)))
+    const newFileEntries = files.filter(file => {
+      const key = this.fileKey(file)
+      if (existingFileKeys.has(key)) return false
 
-    // Clear previous NEW previews logic
-    const existingPreviews = this.previewContainerTarget.querySelectorAll('.new-photo-preview')
-    existingPreviews.forEach(el => el.remove())
-    this.selectedNewFiles = files.map(file => ({
+      existingFileKeys.add(key)
+      return true
+    }).map(file => ({
       id: this.nextNewFileId(),
       file
     }))
+    this.selectedNewFiles = this.selectedNewFiles.concat(newFileEntries)
 
-    if (files.length === 0) {
+    if (newFileEntries.length === 0) {
       this.syncInputFilesFromState()
       this.updateOrder()
       this.refreshPhotoBadges()
       return
     }
 
-    this.selectedNewFiles.forEach(fileEntry => {
+    newFileEntries.forEach(fileEntry => {
       const file = fileEntry.file
       const imgContainer = document.createElement("div")
       const previewUrl = URL.createObjectURL(file)
@@ -286,6 +290,10 @@ export default class extends Controller {
   nextNewFileId() {
     this.newFileIdCounter += 1
     return `new-photo-${Date.now()}-${this.newFileIdCounter}`
+  }
+
+  fileKey(file) {
+    return [file.name, file.size, file.lastModified].join(':')
   }
 
   escapeHtml(value) {

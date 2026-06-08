@@ -8,6 +8,7 @@ module Admin
         number: params[:number],
         building: params[:building],
         unit: params[:unit],
+        status: params[:status],
         ignored_id: params[:ignored_id]
       ).call
 

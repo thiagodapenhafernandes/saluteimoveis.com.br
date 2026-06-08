@@ -95,9 +95,9 @@ class Admin::HabitationsController < Admin::BaseController
     load_index_filters
     @sort_column = sort_column
     @sort_direction = sort_direction
-    @habitations = filtered_habitations_scope
-                   .order(Arel.sql("#{sort_expression} #{@sort_direction} NULLS LAST"))
-    @filtered_count = @habitations.count
+    filtered_scope = filtered_habitations_scope
+    @filtered_count = filtered_scope.reorder(nil).count
+    @habitations = filtered_scope.order(Arel.sql("#{sort_expression} #{@sort_direction} NULLS LAST"))
 
     @habitations = @habitations.paginate(page: params[:page], per_page: 20)
     @page_title = "Gerenciar Imóveis"
@@ -317,7 +317,9 @@ class Admin::HabitationsController < Admin::BaseController
   end
 
   def create
-    @habitation = Habitation.new(habitation_params)
+    permitted_attributes = habitation_params
+    new_photo_uploads = extract_photo_uploads!(permitted_attributes)
+    @habitation = Habitation.new(permitted_attributes)
     @habitation.skip_auto_audit = true
     prepare_admin_paper_intake(@habitation) if admin_paper_intake_form?
     apply_picture_removals_to_memory(@habitation)
@@ -356,6 +358,7 @@ class Admin::HabitationsController < Admin::BaseController
     end
 
     if @habitation.save
+      attach_new_photos(@habitation, new_photo_uploads)
       record_habitation_created(@habitation)
       apply_saved_photo_removals(@habitation)
       notice = if releasing_to_broker
@@ -383,7 +386,9 @@ class Admin::HabitationsController < Admin::BaseController
   def update
     audit_snapshot_before = Habitations::AuditChangeRecorder.snapshot_for(@habitation)
     @habitation.skip_auto_audit = true
-    @habitation.assign_attributes(habitation_params)
+    permitted_attributes = habitation_params
+    new_photo_uploads = extract_photo_uploads!(permitted_attributes)
+    @habitation.assign_attributes(permitted_attributes)
     apply_picture_removals_to_memory(@habitation)
     keep_admin_review_intake_hidden
 
@@ -420,6 +425,7 @@ class Admin::HabitationsController < Admin::BaseController
     assign_proprietor_from_legacy_fields(@habitation) if current_admin_user&.admin?
     apply_intake_status_transition_metadata(@habitation)
     if @habitation.save
+      attach_new_photos(@habitation, new_photo_uploads)
       record_habitation_updated(@habitation, before_snapshot: audit_snapshot_before)
       apply_saved_photo_removals(@habitation)
       notice = if releasing_to_broker
@@ -904,9 +910,16 @@ class Admin::HabitationsController < Admin::BaseController
     end
     if @corretor_id.present?
       broker_name = AdminUser.where(id: @corretor_id).pick(:name).to_s
-      scope = scope.left_outer_joins(:broker_assignments)
-                   .where("habitation_broker_assignments.admin_user_id = :id OR habitations.corretor_nome ILIKE :name", id: @corretor_id.to_i, name: "%#{broker_name}%")
-                   .distinct
+      scope = scope.where(
+        "EXISTS (
+           SELECT 1
+           FROM habitation_broker_assignments
+           WHERE habitation_broker_assignments.habitation_id = habitations.id
+             AND habitation_broker_assignments.admin_user_id = :id
+         ) OR habitations.corretor_nome ILIKE :name",
+        id: @corretor_id.to_i,
+        name: "%#{broker_name}%"
+      )
     end
     scope = scope.where(proprietor_id: @proprietor_id) if @proprietor_id.present?
 
@@ -1205,6 +1218,7 @@ class Admin::HabitationsController < Admin::BaseController
       number: habitation.numero,
       building: habitation.nome_empreendimento,
       unit: habitation.bloco,
+      status: habitation.status,
       ignored_id: habitation.id
     ).call
     return true unless result.complete && result.duplicate?
@@ -1476,6 +1490,22 @@ class Admin::HabitationsController < Admin::BaseController
     end
 
     permitted
+  end
+
+  def extract_photo_uploads!(permitted)
+    Array(permitted.delete(:photos)).reject do |photo|
+      photo.blank? || (photo.respond_to?(:size) && photo.size.to_i.zero?)
+    end
+  end
+
+  def attach_new_photos(habitation, uploads)
+    valid_uploads = Array(uploads).reject do |photo|
+      photo.blank? || (photo.respond_to?(:size) && photo.size.to_i.zero?)
+    end
+    return if valid_uploads.blank?
+
+    habitation.photos.attach(valid_uploads)
+    habitation.reload
   end
 
   def apply_picture_removals_to_memory(habitation)
