@@ -1,4 +1,4 @@
-\restrict E4Ev7fDaexEHvnFgEk3nJDhrwxsS99YhyIaAYExu6CK7YZZlAEOXkcg2GgiLBcS
+\restrict rPXkzGekHTSldjhAVb4LiZdaghWI3oZeIlvA0C40VuJpy6ZbpxKNaOI9KvR83TY
 
 -- Dumped from database version 17.9 (Homebrew)
 -- Dumped by pg_dump version 17.9 (Homebrew)
@@ -1440,7 +1440,8 @@ CREATE TABLE public.habitations (
     valor_livre_proprietario_cents bigint,
     motivo_suspensao text,
     valor_alugado_terceiros_cents bigint,
-    valor_vendido_terceiros_cents bigint
+    valor_vendido_terceiros_cents bigint,
+    site_hidden_photo_ids jsonb DEFAULT '[]'::jsonb NOT NULL
 );
 
 
@@ -8392,11 +8393,12 @@ ALTER TABLE ONLY public.push_subscriptions
 -- PostgreSQL database dump complete
 --
 
-\unrestrict E4Ev7fDaexEHvnFgEk3nJDhrwxsS99YhyIaAYExu6CK7YZZlAEOXkcg2GgiLBcS
+\unrestrict rPXkzGekHTSldjhAVb4LiZdaghWI3oZeIlvA0C40VuJpy6ZbpxKNaOI9KvR83TY
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260608190000'),
 ('20260606123000'),
 ('20260605123358'),
 ('20260605093000'),

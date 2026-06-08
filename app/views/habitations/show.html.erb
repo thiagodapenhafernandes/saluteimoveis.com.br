@@ -329,12 +329,6 @@
                 <p class="font-bold text-gray-900">Pronto para morar</p>
               </div>
             <% end %>
-            <% if @habitation.nome_empreendimento.present? && !@habitation.unidade? %>
-              <div>
-                <p class="text-gray-500">Empreendimento</p>
-                <p class="font-bold text-gray-900"><%= @habitation.nome_empreendimento %></p>
-              </div>
-            <% end %>
           </div>
         </section>
 

@@ -193,6 +193,22 @@ RSpec.describe "Habitation details", type: :request do
       expect(response.body).not_to include("Residencial Oculto")
     end
 
+    it "does not expose the condominium name in regular property details" do
+      habitation = create(
+        :habitation,
+        codigo: "PUBLIC-NO-CONDO",
+        slug: "publico-sem-condominio",
+        nome_empreendimento: "Blue Sky Residence",
+        titulo_anuncio: "Apartamento à venda 3 suítes"
+      )
+
+      get habitation_path(habitation)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("Blue Sky Residence")
+      expect(response.body).not_to include("Empreendimento</p>")
+    end
+
     it "shows included taxes instead of strategic placeholder condominium and IPTU values" do
       habitation = create(
         :habitation,

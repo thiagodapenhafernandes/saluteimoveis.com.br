@@ -7,6 +7,8 @@ export default class extends Controller {
     "input",
     "orderInput",
     "apiOrderInput",
+    "hiddenPhotoIdsInput",
+    "hiddenPictureUrlsInput",
     "removePhotoIdsInput",
     "removePictureIndicesInput",
     "previewContainer"
@@ -155,6 +157,29 @@ export default class extends Controller {
     this.refreshPhotoBadges()
   }
 
+  toggleSiteVisibility(event) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    const button = event.currentTarget
+    const tile = button.closest('.media-photo-tile')
+    if (!tile) return
+
+    const hidden = tile.dataset.siteHidden !== "true"
+    tile.dataset.siteHidden = hidden ? "true" : "false"
+    tile.classList.toggle('is-site-hidden', hidden)
+
+    if (button.dataset.photoId && this.hasHiddenPhotoIdsInputTarget) {
+      this.toggleHiddenListValue(this.hiddenPhotoIdsInputTarget, button.dataset.photoId, hidden)
+    }
+
+    if (button.dataset.pictureUrl && this.hasHiddenPictureUrlsInputTarget) {
+      this.toggleHiddenListValue(this.hiddenPictureUrlsInputTarget, button.dataset.pictureUrl, hidden)
+    }
+
+    this.setSiteToggleButton(button, hidden)
+  }
+
   refreshPhotoBadges() {
     const items = Array.from(this.previewContainerTarget.querySelectorAll('.draggable-item'))
 
@@ -285,6 +310,36 @@ export default class extends Controller {
 
     if (!values.includes(value)) values.push(value)
     input.value = values.join(',')
+  }
+
+  toggleHiddenListValue(input, value, hidden) {
+    if (!input || !value) return
+
+    const values = input.value
+      .split(',')
+      .map(item => item.trim())
+      .filter(Boolean)
+
+    const nextValues = hidden
+      ? Array.from(new Set(values.concat(value)))
+      : values.filter(item => item !== value)
+
+    input.value = nextValues.join(',')
+  }
+
+  setSiteToggleButton(button, hidden) {
+    button.classList.toggle('btn-success', !hidden)
+    button.classList.toggle('btn-secondary', hidden)
+    button.title = hidden ? 'Foto interna, fora do site' : 'Foto publicada no site'
+
+    const icon = button.querySelector('i')
+    if (icon) {
+      icon.classList.toggle('bi-globe2', !hidden)
+      icon.classList.toggle('bi-eye-slash', hidden)
+    }
+
+    const label = button.querySelector('span')
+    if (label) label.textContent = hidden ? 'Interna' : 'Site'
   }
 
   nextNewFileId() {

@@ -404,7 +404,7 @@
                   <% @recent_habitations.each do |h| %>
                     <tr>
                       <td class="fw-bold small">
-                        <%= link_to h.codigo, edit_admin_habitation_path(h), class: "text-decoration-none" %>
+                        <%= link_to h.codigo, admin_habitation_internal_path(h), class: "text-decoration-none" %>
                       </td>
                       <td class="small">
                         <div><%= [h.endereco, h.numero].compact_blank.join(", ").presence || "—" %></div>
