@@ -393,8 +393,6 @@ RSpec.describe "Admin::Habitations", type: :request do
       }
     }
 
-    warn response.body.scan(/(?:alert[^>]*>|invalid-feedback[^>]*>|Já existe|erro|não|falhou|inválid|propriet)[^<]{0,220}/i).uniq.first(30).join("\n")
-
     expect(response).to redirect_to(admin_habitations_path)
     expect(intake.reload).to have_attributes(
       intake_status: "admin_approved",
@@ -403,6 +401,66 @@ RSpec.describe "Admin::Habitations", type: :request do
       admin_reviewed_by_id: admin.id
     )
     expect(intake.admin_reviewed_at).to be_present
+  end
+
+  it "não remove autorização existente quando devolve para captador com campo de arquivo vazio" do
+    intake = create(:habitation, :broker_intake, admin_user: admin, codigo: "AUTH-KEEP-#{SecureRandom.hex(6)}", intake_status: "submitted_for_admin_review")
+    intake.create_address!(
+      cep: "88330-000",
+      logradouro: "Rua Autorização",
+      numero: "100",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+    intake.autorizacoes_venda.attach(
+      io: StringIO.new("autorizacao existente"),
+      filename: "autorizacao-existente.txt",
+      content_type: "text/plain"
+    )
+
+    patch admin_habitation_path(intake), params: {
+      release_to_broker_after_save: "1",
+      habitation: {
+        titulo_anuncio: "Apartamento com autorização preservada",
+        autorizacoes_venda: [""]
+      }
+    }
+
+    expect(response).to redirect_to(admin_habitations_path)
+    expect(intake.reload).to have_attributes(intake_status: "admin_approved")
+    expect(intake.autorizacoes_venda).to be_attached
+    expect(intake.autorizacoes_venda.attachments.map { |attachment| attachment.filename.to_s }).to include("autorizacao-existente.txt")
+  end
+
+  it "salva autorização nova antes de validar devolução para captador" do
+    intake = create(:habitation, :broker_intake, admin_user: admin, codigo: "AUTH-NEW-#{SecureRandom.hex(6)}", intake_status: "submitted_for_admin_review")
+    intake.create_address!(
+      cep: "88330-000",
+      logradouro: "Rua Autorização Nova",
+      numero: "100",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+    authorization = Rack::Test::UploadedFile.new(
+      StringIO.new("autorizacao nova"),
+      "text/plain",
+      original_filename: "autorizacao-nova.txt"
+    )
+
+    patch admin_habitation_path(intake), params: {
+      release_to_broker_after_save: "1",
+      habitation: {
+        titulo_anuncio: "Apartamento com autorização nova",
+        autorizacoes_venda: ["", authorization]
+      }
+    }
+
+    expect(response).to redirect_to(admin_habitations_path)
+    expect(intake.reload).to have_attributes(intake_status: "admin_approved")
+    expect(intake.autorizacoes_venda).to be_attached
+    expect(intake.autorizacoes_venda.attachments.map { |attachment| attachment.filename.to_s }).to include("autorizacao-nova.txt")
   end
 
   it "salva captação revisada internamente sem exibir no site" do

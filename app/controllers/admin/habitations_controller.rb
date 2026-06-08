@@ -320,6 +320,7 @@ class Admin::HabitationsController < Admin::BaseController
   def create
     permitted_attributes = habitation_params
     new_photo_uploads = extract_photo_uploads!(permitted_attributes)
+    normalize_document_uploads!(permitted_attributes)
     @habitation = Habitation.new(permitted_attributes)
     @habitation.skip_auto_audit = true
     prepare_admin_paper_intake(@habitation) if admin_paper_intake_form?
@@ -389,6 +390,7 @@ class Admin::HabitationsController < Admin::BaseController
     @habitation.skip_auto_audit = true
     permitted_attributes = habitation_params
     new_photo_uploads = extract_photo_uploads!(permitted_attributes)
+    normalize_document_uploads!(permitted_attributes)
     @habitation.assign_attributes(permitted_attributes)
     apply_picture_removals_to_memory(@habitation)
     keep_admin_review_intake_hidden
@@ -1511,6 +1513,20 @@ class Admin::HabitationsController < Admin::BaseController
     Array(permitted.delete(:photos)).reject do |photo|
       photo.blank? || (photo.respond_to?(:size) && photo.size.to_i.zero?)
     end
+  end
+
+  def normalize_document_uploads!(permitted)
+    %i[fichas_cadastro autorizacoes_venda].each do |key|
+      next unless permitted.key?(key)
+
+      uploads = Array(permitted[key]).reject do |upload|
+        upload.blank? || (upload.respond_to?(:size) && upload.size.to_i.zero?)
+      end
+
+      uploads.any? ? permitted[key] = uploads : permitted.delete(key)
+    end
+
+    permitted
   end
 
   def attach_new_photos(habitation, uploads)
