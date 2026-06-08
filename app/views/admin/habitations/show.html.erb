@@ -1,0 +1,245 @@
+<style>
+  .habitation-show-page {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .habitation-show-header,
+  .habitation-show-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  }
+
+  .habitation-show-header {
+    padding: 1rem 1.25rem;
+  }
+
+  .habitation-show-title {
+    color: #0f172a;
+    font-size: 1.3rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .habitation-show-meta {
+    color: #64748b;
+    font-size: .85rem;
+    font-weight: 600;
+  }
+
+  .habitation-show-card {
+    padding: 1.25rem;
+  }
+
+  .habitation-show-section-title {
+    color: #64748b;
+    font-size: .75rem;
+    font-weight: 800;
+    letter-spacing: .08em;
+    margin-bottom: .75rem;
+    text-transform: uppercase;
+  }
+
+  .habitation-show-field {
+    border-bottom: 1px solid #eef2f7;
+    padding: .55rem 0;
+  }
+
+  .habitation-show-label {
+    color: #64748b;
+    font-size: .78rem;
+    font-weight: 700;
+    margin-bottom: .1rem;
+    text-transform: uppercase;
+  }
+
+  .habitation-show-value {
+    color: #111827;
+    font-size: .98rem;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  .habitation-show-photo {
+    aspect-ratio: 16 / 9;
+    background: #f8fafc;
+    border-radius: 12px;
+    object-fit: cover;
+    width: 100%;
+  }
+
+  .habitation-show-badge-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+  }
+
+  @media (max-width: 767.98px) {
+    .habitation-show-header,
+    .habitation-show-card {
+      border-radius: 10px;
+      padding: 1rem;
+    }
+
+    .habitation-show-title {
+      font-size: 1.08rem;
+    }
+
+    .habitation-show-actions {
+      width: 100%;
+    }
+
+    .habitation-show-actions .btn {
+      flex: 1 1 auto;
+    }
+  }
+</style>
+
+<% primary_image = @habitation.primary_image %>
+<% address_parts = [@habitation.endereco, @habitation.numero, @habitation.complemento.presence && "Apto. #{@habitation.complemento}", @habitation.bairro, @habitation.cidade, @habitation.uf].compact_blank %>
+<% feature_names = (@habitation.caracteristicas.presence || {}).respond_to?(:values) ? @habitation.caracteristicas.values : Array(@habitation.caracteristicas) %>
+<% infrastructure_names = (@habitation.infra_estrutura.presence || {}).respond_to?(:values) ? @habitation.infra_estrutura.values : Array(@habitation.infra_estrutura) %>
+<% description = @habitation.display_description %>
+
+<div class="habitation-show-page">
+  <div class="habitation-show-header d-flex justify-content-between align-items-start gap-3 flex-wrap">
+    <div class="flex-grow-1" style="min-width: 0;">
+      <div class="habitation-show-meta">
+        <i class="bi bi-hash"></i><%= @habitation.codigo %>
+        <% if @habitation.status.present? %>
+          · <span class="badge bg-light text-dark border fw-normal"><%= @habitation.status %></span>
+        <% end %>
+        <% if @habitation.categoria.present? %>
+          · <span><%= @habitation.categoria %></span>
+        <% end %>
+      </div>
+      <div class="habitation-show-title mt-1">
+        <%= @habitation.titulo_anuncio.presence || @habitation.display_title || "Detalhes do imóvel" %>
+      </div>
+      <% if address_parts.any? %>
+        <div class="habitation-show-meta mt-2 text-truncate">
+          <i class="bi bi-geo-alt"></i>
+          <%= address_parts.join(" · ") %>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="habitation-show-actions d-flex gap-2 flex-wrap">
+      <%= link_to (@return_to_path || admin_habitations_path), class: "btn btn-outline-secondary btn-sm" do %>
+        <i class="bi bi-arrow-left"></i><span class="ms-1">Voltar</span>
+      <% end %>
+      <% if can_edit_habitation?(@habitation) %>
+        <%= link_to edit_admin_habitation_path(@habitation, return_to: @return_to_path), class: "btn btn-primary btn-sm" do %>
+          <i class="bi bi-pencil-square"></i><span class="ms-1">Editar cadastro</span>
+        <% end %>
+      <% end %>
+      <%= link_to habitation_path(@habitation), target: "_blank", rel: "noopener", class: "btn btn-outline-primary btn-sm" do %>
+        <i class="bi bi-box-arrow-up-right"></i><span class="ms-1">Ver no site</span>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-12 col-xl-5">
+      <div class="habitation-show-card h-100">
+        <% if primary_image.present? %>
+          <img src="<%= primary_image["url"] || primary_image["url_pequena"] %>" class="habitation-show-photo mb-3" alt="<%= @habitation.display_title %>">
+        <% else %>
+          <div class="habitation-show-photo mb-3 d-flex align-items-center justify-content-center text-muted">
+            <i class="bi bi-image display-4 opacity-25"></i>
+          </div>
+        <% end %>
+
+        <div class="habitation-show-section-title">Resumo comercial</div>
+        <div class="row">
+          <div class="col-6 habitation-show-field">
+            <div class="habitation-show-label">Venda</div>
+            <div class="habitation-show-value"><%= @habitation.valor_venda_cents.to_i.positive? ? number_to_currency(@habitation.valor_venda_cents / 100.0) : "Sob consulta" %></div>
+          </div>
+          <div class="col-6 habitation-show-field">
+            <div class="habitation-show-label">Locação</div>
+            <div class="habitation-show-value"><%= @habitation.valor_locacao_cents.to_i.positive? ? number_to_currency(@habitation.valor_locacao_cents / 100.0) : "Sob consulta" %></div>
+          </div>
+          <div class="col-6 habitation-show-field">
+            <div class="habitation-show-label">Condomínio</div>
+            <div class="habitation-show-value"><%= @habitation.valor_condominio_cents.to_i.positive? ? number_to_currency(@habitation.valor_condominio_cents / 100.0) : "Não informado" %></div>
+          </div>
+          <div class="col-6 habitation-show-field">
+            <div class="habitation-show-label">IPTU</div>
+            <div class="habitation-show-value"><%= @habitation.valor_iptu_cents.to_i.positive? ? number_to_currency(@habitation.valor_iptu_cents / 100.0) : "Não informado" %></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-xl-7">
+      <div class="habitation-show-card h-100">
+        <div class="habitation-show-section-title">Cadastro interno</div>
+        <div class="row">
+          <div class="col-sm-6 habitation-show-field">
+            <div class="habitation-show-label">Empreendimento</div>
+            <div class="habitation-show-value"><%= @habitation.nome_empreendimento.presence || "Não informado" %></div>
+          </div>
+          <div class="col-sm-6 habitation-show-field">
+            <div class="habitation-show-label">Corretor/Captador</div>
+            <div class="habitation-show-value"><%= @habitation.admin_user&.name.presence || @habitation.corretor_nome.presence || "Não informado" %></div>
+          </div>
+          <div class="col-sm-4 habitation-show-field">
+            <div class="habitation-show-label">Dormitórios</div>
+            <div class="habitation-show-value"><%= @habitation.dormitorios_qtd.presence || 0 %></div>
+          </div>
+          <div class="col-sm-4 habitation-show-field">
+            <div class="habitation-show-label">Suítes</div>
+            <div class="habitation-show-value"><%= @habitation.suites_qtd.presence || 0 %></div>
+          </div>
+          <div class="col-sm-4 habitation-show-field">
+            <div class="habitation-show-label">Vagas</div>
+            <div class="habitation-show-value"><%= @habitation.vagas_qtd.presence || 0 %></div>
+          </div>
+          <div class="col-sm-6 habitation-show-field">
+            <div class="habitation-show-label">Área privativa</div>
+            <div class="habitation-show-value"><%= @habitation.area_privativa_m2.present? ? "#{@habitation.area_privativa_m2} m²" : "Não informado" %></div>
+          </div>
+          <div class="col-sm-6 habitation-show-field">
+            <div class="habitation-show-label">Área total</div>
+            <div class="habitation-show-value"><%= @habitation.area_total_m2.present? ? "#{@habitation.area_total_m2} m²" : "Não informado" %></div>
+          </div>
+          <div class="col-12 habitation-show-field">
+            <div class="habitation-show-label">Proprietário</div>
+            <div class="habitation-show-value">
+              <% if can_view_proprietor_data?(@habitation) %>
+                <%= @habitation.proprietario.presence || @habitation.proprietor&.name.presence || "Não informado" %>
+              <% else %>
+                Dados restritos ao responsável pelo imóvel e ao Administrativo.
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <% if description.present? %>
+      <div class="col-12">
+        <div class="habitation-show-card">
+          <div class="habitation-show-section-title">Descrição</div>
+          <div class="text-muted"><%= formatted_habitation_description(description) %></div>
+        </div>
+      </div>
+    <% end %>
+
+    <% if feature_names.any? || infrastructure_names.any? %>
+      <div class="col-12">
+        <div class="habitation-show-card">
+          <div class="habitation-show-section-title">Características e infraestrutura</div>
+          <div class="habitation-show-badge-list">
+            <% (feature_names + infrastructure_names).compact_blank.uniq.each do |name| %>
+              <span class="badge rounded-pill bg-light text-dark border px-3 py-2"><%= name %></span>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

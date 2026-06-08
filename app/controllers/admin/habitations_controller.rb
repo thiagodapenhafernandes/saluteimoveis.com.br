@@ -84,7 +84,7 @@ class Admin::HabitationsController < Admin::BaseController
     "valor_total_aluguel_cents" => { label: "Valor total aluguel", column: "valor_total_aluguel_cents", default_direction: "desc" }
   }.freeze
 
-  before_action :set_habitation, only: [:edit, :update, :destroy, :generate_ai_preview, :format_ai_suggestion, :apply_ai_suggestion]
+  before_action :set_habitation, only: [:show, :edit, :update, :destroy, :generate_ai_preview, :format_ai_suggestion, :apply_ai_suggestion]
   before_action :authorize_habitation_edit!, only: [:edit, :update]
 
   before_action :load_autocomplete_data, only: [:new, :edit, :create, :update]
@@ -308,6 +308,11 @@ class Admin::HabitationsController < Admin::BaseController
     @habitation = Habitation.new
     @habitation.build_address
     @page_title = "Novo Imóvel"
+  end
+
+  def show
+    @page_title = "Detalhes do Imóvel: #{@habitation.codigo}"
+    @return_to_path = safe_admin_habitations_return_path(params[:return_to])
   end
 
   def create
@@ -1350,7 +1355,7 @@ class Admin::HabitationsController < Admin::BaseController
     strip_blank_photo_uploads!(permitted)
 
     unless current_admin_user&.admin? || owns_all_resource?(:imoveis)
-      permitted = permitted.slice(*broker_limited_habitation_fields.map(&:to_s))
+      permitted = permitted.except(*broker_protected_habitation_param_keys)
     end
 
     unless can_view_proprietor_data?(@habitation)
@@ -1696,18 +1701,25 @@ class Admin::HabitationsController < Admin::BaseController
     ]
   end
 
-  def broker_limited_habitation_fields
-    %i[
-      status
-      exibir_no_site_flag
-      valor_venda_formatted
-      valor_locacao_formatted
-      valor_alugado_terceiros_formatted
-      valor_vendido_terceiros_formatted
-      valor_promocional_formatted
-      valor_condominio_formatted
-      valor_iptu_formatted
-      ordered_photo_ids
+  def broker_protected_habitation_param_keys
+    %w[
+      admin_user_id
+      broker_assignments_attributes
+      codigo_empreendimento
+      nome_empreendimento
+      titulo_anuncio
+      descricao_web
+      descricao_interna
+      proprietario
+      proprietario_codigo
+      proprietario_email
+      proprietario_celular
+      proprietario_telefone_comercial
+      proprietario_telefone_residencial
+      proprietor_id
+      address_attributes
+      fichas_cadastro
+      autorizacoes_venda
     ]
   end
 

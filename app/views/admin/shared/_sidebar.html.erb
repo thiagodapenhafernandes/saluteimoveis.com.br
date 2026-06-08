@@ -25,7 +25,7 @@
     <!-- 2. Imóveis -->
     <% if can_access.call(:view, :imoveis) %>
       <li class="sidebar-menu-item">
-        <%= link_to admin_habitations_path, class: controller_name == 'habitations' ? 'active' : '' do %>
+        <%= link_to admin_habitations_path(ownership: "all"), class: controller_name == 'habitations' ? 'active' : '' do %>
           <i class="bi bi-houses"></i><span>Imóveis</span>
         <% end %>
       </li>

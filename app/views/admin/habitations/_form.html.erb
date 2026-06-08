@@ -38,6 +38,7 @@
   end
   intake_waiting_admin_review = habitation.broker_intake? && habitation.intake_submitted_for_admin_review?
   can_manage_internal_documents = current_admin_user&.admin? || current_admin_user&.profile&.name == "Administrativo"
+  can_edit_protected_habitation_fields = current_admin_user&.admin? || owns_all_resource?(:imoveis)
   vista_document_assets = Array(@habitation_vista_document_assets)
   vista_document_status_labels = {
     "pending" => "Pendente de download",
@@ -496,13 +497,17 @@
                     <%= f.label :codigo_empreendimento, "Pertence ao empreendimento:", class: "form-label small fw-bold mb-1" %>
                     <div class="input-group input-group-sm">
                       <%= f.collection_select :codigo_empreendimento, @developments, :codigo, :nome_empreendimento, { include_blank: true },
-                          { class: "form-select form-select-sm", data: { controller: "tom-select", placeholder: "Selecione...", habitation_form_target: "developmentSelect", action: "change->habitation-form#developmentChanged" } } %>
-                      <%= link_to new_admin_habitation_path(habitation: { tipo: "Empreendimento" }),
-                          class: "btn btn-outline-secondary",
-                          title: "Cadastrar novo empreendimento",
-                          target: "_blank",
-                          rel: "noopener" do %>
-                        <i class="bi bi-plus"></i>
+                          { class: "form-select form-select-sm",
+                            disabled: !can_edit_protected_habitation_fields,
+                            data: { controller: "tom-select", placeholder: "Selecione...", habitation_form_target: "developmentSelect", action: "change->habitation-form#developmentChanged" } } %>
+                      <% if can_edit_protected_habitation_fields %>
+                        <%= link_to new_admin_habitation_path(habitation: { tipo: "Empreendimento" }),
+                            class: "btn btn-outline-secondary",
+                            title: "Cadastrar novo empreendimento",
+                            target: "_blank",
+                            rel: "noopener" do %>
+                          <i class="bi bi-plus"></i>
+                        <% end %>
                       <% end %>
                     </div>
                     <% linked_dev = f.object.empreendimento %>
@@ -528,7 +533,7 @@
                     <%= f.label :nome_empreendimento, "Nome do condomínio:", class: "form-label small fw-bold mb-1" %>
                     <%= f.text_field :nome_empreendimento,
                                      class: "form-control form-control-sm",
-                                     readonly: f.object.codigo_empreendimento.present?,
+                                     readonly: !can_edit_protected_habitation_fields || f.object.codigo_empreendimento.present?,
                                      data: {
                                        habitation_form_target: "developmentName",
                                        habitation_duplicate_check_target: "building",
@@ -595,13 +600,17 @@
             <div class="row g-2 mb-3">
               <div class="col-md-2">
                 <%= address_form.label :tipo_endereco, "Endereço:", class: "form-label small fw-bold mb-1" %>
-                <%= address_form.select :tipo_endereco, Habitation::STREET_TYPES, { include_blank: true }, class: "form-select form-select-sm", data: { cep_search_target: "tipo" } %>
+                <%= address_form.select :tipo_endereco, Habitation::STREET_TYPES, { include_blank: true },
+                    class: "form-select form-select-sm",
+                    disabled: !can_edit_protected_habitation_fields,
+                    data: { cep_search_target: "tipo" } %>
               </div>
               <div class="col-md-5">
                 <%= address_form.label :logradouro, "Logradouro:", class: "form-label small fw-bold mb-1" %>
                 <%= address_form.text_field :logradouro,
                                             class: "form-control form-control-sm",
                                             placeholder: "Rua, Av...",
+                                            readonly: !can_edit_protected_habitation_fields,
                                             data: {
                                               cep_search_target: "logradouro",
                                               habitation_duplicate_check_target: "street",
@@ -612,6 +621,7 @@
                 <%= address_form.label :numero, "Nº:", class: "form-label small fw-bold mb-1" %>
                 <%= address_form.text_field :numero,
                                             class: "form-control form-control-sm",
+                                            readonly: !can_edit_protected_habitation_fields,
                                             data: {
                                               cep_search_target: "numero",
                                               habitation_duplicate_check_target: "number",
@@ -620,18 +630,25 @@
               </div>
               <div class="col-md-2">
                 <%= address_form.label :complemento, "Compl.:", class: "form-label small fw-bold mb-1" %>
-                <%= address_form.text_field :complemento, class: "form-control form-control-sm", data: { cep_search_target: "complemento" } %>
+                <%= address_form.text_field :complemento,
+                    class: "form-control form-control-sm",
+                    readonly: !can_edit_protected_habitation_fields,
+                    data: { cep_search_target: "complemento" } %>
               </div>
               <div class="col-md-1">
                 <%= address_form.label :uf, "UF:", class: "form-label small fw-bold mb-1" %>
-                <%= address_form.select :uf, Habitation::UF_OPTIONS, { include_blank: true }, class: "form-select form-select-sm", data: { cep_search_target: "uf" } %>
+                <%= address_form.select :uf, Habitation::UF_OPTIONS, { include_blank: true },
+                    class: "form-select form-select-sm",
+                    disabled: !can_edit_protected_habitation_fields,
+                    data: { cep_search_target: "uf" } %>
               </div>
               <div class="col-md-2">
                 <%= address_form.label :cep, "CEP:", class: "form-label small fw-bold mb-1" %>
                 <div class="input-group input-group-sm">
                   <%= address_form.text_field :cep, class: "form-control form-control-sm",
+                      readonly: !can_edit_protected_habitation_fields,
                       data: { controller: "mask", mask_type_value: "cep", cep_search_target: "cep", action: "blur->cep-search#search" } %>
-                  <button class="btn btn-primary" type="button" data-action="cep-search#search">
+                  <button class="btn btn-primary" type="button" data-action="cep-search#search" <%= "disabled" unless can_edit_protected_habitation_fields %>>
                     <i class="bi bi-search"></i>
                   </button>
                 </div>
@@ -643,24 +660,28 @@
                 <%= address_form.label :bairro, "Bairro:", class: "form-label small fw-bold mb-1" %>
                 <%= address_form.select :bairro, @neighborhoods, { include_blank: true, selected: address_form.object.bairro },
                     data: { controller: "tom-select", tom_select_create_value: true, cep_search_target: "bairro" },
+                    disabled: !can_edit_protected_habitation_fields,
                     class: "form-select form-select-sm" %>
               </div>
               <div class="col-md-2">
                 <%= address_form.label :bairro_comercial, "Bairro comercial:", class: "form-label small fw-bold mb-1" %>
                 <%= address_form.select :bairro_comercial, (@commercial_neighborhoods || []), { include_blank: true, selected: address_form.object.bairro_comercial },
                     data: { controller: "tom-select", tom_select_create_value: true },
+                    disabled: !can_edit_protected_habitation_fields,
                     class: "form-select form-select-sm" %>
               </div>
               <div class="col-md-3">
                 <%= address_form.label :cidade, "Cidade:", class: "form-label small fw-bold mb-1" %>
                 <%= address_form.select :cidade, @cities, { include_blank: true, selected: address_form.object.cidade },
                     data: { controller: "tom-select", tom_select_create_value: true, cep_search_target: "cidade" },
+                    disabled: !can_edit_protected_habitation_fields,
                     class: "form-select form-select-sm" %>
               </div>
               <div class="col-md-1">
                 <%= f.label :bloco, "Bloco:", class: "form-label small fw-bold mb-1" %>
                 <%= f.text_field :bloco,
                                  class: "form-control form-control-sm",
+                                 readonly: !can_edit_protected_habitation_fields,
                                  data: {
                                    habitation_duplicate_check_target: "unit",
                                    action: "input->habitation-duplicate-check#schedule blur->habitation-duplicate-check#check"
@@ -678,6 +699,7 @@
                     <%= address_form.select :imediacoes, options_for_select(imediacoes_options, selected_imediacoes), {}, {
                         id: "address-imediacoes-tags",
                         multiple: true,
+                        disabled: !can_edit_protected_habitation_fields,
                         class: "form-select form-select-sm",
                         data: { controller: "tom-select", tom_select_tags_value: true }
                     } %>
@@ -996,11 +1018,16 @@
 
               <div class="border rounded p-3 mb-3">
                 <%= f.label :titulo_anuncio, "Título do anúncio (sites e portais):", class: "form-label small fw-bold mb-1" %>
-                <%= f.text_field :titulo_anuncio, class: "form-control form-control-sm" %>
+                <%= f.text_field :titulo_anuncio,
+                    class: "form-control form-control-sm",
+                    readonly: !can_edit_protected_habitation_fields %>
               </div>
               <div class="border rounded p-3 mb-3">
                 <%= f.label :descricao_web, "Descrição do imóvel para Internet:", class: "form-label small fw-bold mb-1" %>
-                <%= f.rich_text_area :descricao_web, class: "form-control", style: "min-height: 250px;" %>
+                <%= f.rich_text_area :descricao_web,
+                    class: "form-control",
+                    style: "min-height: 250px;",
+                    disabled: !can_edit_protected_habitation_fields %>
               </div>
             </div>
             <div class="col-md-3">
@@ -1226,21 +1253,28 @@
                   <div class="row g-2">
                     <div class="col-md-9">
                       <%= f.label :proprietario, "Nome", class: "form-label extra-small fw-bold mb-1" %>
-                      <%= f.text_field :proprietario, class: "form-control form-control-sm" %>
+                      <%= f.text_field :proprietario,
+                          class: "form-control form-control-sm",
+                          readonly: !can_edit_protected_habitation_fields %>
                     </div>
                     <div class="col-md-3">
                       <%= f.label :proprietario_codigo, "Cód. Vista", class: "form-label extra-small fw-bold mb-1" %>
-                      <%= f.text_field :proprietario_codigo, class: "form-control form-control-sm" %>
+                      <%= f.text_field :proprietario_codigo,
+                          class: "form-control form-control-sm",
+                          readonly: !can_edit_protected_habitation_fields %>
                     </div>
                     <div class="col-md-12">
                       <%= f.label :proprietario_email, "E-mail", class: "form-label extra-small fw-bold mb-1" %>
-                      <%= f.text_field :proprietario_email, class: "form-control form-control-sm" %>
+                      <%= f.text_field :proprietario_email,
+                          class: "form-control form-control-sm",
+                          readonly: !can_edit_protected_habitation_fields %>
                     </div>
                     <div class="col-md-4">
                       <%= f.label :proprietario_celular, "Celular", class: "form-label extra-small fw-bold mb-1" %>
                       <%= f.text_field :proprietario_celular,
                                        value: habitation.proprietario_telefone,
                                        class: "form-control form-control-sm",
+                                       readonly: !can_edit_protected_habitation_fields,
                                        data: { controller: "mask", mask_type_value: "phone" } %>
                     </div>
                     <div class="col-md-4">
@@ -1248,6 +1282,7 @@
                       <%= f.text_field :proprietario_telefone_comercial,
                                        value: habitation.proprietario_telefone_comercial_display,
                                        class: "form-control form-control-sm",
+                                       readonly: !can_edit_protected_habitation_fields,
                                        data: { controller: "mask", mask_type_value: "phone" } %>
                     </div>
                     <div class="col-md-4">
@@ -1255,6 +1290,7 @@
                       <%= f.text_field :proprietario_telefone_residencial,
                                        value: habitation.proprietario_telefone_residencial_display,
                                        class: "form-control form-control-sm",
+                                       readonly: !can_edit_protected_habitation_fields,
                                        data: { controller: "mask", mask_type_value: "phone" } %>
                     </div>
                   </div>
