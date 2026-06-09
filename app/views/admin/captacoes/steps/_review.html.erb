@@ -14,7 +14,12 @@
         <dd class="col-7"><%= @captacao.edificio_nome %><%= " · Un. #{@captacao.unidade_numero}" if @captacao.unidade_numero.present? %></dd>
       <% end %>
       <dt class="col-5">Cidade</dt><dd class="col-7"><%= [@captacao.city, @captacao.state].compact_blank.join("/") %></dd>
-      <dt class="col-5">Área total</dt><dd class="col-7"><%= @captacao.area_total %> m²</dd>
+      <% if @captacao.area_privativa.present? %>
+        <dt class="col-5">Área privativa</dt><dd class="col-7"><%= @captacao.area_privativa %> m²</dd>
+      <% end %>
+      <% if @captacao.area_total.present? %>
+        <dt class="col-5">Área total</dt><dd class="col-7"><%= @captacao.area_total %> m²</dd>
+      <% end %>
       <% if @captacao.property_kind_residencial? %>
         <dt class="col-5">Dorms / Suítes / Banheiros</dt>
         <dd class="col-7"><%= [@captacao.dormitorios, @captacao.suites, @captacao.banheiros].join(" / ") %></dd>

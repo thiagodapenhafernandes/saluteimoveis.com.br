@@ -27,7 +27,8 @@ class Captacao < ApplicationRecord
     validates :street, :street_number, :city, presence: true
   end
   with_options on: :caracteristicas do
-    validates :area_total, presence: true, numericality: { greater_than: 0 }
+    validates :area_privativa, presence: true, numericality: { greater_than: 0 }, unless: :property_kind_terreno?
+    validates :area_total, presence: true, numericality: { greater_than: 0 }, if: :property_kind_terreno?
     validates :dormitorios, :banheiros, presence: true, if: :property_kind_residencial?
     validates :salas,       presence: true, if: :property_kind_sala_comercial?
   end

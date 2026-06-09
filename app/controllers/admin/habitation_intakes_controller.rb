@@ -468,7 +468,11 @@ module Admin
         missing
       when "caracteristicas"
         missing = []
-        missing << "Informe a área total do imóvel." if @habitation.area_total_m2.to_f <= 0
+        if @habitation.property_kind_terreno?
+          missing << "Informe a área total do terreno." if @habitation.area_total_m2.to_f <= 0
+        elsif @habitation.area_privativa_m2.to_f <= 0
+          missing << "Informe a área privativa do imóvel."
+        end
         if @habitation.property_kind_residencial? && @habitation.dormitorios_qtd.to_i <= 0
           missing << "Informe a quantidade de dormitórios."
         end
@@ -523,7 +527,11 @@ module Admin
         fields[:state] = true if @habitation.uf.blank?
         fields[:edificio_nome] = true if !@habitation.property_kind_terreno? && @habitation.nome_empreendimento.blank?
       when "caracteristicas"
-        fields[:area_total] = true if @habitation.area_total_m2.to_f <= 0
+        if @habitation.property_kind_terreno?
+          fields[:area_total] = true if @habitation.area_total_m2.to_f <= 0
+        elsif @habitation.area_privativa_m2.to_f <= 0
+          fields[:area_privativa] = true
+        end
         fields[:dormitorios] = true if @habitation.property_kind_residencial? && @habitation.dormitorios_qtd.to_i <= 0
         fields[:banheiros] = true if @habitation.property_kind_residencial? && @habitation.banheiros_qtd.to_i <= 0
         fields[:caracteristicas_imovel] = true if @habitation.caracteristicas.blank?

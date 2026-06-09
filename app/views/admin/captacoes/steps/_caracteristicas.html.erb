@@ -22,15 +22,20 @@
   <div class="col-6">
     <div class="wizard-field-group">
       <%= f.label :area_total, "Área total (m²)", class: "form-label" %>
-      <span class="required-star">*</span>
+      <% if @captacao.property_kind_terreno? %>
+        <span class="required-star">*</span>
+      <% end %>
       <%= f.number_field :area_total, step: 0.01, inputmode: "decimal", class: field_state.call(:area_total) %>
-      <% if field_invalid.call(:area_total) %><div class="invalid-feedback d-block">Informe a área total maior que zero.</div><% end %>
+      <% if @captacao.property_kind_terreno? %>
+        <% if field_invalid.call(:area_total) %><div class="invalid-feedback d-block">Informe a área total maior que zero.</div><% end %>
+      <% end %>
     </div>
   </div>
   <% unless @captacao.property_kind_terreno? %>
     <div class="col-6">
       <div class="wizard-field-group">
         <%= f.label :area_privativa, "Área privativa (m²)", class: "form-label" %>
+        <span class="required-star">*</span>
         <%= f.number_field :area_privativa, step: 0.01, inputmode: "decimal", class: field_state.call(:area_privativa) %>
         <% if field_invalid.call(:area_privativa) %><div class="invalid-feedback d-block">Informe a área privativa maior que zero.</div><% end %>
       </div>
