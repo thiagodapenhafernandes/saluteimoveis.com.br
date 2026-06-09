@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["street", "number", "building", "unit", "commercialStatus", "status", "submit"]
+  static targets = ["street", "number", "building", "unit", "commercialStatus", "comparison", "status", "submit"]
   static values = {
     url: String,
     ignoredId: String
@@ -32,7 +32,8 @@ export default class extends Controller {
         number: this.numberTarget.value,
         building: this.targetValue("building"),
         unit: this.targetValue("unit"),
-        status: this.statusValue()
+        status: this.statusValue(),
+        comparison: this.comparisonValue()
       })
       if (this.hasIgnoredIdValue && this.ignoredIdValue) params.set("ignored_id", this.ignoredIdValue)
 
@@ -59,7 +60,8 @@ export default class extends Controller {
     if (!this.hasStreetTarget || !this.hasNumberTarget) return false
 
     return [this.streetTarget, this.numberTarget].every((target) => target.value.trim().length > 0) &&
-      this.statusValue().trim().length > 0
+      this.statusValue().trim().length > 0 &&
+      (this.comparisonValue() !== "unit" || this.targetValue("unit").trim().length > 0)
   }
 
   statusValue() {
@@ -72,6 +74,10 @@ export default class extends Controller {
     return this[hasTargetName] ? this[targetName].value : ""
   }
 
+  comparisonValue() {
+    return this.hasComparisonTarget ? this.comparisonTarget.value : ""
+  }
+
   showDuplicate(matches) {
     if (!this.hasStatusTarget) return
 
@@ -80,7 +86,8 @@ export default class extends Controller {
       const code = match.codigo ? `#${match.codigo}` : `ID ${match.id}`
       return `<a href="${match.edit_url}" class="alert-link" target="_blank" rel="noopener">${this.escapeHtml(code)}</a>`
     }).join(", ")
-    this.statusTarget.innerHTML = `Já existe imóvel com este endereço, prédio e unidade${links ? `: ${links}` : "."}. Ajuste os dados antes de continuar.`
+    const identity = this.comparisonValue() === "unit" ? "este endereço, unidade e status comercial" : "este endereço e status comercial"
+    this.statusTarget.innerHTML = `Já existe imóvel com ${identity}${links ? `: ${links}` : "."}. Ajuste os dados antes de continuar.`
   }
 
   showAvailable() {

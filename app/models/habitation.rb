@@ -334,7 +334,8 @@ class Habitation < ApplicationRecord
 
   def property_kind
     return "terreno" if categoria.to_s.match?(/terreno/i)
-    return "sala_comercial" if categoria.to_s.match?(/sala|loja|comercial/i)
+    return "sala_comercial" if categoria.to_s.match?(/sala|loja|comercial|ponto|conjunto/i)
+    return "galpao" if categoria.to_s.match?(/galp/i)
     "residencial"
   end
 
@@ -356,6 +357,26 @@ class Habitation < ApplicationRecord
 
   def property_kind_terreno?
     property_kind == "terreno"
+  end
+
+  def property_kind_galpao?
+    property_kind == "galpao"
+  end
+
+  def property_kind_apartment_unit?
+    categoria.to_s.match?(/apartamento|cobertura|loft|studio/i)
+  end
+
+  def requires_unit_number?
+    property_kind_apartment_unit?
+  end
+
+  def uses_building_infrastructure?
+    property_kind_apartment_unit?
+  end
+
+  def duplicate_identity_scope
+    requires_unit_number? || bloco.present? ? :unit : :street
   end
 
   def modalidade
@@ -705,12 +726,12 @@ class Habitation < ApplicationRecord
 
   def intake_missing_requirements
     missing = []
-    missing << "Dados do proprietário" if proprietario.blank? || (proprietario_celular.blank? && proprietario_email.blank?)
+    missing << "Dados do proprietário" if proprietario.blank? || (proprietario_celular.blank? && proprietario_email.blank?) || proprietario_cidade.blank?
     missing << intake_sale_price_requirement_message if requires_sale_price? && !valid_intake_sale_price?
     missing << intake_rent_price_requirement_message if requires_rent_price? && !valid_intake_rent_price?
     missing << "Definições básicas" if categoria.blank? || status.blank?
-    missing << "Nome do condomínio/empreendimento" if nome_empreendimento.blank?
     missing << "Endereço e localização" if address.blank? || cep.blank? || logradouro.blank? || bairro.blank? || cidade.blank? || uf.blank?
+    missing << "Número da unidade" if requires_unit_number? && bloco.blank?
     if property_kind_terreno?
       missing << "Dimensões e estrutura física" if area_total_m2.to_f <= 0
     elsif area_privativa_m2.to_f <= 0
@@ -722,7 +743,7 @@ class Habitation < ApplicationRecord
     end
     missing << "Financeiro e valores" if valor_condominio_cents.blank? && valor_iptu_cents.blank?
     missing << "Mais características" if caracteristicas.blank?
-    missing << "Infraestrutura & Lazer" if infra_estrutura.blank?
+    missing << "Infraestrutura & Lazer" if uses_building_infrastructure? && infra_estrutura.blank?
     missing << "Administração de locação feita pela Salute" if rental_intake? && salute_rental_management_answer.blank?
     missing << "Aceita permuta" if sale_intake? && aceita_permuta_answer.blank?
     missing << "Quantidade de parcelas" if aceita_parcelamento_flag? && numero_prestacoes.blank?

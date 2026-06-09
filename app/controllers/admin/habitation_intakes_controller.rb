@@ -462,6 +462,7 @@ module Admin
         missing = []
         missing << "Informe o nome do proprietário." if @habitation.proprietario.blank?
         missing << "Informe o telefone/WhatsApp do proprietário." if @habitation.proprietario_celular.blank?
+        missing << "Informe a cidade do proprietário." if @habitation.proprietario_cidade.blank?
         missing
       when "endereco"
         missing = []
@@ -471,7 +472,7 @@ module Admin
         missing << "Informe o bairro." if @habitation.bairro.blank?
         missing << "Informe a cidade." if @habitation.cidade.blank?
         missing << "Informe a UF." if @habitation.uf.blank?
-        missing << "Informe o nome do condomínio/empreendimento." if !@habitation.property_kind_terreno? && @habitation.nome_empreendimento.blank?
+        missing << "Informe o número da unidade." if @habitation.requires_unit_number? && @habitation.bloco.blank?
         missing
       when "caracteristicas"
         missing = []
@@ -490,7 +491,7 @@ module Admin
         missing
       when "infraestrutura"
         missing = []
-        missing << "Marque ao menos uma característica do edifício." if !@habitation.property_kind_terreno? && @habitation.infra_estrutura.blank?
+        missing << "Marque ao menos uma característica do edifício." if @habitation.uses_building_infrastructure? && @habitation.infra_estrutura.blank?
         missing
       when "negociacao"
         missing = []
@@ -525,6 +526,7 @@ module Admin
       when "proprietario"
         fields[:proprietario_nome] = true if @habitation.proprietario.blank?
         fields[:proprietario_telefone] = true if @habitation.proprietario_celular.blank?
+        fields[:proprietario_cidade] = true if @habitation.proprietario_cidade.blank?
       when "endereco"
         fields[:zip_code] = true if @habitation.cep.blank?
         fields[:street] = true if @habitation.logradouro.blank?
@@ -532,7 +534,7 @@ module Admin
         fields[:neighborhood] = true if @habitation.bairro.blank?
         fields[:city] = true if @habitation.cidade.blank?
         fields[:state] = true if @habitation.uf.blank?
-        fields[:edificio_nome] = true if !@habitation.property_kind_terreno? && @habitation.nome_empreendimento.blank?
+        fields[:unidade_numero] = true if @habitation.requires_unit_number? && @habitation.bloco.blank?
       when "caracteristicas"
         if @habitation.property_kind_terreno?
           fields[:area_total] = true if @habitation.area_total_m2.to_f <= 0
@@ -543,7 +545,7 @@ module Admin
         fields[:banheiros] = true if @habitation.property_kind_residencial? && @habitation.banheiros_qtd.to_i <= 0
         fields[:caracteristicas_imovel] = true if @habitation.caracteristicas.blank?
       when "infraestrutura"
-        fields[:caracteristicas_predio] = true if !@habitation.property_kind_terreno? && @habitation.infra_estrutura.blank?
+        fields[:caracteristicas_predio] = true if @habitation.uses_building_infrastructure? && @habitation.infra_estrutura.blank?
       when "negociacao"
         fields[:valor_venda] = true if @habitation.requires_sale_price? && !@habitation.valid_intake_sale_price?
         fields[:valor_locacao] = true if @habitation.requires_rent_price? && !@habitation.valid_intake_rent_price?
@@ -576,6 +578,7 @@ module Admin
         building: @habitation.nome_empreendimento,
         unit: @habitation.bloco,
         status: @habitation.status,
+        comparison: @habitation.duplicate_identity_scope,
         ignored_id: @habitation.id
       ).call
     end
@@ -583,12 +586,15 @@ module Admin
     def assign_duplicate_address_errors
       duplicated = duplicate_address_result.matches.first
       code = duplicated&.codigo.present? ? " ##{duplicated.codigo}" : ""
-      message = "Já existe imóvel cadastrado com esta rua, número, prédio e unidade#{code}."
+      message = if @habitation.duplicate_identity_scope == :unit
+                  "Já existe imóvel cadastrado com esta rua, número, unidade e status comercial#{code}."
+                else
+                  "Já existe imóvel cadastrado com esta rua, número e status comercial#{code}."
+                end
       @invalid_fields ||= {}
       @invalid_fields[:street] = true
       @invalid_fields[:street_number] = true
-      @invalid_fields[:edificio_nome] = true
-      @invalid_fields[:unidade_numero] = true
+      @invalid_fields[:unidade_numero] = true if @habitation.duplicate_identity_scope == :unit
       @step_errors ||= []
       @step_errors << message
       @missing_requirements ||= []
@@ -761,7 +767,7 @@ module Admin
         attrs["key_location"] = key_location_from_captacao_value(attrs.delete("chaves_com"))
       end
 
-      notes = attrs["observacoes_visitas"].presence || @habitation.observacoes_visitas
+      notes = attrs.key?("observacoes_visitas") ? attrs["observacoes_visitas"] : @habitation.observacoes_visitas
       notes = upsert_captacao_note(notes, "Outras taxas", Array(attrs.delete("outras_taxas")).compact_blank.join(", ")) if attrs.key?("outras_taxas")
       notes = upsert_captacao_note(notes, "Dias/horários para visita", Array(attrs.delete("dias_visitas")).compact_blank.join(", ")) if attrs.key?("dias_visitas")
       notes = upsert_captacao_note(notes, "Senha do imóvel", attrs.delete("senha_imovel")) if attrs.key?("senha_imovel")
@@ -770,7 +776,7 @@ module Admin
         distance = attrs.delete("distancia_praia")
         notes = upsert_captacao_note(notes, "Distância da praia", distance.present? ? "#{distance} m" : nil)
       end
-      attrs["observacoes_visitas"] = notes if notes.present?
+      attrs["observacoes_visitas"] = notes if attrs.key?("observacoes_visitas") || notes.present?
     end
 
     def normalize_intake_land_extra_fields!(attrs)

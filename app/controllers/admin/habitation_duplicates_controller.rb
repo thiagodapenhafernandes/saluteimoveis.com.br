@@ -9,12 +9,14 @@ module Admin
         building: params[:building],
         unit: params[:unit],
         status: params[:status],
+        comparison: params[:comparison],
         ignored_id: params[:ignored_id]
       ).call
 
       render json: {
         complete: result.complete,
         duplicate: result.duplicate?,
+        comparison: result.comparison,
         matches: result.matches.first(5).map { |habitation| match_payload(habitation) }
       }
     end

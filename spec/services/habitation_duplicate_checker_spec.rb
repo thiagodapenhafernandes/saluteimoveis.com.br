@@ -88,4 +88,21 @@ RSpec.describe HabitationDuplicateChecker do
 
     expect(result.matches).not_to include(apartment)
   end
+
+  it "não compara unidade de apartamento com cadastro do empreendimento sem unidade" do
+    development = create(:habitation, status: "Venda", nome_empreendimento: "Edifício Solar", bloco: nil, complemento: nil)
+    development.create_address!(logradouro: "Rua 3000", numero: "50", bairro: "Centro", cidade: "Balneário Camboriú", uf: "SC")
+
+    result = described_class.new(
+      street: "Rua 3000",
+      number: "50",
+      building: "Edifício Solar",
+      unit: "501",
+      status: "Venda",
+      comparison: :unit
+    ).call
+
+    expect(result.complete).to be(true)
+    expect(result.matches).not_to include(development)
+  end
 end

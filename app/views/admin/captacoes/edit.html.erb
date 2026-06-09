@@ -89,6 +89,9 @@
     <%= hidden_field_tag :duplicate_check_status,
                          @captacao.status,
                          data: { habitation_duplicate_check_target: "commercialStatus" } %>
+    <%= hidden_field_tag :duplicate_check_comparison,
+                         @captacao.duplicate_identity_scope,
+                         data: { habitation_duplicate_check_target: "comparison" } %>
 
     <%= render "admin/captacoes/steps/#{@step}", f: f, field_state: field_state, field_invalid: field_invalid %>
 

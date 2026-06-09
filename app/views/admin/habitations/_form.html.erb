@@ -28,7 +28,7 @@
     end
   show_development_context = habitation.codigo_empreendimento.present? || habitation.proprietor_id.present? || habitation.tipo == "Empreendimento"
   cadastro_reference_at = habitation.data_cadastro_crm
-  updated_reference_at = habitation.data_atualizacao_crm || habitation.updated_at
+  updated_reference_at = [habitation.data_atualizacao_crm, habitation.updated_at].compact.max
   development_lookup = @developments.each_with_object({}) do |development, hash|
     hash[development.codigo.to_s] = {
       nome_empreendimento: development.nome_empreendimento.to_s,
@@ -489,6 +489,9 @@
                       habitation_duplicate_check_target: "commercialStatus",
                       action: "change->habitation-duplicate-check#check"
                     } %>
+                <%= hidden_field_tag :duplicate_check_comparison,
+                                     habitation.duplicate_identity_scope,
+                                     data: { habitation_duplicate_check_target: "comparison" } %>
               </div>
               <div class="col-md-4">
                 <%= f.label :motivo_suspensao, "Motivo de suspensão:", class: "form-label small fw-bold mb-1" %>

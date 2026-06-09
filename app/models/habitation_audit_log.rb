@@ -9,6 +9,12 @@ class HabitationAuditLog < ApplicationRecord
     "integracao" => "Integração",
     "sistema" => "Sistema"
   }.freeze
+  DISPLAY_IGNORED_FIELDS = %w[
+    agenciador
+    imovel_dwv
+    pictures
+    photo_ids_order
+  ].freeze
 
   FIELD_LABELS = {
     "status" => "Status comercial",
@@ -121,9 +127,12 @@ class HabitationAuditLog < ApplicationRecord
   end
 
   def change_summaries
-    changeset.to_h.map do |field, values|
+    changeset.to_h.filter_map do |field, values|
+      next if DISPLAY_IGNORED_FIELDS.include?(field.to_s)
+
       before = values.is_a?(Hash) ? fetch_change_value(values, "before") : nil
       after = values.is_a?(Hash) ? fetch_change_value(values, "after") : nil
+      next if display_noop?(before, after)
 
       {
         field: field,
@@ -131,6 +140,27 @@ class HabitationAuditLog < ApplicationRecord
         before: display_value(field, before),
         after: display_value(field, after)
       }
+    end
+  end
+
+  def display_noop?(before, after)
+    audit_display_value_for_compare(before) == audit_display_value_for_compare(after)
+  end
+
+  def audit_display_value_for_compare(value)
+    case value
+    when nil
+      nil
+    when String
+      value.strip.presence
+    when Array
+      normalized = value.map { |item| audit_display_value_for_compare(item) }.compact
+      normalized.presence
+    when Hash
+      normalized = value.to_h.transform_values { |item| audit_display_value_for_compare(item) }.reject { |_key, item| item.nil? }
+      normalized.presence
+    else
+      value
     end
   end
 

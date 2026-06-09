@@ -28,6 +28,7 @@ FactoryBot.define do
       nome_empreendimento { "Residencial Teste" }
       proprietario { "Proprietário Teste" }
       proprietario_celular { "(47) 99999-0000" }
+      observacoes_visitas { "Cidade do proprietário: Balneário Camboriú" }
       valor_venda_cents { 1_000_000_00 }
       valor_condominio_cents { 500_00 }
       valor_iptu_cents { 100_00 }
