@@ -158,6 +158,13 @@ module Admin
     end
 
     def approve
+      unless @habitation.intake_ready_for_admin_review?
+        missing = @habitation.intake_missing_requirements.to_sentence
+        redirect_to admin_captacao_path(@habitation),
+                    alert: "Complete os campos obrigatórios antes de aprovar: #{missing}."
+        return
+      end
+
       @habitation.update!(
         intake_status: "admin_approved",
         admin_reviewed_by: current_admin_user,
@@ -326,7 +333,7 @@ module Admin
         admin_approved: status_counts["admin_approved"].to_i,
         published: status_counts["published"].to_i,
         last_7_days: scope.where(created_at: 7.days.ago.beginning_of_day..Time.current).count,
-        missing_photos: scope.where("pictures IS NULL OR pictures = '[]'::jsonb").count,
+        missing_photos: missing_photos_count(scope),
         property_kinds: {
           residencial: [total - commercial_count - land_count, 0].max,
           sala_comercial: commercial_count,
@@ -340,6 +347,21 @@ module Admin
           blank: modality_counts[nil].to_i
         }
       }
+    end
+
+    def missing_photos_count(scope)
+      scope
+        .where("pictures IS NULL OR pictures = '[]'::jsonb")
+        .where(<<~SQL.squish)
+          NOT EXISTS (
+            SELECT 1
+            FROM active_storage_attachments
+            WHERE active_storage_attachments.record_type = 'Habitation'
+              AND active_storage_attachments.record_id = habitations.id
+              AND active_storage_attachments.name = 'photos'
+          )
+        SQL
+        .count
     end
 
     def export_filters
@@ -476,10 +498,10 @@ module Admin
         missing
       when "caracteristicas"
         missing = []
-        if @habitation.property_kind_terreno?
-          missing << "Informe a área total do terreno." if @habitation.area_total_m2.to_f <= 0
-        elsif @habitation.area_privativa_m2.to_f <= 0
+        if @habitation.property_kind_apartment_unit? && @habitation.area_privativa_m2.to_f <= 0
           missing << "Informe a área privativa do imóvel."
+        elsif !@habitation.has_required_intake_area?
+          missing << "Informe a área total do imóvel."
         end
         if @habitation.property_kind_residencial? && @habitation.dormitorios_qtd.to_i <= 0
           missing << "Informe a quantidade de dormitórios."
@@ -536,10 +558,10 @@ module Admin
         fields[:state] = true if @habitation.uf.blank?
         fields[:unidade_numero] = true if @habitation.requires_unit_number? && @habitation.bloco.blank?
       when "caracteristicas"
-        if @habitation.property_kind_terreno?
-          fields[:area_total] = true if @habitation.area_total_m2.to_f <= 0
-        elsif @habitation.area_privativa_m2.to_f <= 0
+        if @habitation.property_kind_apartment_unit? && @habitation.area_privativa_m2.to_f <= 0
           fields[:area_privativa] = true
+        elsif !@habitation.has_required_intake_area?
+          fields[:area_total] = true
         end
         fields[:dormitorios] = true if @habitation.property_kind_residencial? && @habitation.dormitorios_qtd.to_i <= 0
         fields[:banheiros] = true if @habitation.property_kind_residencial? && @habitation.banheiros_qtd.to_i <= 0
@@ -706,6 +728,7 @@ module Admin
       attrs["saldo_devedor_formatted"] = attrs.delete("saldo_devedor") if attrs["saldo_devedor"].present?
       attrs["nome_empreendimento"] = attrs.delete("edificio_nome") if attrs["edificio_nome"].present?
       attrs["bloco"] = attrs.delete("unidade_numero") if attrs["unidade_numero"].present?
+      normalize_street_house_category!(attrs)
       attrs["ocupacao_status"] = attrs.delete("ocupacao") if attrs["ocupacao"].present?
       attrs["estado_conservacao"] = attrs.delete("estado_imovel") if attrs["estado_imovel"].present?
       attrs["situacao"] = attrs.delete("situacao_imovel") if attrs["situacao_imovel"].present?
@@ -818,11 +841,21 @@ module Admin
 
     def default_category_for_cadastro_type(value)
       case value
-      when "apartamentos", "residencial" then "Apartamento"
+      when "apartamentos" then "Apartamento"
+      when "residencial", "imoveis_residenciais" then "Casa"
       when "comerciais_industriais", "sala_comercial" then "Sala Comercial"
-      when "imoveis_residenciais" then "Casa"
       when "terrenos", "terreno" then "Terreno"
       end
+    end
+
+    def normalize_street_house_category!(attrs)
+      return if attrs["bloco"].present?
+
+      building_name = attrs["nome_empreendimento"].to_s.strip
+      return unless building_name.match?(/\Acasa\z/i)
+      return if attrs["categoria"].present? && !attrs["categoria"].to_s.match?(/apartamento/i)
+
+      attrs["categoria"] = "Casa"
     end
 
     def normalize_attachment_params!(attrs)

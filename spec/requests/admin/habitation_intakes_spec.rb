@@ -64,6 +64,22 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(response.body).to include("Terreno: 1")
   end
 
+  it "não conta captação com fotos anexadas como sem fotos" do
+    create(:habitation, :broker_intake, admin_user: admin, pictures: [])
+    with_attachment = create(:habitation, :broker_intake, admin_user: admin, pictures: [])
+    with_attachment.photos.attach(
+      io: StringIO.new("foto"),
+      filename: "foto.jpg",
+      content_type: "image/jpeg"
+    )
+
+    get admin_captacoes_path
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Sem fotos")
+    expect(response.body).to include(%(<div class="fw-bold">1 captações</div>))
+  end
+
   it "mantém rascunho de ficha de papel visível somente para quem começou" do
     administrative_profile = Profile.find_or_initialize_by(name: "Administrativo")
     administrative_profile.permissions = Profile.default_permissions_for("Administrativo")
@@ -225,6 +241,20 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     intake = Habitation.broker_intakes.order(:created_at).last
     expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "proprietario"))
     expect(intake).to have_attributes(categoria: "Sala Comercial", status: "Venda")
+  end
+
+  it "mantém residencial legado como casa, não apartamento" do
+    post admin_captacoes_path, params: {
+      habitation: {
+        property_kind: "residencial",
+        modalidade: "locacao_anual"
+      }
+    }
+
+    intake = Habitation.broker_intakes.order(:created_at).last
+    expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "proprietario"))
+    expect(intake).to have_attributes(categoria: "Casa", status: "Aluguel")
+    expect(intake).not_to be_requires_unit_number
   end
 
   it "envia sala comercial para revisão usando salas como dimensão física" do
@@ -456,6 +486,35 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(intake.reload.intake_step).to eq("caracteristicas")
   end
 
+  it "aceita área total para casa de rua sem exigir área privativa" do
+    intake = create(
+      :habitation,
+      :broker_intake,
+      admin_user: admin,
+      categoria: "Casa",
+      intake_step: "caracteristicas",
+      area_privativa_m2: nil,
+      area_total_m2: nil
+    )
+
+    patch admin_captacao_path(intake), params: {
+      current_step: "caracteristicas",
+      direction: "forward",
+      habitation: {
+        area_total: "228",
+        area_privativa: "",
+        dormitorios: "3",
+        banheiros: "4",
+        caracteristicas_imovel: ["Piscina"]
+      }
+    }
+
+    expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "infraestrutura"))
+    intake.reload
+    expect(intake.area_total_m2.to_i).to eq(228)
+    expect(intake.area_privativa_m2.to_f).to eq(0)
+  end
+
   it "carrega características do catálogo do cadastro completo na captação" do
     AttributeOption.create!(context: "habitation", category: "feature", name: "Vista panorâmica")
     AttributeOption.create!(context: "habitation", category: "infrastructure", name: "Espaço gourmet")
@@ -679,6 +738,30 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(intake.reload.bloco).to eq("ap 302")
   end
 
+  it "trata casa de rua como casa quando o campo de edifício veio como Casa sem unidade" do
+    intake = create(:habitation, :broker_intake, admin_user: admin, categoria: "Apartamento", intake_step: "endereco")
+
+    patch admin_captacao_path(intake), params: {
+      current_step: "endereco",
+      direction: "forward",
+      habitation: {
+        zip_code: "88330-422",
+        street: "Rua 2350",
+        street_number: "490",
+        neighborhood: "Centro",
+        city: "Balneário Camboriú",
+        state: "SC",
+        edificio_nome: "Casa",
+        unidade_numero: ""
+      }
+    }
+
+    expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "caracteristicas"))
+    intake.reload
+    expect(intake.categoria).to eq("Casa")
+    expect(intake).not_to be_requires_unit_number
+  end
+
   it "não exige dados de edifício para sala comercial de rua" do
     intake = create(:habitation, :broker_intake, admin_user: admin, categoria: "Sala Comercial", intake_step: "infraestrutura", infra_estrutura: [])
 
@@ -734,6 +817,23 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     post release_to_site_admin_captacao_path(intake)
     expect(response).to redirect_to(admin_captacao_path(intake))
     expect(intake.reload).to have_attributes(intake_status: "published", exibir_no_site_flag: true)
+  end
+
+  it "impede aprovação administrativa quando ainda faltam dados obrigatórios" do
+    intake = create(
+      :habitation,
+      :broker_intake,
+      admin_user: admin,
+      intake_status: "submitted_for_admin_review",
+      observacoes_visitas: ""
+    )
+
+    post approve_admin_captacao_path(intake), params: { admin_review_notes: "Ok" }
+
+    expect(response).to redirect_to(admin_captacao_path(intake))
+    expect(flash[:alert]).to include("Complete os campos obrigatórios antes de aprovar")
+    expect(flash[:alert]).to include("Dados do proprietário")
+    expect(intake.reload.intake_status).to eq("submitted_for_admin_review")
   end
 
   it "bloqueia campos sensíveis para corretor após publicação no site" do
