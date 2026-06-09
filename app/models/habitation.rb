@@ -449,8 +449,7 @@ class Habitation < ApplicationRecord
   end
 
   def proprietario_cpf_cnpj = proprietario_codigo
-  def proprietario_cidade = nil
-  def proprietario_cidade=(_value); end
+  def proprietario_cidade = captacao_note_value("Cidade do proprietário")
 
   def area_total = area_total_m2
   def area_privativa = area_privativa_m2
@@ -459,8 +458,7 @@ class Habitation < ApplicationRecord
   def demi_suites = demi_suites_qtd
   def banheiros = banheiros_qtd
   def vagas_garagem = vagas_qtd
-  def salas = nil
-  def salas=(_value); end
+  def salas = salas_qtd
 
   def valor_venda = valor_venda_cents.to_i.positive? ? valor_venda_cents / 100.0 : nil
   def valor_locacao = valor_locacao_cents.to_i.positive? ? valor_locacao_cents / 100.0 : nil
@@ -496,33 +494,35 @@ class Habitation < ApplicationRecord
     aceita_permuta_answer == "sim" || aceita_permuta_flag? ? ["Sim"] : []
   end
   def aceita_parcelamento = aceita_parcelamento_flag? ? "sim" : "nao"
-  def outras_taxas = []
-  def outras_taxas=(_value); end
-  def dias_visitas = []
-  def dias_visitas=(_value); end
-  def extras = {}
-  def extras=(_value); end
-  def chaves_com = nil
-  def chaves_com=(_value); end
-  def senha_imovel = nil
-  def senha_imovel=(_value); end
-  def senha_portaria = nil
-  def senha_portaria=(_value); end
+  def outras_taxas = captacao_note_list("Outras taxas")
+  def dias_visitas = captacao_note_list("Dias/horários para visita")
+  def extras
+    {
+      "frente_metros" => dimensoes_terreno.to_s[/Frente:\s*([^|]+)/, 1]&.strip&.delete_suffix(" m"),
+      "topografia" => topografia.to_s.parameterize(separator: "_"),
+      "face" => face
+    }.compact_blank
+  end
+  def chaves_com
+    {
+      "Corretor(a)" => "corretor",
+      "Proprietário" => "proprietario",
+      "Portaria" => "portaria",
+      "Outro" => "outro"
+    }[key_location]
+  end
+  def senha_imovel = captacao_note_value("Senha do imóvel")
+  def senha_portaria = captacao_note_value("Senha da portaria")
   def ocupacao = ocupacao_status
   def estado_imovel = estado_conservacao
   def situacao_imovel = situacao
-  def sacada = false
-  def sacada=(_value); end
-  def terraco = false
-  def terraco=(_value); end
-  def dependencia_empregada = false
-  def dependencia_empregada=(_value); end
-  def precisa_reforma = false
-  def precisa_reforma=(_value); end
+  def sacada = captacao_feature_enabled?("Sacada")
+  def terraco = captacao_feature_enabled?("Terraço")
+  def dependencia_empregada = captacao_feature_enabled?("Dependência de empregada")
+  def precisa_reforma = captacao_feature_enabled?("Precisa reforma")
   def andares_total = andares_qtd
   def aptos_por_andar = aptos_andar
-  def distancia_praia = nil
-  def distancia_praia=(_value); end
+  def distancia_praia = captacao_note_value("Distância da praia").to_s.delete_suffix(" m")
   def cidade_permuta = permuta_localizacao
   def fotos = photos
   def autorizacao_pdf = autorizacoes_venda.attachments.first
@@ -546,6 +546,7 @@ class Habitation < ApplicationRecord
     demi_suites: [:self, :demi_suites_qtd],
     banheiros: [:self, :banheiros_qtd],
     vagas_garagem: [:self, :vagas_qtd],
+    salas: [:self, :salas_qtd],
     caracteristicas_imovel: [:self, :caracteristicas],
     caracteristicas_predio: [:self, :infra_estrutura],
     ocupacao: [:self, :ocupacao_status],
@@ -559,6 +560,23 @@ class Habitation < ApplicationRecord
       receiver = target == :address ? ensure_address : self
       receiver.public_send("#{attribute}=", value)
     end
+  end
+
+  def captacao_note_value(label)
+    observacoes_visitas.to_s.each_line do |line|
+      key, value = line.split(":", 2)
+      return value.to_s.strip if key == label
+    end
+    nil
+  end
+
+  def captacao_note_list(label)
+    captacao_note_value(label).to_s.split(",").map(&:strip).compact_blank
+  end
+
+  def captacao_feature_enabled?(label)
+    values = caracteristicas.is_a?(Hash) ? caracteristicas.to_a.flatten : Array(caracteristicas)
+    values.any? { |value| value.to_s.casecmp?(label) }
   end
 
   {
@@ -697,7 +715,9 @@ class Habitation < ApplicationRecord
       missing << "Dimensões e estrutura física" if area_total_m2.to_f <= 0
     elsif area_privativa_m2.to_f <= 0
       missing << "Área privativa"
-    elsif dormitorios_qtd.to_i <= 0 && suites_qtd.to_i <= 0 && vagas_qtd.to_i <= 0
+    elsif property_kind_sala_comercial? && salas_qtd.to_i <= 0 && banheiros_qtd.to_i <= 0 && vagas_qtd.to_i <= 0
+      missing << "Dimensões e estrutura física"
+    elsif property_kind_residencial? && dormitorios_qtd.to_i <= 0 && suites_qtd.to_i <= 0 && vagas_qtd.to_i <= 0
       missing << "Dimensões e estrutura física"
     end
     missing << "Financeiro e valores" if valor_condominio_cents.blank? && valor_iptu_cents.blank?
