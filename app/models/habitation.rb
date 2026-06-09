@@ -333,6 +333,7 @@ class Habitation < ApplicationRecord
   end
 
   def property_kind
+    return "casa_rua" if street_house?
     return "terreno" if categoria.to_s.match?(/terreno/i)
     return "sala_comercial" if categoria.to_s.match?(/sala|loja|comercial|ponto|conjunto/i)
     return "galpao" if categoria.to_s.match?(/galp/i)
@@ -348,7 +349,7 @@ class Habitation < ApplicationRecord
   end
 
   def property_kind_residencial?
-    property_kind == "residencial"
+    property_kind.in?(%w[residencial casa_rua])
   end
 
   def property_kind_sala_comercial?
@@ -363,6 +364,10 @@ class Habitation < ApplicationRecord
     property_kind == "galpao"
   end
 
+  def property_kind_street_house?
+    property_kind == "casa_rua"
+  end
+
   def property_kind_apartment_unit?
     categoria.to_s.match?(/apartamento|cobertura|loft|studio/i)
   end
@@ -373,6 +378,17 @@ class Habitation < ApplicationRecord
 
   def uses_building_infrastructure?
     property_kind_apartment_unit?
+  end
+
+  def street_house?
+    categoria.to_s.match?(/\bcasa\b|sobrado|rural|chácara|chacara|sítio|sitio/i)
+  end
+
+  def has_required_intake_area?
+    return area_total_m2.to_f.positive? if property_kind_terreno?
+    return area_privativa_m2.to_f.positive? if property_kind_apartment_unit?
+
+    area_privativa_m2.to_f.positive? || area_total_m2.to_f.positive?
   end
 
   def duplicate_identity_scope
@@ -732,10 +748,10 @@ class Habitation < ApplicationRecord
     missing << "Definições básicas" if categoria.blank? || status.blank?
     missing << "Endereço e localização" if address.blank? || cep.blank? || logradouro.blank? || bairro.blank? || cidade.blank? || uf.blank?
     missing << "Número da unidade" if requires_unit_number? && bloco.blank?
-    if property_kind_terreno?
-      missing << "Dimensões e estrutura física" if area_total_m2.to_f <= 0
-    elsif area_privativa_m2.to_f <= 0
-      missing << "Área privativa"
+    if property_kind_apartment_unit?
+      missing << "Área privativa" if area_privativa_m2.to_f <= 0
+    elsif !has_required_intake_area?
+      missing << "Dimensões e estrutura física"
     elsif property_kind_sala_comercial? && salas_qtd.to_i <= 0 && banheiros_qtd.to_i <= 0 && vagas_qtd.to_i <= 0
       missing << "Dimensões e estrutura física"
     elsif property_kind_residencial? && dormitorios_qtd.to_i <= 0 && suites_qtd.to_i <= 0 && vagas_qtd.to_i <= 0
