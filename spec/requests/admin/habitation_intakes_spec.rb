@@ -410,13 +410,30 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
 
     expect(response).to have_http_status(:unprocessable_entity)
     expect(response.body).to include("Informe o CEP.")
-    expect(response.body).to include("Informe o nome do condomínio/empreendimento.")
     expect(response.body).to include("is-invalid")
     expect(intake.reload.intake_step).to eq("endereco")
   end
 
+  it "exige cidade do proprietário no passo de proprietário" do
+    intake = create(:habitation, :broker_intake, admin_user: admin, intake_step: "proprietario")
+
+    patch admin_captacao_path(intake), params: {
+      current_step: "proprietario",
+      direction: "forward",
+      habitation: {
+        proprietario_nome: "Mário",
+        proprietario_telefone: "(47) 99999-0000",
+        proprietario_cidade: ""
+      }
+    }
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include("Informe a cidade do proprietário.")
+    expect(intake.reload.intake_step).to eq("proprietario")
+  end
+
   it "marca quantidades obrigatórias zeradas no step de características" do
-    intake = create(:habitation, :broker_intake, admin_user: admin, intake_step: "caracteristicas")
+    intake = create(:habitation, :broker_intake, admin_user: admin, categoria: "Apartamento", intake_step: "caracteristicas")
 
     patch admin_captacao_path(intake), params: {
       current_step: "caracteristicas",
@@ -442,7 +459,7 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
   it "carrega características do catálogo do cadastro completo na captação" do
     AttributeOption.create!(context: "habitation", category: "feature", name: "Vista panorâmica")
     AttributeOption.create!(context: "habitation", category: "infrastructure", name: "Espaço gourmet")
-    intake = create(:habitation, :broker_intake, admin_user: admin, intake_step: "caracteristicas")
+    intake = create(:habitation, :broker_intake, admin_user: admin, categoria: "Apartamento", intake_step: "caracteristicas")
 
     get edit_admin_captacao_path(intake, step: "caracteristicas")
 
@@ -617,6 +634,7 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
       direction: "forward",
       habitation: {
         street: "Rua 3000",
+        zip_code: "88330-000",
         street_number: "50",
         neighborhood: "Centro",
         city: "Balneário Camboriú",
@@ -629,6 +647,51 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(response).to have_http_status(:unprocessable_entity)
     expect(response.body).to include("Já existe imóvel cadastrado")
     expect(intake.reload.intake_step).to eq("endereco")
+  end
+
+  it "não bloqueia apartamento com unidade quando existe cadastro do empreendimento no mesmo endereço" do
+    development = create(:habitation, categoria: "Apartamento", nome_empreendimento: "Residencial Atlântico", bloco: nil, complemento: nil)
+    development.create_address!(
+      logradouro: "Rua 3000",
+      numero: "50",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+    intake = create(:habitation, :broker_intake, admin_user: admin, categoria: "Apartamento", intake_step: "endereco")
+
+    patch admin_captacao_path(intake), params: {
+      current_step: "endereco",
+      direction: "forward",
+      habitation: {
+        zip_code: "88330-000",
+        street: "Rua 3000",
+        street_number: "50",
+        neighborhood: "Centro",
+        city: "Balneário Camboriú",
+        state: "SC",
+        edificio_nome: "Residencial Atlantico",
+        unidade_numero: "ap 302"
+      }
+    }
+
+    expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "caracteristicas"))
+    expect(intake.reload.bloco).to eq("ap 302")
+  end
+
+  it "não exige dados de edifício para sala comercial de rua" do
+    intake = create(:habitation, :broker_intake, admin_user: admin, categoria: "Sala Comercial", intake_step: "infraestrutura", infra_estrutura: [])
+
+    patch admin_captacao_path(intake), params: {
+      current_step: "infraestrutura",
+      direction: "forward",
+      habitation: {
+        distancia_praia: "250"
+      }
+    }
+
+    expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "negociacao"))
+    expect(intake.reload.distancia_praia).to eq("250")
   end
 
   it "envia, aprova e libera para o site quando a ficha está completa" do

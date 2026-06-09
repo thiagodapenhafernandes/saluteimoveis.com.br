@@ -29,6 +29,16 @@ RSpec.describe Images::WatermarkProcessor do
     expect(result.tempfile).to be_nil
   end
 
+  it "sizes centered watermarks close to the reference overlay width" do
+    setting = PropertySetting.instance
+    setting.update!(watermark_position: "center")
+
+    image = Struct.new(:width).new(1000)
+    processor = described_class.new(png_upload("property.png", "1000x600", "#d9e4ec", "#1f2937"), setting: setting)
+
+    expect(processor.send(:watermark_width_for, image)).to eq(580)
+  end
+
   def png_upload(filename, size, background, fill)
     file = Tempfile.new([File.basename(filename, ".png"), ".png"])
     file.close

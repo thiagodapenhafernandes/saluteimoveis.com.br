@@ -410,6 +410,7 @@ class Admin::HabitationsController < Admin::BaseController
     new_photo_uploads = extract_photo_uploads!(permitted_attributes)
     normalize_document_uploads!(permitted_attributes)
     @habitation.assign_attributes(permitted_attributes)
+    touch_manual_habitation_update!(@habitation, force: new_photo_uploads.present?)
     apply_picture_removals_to_memory(@habitation)
     keep_admin_review_intake_hidden
 
@@ -1211,18 +1212,22 @@ class Admin::HabitationsController < Admin::BaseController
       building: habitation.nome_empreendimento,
       unit: habitation.bloco,
       status: habitation.status,
+      comparison: habitation.duplicate_identity_scope,
       ignored_id: habitation.id
     ).call
     return true unless result.complete && result.duplicate?
 
     duplicated = result.matches.first
     code = duplicated&.codigo.present? ? " ##{duplicated.codigo}" : ""
-    message = "Já existe imóvel cadastrado com esta rua, número, prédio e unidade#{code}."
+    message = if habitation.duplicate_identity_scope == :unit
+                "Já existe imóvel cadastrado com esta rua, número, unidade e status comercial#{code}."
+              else
+                "Já existe imóvel cadastrado com esta rua, número e status comercial#{code}."
+              end
     habitation.errors.add(:base, message)
     habitation.errors.add(:"address.logradouro", message)
     habitation.errors.add(:"address.numero", message)
-    habitation.errors.add(:nome_empreendimento, message)
-    habitation.errors.add(:bloco, message)
+    habitation.errors.add(:bloco, message) if habitation.duplicate_identity_scope == :unit
     false
   end
 
@@ -1240,6 +1245,10 @@ class Admin::HabitationsController < Admin::BaseController
     else
       redirect_to safe_admin_habitations_return_path(params[:return_to]) || admin_habitations_path, notice: "#{notice} Você saiu para o catálogo."
     end
+  end
+
+  def touch_manual_habitation_update!(habitation, force: false)
+    habitation.data_atualizacao_crm = Time.current if force || habitation.changed?
   end
 
   def safe_admin_habitations_return_path(value)
@@ -1810,7 +1819,8 @@ class Admin::HabitationsController < Admin::BaseController
       actor: current_admin_user,
       request: request,
       source: habitation_audit_source(habitation),
-      before_snapshot: before_snapshot
+      before_snapshot: before_snapshot,
+      ignored_fields: Habitations::AuditChangeRecorder::ADMIN_NOISE_FIELDS
     ).record_update!
   end
 

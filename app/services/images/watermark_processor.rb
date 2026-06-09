@@ -9,6 +9,8 @@ module Images
       "bottom_right" => "SouthEast",
       "center" => "Center"
     }.freeze
+    CENTER_WIDTH_RATIO = 0.58
+    CORNER_WIDTH_RATIO = 0.28
 
     def self.call(upload, setting:)
       new(upload, setting: setting).call
@@ -72,7 +74,11 @@ module Images
     end
 
     def watermark_width_for(image)
-      [[(image.width * 0.28).round, 120].max, 420].min
+      ratio = setting.watermark_position == "center" ? CENTER_WIDTH_RATIO : CORNER_WIDTH_RATIO
+      minimum = setting.watermark_position == "center" ? 180 : 120
+      maximum = setting.watermark_position == "center" ? (image.width * 0.9).round : 420
+
+      [[(image.width * ratio).round, minimum].max, maximum].min
     end
 
     def gravity

@@ -78,7 +78,7 @@
   </div>
 </div>
 
-<% unless @captacao.property_kind_terreno? %>
+<% if @captacao.requires_unit_number? %>
   <hr class="my-3">
   <div class="row g-2">
     <div class="col-md-8">
@@ -97,15 +97,19 @@
     <div class="col-md-4">
       <div class="wizard-field-group">
         <%= f.label :unidade_numero, "Unidade / Apto", class: "form-label" %>
+        <span class="required-star">*</span>
         <%= f.text_field :unidade_numero,
-                         class: "form-control",
+                         class: field_state.call(:unidade_numero),
                          placeholder: "1203",
                          data: {
                            habitation_duplicate_check_target: "unit",
                            action: "input->habitation-duplicate-check#schedule blur->habitation-duplicate-check#check"
                          } %>
+        <% if field_invalid.call(:unidade_numero) %><div class="invalid-feedback d-block">Informe o número da unidade.</div><% end %>
       </div>
     </div>
   </div>
+  <div data-habitation-duplicate-check-target="status"></div>
+<% else %>
   <div data-habitation-duplicate-check-target="status"></div>
 <% end %>

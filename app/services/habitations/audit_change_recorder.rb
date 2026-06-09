@@ -2,6 +2,12 @@ module Habitations
   class AuditChangeRecorder
     TECHNICAL_FIELDS = %w[id created_at updated_at].freeze
     ADDRESS_TECHNICAL_FIELDS = %w[id addressable_id addressable_type created_at updated_at].freeze
+    ADMIN_NOISE_FIELDS = %w[
+      agenciador
+      imovel_dwv
+      pictures
+      photo_ids_order
+    ].freeze
     ATTACHMENT_ASSOCIATIONS = %w[photos fichas_cadastro autorizacoes_venda].freeze
     BROKER_ASSIGNMENT_FIELDS = %w[
       id admin_user_id admin_user_name role commission_type commission_value observations
@@ -78,13 +84,14 @@ module Habitations
       end
     end
 
-    def initialize(habitation, actor:, request: nil, source: "admin", before_snapshot: nil, metadata: {})
+    def initialize(habitation, actor:, request: nil, source: "admin", before_snapshot: nil, metadata: {}, ignored_fields: [])
       @habitation = habitation
       @actor = actor
       @request = request
       @source = source
       @before_snapshot = before_snapshot
       @metadata = metadata
+      @ignored_fields = Array(ignored_fields).map(&:to_s)
     end
 
     def record_create!
@@ -143,11 +150,11 @@ module Habitations
 
     private
 
-    attr_reader :habitation, :actor, :request, :source, :before_snapshot, :metadata
+    attr_reader :habitation, :actor, :request, :source, :before_snapshot, :metadata, :ignored_fields
 
     def normalized_changes
       changeset = model_changes.merge(snapshot_changes)
-      changeset.reject { |_field, values| values[:before] == values[:after] }
+      normalize_changeset(changeset)
     end
 
     def model_changes
@@ -273,9 +280,33 @@ module Habitations
         after_value = values.is_a?(Hash) ? fetch_change_value(values, :after) : nil
         before_value = self.class.normalize_value(before_value)
         after_value = self.class.normalize_value(after_value)
-        next if before_value == after_value
+        field_name = field.to_s
+        next if ignored_fields.include?(field_name)
+        next if semantically_equal?(before_value, after_value)
 
-        result[field.to_s] = { before: before_value, after: after_value }
+        result[field_name] = { before: before_value, after: after_value }
+      end
+    end
+
+    def semantically_equal?(before_value, after_value)
+      audit_value_for_compare(before_value) == audit_value_for_compare(after_value)
+    end
+
+    def audit_value_for_compare(value)
+      case value
+      when nil
+        nil
+      when String
+        normalized = value.strip
+        normalized.presence
+      when Array
+        normalized = value.map { |item| audit_value_for_compare(item) }.compact
+        normalized.presence
+      when Hash
+        normalized = value.to_h.transform_values { |item| audit_value_for_compare(item) }.reject { |_key, item| item.nil? }
+        normalized.presence
+      else
+        value
       end
     end
 

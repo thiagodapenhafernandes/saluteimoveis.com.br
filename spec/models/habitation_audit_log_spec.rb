@@ -36,5 +36,28 @@ RSpec.describe HabitationAuditLog, type: :model do
         hash_including(label: "Publicação no site", before: "Não", after: "Sim")
       )
     end
+
+    it "hides empty no-op and technical noise fields from the timeline" do
+      log = build(
+        :habitation_audit_log,
+        changeset: {
+          "status" => { "before" => "Venda", "after" => "Vendido terceiros" },
+          "face" => { "before" => nil, "after" => "" },
+          "agenciador" => { "before" => nil, "after" => "" },
+          "imovel_dwv" => { "before" => "Não", "after" => "Não" },
+          "pictures" => { "before" => ["https://cdn.example/foto.jpg"], "after" => ["https://cdn.example/foto.jpg"] },
+          "photo_ids_order" => { "before" => [], "after" => [] }
+        }
+      )
+
+      summaries = log.change_summaries
+
+      expect(summaries.map { |summary| summary[:field] }).to eq(["status"])
+      expect(summaries.first).to include(
+        label: "Status comercial",
+        before: "Venda",
+        after: "Vendido terceiros"
+      )
+    end
   end
 end
