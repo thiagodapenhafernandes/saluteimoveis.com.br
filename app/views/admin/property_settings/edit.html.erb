@@ -1,0 +1,139 @@
+<div class="container-fluid py-3">
+  <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap mb-4">
+    <div>
+      <div class="text-uppercase small fw-semibold text-muted">Administração</div>
+      <h1 class="h4 mb-1">Config Imóveis</h1>
+      <p class="text-muted mb-0">Configurações específicas para o cadastro e mídia dos imóveis.</p>
+    </div>
+  </div>
+
+  <%= form_with model: @property_setting, url: admin_property_setting_path, method: :patch, html: { multipart: true }, class: "row g-4", data: { controller: "watermark-preview" } do |f| %>
+    <% if @property_setting.errors.any? %>
+      <div class="col-12">
+        <div class="alert alert-danger">
+          <strong>Não foi possível salvar:</strong>
+          <ul class="mb-0">
+            <% @property_setting.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      </div>
+    <% end %>
+
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body p-4">
+          <h2 class="h6 text-uppercase text-muted fw-semibold mb-3">Marca d'água das fotos</h2>
+
+          <div class="mb-4">
+            <%= f.label :watermark_image, "Imagem da marca d'água", class: "form-label fw-semibold" %>
+            <%= f.file_field :watermark_image, class: "form-control", accept: "image/png,image/jpeg,image/webp" %>
+            <div class="form-text">
+              Use preferencialmente PNG com fundo transparente.
+            </div>
+          </div>
+
+          <% if @property_setting.watermark_image.attached? %>
+            <div class="form-check mb-4">
+              <%= check_box_tag "property_setting[remove_watermark_image]", "1", false, class: "form-check-input", id: "property_setting_remove_watermark_image" %>
+              <%= label_tag "property_setting_remove_watermark_image", "Remover imagem atual", class: "form-check-label" %>
+            </div>
+          <% end %>
+
+          <div class="mb-4">
+            <%= f.label :watermark_position, "Posição padrão", class: "form-label fw-semibold" %>
+            <div class="row g-2">
+              <% PropertySetting::WATERMARK_POSITIONS.each do |value, label| %>
+                <div class="col-sm-4">
+                  <label class="border rounded px-3 py-2 d-flex align-items-center gap-2 h-100">
+                    <%= f.radio_button :watermark_position, value, class: "form-check-input m-0", data: { action: "watermark-preview#update", watermark_preview_target: "positionInput" } %>
+                    <span class="small fw-semibold"><%= label %></span>
+                  </label>
+                </div>
+              <% end %>
+            </div>
+          </div>
+
+          <div class="d-flex align-items-center gap-2">
+            <%= f.submit "Salvar configurações", class: "btn btn-primary fw-semibold" %>
+            <%= link_to "Voltar", admin_root_path, class: "btn btn-outline-secondary" %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body p-4">
+          <h2 class="h6 text-uppercase text-muted fw-semibold mb-3">Prévia</h2>
+          <div class="watermark-preview-frame rounded overflow-hidden position-relative bg-light border"
+               data-watermark-preview-target="frame">
+            <div class="watermark-preview-photo"></div>
+            <% if @property_setting.watermark_image.attached? %>
+              <%= image_tag @property_setting.watermark_image,
+                    class: "watermark-preview-logo watermark-position-#{@property_setting.watermark_position}",
+                    data: { watermark_preview_target: "logo" },
+                    alt: "Marca d'água configurada" %>
+            <% else %>
+              <div class="position-absolute top-50 start-50 translate-middle text-center text-muted px-4">
+                <i class="bi bi-image fs-2 d-block mb-2"></i>
+                Envie uma imagem para visualizar a posição da marca d'água.
+              </div>
+            <% end %>
+          </div>
+          <p class="text-muted small mt-3 mb-0">
+            A marca d'água será aplicada somente nas novas fotos enviadas quando a opção estiver marcada no cadastro do imóvel.
+          </p>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<style>
+  .watermark-preview-frame {
+    aspect-ratio: 16 / 10;
+    min-height: 260px;
+  }
+
+  .watermark-preview-photo {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(135deg, rgba(2, 43, 58, .18), rgba(191, 171, 37, .15)),
+      linear-gradient(160deg, #dbe7ef 0%, #f6f7f9 48%, #b9c7d3 100%);
+  }
+
+  .watermark-preview-photo::after {
+    content: "";
+    position: absolute;
+    inset: 18% 8% 0 38%;
+    background: rgba(255,255,255,.45);
+    transform: skewX(-12deg);
+  }
+
+  .watermark-preview-logo {
+    position: absolute;
+    width: min(34%, 220px);
+    max-height: 38%;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 10px rgba(15, 23, 42, .18));
+  }
+
+  .watermark-position-bottom_left {
+    left: 5%;
+    bottom: 7%;
+  }
+
+  .watermark-position-bottom_right {
+    right: 5%;
+    bottom: 7%;
+  }
+
+  .watermark-position-center {
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+</style>

@@ -1,4 +1,4 @@
-\restrict rPXkzGekHTSldjhAVb4LiZdaghWI3oZeIlvA0C40VuJpy6ZbpxKNaOI9KvR83TY
+\restrict HkZCQ9kILANfefe8BTDi9dX5SIRVragajEYXCeKHKgp1tq8pCWG3mbaOt8MQ6yQ
 
 -- Dumped from database version 17.9 (Homebrew)
 -- Dumped by pg_dump version 17.9 (Homebrew)
@@ -2636,6 +2636,37 @@ ALTER SEQUENCE public.property_pages_id_seq OWNED BY public.property_pages.id;
 
 
 --
+-- Name: property_settings; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.property_settings (
+    id bigint NOT NULL,
+    watermark_position character varying DEFAULT 'bottom_left'::character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: property_settings_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.property_settings_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: property_settings_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.property_settings_id_seq OWNED BY public.property_settings.id;
+
+
+--
 -- Name: proprietors; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -4161,6 +4192,13 @@ ALTER TABLE ONLY public.property_pages ALTER COLUMN id SET DEFAULT nextval('publ
 
 
 --
+-- Name: property_settings id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.property_settings ALTER COLUMN id SET DEFAULT nextval('public.property_settings_id_seq'::regclass);
+
+
+--
 -- Name: proprietors id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -4801,6 +4839,14 @@ ALTER TABLE ONLY public.profiles
 
 ALTER TABLE ONLY public.property_pages
     ADD CONSTRAINT property_pages_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: property_settings property_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.property_settings
+    ADD CONSTRAINT property_settings_pkey PRIMARY KEY (id);
 
 
 --
@@ -8393,11 +8439,12 @@ ALTER TABLE ONLY public.push_subscriptions
 -- PostgreSQL database dump complete
 --
 
-\unrestrict rPXkzGekHTSldjhAVb4LiZdaghWI3oZeIlvA0C40VuJpy6ZbpxKNaOI9KvR83TY
+\unrestrict HkZCQ9kILANfefe8BTDi9dX5SIRVragajEYXCeKHKgp1tq8pCWG3mbaOt8MQ6yQ
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260609143000'),
 ('20260608190000'),
 ('20260606123000'),
 ('20260605123358'),
@@ -8557,3 +8604,4 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20251122130154'),
 ('20251122125348'),
 ('20251122125042');
+

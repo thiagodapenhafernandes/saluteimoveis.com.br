@@ -88,6 +88,7 @@ class Admin::HabitationsController < Admin::BaseController
   before_action :authorize_habitation_edit!, only: [:edit, :update]
 
   before_action :load_autocomplete_data, only: [:new, :edit, :create, :update]
+  before_action :load_property_setting, only: [:new, :edit, :create, :update]
   helper_method :can_view_proprietor_data?, :can_view_internal_documents?, :can_view_habitation_show_sensitive_data?, :can_edit_habitation?, :sort_options
   helper_method :can_release_intake_to_broker?, :can_manage_intake_status?, :can_complete_admin_intake_review?
 
@@ -377,7 +378,7 @@ class Admin::HabitationsController < Admin::BaseController
     end
 
     if @habitation.save
-      attach_new_photos(@habitation, new_photo_uploads)
+      attach_new_photos(@habitation, new_photo_uploads, apply_watermark: apply_photo_watermark_requested?)
       record_habitation_created(@habitation)
       apply_saved_photo_removals(@habitation)
       notice = if releasing_to_broker
@@ -445,7 +446,7 @@ class Admin::HabitationsController < Admin::BaseController
     assign_proprietor_from_legacy_fields(@habitation) if current_admin_user&.admin?
     apply_intake_status_transition_metadata(@habitation)
     if @habitation.save
-      attach_new_photos(@habitation, new_photo_uploads)
+      attach_new_photos(@habitation, new_photo_uploads, apply_watermark: apply_photo_watermark_requested?)
       record_habitation_updated(@habitation, before_snapshot: audit_snapshot_before)
       apply_saved_photo_removals(@habitation)
       notice = if releasing_to_broker
@@ -1597,14 +1598,25 @@ class Admin::HabitationsController < Admin::BaseController
     permitted
   end
 
-  def attach_new_photos(habitation, uploads)
+  def attach_new_photos(habitation, uploads, apply_watermark: false)
     valid_uploads = Array(uploads).reject do |photo|
       photo.blank? || (photo.respond_to?(:size) && photo.size.to_i.zero?)
     end
     return if valid_uploads.blank?
 
-    habitation.photos.attach(valid_uploads)
+    processed_results = []
+    attachables =
+      if apply_watermark && @property_setting&.watermark_configured?
+        processed_results = valid_uploads.map { |upload| Images::WatermarkProcessor.call(upload, setting: @property_setting) }
+        processed_results.map(&:attachable)
+      else
+        valid_uploads
+      end
+
+    habitation.photos.attach(attachables)
     habitation.reload
+  ensure
+    Array(processed_results).each { |result| result.tempfile&.close! }
   end
 
   def apply_picture_removals_to_memory(habitation)
@@ -1924,6 +1936,14 @@ class Admin::HabitationsController < Admin::BaseController
       broker_assignments_attributes: [:id, :admin_user_id, :role, :commission_type, :commission_value, :observations, :_destroy],
       address_attributes: [:id, :tipo_endereco, :logradouro, :numero, :complemento, :bairro, :bairro_comercial, :cidade, :uf, :cep, :pais, :latitude, :longitude, :_destroy, { imediacoes: [] }]
     ]
+  end
+
+  def apply_photo_watermark_requested?
+    ActiveModel::Type::Boolean.new.cast(params.dig(:habitation, :apply_photo_watermark))
+  end
+
+  def load_property_setting
+    @property_setting = PropertySetting.instance
   end
 
   def broker_protected_habitation_param_keys

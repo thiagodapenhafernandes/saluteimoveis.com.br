@@ -142,6 +142,15 @@
                 </td>
                 <td class="px-4 py-3 border-0 text-end">
                   <div class="btn-group">
+                    <% if current_admin_user.admin? && user != current_admin_user %>
+                      <%= button_to impersonate_admin_admin_user_path(user),
+                            method: :post,
+                            class: "btn btn-sm btn-outline-primary border-0",
+                            title: "Acessar como #{user.name}",
+                            data: { turbo_confirm: "Acessar o sistema como #{user.name}?" } do %>
+                        <i class="bi bi-person-check"></i>
+                      <% end %>
+                    <% end %>
                     <%= link_to edit_admin_admin_user_path(user), class: "btn btn-sm btn-outline-secondary border-0", title: "Editar" do %>
                       <i class="bi bi-pencil"></i>
                     <% end %>

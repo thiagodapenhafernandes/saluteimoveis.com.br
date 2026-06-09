@@ -169,7 +169,7 @@
 
     <!-- Administração -->
     <%
-      admin_controllers = ['admin_users', 'profiles', 'captacao_goals', 'attribute_options', 'access_security', 'field_settings', 'access_audit_logs', 'data_export_audit_logs']
+      admin_controllers = ['admin_users', 'profiles', 'captacao_goals', 'attribute_options', 'property_settings', 'access_security', 'field_settings', 'access_audit_logs', 'data_export_audit_logs']
       admin_context = admin_controllers.include?(controller_name) || controller_path == 'admin/field/audit_logs'
       audit_menu_visible = can_access.call(:view, :field_audit) || can_access.call(:view, :access_audit) || can_access.call(:view, :data_export_audit)
       security_menu_visible = can_access.call(:manage, :access_security) || can_access.call(:manage, :field_settings)
@@ -193,6 +193,9 @@
             <% end %>
             <% if can_access.call(:view, :catalogos) %>
               <li class="sidebar-menu-item"><%= link_to admin_attribute_options_path, class: controller_name == 'attribute_options' ? 'active' : '' do %><i class="bi bi-tags"></i><span>Catálogos Dinâmicos</span><% end %></li>
+            <% end %>
+            <% if current_admin_user&.admin? %>
+              <li class="sidebar-menu-item"><%= link_to edit_admin_property_setting_path, class: controller_name == 'property_settings' ? 'active' : '' do %><i class="bi bi-house-gear"></i><span>Config Imóveis</span><% end %></li>
             <% end %>
             <% if security_menu_visible %>
               <li class="px-3 pt-2 pb-1 small text-uppercase text-muted fw-bold">Segurança</li>
