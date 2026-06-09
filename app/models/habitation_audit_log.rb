@@ -11,9 +11,14 @@ class HabitationAuditLog < ApplicationRecord
   }.freeze
   DISPLAY_IGNORED_FIELDS = %w[
     agenciador
+    data_atualizacao_crm
     imovel_dwv
     pictures
     photo_ids_order
+  ].freeze
+  DISPLAY_IGNORED_WHEN_AFTER_BLANK_FIELDS = %w[
+    perfil_construcao
+    tipo_vaga
   ].freeze
 
   FIELD_LABELS = {
@@ -132,7 +137,8 @@ class HabitationAuditLog < ApplicationRecord
 
       before = values.is_a?(Hash) ? fetch_change_value(values, "before") : nil
       after = values.is_a?(Hash) ? fetch_change_value(values, "after") : nil
-      next if display_noop?(before, after)
+      next if DISPLAY_IGNORED_WHEN_AFTER_BLANK_FIELDS.include?(field.to_s) && blank_audit_value?(after)
+      next if display_noop?(field, before, after)
 
       {
         field: field,
@@ -143,25 +149,36 @@ class HabitationAuditLog < ApplicationRecord
     end
   end
 
-  def display_noop?(before, after)
-    audit_display_value_for_compare(before) == audit_display_value_for_compare(after)
+  def display_noop?(field, before, after)
+    audit_display_value_for_compare(field, before) == audit_display_value_for_compare(field, after)
   end
 
-  def audit_display_value_for_compare(value)
+  def audit_display_value_for_compare(field, value)
     case value
     when nil
       nil
     when String
-      value.strip.presence
+      normalized = value.strip
+      return normalized.gsub(/\D/, "").presence if phone_field?(field)
+
+      normalized.presence
     when Array
-      normalized = value.map { |item| audit_display_value_for_compare(item) }.compact
+      normalized = value.map { |item| audit_display_value_for_compare(field, item) }.compact
       normalized.presence
     when Hash
-      normalized = value.to_h.transform_values { |item| audit_display_value_for_compare(item) }.reject { |_key, item| item.nil? }
+      normalized = value.to_h.transform_values { |item| audit_display_value_for_compare(field, item) }.reject { |_key, item| item.nil? }
       normalized.presence
     else
       value
     end
+  end
+
+  def blank_audit_value?(value)
+    audit_display_value_for_compare(nil, value).blank?
+  end
+
+  def phone_field?(field)
+    field.to_s.match?(/telefone|celular/)
   end
 
   def field_label(field)
