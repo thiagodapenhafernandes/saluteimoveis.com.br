@@ -44,9 +44,13 @@ RSpec.describe HabitationAuditLog, type: :model do
           "status" => { "before" => "Venda", "after" => "Vendido terceiros" },
           "face" => { "before" => nil, "after" => "" },
           "agenciador" => { "before" => nil, "after" => "" },
+          "data_atualizacao_crm" => { "before" => "2024-12-17T00:00:00-03:00", "after" => "2026-06-09T16:48:37-03:00" },
           "imovel_dwv" => { "before" => "Não", "after" => "Não" },
+          "perfil_construcao" => { "before" => "Alto Padrão", "after" => "" },
           "pictures" => { "before" => ["https://cdn.example/foto.jpg"], "after" => ["https://cdn.example/foto.jpg"] },
-          "photo_ids_order" => { "before" => [], "after" => [] }
+          "photo_ids_order" => { "before" => [], "after" => [] },
+          "proprietario_celular" => { "before" => "47 99987.7770", "after" => "(47) 99987-7770" },
+          "tipo_vaga" => { "before" => "Escritura", "after" => "" }
         }
       )
 

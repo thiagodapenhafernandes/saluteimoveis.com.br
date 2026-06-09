@@ -4,9 +4,12 @@ module Habitations
     ADDRESS_TECHNICAL_FIELDS = %w[id addressable_id addressable_type created_at updated_at].freeze
     ADMIN_NOISE_FIELDS = %w[
       agenciador
+      data_atualizacao_crm
       imovel_dwv
+      perfil_construcao
       pictures
       photo_ids_order
+      tipo_vaga
     ].freeze
     ATTACHMENT_ASSOCIATIONS = %w[photos fichas_cadastro autorizacoes_venda].freeze
     BROKER_ASSIGNMENT_FIELDS = %w[
@@ -282,32 +285,38 @@ module Habitations
         after_value = self.class.normalize_value(after_value)
         field_name = field.to_s
         next if ignored_fields.include?(field_name)
-        next if semantically_equal?(before_value, after_value)
+        next if semantically_equal?(field_name, before_value, after_value)
 
         result[field_name] = { before: before_value, after: after_value }
       end
     end
 
-    def semantically_equal?(before_value, after_value)
-      audit_value_for_compare(before_value) == audit_value_for_compare(after_value)
+    def semantically_equal?(field, before_value, after_value)
+      audit_value_for_compare(field, before_value) == audit_value_for_compare(field, after_value)
     end
 
-    def audit_value_for_compare(value)
+    def audit_value_for_compare(field, value)
       case value
       when nil
         nil
       when String
         normalized = value.strip
+        return normalized.gsub(/\D/, "").presence if phone_field?(field)
+
         normalized.presence
       when Array
-        normalized = value.map { |item| audit_value_for_compare(item) }.compact
+        normalized = value.map { |item| audit_value_for_compare(field, item) }.compact
         normalized.presence
       when Hash
-        normalized = value.to_h.transform_values { |item| audit_value_for_compare(item) }.reject { |_key, item| item.nil? }
+        normalized = value.to_h.transform_values { |item| audit_value_for_compare(field, item) }.reject { |_key, item| item.nil? }
         normalized.presence
       else
         value
       end
+    end
+
+    def phone_field?(field)
+      field.to_s.match?(/telefone|celular/)
     end
 
     def fetch_change_value(values, key)
