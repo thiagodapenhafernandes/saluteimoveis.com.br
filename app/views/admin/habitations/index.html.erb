@@ -51,9 +51,15 @@
     border-bottom: 1px solid #c4c8cf;
   }
   .filter-sticky-toolbar .btn {
+    align-items: center;
+    display: inline-flex;
+    justify-content: center;
     min-height: 34px;
     border-radius: 3px;
     font-size: 0.86rem;
+    line-height: 1;
+  }
+  .filter-sticky-toolbar .btn i {
     line-height: 1;
   }
   .filter-sticky-toolbar .btn-success {
@@ -441,7 +447,7 @@
   }
   body.admin-drawer-catalog-layout .admin-content {
     margin-left: 0 !important;
-    padding: calc(var(--admin-navbar-height) + 1.35rem) 1rem 0.85rem;
+    padding: calc(var(--admin-navbar-height) + env(safe-area-inset-top, 0px) + 1.35rem) 1rem 0.85rem;
     width: 100vw;
     max-width: 100vw;
     height: 100vh;
@@ -492,12 +498,16 @@
   }
   /* Mobile-specific tweaks for /admin/habitations */
   @media (max-width: 767.98px) {
+    body.admin-drawer-catalog-layout .admin-navbar {
+      z-index: 1100;
+    }
+
     body.admin-drawer-catalog-layout .admin-content {
       height: auto;
       max-height: none;
       min-height: 100vh;
       overflow: visible;
-      padding: calc(var(--admin-navbar-height) + 1rem) .75rem 1.25rem;
+      padding: calc(var(--admin-navbar-height) + env(safe-area-inset-top, 0px) + 1rem) .75rem 1.25rem;
       width: 100%;
       max-width: 100%;
     }
@@ -535,16 +545,23 @@
       overscroll-behavior: auto;
     }
 
-    .filter-sticky-toolbar {
-      position: sticky !important;
-      top: calc(var(--admin-navbar-height) + .35rem);
-      z-index: 1040;
+    body.admin-drawer-catalog-layout .filter-sticky-toolbar {
       gap: .35rem;
       padding: .45rem;
       box-shadow: 0 6px 16px rgba(15, 23, 42, .12);
-      border: 1px solid #c4c8cf;
-      border-radius: 6px;
-      margin: -.25rem -.25rem .45rem;
+      border: 0;
+      border-bottom: 1px solid #c4c8cf;
+      border-radius: 0;
+      margin: 0;
+    }
+
+    body.admin-drawer-catalog-layout .filter-sticky-toolbar.is-filter-toolbar-fixed {
+      position: fixed !important;
+      top: 64px !important;
+      z-index: 900 !important;
+      left: 0;
+      right: 0;
+      width: auto;
     }
 
     .filter-sticky-toolbar .btn {
@@ -557,7 +574,10 @@
     }
 
     .filter-sticky-toolbar .btn-link {
+      align-items: center;
+      display: inline-flex;
       flex: 1 1 0;
+      justify-content: center;
       background: #fff;
       border: 1px solid #d2d6dd;
       border-radius: 4px;
@@ -2016,6 +2036,64 @@
 </div><!-- /data-controller="bulk-publish" -->
   </section>
 </div>
+
+<script>
+  (function() {
+    if (window.__saluteCatalogToolbarScrollBound) {
+      requestAnimationFrame(window.__saluteCatalogToolbarScrollBound.refresh);
+      return;
+    }
+
+    var fixedTop = 64;
+    var fixAtScrollY = 0;
+
+    function toolbarElement() {
+      return document.querySelector(".filter-sticky-toolbar");
+    }
+
+    function shouldRun() {
+      return document.body.classList.contains("admin-drawer-catalog-layout") && window.matchMedia("(max-width: 767.98px)").matches;
+    }
+
+    function measureFixPoint() {
+      var toolbar = toolbarElement();
+      if (!toolbar) return;
+
+      var wasFixed = toolbar.classList.contains("is-filter-toolbar-fixed");
+      toolbar.classList.remove("is-filter-toolbar-fixed");
+      fixAtScrollY = Math.max(0, window.scrollY + toolbar.getBoundingClientRect().top - fixedTop);
+      if (wasFixed) toolbar.classList.add("is-filter-toolbar-fixed");
+    }
+
+    function syncToolbarFixedState() {
+      var toolbar = toolbarElement();
+      if (!toolbar) return;
+
+      if (!shouldRun()) {
+        toolbar.classList.remove("is-filter-toolbar-fixed");
+        return;
+      }
+
+      toolbar.classList.toggle("is-filter-toolbar-fixed", window.scrollY >= fixAtScrollY);
+    }
+
+    function refreshToolbarScrollState() {
+      measureFixPoint();
+      syncToolbarFixedState();
+    }
+
+    window.__saluteCatalogToolbarScrollBound = {
+      refresh: refreshToolbarScrollState,
+      sync: syncToolbarFixedState
+    };
+    document.addEventListener("turbo:load", refreshToolbarScrollState);
+    document.addEventListener("DOMContentLoaded", refreshToolbarScrollState);
+    window.addEventListener("scroll", syncToolbarFixedState, { passive: true });
+    window.addEventListener("resize", refreshToolbarScrollState, { passive: true });
+    window.addEventListener("orientationchange", refreshToolbarScrollState, { passive: true });
+    requestAnimationFrame(refreshToolbarScrollState);
+  })();
+</script>
 
 <style>
   .uppercase-badge {

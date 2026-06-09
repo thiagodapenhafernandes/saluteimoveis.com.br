@@ -280,8 +280,8 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
       current_step: "caracteristicas",
       direction: "forward",
       habitation: {
-        area_total: "0",
-        area_privativa: "22",
+        area_total: "228",
+        area_privativa: "0",
         dormitorios: "0",
         banheiros: "0",
         caracteristicas_imovel: [],
@@ -290,7 +290,7 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     }
 
     expect(response).to have_http_status(:unprocessable_entity)
-    expect(response.body).to include("Informe a área total do imóvel.")
+    expect(response.body).to include("Informe a área privativa do imóvel.")
     expect(response.body).to include("Informe a quantidade de dormitórios.")
     expect(response.body).to include("Informe a quantidade de banheiros.")
     expect(response.body).to include("is-invalid")
@@ -321,6 +321,7 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
       direction: "forward",
       habitation: {
         area_total: "120",
+        area_privativa: "100",
         dormitorios: "2",
         banheiros: "2",
         caracteristicas_imovel: ["Sacada"]

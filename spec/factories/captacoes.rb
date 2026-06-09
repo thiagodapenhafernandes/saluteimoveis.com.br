@@ -17,6 +17,7 @@ FactoryBot.define do
       street_number { "3750" }
       city { "Balneário Camboriú" }
       state { "SC" }
+      area_privativa { 100 }
       area_total { 120 }
       dormitorios { 3 }
       banheiros { 2 }

@@ -693,7 +693,13 @@ class Habitation < ApplicationRecord
     missing << "Definições básicas" if categoria.blank? || status.blank?
     missing << "Nome do condomínio/empreendimento" if nome_empreendimento.blank?
     missing << "Endereço e localização" if address.blank? || cep.blank? || logradouro.blank? || bairro.blank? || cidade.blank? || uf.blank?
-    missing << "Dimensões e estrutura física" if area_privativa_m2.to_f <= 0 && area_total_m2.to_f <= 0 && dormitorios_qtd.to_i <= 0 && suites_qtd.to_i <= 0 && vagas_qtd.to_i <= 0
+    if property_kind_terreno?
+      missing << "Dimensões e estrutura física" if area_total_m2.to_f <= 0
+    elsif area_privativa_m2.to_f <= 0
+      missing << "Área privativa"
+    elsif dormitorios_qtd.to_i <= 0 && suites_qtd.to_i <= 0 && vagas_qtd.to_i <= 0
+      missing << "Dimensões e estrutura física"
+    end
     missing << "Financeiro e valores" if valor_condominio_cents.blank? && valor_iptu_cents.blank?
     missing << "Mais características" if caracteristicas.blank?
     missing << "Infraestrutura & Lazer" if infra_estrutura.blank?
