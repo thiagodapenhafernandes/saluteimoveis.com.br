@@ -77,6 +77,7 @@ module Admin
       else
         @habitation.assign_attributes(captacao_style_params)
       end
+      touch_manual_habitation_update!(@habitation)
 
       if duplicate_address_blocks_intake?(current_step)
         assign_duplicate_address_errors
@@ -125,8 +126,13 @@ module Admin
       end
     end
 
+    def touch_manual_habitation_update!(habitation)
+      habitation.data_atualizacao_crm = Time.current if habitation.changed?
+    end
+
     def submit_for_review
       @habitation.assign_attributes(captacao_style_params) if intake_param_key.present?
+      touch_manual_habitation_update!(@habitation)
 
       if duplicate_address_blocks_intake?("review")
         load_form_options
@@ -185,6 +191,7 @@ module Admin
       @habitation.update!(
         intake_status: "published",
         broker_released_at: Time.current,
+        data_atualizacao_crm: Time.current,
         exibir_no_site_flag: true,
         foto_classificacao: @habitation.foto_classificacao.presence || "Boas"
       )
@@ -675,11 +682,13 @@ module Admin
       attrs["proprietario"] = attrs.delete("proprietario_nome") if attrs["proprietario_nome"].present?
       attrs["proprietario_celular"] = attrs.delete("proprietario_telefone") if attrs["proprietario_telefone"].present?
       attrs["proprietario_codigo"] = attrs.delete("proprietario_cpf_cnpj") if attrs["proprietario_cpf_cnpj"].present?
+      normalize_intake_proprietor_fields!(attrs)
       attrs["area_total_m2"] = attrs.delete("area_total") if attrs["area_total"].present?
       attrs["area_privativa_m2"] = attrs.delete("area_privativa") if attrs["area_privativa"].present?
       attrs["dormitorios_qtd"] = attrs.delete("dormitorios") if attrs["dormitorios"].present?
       attrs["suites_qtd"] = attrs.delete("suites") if attrs["suites"].present?
       attrs["demi_suites_qtd"] = attrs.delete("demi_suites") if attrs["demi_suites"].present?
+      attrs["salas_qtd"] = attrs.delete("salas") if attrs["salas"].present?
       attrs["banheiros_qtd"] = attrs.delete("banheiros") if attrs["banheiros"].present?
       attrs["vagas_qtd"] = attrs.delete("vagas_garagem") if attrs["vagas_garagem"].present?
       attrs["andares_qtd"] = attrs.delete("andares_total") if attrs["andares_total"].present?
@@ -694,7 +703,8 @@ module Admin
       attrs["ocupacao_status"] = attrs.delete("ocupacao") if attrs["ocupacao"].present?
       attrs["estado_conservacao"] = attrs.delete("estado_imovel") if attrs["estado_imovel"].present?
       attrs["situacao"] = attrs.delete("situacao_imovel") if attrs["situacao_imovel"].present?
-      attrs["observacoes_visitas"] = [attrs.delete("chaves_com"), attrs.delete("senha_imovel"), attrs.delete("senha_portaria"), attrs["observacoes_visitas"]].compact_blank.join(" | ")
+      normalize_intake_feature_fields!(attrs)
+      normalize_intake_visit_fields!(attrs)
       attrs["caracteristicas"] = attrs.delete("caracteristicas_imovel") if attrs["caracteristicas_imovel"].present?
       attrs["infra_estrutura"] = attrs.delete("caracteristicas_predio") if attrs["caracteristicas_predio"].present?
       attrs["aceita_permuta_answer"] = Array(attrs.delete("aceita_permuta")).include?("Sim") ? "sim" : "nao" if attrs.key?("aceita_permuta")
@@ -704,6 +714,7 @@ module Admin
       end
       attrs["photos"] = attrs.delete("fotos") if attrs["fotos"].present?
       attrs["autorizacoes_venda"] = Array(attrs.delete("autorizacao_pdf")) if attrs["autorizacao_pdf"].present?
+      normalize_intake_land_extra_fields!(attrs)
       address_keys = %w[zip_code street street_number neighborhood city state]
       if address_keys.any? { |key| attrs.key?(key) }
         attrs["address_attributes"] = {
@@ -717,6 +728,86 @@ module Admin
         attrs["address_attributes"]["id"] = @habitation.address.id if @habitation.address.present?
       end
       attrs.except("salas", "sacada", "terraco", "dependencia_empregada", "precisa_reforma", "distancia_praia", "cidade_permuta", "outras_taxas", "dias_visitas", "extras", "proprietario_cidade")
+    end
+
+    def normalize_intake_feature_fields!(attrs)
+      features = Array(attrs["caracteristicas_imovel"].presence || @habitation.caracteristicas).compact_blank
+      touched = false
+      {
+        "sacada" => "Sacada",
+        "terraco" => "Terraço",
+        "dependencia_empregada" => "Dependência de empregada",
+        "precisa_reforma" => "Precisa reforma"
+      }.each do |param_key, label|
+        next unless attrs.key?(param_key)
+
+        touched = true
+        enabled = ActiveModel::Type::Boolean.new.cast(attrs.delete(param_key))
+        features = features.reject { |feature| feature.to_s.casecmp?(label) }
+        features << label if enabled
+      end
+      attrs["caracteristicas_imovel"] = features if touched || features.present?
+    end
+
+    def normalize_intake_proprietor_fields!(attrs)
+      return unless attrs.key?("proprietario_cidade")
+
+      notes = attrs["observacoes_visitas"].presence || @habitation.observacoes_visitas
+      attrs["observacoes_visitas"] = upsert_captacao_note(notes, "Cidade do proprietário", attrs.delete("proprietario_cidade"))
+    end
+
+    def normalize_intake_visit_fields!(attrs)
+      if attrs.key?("chaves_com")
+        attrs["key_location"] = key_location_from_captacao_value(attrs.delete("chaves_com"))
+      end
+
+      notes = attrs["observacoes_visitas"].presence || @habitation.observacoes_visitas
+      notes = upsert_captacao_note(notes, "Outras taxas", Array(attrs.delete("outras_taxas")).compact_blank.join(", ")) if attrs.key?("outras_taxas")
+      notes = upsert_captacao_note(notes, "Dias/horários para visita", Array(attrs.delete("dias_visitas")).compact_blank.join(", ")) if attrs.key?("dias_visitas")
+      notes = upsert_captacao_note(notes, "Senha do imóvel", attrs.delete("senha_imovel")) if attrs.key?("senha_imovel")
+      notes = upsert_captacao_note(notes, "Senha da portaria", attrs.delete("senha_portaria")) if attrs.key?("senha_portaria")
+      if attrs.key?("distancia_praia")
+        distance = attrs.delete("distancia_praia")
+        notes = upsert_captacao_note(notes, "Distância da praia", distance.present? ? "#{distance} m" : nil)
+      end
+      attrs["observacoes_visitas"] = notes if notes.present?
+    end
+
+    def normalize_intake_land_extra_fields!(attrs)
+      extras = attrs.delete("extras")
+      return unless extras.is_a?(Hash)
+
+      if extras["topografia"].present?
+        attrs["topografia"] = {
+          "plano" => "Plano",
+          "aclive" => "Aclive",
+          "declive" => "Declive",
+          "irregular" => "Irregular"
+        }.fetch(extras["topografia"], extras["topografia"])
+      end
+      attrs["face"] = extras["face"] if extras["face"].present?
+      return if extras["frente_metros"].blank?
+
+      existing_parts = attrs["dimensoes_terreno"].presence || @habitation.dimensoes_terreno.to_s
+      parts = existing_parts.split("|").map(&:strip).reject { |part| part.start_with?("Frente:") }.compact_blank
+      parts.unshift("Frente: #{extras['frente_metros']} m")
+      attrs["dimensoes_terreno"] = parts.join(" | ")
+    end
+
+
+    def key_location_from_captacao_value(value)
+      {
+        "corretor" => "Corretor(a)",
+        "proprietario" => "Proprietário",
+        "portaria" => "Portaria",
+        "outro" => "Outro"
+      }[value.to_s]
+    end
+
+    def upsert_captacao_note(text, label, value)
+      lines = text.to_s.lines.map(&:chomp).reject { |line| line.start_with?("#{label}:") }
+      lines << "#{label}: #{value}" if value.present?
+      lines.join("\n")
     end
 
     def default_category_for_cadastro_type(value)

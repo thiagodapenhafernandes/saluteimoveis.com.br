@@ -227,6 +227,148 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(intake).to have_attributes(categoria: "Sala Comercial", status: "Venda")
   end
 
+  it "envia sala comercial para revisão usando salas como dimensão física" do
+    intake = create(
+      :habitation,
+      :broker_intake,
+      admin_user: admin,
+      categoria: "Sala Comercial",
+      dormitorios_qtd: 0,
+      suites_qtd: 0,
+      vagas_qtd: 0,
+      salas_qtd: 0
+    )
+    intake.create_address!(
+      cep: "88330-001",
+      logradouro: "Avenida Brasil",
+      numero: "577",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+    intake.autorizacoes_venda.attach(
+      io: StringIO.new("autorizacao"),
+      filename: "autorizacao.txt",
+      content_type: "text/plain"
+    )
+
+    post submit_for_review_admin_captacao_path(intake), params: {
+      habitation: {
+        salas: "1"
+      }
+    }
+
+    expect(response).to redirect_to(admin_captacao_path(intake))
+    expect(intake.reload).to have_attributes(
+      intake_status: "submitted_for_admin_review",
+      salas_qtd: 1
+    )
+  end
+
+  it "salva campos auxiliares do wizard de captação em habitation" do
+    intake = create(:habitation, :broker_intake, admin_user: admin, intake_step: "infraestrutura")
+
+    patch admin_captacao_path(intake), params: {
+      current_step: "proprietario",
+      direction: "forward",
+      captacao: {
+        proprietario_cidade: "Itajaí"
+      }
+    }
+
+    intake.reload
+    expect(intake.proprietario_cidade).to eq("Itajaí")
+
+    intake.update_column(:intake_step, "caracteristicas")
+    patch admin_captacao_path(intake), params: {
+      current_step: "caracteristicas",
+      direction: "forward",
+      captacao: {
+        area_total: "120",
+        area_privativa: "100",
+        dormitorios: "2",
+        banheiros: "1",
+        sacada: "1",
+        terraco: "0",
+        dependencia_empregada: "1",
+        precisa_reforma: "0"
+      }
+    }
+
+    intake.reload
+    expect(intake.sacada).to eq(true)
+    expect(intake.dependencia_empregada).to eq(true)
+    expect(intake.terraco).to eq(false)
+    expect(intake.precisa_reforma).to eq(false)
+    expect(intake.caracteristicas).to include("Sacada", "Dependência de empregada")
+
+    patch admin_captacao_path(intake), params: {
+      current_step: "infraestrutura",
+      direction: "forward",
+      captacao: {
+        distancia_praia: "350",
+        caracteristicas_predio: ["Elevador"]
+      }
+    }
+
+    expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "negociacao"))
+    intake.reload
+    expect(intake.infra_estrutura).to include("Elevador")
+    expect(intake.distancia_praia).to eq("350")
+    expect(intake.observacoes_visitas).to include("Distância da praia: 350 m")
+    intake.update_column(:intake_step, "visitas")
+
+    patch admin_captacao_path(intake), params: {
+      current_step: "visitas",
+      direction: "forward",
+      captacao: {
+        chaves_com: "proprietario",
+        dias_visitas: ["Seg", "Tarde"],
+        senha_imovel: "1234",
+        senha_portaria: "5678",
+        observacoes: "Observação livre"
+      }
+    }
+
+    expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "fotos"))
+    intake.reload
+    expect(intake.key_location).to eq("Proprietário")
+    expect(intake.chaves_com).to eq("proprietario")
+    expect(intake.dias_visitas).to eq(["Seg", "Tarde"])
+    expect(intake.senha_imovel).to eq("1234")
+    expect(intake.senha_portaria).to eq("5678")
+    expect(intake.observacoes).to eq("Observação livre")
+  end
+
+  it "salva extras de terreno do wizard em campos estruturados" do
+    intake = create(:habitation, :broker_intake, admin_user: admin, categoria: "Terreno", intake_step: "caracteristicas")
+
+    patch admin_captacao_path(intake), params: {
+      current_step: "caracteristicas",
+      direction: "forward",
+      captacao: {
+        area_total: "360",
+        caracteristicas_imovel: ["Murado"],
+        extras: {
+          frente_metros: "12",
+          topografia: "plano",
+          face: "Norte"
+        }
+      }
+    }
+
+    expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "infraestrutura"))
+    intake.reload
+    expect(intake.dimensoes_terreno).to include("Frente: 12 m")
+    expect(intake.topografia).to eq("Plano")
+    expect(intake.face).to eq("Norte")
+    expect(intake.extras).to include(
+      "frente_metros" => "12",
+      "topografia" => "plano",
+      "face" => "Norte"
+    )
+  end
+
   it "bloqueia envio para revisão quando faltam campos obrigatórios" do
     intake = create(:habitation, :broker_intake, admin_user: admin, proprietario: nil)
 
