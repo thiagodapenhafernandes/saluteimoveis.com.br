@@ -1,7 +1,8 @@
 module Admin
   class AdminUsersController < BaseController
     before_action -> { check_permission!(:manage, :corretores) }
-    before_action :set_admin_user, only: %i[show edit update destroy]
+    before_action :set_admin_user, only: %i[show edit update destroy impersonate]
+    before_action :require_admin!, only: %i[impersonate]
 
     def sync_from_vista
       status = Vista::SyncStatusService.new.snapshot
@@ -92,6 +93,31 @@ module Admin
     def destroy
       @admin_user.destroy
       redirect_to admin_admin_users_path, notice: 'Usuário excluído com sucesso.'
+    end
+
+    def impersonate
+      if @admin_user == current_admin_user
+        redirect_to admin_admin_users_path, alert: "Você já está logado como este usuário."
+        return
+      end
+
+      session[:impersonator_admin_user_id] = current_admin_user.id
+      session[:impersonator_return_to] = request.referer.presence || admin_admin_users_path
+      bypass_sign_in(@admin_user, scope: :admin_user)
+
+      AccessAuditLog.log!(
+        event_type: "impersonation_start",
+        result: "allowed",
+        request: request,
+        admin_user: @admin_user,
+        reason: "Admin iniciou impersonação",
+        metadata: {
+          impersonator_admin_user_id: session[:impersonator_admin_user_id],
+          impersonated_admin_user_id: @admin_user.id
+        }
+      )
+
+      redirect_to admin_root_path, notice: "Você está acessando como #{@admin_user.name}."
     end
 
     private

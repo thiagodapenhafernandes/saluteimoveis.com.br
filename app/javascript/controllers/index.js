@@ -136,6 +136,9 @@ application.register("property-carousel", PropertyCarouselController)
 import PropertyPagePreviewController from "controllers/property_page_preview_controller"
 application.register("property-page-preview", PropertyPagePreviewController)
 
+import WatermarkPreviewController from "controllers/watermark_preview_controller"
+application.register("watermark-preview", WatermarkPreviewController)
+
 import ProprietorTableController from "controllers/proprietor_table_controller"
 application.register("proprietor-table", ProprietorTableController)
 

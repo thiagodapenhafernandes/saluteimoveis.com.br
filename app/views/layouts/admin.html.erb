@@ -108,6 +108,21 @@
 
     <!-- Content -->
     <main class="admin-content">
+      <% if impersonating_admin_user? %>
+        <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-2 shadow-sm mb-3" role="alert">
+          <div>
+            <i class="bi bi-person-check-fill me-2"></i>
+            Você está acessando como <strong><%= current_admin_user.name %></strong>.
+            Admin original: <strong><%= impersonation_admin_user.name %></strong>.
+          </div>
+          <%= button_to admin_impersonation_path,
+                method: :delete,
+                class: "btn btn-sm btn-dark fw-semibold",
+                form_class: "mb-0" do %>
+            <i class="bi bi-arrow-counterclockwise me-1"></i> Voltar ao admin
+          <% end %>
+        </div>
+      <% end %>
       <%= render 'shared/flash_messages' if flash.any? %>
       <%= yield %>
     </main>

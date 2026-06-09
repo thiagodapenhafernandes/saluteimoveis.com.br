@@ -42,6 +42,7 @@ Rails.application.routes.draw do
     resource :contact_setting, only: [:edit, :update]
     resource :layout_setting, only: [:show, :edit, :update]
     resource :footer_setting, only: [:edit, :update]
+    resource :property_setting, only: [:edit, :update]
     resources :webhook_settings do
       post :test, on: :member
       patch :share_tracking, on: :collection
@@ -84,6 +85,9 @@ Rails.application.routes.draw do
       resources :home_section_items, only: [:new, :create, :edit, :update, :destroy]
     end
     resources :admin_users, only: [:index, :new, :create, :edit, :update, :destroy] do
+      member do
+        post :impersonate
+      end
       collection do
         post :sync_from_vista
         get  :vista_sync_status
@@ -91,6 +95,7 @@ Rails.application.routes.draw do
         get  :backfill_brokers_status
       end
     end
+    resource :impersonation, only: [:destroy]
     resources :habitations do
       post :sync, on: :member
       post :generate_ai_preview, on: :member

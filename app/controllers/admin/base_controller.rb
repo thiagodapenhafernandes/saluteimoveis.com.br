@@ -24,6 +24,7 @@ class Admin::BaseController < ApplicationController
 
   def enforce_access_control_policy!
     return unless current_admin_user
+    return if impersonating_admin_user?
 
     access_result = AccessControl::Policy.call(admin_user: current_admin_user, request: request, controller: self)
     return if access_result.allowed?
@@ -94,9 +95,22 @@ class Admin::BaseController < ApplicationController
     current_admin_user&.owns_all?(resource)
   end
 
-  helper_method :can?, :scope_for_resource, :owns_all_resource?
+  helper_method :can?, :scope_for_resource, :owns_all_resource?, :impersonating_admin_user?, :impersonation_admin_user
 
   def can?(action, resource)
     current_admin_user&.can?(action, resource)
+  end
+
+  def impersonation_admin_user
+    impersonator_id = session[:impersonator_admin_user_id]
+    return nil if impersonator_id.blank?
+
+    @impersonation_admin_user ||= AdminUser.find_by(id: impersonator_id)
+  end
+
+  def impersonating_admin_user?
+    impersonation_admin_user.present? &&
+      current_admin_user.present? &&
+      current_admin_user.id != impersonation_admin_user.id
   end
 end

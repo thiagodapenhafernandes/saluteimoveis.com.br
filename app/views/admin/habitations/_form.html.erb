@@ -1866,6 +1866,23 @@
                </div>
                <h5>Arraste fotos ou clique para selecionar</h5>
                <p class="text-muted small">Fotos adicionadas aqui serão mantidas junto das fotos atuais. Para remover, use a lixeira sobre a imagem.</p>
+               <% watermark_available = @property_setting&.watermark_configured? %>
+               <div class="d-inline-flex flex-column align-items-center gap-1 mb-3">
+                 <label class="form-check d-inline-flex align-items-center gap-2 border rounded px-3 py-2 bg-white shadow-sm mb-0">
+                   <%= hidden_field_tag "habitation[apply_photo_watermark]", "0" %>
+                   <%= check_box_tag "habitation[apply_photo_watermark]", "1", watermark_available, class: "form-check-input m-0", disabled: !watermark_available %>
+                   <span class="small fw-semibold">Aplicar marca d'água nas novas fotos</span>
+                 </label>
+                 <% unless watermark_available %>
+                   <span class="text-muted small">
+                     Marca d'água não configurada.
+                     <% if current_admin_user&.admin? %>
+                       <%= link_to "Configurar", edit_admin_property_setting_path, class: "fw-semibold" %>
+                     <% end %>
+                   </span>
+                 <% end %>
+               </div>
+               <br>
                <%= f.label :photos, "Selecionar Arquivos", class: "btn btn-primary" %>
                <%= f.file_field :photos, multiple: true, class: "d-none", 
                    id: "habitation_photos",
