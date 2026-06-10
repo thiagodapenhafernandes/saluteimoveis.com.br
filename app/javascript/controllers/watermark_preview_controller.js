@@ -13,6 +13,10 @@ export default class extends Controller {
     "sizeValue"
   ]
 
+  connect() {
+    this.update()
+  }
+
   disconnect() {
     this.revokePreviewUrl()
   }
@@ -61,6 +65,10 @@ export default class extends Controller {
     const size = this.sizeInputTarget.value
     this.frameTarget.style.setProperty("--watermark-size", `${size}%`)
 
+    if (this.hasLogoTarget) {
+      this.logoTarget.style.width = `${size}%`
+    }
+
     if (this.hasSizeValueTarget) {
       this.sizeValueTarget.textContent = `${size}%`
     }
@@ -71,6 +79,10 @@ export default class extends Controller {
 
     const opacity = this.opacityInputTarget.value
     this.frameTarget.style.setProperty("--watermark-opacity", opacity / 100)
+
+    if (this.hasLogoTarget) {
+      this.logoTarget.style.opacity = opacity / 100
+    }
 
     if (this.hasOpacityValueTarget) {
       this.opacityValueTarget.textContent = `${opacity}%`
