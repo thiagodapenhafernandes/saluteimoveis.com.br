@@ -60,7 +60,6 @@ module Vista
       @proprietor_id_by_vista_code = Proprietor.where.not(vista_code: [nil, ""]).pluck(:vista_code, :id).to_h
       @habitation_id_by_codigo = Habitation.where.not(codigo: [nil, ""]).pluck(:codigo, :id).to_h
       @development_codes = Habitation.where(tipo: "Empreendimento").where.not(codigo: [nil, ""]).pluck(:codigo).to_set
-      @development_code_by_normalized_name = unique_development_code_by_normalized_name
     end
 
     def load_owner_codes
@@ -649,33 +648,11 @@ module Vista
     end
 
     def development_code_for(row)
-      existing_development_code(row["CODIGO_EMP"]) ||
-        @development_code_by_normalized_name[normalized_development_name(row["EMPREENDIMENTO"])]
+      existing_development_code(row["CODIGO_EMP"])
     end
 
     def development_row?(row, category = nil)
       yes?(row["E_EMPREENDIMENTO"]) || (category || value(row["CATEGORIA"])).to_s.casecmp("Empreendimento").zero?
-    end
-
-    def unique_development_code_by_normalized_name
-      grouped = Habitation
-        .where(tipo: "Empreendimento")
-        .where.not(nome_empreendimento: [nil, ""])
-        .pluck(:nome_empreendimento, :codigo)
-        .group_by { |name, _codigo| normalized_development_name(name) }
-
-      grouped.each_with_object({}) do |(name, rows), memo|
-        next if name.blank? || rows.size != 1
-
-        memo[name] = rows.first.last
-      end
-    end
-
-    def normalized_development_name(raw)
-      I18n.transliterate(value(raw).to_s)
-        .downcase
-        .gsub(/[^a-z0-9]+/, " ")
-        .strip
     end
 
     def unique_dwv_code(row)
