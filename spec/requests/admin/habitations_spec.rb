@@ -1110,6 +1110,12 @@ RSpec.describe "Admin::Habitations", type: :request do
     get edit_admin_habitation_path(intake)
 
     expect(response).to have_http_status(:ok)
+    page = Nokogiri::HTML(response.body)
+    documents_pane = page.at_css("#habitationTabsContent > #documents")
+
+    expect(documents_pane).to be_present
+    expect(documents_pane["role"]).to eq("tabpanel")
+    expect(documents_pane["aria-labelledby"]).to eq("documents-tab")
     expect(response.body).to include("Autorizações de Venda")
     expect(response.body).to include("autorizacao-administrativo.txt")
     expect(response.body).to include("Adicionar arquivos")
