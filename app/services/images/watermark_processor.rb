@@ -9,8 +9,6 @@ module Images
       "bottom_right" => "SouthEast",
       "center" => "Center"
     }.freeze
-    CENTER_WIDTH_RATIO = 0.58
-    CORNER_WIDTH_RATIO = 0.28
 
     def self.call(upload, setting:)
       new(upload, setting: setting).call
@@ -30,6 +28,7 @@ module Images
 
         watermark = MiniMagick::Image.open(watermark_file.path)
         watermark.resize "#{watermark_width_for(image)}x"
+        apply_watermark_opacity(watermark)
 
         output = build_tempfile
         composed = image.composite(watermark) do |config|
@@ -74,11 +73,29 @@ module Images
     end
 
     def watermark_width_for(image)
-      ratio = setting.watermark_position == "center" ? CENTER_WIDTH_RATIO : CORNER_WIDTH_RATIO
+      ratio = setting.watermark_size_percentage.to_i.clamp(
+        PropertySetting::WATERMARK_SIZE_RANGE.begin,
+        PropertySetting::WATERMARK_SIZE_RANGE.end
+      ) / 100.0
       minimum = setting.watermark_position == "center" ? 180 : 120
-      maximum = setting.watermark_position == "center" ? (image.width * 0.9).round : 420
+      maximum = (image.width * (PropertySetting::WATERMARK_SIZE_RANGE.end / 100.0)).round
 
       [[(image.width * ratio).round, minimum].max, maximum].min
+    end
+
+    def apply_watermark_opacity(watermark)
+      opacity = setting.watermark_opacity_percentage.to_i.clamp(
+        PropertySetting::WATERMARK_OPACITY_RANGE.begin,
+        PropertySetting::WATERMARK_OPACITY_RANGE.end
+      ) / 100.0
+      return if opacity >= 1.0
+
+      watermark.combine_options do |config|
+        config.alpha "set"
+        config.channel "A"
+        config.evaluate "multiply", opacity.to_s
+        config.channel "RGBA"
+      end
     end
 
     def gravity

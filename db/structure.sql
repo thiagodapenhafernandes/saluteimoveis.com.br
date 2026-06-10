@@ -1,4 +1,4 @@
-\restrict HkZCQ9kILANfefe8BTDi9dX5SIRVragajEYXCeKHKgp1tq8pCWG3mbaOt8MQ6yQ
+\restrict Xvl8bXr3HiumRUimVj3CvkthvHft9UNOEoprVpbq4lax26mw4y2L3EVVFXtJ2kv
 
 -- Dumped from database version 17.9 (Homebrew)
 -- Dumped by pg_dump version 17.9 (Homebrew)
@@ -1441,7 +1441,8 @@ CREATE TABLE public.habitations (
     motivo_suspensao text,
     valor_alugado_terceiros_cents bigint,
     valor_vendido_terceiros_cents bigint,
-    site_hidden_photo_ids jsonb DEFAULT '[]'::jsonb NOT NULL
+    site_hidden_photo_ids jsonb DEFAULT '[]'::jsonb NOT NULL,
+    dwv_payload jsonb DEFAULT '{}'::jsonb NOT NULL
 );
 
 
@@ -2643,7 +2644,9 @@ CREATE TABLE public.property_settings (
     id bigint NOT NULL,
     watermark_position character varying DEFAULT 'bottom_left'::character varying NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    watermark_size_percentage integer DEFAULT 28 NOT NULL,
+    watermark_opacity_percentage integer DEFAULT 100 NOT NULL
 );
 
 
@@ -6252,6 +6255,13 @@ CREATE INDEX index_habitations_on_dormitorios_qtd ON public.habitations USING bt
 
 
 --
+-- Name: index_habitations_on_dwv_payload; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_dwv_payload ON public.habitations USING gin (dwv_payload);
+
+
+--
 -- Name: index_habitations_on_frente_mar_avenida_atlantica_flag; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8439,11 +8449,13 @@ ALTER TABLE ONLY public.push_subscriptions
 -- PostgreSQL database dump complete
 --
 
-\unrestrict HkZCQ9kILANfefe8BTDi9dX5SIRVragajEYXCeKHKgp1tq8pCWG3mbaOt8MQ6yQ
+\unrestrict Xvl8bXr3HiumRUimVj3CvkthvHft9UNOEoprVpbq4lax26mw4y2L3EVVFXtJ2kv
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260610172000'),
+('20260609170000'),
 ('20260609143000'),
 ('20260608190000'),
 ('20260606123000'),

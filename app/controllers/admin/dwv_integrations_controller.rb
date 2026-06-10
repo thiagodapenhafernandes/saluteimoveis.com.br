@@ -4,7 +4,7 @@ class Admin::DwvIntegrationsController < Admin::BaseController
 
   DEFAULT_BASE_URL = "https://agencies.dwvapp.com.br".freeze
   DEFAULT_SYNC_LIMIT = 50
-  DEFAULT_SYNC_MAX_PAGES = 10
+  DEFAULT_SYNC_MAX_PAGES = 100
   DEFAULT_POLL_PROCESSING_MS = 2000
   DEFAULT_POLL_IDLE_MS = 6000
   DEFAULT_POLL_SLOW_MS = 15000
@@ -27,7 +27,7 @@ class Admin::DwvIntegrationsController < Admin::BaseController
     end
     Setting.set("dwv_base_url", normalized_base_url(dwv_params[:base_url]), "URL base da API DWV")
     Setting.set("dwv_sync_limit", dwv_params[:sync_limit].to_i.clamp(1, 50).to_s, "Limite por página da sincronização DWV")
-    Setting.set("dwv_sync_max_pages", dwv_params[:sync_max_pages].to_i.clamp(1, 10).to_s, "Máximo de páginas da sincronização DWV")
+    Setting.set("dwv_sync_max_pages", dwv_params[:sync_max_pages].to_i.clamp(1, 100).to_s, "Máximo de páginas da sincronização DWV")
     Setting.set("dwv_request_pause_seconds", dwv_params[:request_pause_seconds].to_f.clamp(0.2, 2.0).round(2).to_s, "Pausa entre requisições DWV em segundos")
     Setting.set("dwv_poll_processing_interval_ms", dwv_params[:poll_processing_interval_ms].to_i.clamp(1000, 30000).to_s, "Polling DWV (processing) em ms")
     Setting.set("dwv_poll_idle_interval_ms", dwv_params[:poll_idle_interval_ms].to_i.clamp(2000, 60000).to_s, "Polling DWV (idle/skipped) em ms")
@@ -127,7 +127,7 @@ class Admin::DwvIntegrationsController < Admin::BaseController
     @dwv_connected = @dwv_enabled && @dwv_api_token.present?
     @dwv_base_url = Setting.get("dwv_base_url", DEFAULT_BASE_URL)
     @dwv_sync_limit = Setting.get("dwv_sync_limit", DEFAULT_SYNC_LIMIT.to_s).to_i.clamp(1, 50)
-    @dwv_sync_max_pages = Setting.get("dwv_sync_max_pages", DEFAULT_SYNC_MAX_PAGES.to_s).to_i.clamp(1, 10)
+    @dwv_sync_max_pages = Setting.get("dwv_sync_max_pages", DEFAULT_SYNC_MAX_PAGES.to_s).to_i.clamp(1, 100)
     @dwv_sync_status = Setting.get("dwv_sync_status")
     @dwv_sync_progress = Setting.get("dwv_sync_progress", "0").to_i.clamp(0, 100)
     @dwv_sync_history = status_service.history(limit: 5)

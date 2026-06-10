@@ -3,11 +3,11 @@ require "set"
 module Dwv
   class SyncRunnerService
     DEFAULT_LIMIT = 50
-    DEFAULT_MAX_PAGES = 10
+    DEFAULT_MAX_PAGES = 100
     DEFAULT_BASE_URL = "https://agencies.dwvapp.com.br".freeze
     DEFAULT_REQUEST_PAUSE_SECONDS = 0.70
     MAX_LIMIT = 50
-    MAX_PAGES = 10
+    MAX_PAGES = 100
 
     def call(mode: "full", limit: nil, max_pages: nil, status_service: nil)
       ensure_enabled_and_token!

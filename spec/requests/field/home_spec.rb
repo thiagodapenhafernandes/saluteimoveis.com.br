@@ -5,14 +5,14 @@ RSpec.describe "Field::Home", type: :request do
 
   before { host! "localhost" }
 
-  it "direciona o atalho Meus imóveis para a aba de imóveis atribuídos" do
+  it "direciona o atalho Imóveis para a aba Todos" do
     broker = create(:admin_user, :field_agent, name: "Luciana Indalécio")
     sign_in broker
 
     get field_root_path
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include("Meus imóveis")
-    expect(response.body).to include(CGI.escapeHTML(admin_habitations_path(ownership: "mine")))
+    expect(response.body).to include("Imóveis")
+    expect(response.body).to include(CGI.escapeHTML(admin_habitations_path(ownership: "all")))
   end
 end

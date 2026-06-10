@@ -22,6 +22,8 @@ class Habitation < ApplicationRecord
     'Diferenciado', 'Garden'
   ].freeze
 
+  TITLE_CATEGORY_TERMS = (CATEGORIES + PUBLIC_FILTER_EXTRA_CATEGORIES).sort_by { |category| -category.length }.freeze
+
   STATUS_OPTIONS = [
     'Venda', 'Aluguel', 'Diária', 'Pendente', 'Lançamento', 'Suspenso',
     'Alugado imobiliária', 'Alugado terceiros',
@@ -386,9 +388,8 @@ class Habitation < ApplicationRecord
 
   def has_required_intake_area?
     return area_total_m2.to_f.positive? if property_kind_terreno?
-    return area_privativa_m2.to_f.positive? if property_kind_apartment_unit?
 
-    area_privativa_m2.to_f.positive? || area_total_m2.to_f.positive?
+    area_privativa_m2.to_f.positive?
   end
 
   def duplicate_identity_scope
@@ -746,12 +747,15 @@ class Habitation < ApplicationRecord
     missing << intake_sale_price_requirement_message if requires_sale_price? && !valid_intake_sale_price?
     missing << intake_rent_price_requirement_message if requires_rent_price? && !valid_intake_rent_price?
     missing << "Definições básicas" if categoria.blank? || status.blank?
+    missing << "Título do anúncio" if titulo_anuncio.blank?
+    missing << "Título do anúncio coerente com a categoria" if title_category_inconsistent?
+    missing << "Descrição do imóvel" if display_description_plain_text.blank?
     missing << "Endereço e localização" if address.blank? || cep.blank? || logradouro.blank? || bairro.blank? || cidade.blank? || uf.blank?
     missing << "Número da unidade" if requires_unit_number? && bloco.blank?
-    if property_kind_apartment_unit?
-      missing << "Área privativa" if area_privativa_m2.to_f <= 0
+    if property_kind_terreno?
+      missing << "Dimensões e estrutura física" if area_total_m2.to_f <= 0
     elsif !has_required_intake_area?
-      missing << "Dimensões e estrutura física"
+      missing << "Área privativa" if area_privativa_m2.to_f <= 0
     elsif property_kind_sala_comercial? && salas_qtd.to_i <= 0 && banheiros_qtd.to_i <= 0 && vagas_qtd.to_i <= 0
       missing << "Dimensões e estrutura física"
     elsif property_kind_residencial? && dormitorios_qtd.to_i <= 0 && suites_qtd.to_i <= 0 && vagas_qtd.to_i <= 0
@@ -776,6 +780,27 @@ class Habitation < ApplicationRecord
 
   def broker_can_release_to_site?
     intake_admin_approved? && intake_ready_for_admin_review?
+  end
+
+  def intake_display_title
+    title_category_inconsistent? ? default_title : display_title
+  end
+
+  def title_category_inconsistent?
+    return false if titulo_anuncio.blank? || categoria.blank?
+
+    title_category = title_category_terms_in_title.first
+    return false if title_category.blank?
+
+    title_category_key = normalize_title_category(title_category)
+    current_category_key = normalize_title_category(categoria)
+    return false if title_category_key == current_category_key
+
+    !current_category_key.start_with?(title_category_key) && !title_category_key.start_with?(current_category_key)
+  end
+
+  def display_description_plain_text
+    ActionController::Base.helpers.strip_tags(display_description.to_s).squish
   end
   
   # Retorna a URL da imagem principal
@@ -1135,6 +1160,19 @@ class Habitation < ApplicationRecord
     parts << "em #{bairro}" if bairro.present?
     parts << cidade if cidade.present?
     parts.join(' ')
+  end
+
+  def title_category_terms_in_title
+    title_key = normalize_title_category(titulo_anuncio)
+
+    TITLE_CATEGORY_TERMS.select do |term|
+      term_key = normalize_title_category(term)
+      title_key.start_with?(term_key)
+    end
+  end
+
+  def normalize_title_category(value)
+    value.to_s.parameterize
   end
 
   # Retorna lista de badges (etiquetas) para exibição no card

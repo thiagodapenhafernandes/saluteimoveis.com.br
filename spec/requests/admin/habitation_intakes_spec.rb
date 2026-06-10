@@ -263,6 +263,8 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
       :broker_intake,
       admin_user: admin,
       categoria: "Sala Comercial",
+      titulo_anuncio: "Sala Comercial em Centro Balneário Camboriú",
+      descricao_web: "Descrição pública da sala comercial para publicação.",
       dormitorios_qtd: 0,
       suites_qtd: 0,
       vagas_qtd: 0,
@@ -486,7 +488,7 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(intake.reload.intake_step).to eq("caracteristicas")
   end
 
-  it "aceita área total para casa de rua sem exigir área privativa" do
+  it "exige área privativa para casa de rua mesmo com área total preenchida" do
     intake = create(
       :habitation,
       :broker_intake,
@@ -509,10 +511,39 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
       }
     }
 
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include("Informe a área privativa do imóvel.")
+    expect(response.body).to include("is-invalid")
+    expect(intake.reload.intake_step).to eq("caracteristicas")
+  end
+
+  it "aceita área privativa para casa de rua sem exigir área total" do
+    intake = create(
+      :habitation,
+      :broker_intake,
+      admin_user: admin,
+      categoria: "Casa",
+      intake_step: "caracteristicas",
+      area_privativa_m2: nil,
+      area_total_m2: nil
+    )
+
+    patch admin_captacao_path(intake), params: {
+      current_step: "caracteristicas",
+      direction: "forward",
+      habitation: {
+        area_total: "",
+        area_privativa: "120",
+        dormitorios: "3",
+        banheiros: "4",
+        caracteristicas_imovel: ["Piscina"]
+      }
+    }
+
     expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "infraestrutura"))
     intake.reload
-    expect(intake.area_total_m2.to_i).to eq(228)
-    expect(intake.area_privativa_m2.to_f).to eq(0)
+    expect(intake.area_privativa_m2.to_i).to eq(120)
+    expect(intake.area_total_m2.to_f).to eq(0)
   end
 
   it "carrega características do catálogo do cadastro completo na captação" do
@@ -817,6 +848,83 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     post release_to_site_admin_captacao_path(intake)
     expect(response).to redirect_to(admin_captacao_path(intake))
     expect(intake.reload).to have_attributes(intake_status: "published", exibir_no_site_flag: true)
+  end
+
+  it "mostra título e descrição do anúncio para o corretor conferir antes da publicação" do
+    broker_profile = Profile.create!(
+      name: "Corretor anúncio #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Corretor")
+    )
+    broker = create(:admin_user, profile: broker_profile)
+    intake = create(
+      :habitation,
+      :broker_intake,
+      admin_user: broker,
+      intake_status: "admin_approved",
+      categoria: "Casa",
+      titulo_anuncio: "Apartamento 3 dormitórios em Centro Balneário Camboriú",
+      descricao_web: "Descrição pública revisada para a corretora conferir.",
+      dormitorios_qtd: 3
+    )
+    intake.create_address!(
+      cep: "88330-000",
+      logradouro: "Rua Central",
+      numero: "100",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+
+    sign_in broker
+    get admin_captacao_path(intake)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Casa 3 dormitórios em Centro Balneário Camboriú")
+    expect(response.body).to include("Anúncio para publicação")
+    expect(response.body).to include("Apartamento 3 dormitórios em Centro Balneário Camboriú")
+    expect(response.body).to include("Incoerente com a categoria")
+    expect(response.body).to include("Descrição pública revisada para a corretora conferir.")
+  end
+
+  it "lista pendências específicas quando corretor tenta publicar captação não pronta" do
+    broker_profile = Profile.create!(
+      name: "Corretor pendência #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Corretor")
+    )
+    broker = create(:admin_user, profile: broker_profile)
+    intake = create(
+      :habitation,
+      :broker_intake,
+      admin_user: broker,
+      intake_status: "admin_approved",
+      categoria: "Casa",
+      titulo_anuncio: "Apartamento 3 dormitórios em Centro Balneário Camboriú",
+      descricao_web: "Descrição pública revisada.",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      dormitorios_qtd: 3
+    )
+    intake.create_address!(
+      cep: "88330-000",
+      logradouro: "Rua Central",
+      numero: "100",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+    intake.autorizacoes_venda.attach(
+      io: StringIO.new("autorizacao"),
+      filename: "autorizacao.txt",
+      content_type: "text/plain"
+    )
+
+    sign_in broker
+    post release_to_site_admin_captacao_path(intake)
+
+    expect(response).to redirect_to(admin_captacao_path(intake))
+    expect(flash[:alert]).to include("Esta captação ainda não está pronta para liberar no site.")
+    expect(flash[:alert]).to include("Título do anúncio coerente com a categoria")
+    expect(intake.reload).to have_attributes(intake_status: "admin_approved", exibir_no_site_flag: false)
   end
 
   it "impede aprovação administrativa quando ainda faltam dados obrigatórios" do
