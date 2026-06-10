@@ -7,6 +7,8 @@ RSpec.describe PropertySetting, type: :model do
 
       expect(setting).to be_persisted
       expect(setting.watermark_position).to eq("bottom_left")
+      expect(setting.watermark_size_percentage).to eq(PropertySetting::DEFAULT_WATERMARK_SIZE_PERCENTAGE)
+      expect(setting.watermark_opacity_percentage).to eq(PropertySetting::DEFAULT_WATERMARK_OPACITY_PERCENTAGE)
     end
   end
 
@@ -15,5 +17,17 @@ RSpec.describe PropertySetting, type: :model do
 
     expect(setting).not_to be_valid
     expect(setting.errors[:watermark_position]).to be_present
+  end
+
+  it "validates watermark size and opacity ranges" do
+    setting = described_class.new(
+      watermark_position: "center",
+      watermark_size_percentage: 95,
+      watermark_opacity_percentage: 0
+    )
+
+    expect(setting).not_to be_valid
+    expect(setting.errors[:watermark_size_percentage]).to be_present
+    expect(setting.errors[:watermark_opacity_percentage]).to be_present
   end
 end

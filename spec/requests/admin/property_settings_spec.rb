@@ -14,10 +14,15 @@ RSpec.describe "Admin::PropertySettings", type: :request do
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("Config Imóveis")
     expect(response.body).to include("Marca d'água das fotos")
+    expect(response.body).to include("Tamanho da marca")
+    expect(response.body).to include("Opacidade da marca")
+    expect(response.body).to include("Prévia")
 
     patch admin_property_setting_path, params: {
       property_setting: {
         watermark_position: "bottom_right",
+        watermark_size_percentage: 44,
+        watermark_opacity_percentage: 65,
         watermark_image: png_upload("watermark.png", "120x60", "none", "white")
       }
     }
@@ -26,6 +31,8 @@ RSpec.describe "Admin::PropertySettings", type: :request do
 
     setting = PropertySetting.instance
     expect(setting.watermark_position).to eq("bottom_right")
+    expect(setting.watermark_size_percentage).to eq(44)
+    expect(setting.watermark_opacity_percentage).to eq(65)
     expect(setting.watermark_image).to be_attached
   end
 

@@ -25,6 +25,8 @@ FactoryBot.define do
       intake_origin { Habitation::INTAKE_ORIGIN_BROKER }
       intake_status { "draft" }
       exibir_no_site_flag { false }
+      titulo_anuncio { "Casa em Condomínio 2 dormitórios em Centro" }
+      descricao_web { "Descrição do imóvel revisada para publicação no site." }
       nome_empreendimento { "Residencial Teste" }
       proprietario { "Proprietário Teste" }
       proprietario_celular { "(47) 99999-0000" }

@@ -191,7 +191,10 @@ module Admin
       end
 
       unless @habitation.broker_can_release_to_site?
-        redirect_to admin_captacao_path(@habitation), alert: "Esta captação ainda não está pronta para liberar no site."
+        missing = @habitation.intake_missing_requirements.to_sentence
+        alert = "Esta captação ainda não está pronta para liberar no site."
+        alert = "#{alert} Pendências: #{missing}." if missing.present?
+        redirect_to admin_captacao_path(@habitation), alert: alert
         return
       end
 
@@ -498,10 +501,10 @@ module Admin
         missing
       when "caracteristicas"
         missing = []
-        if @habitation.property_kind_apartment_unit? && @habitation.area_privativa_m2.to_f <= 0
-          missing << "Informe a área privativa do imóvel."
-        elsif !@habitation.has_required_intake_area?
+        if @habitation.property_kind_terreno? && !@habitation.has_required_intake_area?
           missing << "Informe a área total do imóvel."
+        elsif !@habitation.has_required_intake_area?
+          missing << "Informe a área privativa do imóvel."
         end
         if @habitation.property_kind_residencial? && @habitation.dormitorios_qtd.to_i <= 0
           missing << "Informe a quantidade de dormitórios."
@@ -558,10 +561,10 @@ module Admin
         fields[:state] = true if @habitation.uf.blank?
         fields[:unidade_numero] = true if @habitation.requires_unit_number? && @habitation.bloco.blank?
       when "caracteristicas"
-        if @habitation.property_kind_apartment_unit? && @habitation.area_privativa_m2.to_f <= 0
-          fields[:area_privativa] = true
-        elsif !@habitation.has_required_intake_area?
+        if @habitation.property_kind_terreno? && !@habitation.has_required_intake_area?
           fields[:area_total] = true
+        elsif !@habitation.has_required_intake_area?
+          fields[:area_privativa] = true
         end
         fields[:dormitorios] = true if @habitation.property_kind_residencial? && @habitation.dormitorios_qtd.to_i <= 0
         fields[:banheiros] = true if @habitation.property_kind_residencial? && @habitation.banheiros_qtd.to_i <= 0

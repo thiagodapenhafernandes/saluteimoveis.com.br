@@ -1,6 +1,6 @@
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
   <div>
-    <h1 class="h4 mb-1"><%= @captacao.display_title %></h1>
+    <h1 class="h4 mb-1"><%= @captacao.intake_display_title %></h1>
     <div class="small text-muted">
       <%= @captacao.property_kind.humanize %> · <%= @captacao.modalidade.humanize %> ·
       <% if @captacao.submitted_at %>
@@ -28,8 +28,49 @@
   </div>
 <% end %>
 
+<% if can_broker_release_to_site?(@captacao) && !@captacao.broker_can_release_to_site? %>
+  <% missing_requirements = @captacao.intake_missing_requirements %>
+  <div class="alert alert-danger">
+    <i class="bi bi-exclamation-triangle-fill me-1"></i>
+    <strong>Esta captação ainda não está pronta para liberar no site.</strong>
+    <% if missing_requirements.any? %>
+      <div class="mt-2">Pendências:</div>
+      <ul class="mb-0 mt-1">
+        <% missing_requirements.each do |requirement| %>
+          <li><%= requirement %></li>
+        <% end %>
+      </ul>
+    <% end %>
+  </div>
+<% end %>
+
 <div class="row g-3">
   <div class="col-lg-8">
+    <div class="card shadow-sm border-0 mb-3">
+      <div class="card-body">
+        <h6 class="fw-bold text-uppercase small text-muted mb-3"><i class="bi bi-megaphone me-1"></i>Anúncio para publicação</h6>
+        <dl class="row small mb-0">
+          <dt class="col-sm-3">Categoria</dt>
+          <dd class="col-sm-9"><%= @captacao.categoria.presence || "—" %></dd>
+          <dt class="col-sm-3">Título do anúncio</dt>
+          <dd class="col-sm-9">
+            <%= @captacao.titulo_anuncio.presence || "—" %>
+            <% if @captacao.title_category_inconsistent? %>
+              <span class="badge bg-danger-subtle text-danger-emphasis border ms-1">Incoerente com a categoria</span>
+            <% end %>
+          </dd>
+          <dt class="col-sm-3">Descrição do imóvel</dt>
+          <dd class="col-sm-9">
+            <% if @captacao.display_description_plain_text.present? %>
+              <div class="text-muted"><%= formatted_habitation_description(@captacao.display_description) %></div>
+            <% else %>
+              <span class="text-muted">—</span>
+            <% end %>
+          </dd>
+        </dl>
+      </div>
+    </div>
+
     <div class="card shadow-sm border-0 mb-3">
       <div class="card-body">
         <h6 class="fw-bold text-uppercase small text-muted mb-3"><i class="bi bi-geo-alt me-1"></i>Endereço</h6>

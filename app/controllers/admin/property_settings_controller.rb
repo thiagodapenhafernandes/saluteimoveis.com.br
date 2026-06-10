@@ -26,7 +26,12 @@ module Admin
     end
 
     def property_setting_params
-      params.require(:property_setting).permit(:watermark_position, :watermark_image)
+      params.require(:property_setting).permit(
+        :watermark_position,
+        :watermark_size_percentage,
+        :watermark_opacity_percentage,
+        :watermark_image
+      )
     end
 
     def remove_watermark_image?

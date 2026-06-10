@@ -1641,8 +1641,8 @@
   <% if @habitations.any? %>
     <% @habitations.each do |imovel| %>
       <% details_path = admin_habitation_path(imovel, return_to: request.fullpath) %>
+      <% edit_path = edit_admin_habitation_path(imovel, return_to: request.fullpath) if admin_can_edit_habitation?(imovel) %>
       <% catalog_card_path = admin_habitation_catalog_card_path(imovel, ownership_scope: @ownership_scope, intake_review: @intake_review, return_to: request.fullpath) %>
-      <% catalog_action_label = admin_habitation_catalog_action_label(imovel, ownership_scope: @ownership_scope, intake_review: @intake_review) %>
       <div class="col-12">
         <div class="card shadow-sm border-0 overflow-hidden property-card-horizontal <%= 'property-card--inactive' if imovel.inactive_for_admin_card? %>"
              style="height: 240px; cursor: pointer;"
@@ -1688,13 +1688,18 @@
                   <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mobile-property-actions-menu"
                       data-dropdown-target="menu"
                       style="right: 0; left: auto;">
-                    <li><%= link_to catalog_action_label, catalog_card_path, class: "dropdown-item small" %></li>
-                    <li><%= link_to "Detalhes internos", details_path, class: "dropdown-item small" %></li>
+                    <li><%= link_to "Visualizar cadastro", details_path, class: "dropdown-item small" %></li>
+                    <% if edit_path.present? %>
+                      <li><%= link_to "Editar", edit_path, class: "dropdown-item small" %></li>
+                    <% end %>
                     <li><%= link_to "Ver no Site", habitation_path(imovel), target: "_blank", class: "dropdown-item small" %></li>
                     <% if current_admin_user&.admin? %>
                       <li><hr class="dropdown-divider"></li>
                       <li>
-                        <%= button_to admin_habitation_path(imovel), method: :delete, class: "dropdown-item small text-danger", data: { confirm: "Tem certeza?" } do %>
+                        <%= button_to admin_habitation_path(imovel),
+                                      method: :delete,
+                                      class: "dropdown-item small text-danger",
+                                      form: { data: { turbo_confirm: "Tem certeza que deseja excluir este imóvel? Esta ação não pode ser desfeita." } } do %>
                           Excluir
                         <% end %>
                       </li>
@@ -1718,7 +1723,7 @@
               
               <!-- Update Badge -->
               <% 
-                 data_referencia = imovel.data_atualizacao_crm || imovel.updated_at
+                 data_referencia = [imovel.data_atualizacao_crm, imovel.updated_at].compact.max
                  days_since_update = ((Time.current - data_referencia) / 1.day).to_i
                  badge_class = if days_since_update <= 30
                                  'bg-success text-white'
@@ -1769,13 +1774,18 @@
                           <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" 
                               data-dropdown-target="menu"
                               style="right: 0; left: auto;">
-                            <li><%= link_to catalog_action_label, catalog_card_path, class: "dropdown-item small" %></li>
-                            <li><%= link_to "Detalhes internos", details_path, class: "dropdown-item small" %></li>
+                            <li><%= link_to "Visualizar cadastro", details_path, class: "dropdown-item small" %></li>
+                            <% if edit_path.present? %>
+                              <li><%= link_to "Editar", edit_path, class: "dropdown-item small" %></li>
+                            <% end %>
                             <li><%= link_to "Ver no Site", habitation_path(imovel), target: "_blank", class: "dropdown-item small" %></li>
                             <% if current_admin_user&.admin? %>
                               <li><hr class="dropdown-divider"></li>
                               <li>
-                                <%= button_to admin_habitation_path(imovel), method: :delete, class: "dropdown-item small text-danger", data: { confirm: "Tem certeza?" } do %>
+                                <%= button_to admin_habitation_path(imovel),
+                                              method: :delete,
+                                              class: "dropdown-item small text-danger",
+                                              form: { data: { turbo_confirm: "Tem certeza que deseja excluir este imóvel? Esta ação não pode ser desfeita." } } do %>
                                    Excluir
                                 <% end %>
                               </li>

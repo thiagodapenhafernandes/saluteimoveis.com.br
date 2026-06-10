@@ -28,7 +28,10 @@
 
           <div class="mb-4">
             <%= f.label :watermark_image, "Imagem da marca d'água", class: "form-label fw-semibold" %>
-            <%= f.file_field :watermark_image, class: "form-control", accept: "image/png,image/jpeg,image/webp" %>
+            <%= f.file_field :watermark_image,
+                  class: "form-control",
+                  accept: "image/png,image/jpeg,image/webp",
+                  data: { action: "change->watermark-preview#loadFile", watermark_preview_target: "fileInput" } %>
             <div class="form-text">
               Use preferencialmente PNG com fundo transparente.
             </div>
@@ -55,6 +58,40 @@
             </div>
           </div>
 
+          <div class="mb-4">
+            <div class="d-flex align-items-center justify-content-between gap-3">
+              <%= f.label :watermark_size_percentage, "Tamanho da marca d'água", class: "form-label fw-semibold mb-1" %>
+              <span class="badge text-bg-light border" data-watermark-preview-target="sizeValue"><%= @property_setting.watermark_size_percentage %>%</span>
+            </div>
+            <%= f.range_field :watermark_size_percentage,
+                  min: PropertySetting::WATERMARK_SIZE_RANGE.begin,
+                  max: PropertySetting::WATERMARK_SIZE_RANGE.end,
+                  step: 1,
+                  class: "form-range",
+                  data: { action: "input->watermark-preview#update", watermark_preview_target: "sizeInput" } %>
+            <div class="d-flex justify-content-between small text-muted">
+              <span>Menor</span>
+              <span>Maior</span>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <div class="d-flex align-items-center justify-content-between gap-3">
+              <%= f.label :watermark_opacity_percentage, "Opacidade da marca d'água", class: "form-label fw-semibold mb-1" %>
+              <span class="badge text-bg-light border" data-watermark-preview-target="opacityValue"><%= @property_setting.watermark_opacity_percentage %>%</span>
+            </div>
+            <%= f.range_field :watermark_opacity_percentage,
+                  min: PropertySetting::WATERMARK_OPACITY_RANGE.begin,
+                  max: PropertySetting::WATERMARK_OPACITY_RANGE.end,
+                  step: 1,
+                  class: "form-range",
+                  data: { action: "input->watermark-preview#update", watermark_preview_target: "opacityInput" } %>
+            <div class="d-flex justify-content-between small text-muted">
+              <span>Mais discreta</span>
+              <span>Mais intensa</span>
+            </div>
+          </div>
+
           <div class="d-flex align-items-center gap-2">
             <%= f.submit "Salvar configurações", class: "btn btn-primary fw-semibold" %>
             <%= link_to "Voltar", admin_root_path, class: "btn btn-outline-secondary" %>
@@ -68,19 +105,26 @@
         <div class="card-body p-4">
           <h2 class="h6 text-uppercase text-muted fw-semibold mb-3">Prévia</h2>
           <div class="watermark-preview-frame rounded overflow-hidden position-relative bg-light border"
-               data-watermark-preview-target="frame">
+               data-watermark-preview-target="frame"
+               style="--watermark-size: <%= @property_setting.watermark_size_percentage %>%; --watermark-opacity: <%= @property_setting.watermark_opacity_percentage.to_f / 100 %>;">
             <div class="watermark-preview-photo"></div>
+            <% logo_class = "watermark-preview-logo watermark-position-#{@property_setting.watermark_position}" %>
+            <% logo_class = "#{logo_class} d-none" unless @property_setting.watermark_image.attached? %>
             <% if @property_setting.watermark_image.attached? %>
               <%= image_tag @property_setting.watermark_image,
-                    class: "watermark-preview-logo watermark-position-#{@property_setting.watermark_position}",
+                    class: logo_class,
                     data: { watermark_preview_target: "logo" },
                     alt: "Marca d'água configurada" %>
             <% else %>
-              <div class="position-absolute top-50 start-50 translate-middle text-center text-muted px-4">
-                <i class="bi bi-image fs-2 d-block mb-2"></i>
-                Envie uma imagem para visualizar a posição da marca d'água.
-              </div>
+              <%= tag.img class: logo_class,
+                    data: { watermark_preview_target: "logo" },
+                    alt: "Marca d'água configurada" %>
             <% end %>
+            <div class="position-absolute top-50 start-50 translate-middle text-center text-muted px-4 <%= "d-none" if @property_setting.watermark_image.attached? %>"
+                 data-watermark-preview-target="placeholder">
+              <i class="bi bi-image fs-2 d-block mb-2"></i>
+              Envie uma imagem para visualizar a marca d'água.
+            </div>
           </div>
           <p class="text-muted small mt-3 mb-0">
             A marca d'água será aplicada somente nas novas fotos enviadas quando a opção estiver marcada no cadastro do imóvel.
@@ -115,9 +159,10 @@
 
   .watermark-preview-logo {
     position: absolute;
-    width: min(34%, 220px);
+    width: var(--watermark-size, 28%);
     max-height: 38%;
     object-fit: contain;
+    opacity: var(--watermark-opacity, 1);
     filter: drop-shadow(0 4px 10px rgba(15, 23, 42, .18));
   }
 
@@ -134,7 +179,6 @@
   .watermark-position-center {
     left: 50%;
     top: 50%;
-    width: min(58%, 680px);
     transform: translate(-50%, -50%);
   }
 </style>
