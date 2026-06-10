@@ -36,6 +36,21 @@ RSpec.describe "Admin::PropertySettings", type: :request do
     expect(setting.watermark_image).to be_attached
   end
 
+  it "shows the current watermark image when one is already attached" do
+    setting = PropertySetting.instance
+    setting.watermark_image.attach(png_upload("marca-atual.png", "120x60", "none", "white"))
+
+    admin = create(:admin_user, :admin)
+    sign_in admin
+
+    get edit_admin_property_setting_path
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Imagem atual")
+    expect(response.body).to include("marca-atual.png")
+    expect(response.body).to include("Remover imagem atual")
+  end
+
   it "blocks non-admin users" do
     user = create(:admin_user)
     sign_in user
