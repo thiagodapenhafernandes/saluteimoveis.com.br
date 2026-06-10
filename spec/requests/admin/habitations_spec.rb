@@ -662,6 +662,9 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include("Devolver para captador")
     expect(response.body).to include("Salvar Interno")
     expect(response.body).to include("Salvar e sair")
+    expect(response.body).to include("Autorizações de Venda")
+    expect(response.body).to include("autorizacao.txt")
+    expect(response.body).to include("Adicionar arquivos")
 
     patch admin_habitation_path(intake), params: {
       save_internal_after_save: "1",
@@ -1087,6 +1090,29 @@ RSpec.describe "Admin::Habitations", type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(response.body).not_to include("Classificação das Fotos:")
+  end
+
+  it "exibe anexos internos para perfil administrativo revisar autorização" do
+    administrative_profile = Profile.create!(
+      name: "Administrativo",
+      active: true,
+      permissions: Profile.default_permissions_for("Administrativo")
+    )
+    administrative_user = create(:admin_user, profile: administrative_profile)
+    intake = create(:habitation, :broker_intake, admin_user: admin, codigo: "DOC-ADM-#{SecureRandom.hex(6)}", intake_status: "submitted_for_admin_review")
+    intake.autorizacoes_venda.attach(
+      io: StringIO.new("autorizacao"),
+      filename: "autorizacao-administrativo.txt",
+      content_type: "text/plain"
+    )
+
+    sign_in administrative_user
+    get edit_admin_habitation_path(intake)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Autorizações de Venda")
+    expect(response.body).to include("autorizacao-administrativo.txt")
+    expect(response.body).to include("Adicionar arquivos")
   end
 
   it "abre cadastro de proprietário em modal no formulário do imóvel" do

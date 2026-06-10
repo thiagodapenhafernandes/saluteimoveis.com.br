@@ -26,10 +26,18 @@ export default class extends Controller {
   }
 
   connect() {
+    this.tabClickHandler = (event) => this.activateClickedTab(event)
+    this.element.addEventListener("click", this.tabClickHandler)
     this.activateTabFromHash()
     this.applyCadastroType()
     this.syncFromDevelopmentSelection()
     this.applyServerValidationErrors()
+  }
+
+  disconnect() {
+    if (this.tabClickHandler) {
+      this.element.removeEventListener("click", this.tabClickHandler)
+    }
   }
 
   activateTabFromHash() {
@@ -39,7 +47,48 @@ export default class extends Controller {
     const trigger = document.querySelector(`[data-bs-target="#${CSS.escape(tabId)}"]`)
     if (trigger && window.bootstrap?.Tab) {
       window.bootstrap.Tab.getOrCreateInstance(trigger).show()
+    } else if (trigger) {
+      this.showTab(trigger)
     }
+  }
+
+  activateClickedTab(event) {
+    const trigger = event.target.closest('[data-bs-toggle="tab"][data-bs-target]')
+    if (!trigger || !this.element.contains(trigger)) return
+
+    requestAnimationFrame(() => this.ensureTabPaneVisible(trigger))
+  }
+
+  ensureTabPaneVisible(trigger) {
+    const targetSelector = trigger.getAttribute("data-bs-target")
+    if (!targetSelector) return
+
+    const pane = this.element.querySelector(targetSelector)
+    if (pane?.classList.contains("show") && pane.classList.contains("active")) return
+
+    this.showTab(trigger)
+  }
+
+  showTab(trigger) {
+    const targetSelector = trigger.getAttribute("data-bs-target")
+    if (!targetSelector) return
+
+    const pane = this.element.querySelector(targetSelector)
+    if (!pane) return
+
+    const tabList = trigger.closest('[role="tablist"]')
+    tabList?.querySelectorAll('[data-bs-toggle="tab"][data-bs-target]').forEach((tab) => {
+      const isCurrent = tab === trigger
+      tab.classList.toggle("active", isCurrent)
+      tab.setAttribute("aria-selected", isCurrent ? "true" : "false")
+    })
+
+    const tabContent = pane.closest(".tab-content")
+    tabContent?.querySelectorAll(".tab-pane").forEach((tabPane) => {
+      const isCurrent = tabPane === pane
+      tabPane.classList.toggle("active", isCurrent)
+      tabPane.classList.toggle("show", isCurrent)
+    })
   }
 
   applyServerValidationErrors() {
@@ -136,7 +185,7 @@ export default class extends Controller {
       return
     }
 
-    tabButton.click()
+    this.showTab(tabButton)
     requestAnimationFrame(callback)
   }
 

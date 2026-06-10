@@ -89,7 +89,8 @@ class Admin::HabitationsController < Admin::BaseController
 
   before_action :load_autocomplete_data, only: [:new, :edit, :create, :update]
   before_action :load_property_setting, only: [:new, :edit, :create, :update]
-  helper_method :can_view_proprietor_data?, :can_view_internal_documents?, :can_view_habitation_show_sensitive_data?, :can_edit_habitation?, :sort_options
+  helper_method :can_view_proprietor_data?, :can_view_internal_documents?, :can_manage_internal_documents?,
+                :can_view_habitation_show_sensitive_data?, :can_edit_habitation?, :sort_options
   helper_method :can_release_intake_to_broker?, :can_manage_intake_status?, :can_complete_admin_intake_review?
 
   def index
