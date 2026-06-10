@@ -31,12 +31,12 @@ RSpec.describe Images::WatermarkProcessor do
 
   it "sizes watermarks from the configured percentage" do
     setting = PropertySetting.instance
-    setting.update!(watermark_position: "center", watermark_size_percentage: 70)
+    setting.update!(watermark_position: "center", watermark_size_percentage: 120)
 
     image = Struct.new(:width).new(1000)
     processor = described_class.new(png_upload("property.png", "1000x600", "#d9e4ec", "#1f2937"), setting: setting)
 
-    expect(processor.send(:watermark_width_for, image)).to eq(700)
+    expect(processor.send(:watermark_width_for, image)).to eq(1200)
   end
 
   def png_upload(filename, size, background, fill)
