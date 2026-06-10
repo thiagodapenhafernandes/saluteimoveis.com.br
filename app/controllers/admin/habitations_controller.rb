@@ -1331,7 +1331,7 @@ class Admin::HabitationsController < Admin::BaseController
 
   def apply_status_filter(scope, raw_status)
     status = Habitation.normalize_status(raw_status)
-    return scope if status.blank? || status == "Todos"
+    return scope.where.not("unaccent(TRIM(habitations.status)) = unaccent(?)", "Suspenso") if status.blank? || status == "Todos"
 
     scope.where("unaccent(TRIM(habitations.status)) = unaccent(?)", status)
   end

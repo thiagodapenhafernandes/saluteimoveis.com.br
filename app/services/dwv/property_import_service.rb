@@ -46,7 +46,6 @@ module Dwv
       raise "ID do imóvel DWV não encontrado no payload." if dwv_id.blank?
 
       incoming_codigo = value(["reference"], ["codigo"], ["code"]).to_s.strip
-      incoming_codigo = "DWV-#{dwv_id}" if incoming_codigo.blank?
 
       habitation = find_existing_habitation(dwv_id: dwv_id, codigo: incoming_codigo) || Habitation.new
       existing_record = habitation.persisted?
@@ -171,7 +170,7 @@ module Dwv
 
       attrs.merge!(legacy_address_attrs(address_attrs)) if address_attrs.present?
       attrs.merge!(derived_feature_flags(features + infrastructure))
-      attrs[:codigo] = resolve_codigo_for(habitation, incoming_codigo) unless existing_record
+      attrs[:codigo] = resolve_codigo_for(habitation) unless existing_record
 
       habitation.assign_attributes(attrs)
     end
@@ -198,11 +197,9 @@ module Dwv
       scope.order(Arel.sql("CASE WHEN codigo_dwv IS NULL OR codigo_dwv = '' THEN 1 ELSE 0 END"), updated_at: :desc).first
     end
 
-    def resolve_codigo_for(habitation, incoming_codigo)
+    def resolve_codigo_for(habitation)
       current = habitation.codigo.to_s.strip
-      return incoming_codigo if current.blank?
-
-      current
+      current.presence
     end
 
     def detect_record_type

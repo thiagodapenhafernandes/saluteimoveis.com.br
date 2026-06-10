@@ -3,11 +3,13 @@ require "rails_helper"
 RSpec.describe Dwv::PropertyImportService do
   describe "#perform" do
     it "creates a DWV habitation with the full unit/building mapping" do
+      create(:habitation, codigo: "8628", imovel_dwv: "Nao", last_sync_message: "Importado do dump Vista")
+
       result = described_class.new(unit_payload).perform
 
       habitation = result[:habitation]
       expect(habitation).to be_persisted
-      expect(habitation.codigo).to eq("DWV-632439")
+      expect(habitation.codigo).to eq("8629")
       expect(habitation.codigo_dwv).to eq("632439")
       expect(habitation.imovel_dwv).to eq("Sim")
       expect(habitation.status).to eq("Venda")
