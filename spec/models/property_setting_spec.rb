@@ -22,7 +22,7 @@ RSpec.describe PropertySetting, type: :model do
   it "validates watermark size and opacity ranges" do
     setting = described_class.new(
       watermark_position: "center",
-      watermark_size_percentage: 95,
+      watermark_size_percentage: 125,
       watermark_opacity_percentage: 0
     )
 
