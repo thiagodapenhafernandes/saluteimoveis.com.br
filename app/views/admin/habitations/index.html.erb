@@ -1768,11 +1768,6 @@
                        <h5 class="card-title fw-bold text-dark mb-1" style="font-family: 'Outfit', sans-serif;"><%= imovel.bairro %> <span class="text-muted fw-light mx-1">•</span> <%= imovel.nome_empreendimento.presence || imovel.titulo_anuncio %></h5>
                        <div class="small font-monospace text-muted mt-1">
                           REF: <span class="fw-bold text-dark"><%= imovel.codigo %></span>
-                          <% if imovel.dwv_property? %>
-                            <span class="badge admin-property-dwv-badge ms-2" title="<%= imovel.codigo_dwv.present? ? "Código DWV: #{imovel.codigo_dwv}" : "Imóvel sincronizado via DWV" %>">
-                              DWV
-                            </span>
-                          <% end %>
                           <span class="badge bg-primary-subtle text-primary border-0 ms-2 text-uppercase" style="font-size: 0.65rem;"><%= imovel.status || 'VENDA' %></span>
                           <% if imovel.broker_intake? %>
                             <span class="badge bg-warning-subtle text-warning-emphasis border-0 ms-2" style="font-size: 0.65rem;"><%= imovel.intake_status_label %></span>
@@ -2153,17 +2148,6 @@
   }
   .dropdown-toggle.no-caret::after {
     display: none !important;
-  }
-  .admin-property-dwv-badge {
-    background: #022b3a;
-    color: #ffffff;
-    border: 1px solid rgba(2, 43, 58, 0.08);
-    border-radius: 999px;
-    font-size: 0.65rem;
-    font-weight: 800;
-    letter-spacing: 0.06em;
-    padding: 0.32rem 0.52rem;
-    box-shadow: 0 2px 5px rgba(2, 43, 58, 0.12);
   }
   .admin-property-actions {
     --admin-action-size: 38px;

@@ -1384,9 +1384,18 @@ class Admin::HabitationsController < Admin::BaseController
 
   def apply_status_filter(scope, raw_status)
     status = Habitation.normalize_status(raw_status)
-    return scope.where.not("unaccent(TRIM(habitations.status)) = unaccent(?)", "Suspenso") if status.blank? || status == "Todos"
+    return without_inactive_statuses(scope) if status.blank? || status == "Todos"
 
     scope.where("unaccent(TRIM(habitations.status)) = unaccent(?)", status)
+  end
+
+  def without_inactive_statuses(scope)
+    Habitation::INACTIVE_STATUS_KEYWORDS.reduce(scope) do |filtered_scope, keyword|
+      filtered_scope.where(
+        "unaccent(TRIM(COALESCE(habitations.status, ''))) NOT ILIKE unaccent(?)",
+        "%#{keyword}%"
+      )
+    end
   end
 
   def apply_category_filter(scope, raw_category)

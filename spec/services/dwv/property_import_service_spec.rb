@@ -49,6 +49,7 @@ RSpec.describe Dwv::PropertyImportService do
     end
 
     it "updates rich fields on an existing DWV record" do
+      create(:habitation, codigo: "8628", imovel_dwv: "Nao", last_sync_message: "Importado do dump Vista")
       habitation = create(
         :habitation,
         codigo: "DWV-632439",
@@ -63,12 +64,29 @@ RSpec.describe Dwv::PropertyImportService do
       described_class.new(unit_payload).perform
       habitation.reload
 
+      expect(habitation.codigo).to eq("8629")
       expect(habitation.titulo_anuncio).to eq("Apartamento com vista mar")
       expect(habitation.descricao_web.to_plain_text).to include("Descrição completa do imóvel")
       expect(habitation.area_privativa_m2).to eq(BigDecimal("186.0"))
       expect(habitation.pictures.map { |pic| pic["url"] }).to include("https://cdn.dwv.test/unit-cover.jpg")
       expect(habitation.address.logradouro).to eq("Rua 2450")
       expect(habitation.last_sync_message).to eq("Sincronizado via DWV (mapeamento completo)")
+    end
+
+    it "links units to a DWV development by the internal DWV code while keeping the local reference" do
+      create(
+        :habitation,
+        tipo: "Empreendimento",
+        categoria: "Empreendimento",
+        codigo: "9000",
+        codigo_dwv: "9001",
+        imovel_dwv: "Sim",
+        nome_empreendimento: "Línea"
+      )
+
+      result = described_class.new(unit_payload).perform
+
+      expect(result[:habitation].codigo_empreendimento).to eq("9000")
     end
 
     it "maps third party property fields without requiring unit data" do

@@ -54,6 +54,23 @@ RSpec.describe Habitation, type: :model do
     end
   end
 
+  describe "#display_area_m2" do
+    it "uses private area for residential units when total area is zero" do
+      habitation = create(:habitation, categoria: "Apartamento", area_total_m2: 0, area_privativa_m2: 130)
+
+      expect(habitation.display_area_m2).to eq(130)
+      expect(habitation.area_formatted).to eq("130 m²")
+      expect(habitation.card_data[:area]).to eq(130)
+      expect(habitation.structured_data[:floorSize][:value]).to eq(130.0)
+    end
+
+    it "uses total area first for land properties" do
+      habitation = described_class.new(categoria: "Terreno", area_total_m2: 450, area_privativa_m2: 130)
+
+      expect(habitation.display_area_m2).to eq(450)
+    end
+  end
+
   describe "#inactive_for_admin_card?" do
     it "does not mark active internal properties as inactive cards" do
       habitation = described_class.new(status: "Aluguel", exibir_no_site_flag: false)

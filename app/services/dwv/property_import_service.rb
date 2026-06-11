@@ -170,7 +170,7 @@ module Dwv
 
       attrs.merge!(legacy_address_attrs(address_attrs)) if address_attrs.present?
       attrs.merge!(derived_feature_flags(features + infrastructure))
-      attrs[:codigo] = resolve_codigo_for(habitation) unless existing_record
+      attrs[:codigo] = resolve_codigo_for(habitation, dwv_id:) if assign_local_codigo?(habitation, dwv_id:, existing_record:)
 
       habitation.assign_attributes(attrs)
     end
@@ -197,9 +197,24 @@ module Dwv
       scope.order(Arel.sql("CASE WHEN codigo_dwv IS NULL OR codigo_dwv = '' THEN 1 ELSE 0 END"), updated_at: :desc).first
     end
 
-    def resolve_codigo_for(habitation)
+    def assign_local_codigo?(habitation, dwv_id:, existing_record:)
+      return true unless existing_record
+
+      external_dwv_codigo?(habitation.codigo, dwv_id:)
+    end
+
+    def resolve_codigo_for(habitation, dwv_id:)
       current = habitation.codigo.to_s.strip
-      current.presence
+      return current if current.present? && !external_dwv_codigo?(current, dwv_id:)
+
+      Habitation.next_automatic_codigo
+    end
+
+    def external_dwv_codigo?(codigo, dwv_id:)
+      normalized = codigo.to_s.strip
+      return false if normalized.blank?
+
+      normalized.match?(/\Adwv[-_\s]/i) || (dwv_id.present? && normalized == dwv_id.to_s)
     end
 
     def detect_record_type
@@ -213,7 +228,9 @@ module Dwv
       raw_code = text_value(["building", "id"])
       return nil if raw_code.blank?
 
-      Habitation.empreendimentos.exists?(codigo: raw_code) ? raw_code : nil
+      development = Habitation.empreendimentos.find_by(codigo_dwv: raw_code, imovel_dwv: "Sim") ||
+                    Habitation.empreendimentos.find_by(codigo: raw_code)
+      development&.codigo
     end
 
     def normalize_category(raw)
