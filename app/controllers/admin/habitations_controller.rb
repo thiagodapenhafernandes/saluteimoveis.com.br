@@ -1250,8 +1250,10 @@ class Admin::HabitationsController < Admin::BaseController
   end
 
   def redirect_after_habitation_save(habitation, notice:)
+    anchor = params[:save_anchor].to_s.presence_in(%w[documents media])
+
     if params[:save_navigation].to_s == "stay"
-      redirect_to edit_admin_habitation_path(habitation, return_to: safe_admin_habitations_return_path(params[:return_to])), notice: "#{notice} Você permaneceu na ficha de cadastro."
+      redirect_to edit_admin_habitation_path(habitation, return_to: safe_admin_habitations_return_path(params[:return_to]), anchor: anchor), notice: "#{notice} Você permaneceu na ficha de cadastro."
     else
       redirect_to safe_admin_habitations_return_path(params[:return_to]) || admin_habitations_path, notice: "#{notice} Você saiu para o catálogo."
     end

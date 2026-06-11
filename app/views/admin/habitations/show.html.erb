@@ -121,6 +121,10 @@
   linked_development = @habitation.empreendimento if @habitation.codigo_empreendimento.present?
   address_parts = [@habitation.endereco, @habitation.numero, @habitation.complemento.presence && "Apto. #{@habitation.complemento}", @habitation.bairro, @habitation.cidade, @habitation.uf].compact_blank
   description = @habitation.display_description
+  profile_name = current_admin_user&.profile&.name.to_s
+  broker_compact_view = current_admin_user.present? &&
+                        !current_admin_user.admin? &&
+                        !%w[Administrador Administrativo Gerente].include?(profile_name)
 
   money = lambda do |cents|
     cents.to_i.positive? ? number_to_currency(cents.to_i / 100.0) : nil
@@ -152,9 +156,22 @@
     normalized_url.match?(/\Ahttps?:\/\//i) ? normalized_url : "https://#{normalized_url}"
   end
 
-  feature_names = show_value.call(@habitation.caracteristicas) == "Não informado" ? [] : show_value.call(@habitation.caracteristicas).split(", ")
-  infrastructure_names = show_value.call(@habitation.infra_estrutura) == "Não informado" ? [] : show_value.call(@habitation.infra_estrutura).split(", ")
-  unique_feature_names = show_value.call(@habitation.caracteristica_unica) == "Não informado" ? [] : show_value.call(@habitation.caracteristica_unica).split(", ")
+  badge_names = lambda do |value|
+    values = case value
+             when Array
+               value
+             when Hash
+               value.values
+             else
+               value.to_s.split(",")
+             end
+
+    values.map { |item| item.to_s.strip }.compact_blank
+  end
+
+  feature_names = badge_names.call(@habitation.caracteristicas)
+  infrastructure_names = badge_names.call(@habitation.infra_estrutura)
+  unique_feature_names = badge_names.call(@habitation.caracteristica_unica)
 
   attached_photo_sources = @habitation.photos.attached? ? @habitation.ordered_photos.select { |photo| photo.persisted? && photo.blob&.persisted? }.map.with_index { |photo, index|
     {
@@ -196,15 +213,27 @@
   photo_sources = attached_photo_sources + api_photo_sources + development_photo_sources
   primary_photo = photo_sources.first
 
-  summary_fields = [
-    ["Referência", @habitation.codigo],
-    ["Tipo", @habitation.tipo],
-    ["Categoria", @habitation.categoria],
-    ["Modalidade", @habitation.status],
-    ["Captador", @habitation.primary_captador_name],
-    ["Empreendimento", @habitation.nome_empreendimento],
-    ["Ocupação", @habitation.ocupacao_status]
-  ]
+  summary_fields = if broker_compact_view
+    [
+      ["Referência", @habitation.codigo],
+      ["Categoria", @habitation.categoria],
+      ["Modalidade", @habitation.status],
+      ["Empreendimento", @habitation.nome_empreendimento],
+      ["Situação", @habitation.situacao],
+      ["Ocupação", @habitation.ocupacao_status],
+      ["Estado de conservação", @habitation.estado_conservacao]
+    ]
+  else
+    [
+      ["Referência", @habitation.codigo],
+      ["Tipo", @habitation.tipo],
+      ["Categoria", @habitation.categoria],
+      ["Modalidade", @habitation.status],
+      ["Captador", @habitation.primary_captador_name],
+      ["Empreendimento", @habitation.nome_empreendimento],
+      ["Ocupação", @habitation.ocupacao_status]
+    ]
+  end
 
   address_fields = [
     ["Logradouro", @habitation.endereco],
@@ -226,15 +255,24 @@
     ["Face", @habitation.face]
   ]
 
-  value_fields = [
-    ["Venda", money.call(@habitation.valor_venda_cents)],
-    ["Locação", money.call(@habitation.valor_locacao_cents)],
-    ["Total aluguel", money.call(@habitation.valor_total_aluguel_cents)],
-    ["Condomínio", money.call(@habitation.valor_condominio_cents)],
-    ["IPTU", money.call(@habitation.valor_iptu_cents)],
-    ["Aceita financiamento", yes_no.call(@habitation.aceita_financiamento_flag)],
-    ["Aceita permuta", yes_no.call(@habitation.aceita_permuta_flag)]
-  ]
+  value_fields = if broker_compact_view
+    [
+      ["Venda", money.call(@habitation.valor_venda_cents)],
+      ["Locação", money.call(@habitation.valor_locacao_cents)],
+      ["Condomínio", money.call(@habitation.valor_condominio_cents)],
+      ["IPTU", money.call(@habitation.valor_iptu_cents)]
+    ]
+  else
+    [
+      ["Venda", money.call(@habitation.valor_venda_cents)],
+      ["Locação", money.call(@habitation.valor_locacao_cents)],
+      ["Total aluguel", money.call(@habitation.valor_total_aluguel_cents)],
+      ["Condomínio", money.call(@habitation.valor_condominio_cents)],
+      ["IPTU", money.call(@habitation.valor_iptu_cents)],
+      ["Aceita financiamento", yes_no.call(@habitation.aceita_financiamento_flag)],
+      ["Aceita permuta", yes_no.call(@habitation.aceita_permuta_flag)]
+    ]
+  end
 
   public_flags = [
     ["Mobiliado", @habitation.mobiliado_flag],
@@ -281,6 +319,13 @@
         <div class="habitation-show-meta mt-2">
           <i class="bi bi-geo-alt"></i>
           <%= address_parts.join(" · ") %>
+        </div>
+      <% end %>
+      <% if broker_compact_view && @habitation.primary_captador_name.present? %>
+        <div class="habitation-show-meta mt-2">
+          <i class="bi bi-person-badge"></i>
+          <span class="text-uppercase fw-bold">Captador:</span>
+          <span><%= @habitation.primary_captador_name %></span>
         </div>
       <% end %>
     </div>
@@ -422,12 +467,38 @@
       </div>
     <% end %>
 
-    <% if feature_names.any? || infrastructure_names.any? || unique_feature_names.any? || public_flags.any? %>
+    <% if feature_names.any? %>
       <div class="col-12">
         <div class="habitation-show-card">
-          <div class="habitation-show-section-title">Itens do imóvel</div>
+          <div class="habitation-show-section-title">Características do imóvel</div>
           <div class="habitation-show-badge-list">
-            <% (feature_names + infrastructure_names + unique_feature_names).compact_blank.uniq.each do |name| %>
+            <% feature_names.uniq.each do |name| %>
+              <span class="badge rounded-pill bg-light text-dark border px-3 py-2"><%= name %></span>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <% if infrastructure_names.any? %>
+      <div class="col-12">
+        <div class="habitation-show-card">
+          <div class="habitation-show-section-title">Infraestrutura</div>
+          <div class="habitation-show-badge-list">
+            <% infrastructure_names.uniq.each do |name| %>
+              <span class="badge rounded-pill bg-light text-dark border px-3 py-2"><%= name %></span>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <% if unique_feature_names.any? || public_flags.any? %>
+      <div class="col-12">
+        <div class="habitation-show-card">
+          <div class="habitation-show-section-title">Destaques</div>
+          <div class="habitation-show-badge-list">
+            <% unique_feature_names.uniq.each do |name| %>
               <span class="badge rounded-pill bg-light text-dark border px-3 py-2"><%= name %></span>
             <% end %>
             <% public_flags.each do |label, value| %>

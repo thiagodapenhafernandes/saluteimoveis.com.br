@@ -78,12 +78,13 @@
   </div>
 </div>
 
-<% if @captacao.requires_unit_number? %>
+<% if @captacao.requires_intake_development_name? || @captacao.requires_unit_number? %>
   <hr class="my-3">
   <div class="row g-2">
-    <div class="col-md-8">
+    <div class="<%= @captacao.requires_unit_number? ? 'col-md-8' : 'col-12' %>">
       <div class="wizard-field-group">
         <%= f.label :edificio_nome, "Edifício / Condomínio", class: "form-label" %>
+        <% if @captacao.requires_intake_development_name? %><span class="required-star">*</span><% end %>
         <%= f.text_field :edificio_nome,
                          class: field_state.call(:edificio_nome),
                          placeholder: "Ex.: Edifício Mirante do Atlântico",
@@ -94,20 +95,22 @@
         <% if field_invalid.call(:edificio_nome) %><div class="invalid-feedback d-block">Informe o nome do condomínio/empreendimento.</div><% end %>
       </div>
     </div>
-    <div class="col-md-4">
-      <div class="wizard-field-group">
-        <%= f.label :unidade_numero, "Unidade / Apto", class: "form-label" %>
-        <span class="required-star">*</span>
-        <%= f.text_field :unidade_numero,
-                         class: field_state.call(:unidade_numero),
-                         placeholder: "1203",
-                         data: {
-                           habitation_duplicate_check_target: "unit",
-                           action: "input->habitation-duplicate-check#schedule blur->habitation-duplicate-check#check"
-                         } %>
-        <% if field_invalid.call(:unidade_numero) %><div class="invalid-feedback d-block">Informe o número da unidade.</div><% end %>
+    <% if @captacao.requires_unit_number? %>
+      <div class="col-md-4">
+        <div class="wizard-field-group">
+          <%= f.label :unidade_numero, "Unidade / Apto", class: "form-label" %>
+          <span class="required-star">*</span>
+          <%= f.text_field :unidade_numero,
+                           class: field_state.call(:unidade_numero),
+                           placeholder: "1203",
+                           data: {
+                             habitation_duplicate_check_target: "unit",
+                             action: "input->habitation-duplicate-check#schedule blur->habitation-duplicate-check#check"
+                           } %>
+          <% if field_invalid.call(:unidade_numero) %><div class="invalid-feedback d-block">Informe o número da unidade.</div><% end %>
+        </div>
       </div>
-    </div>
+    <% end %>
   </div>
   <div data-habitation-duplicate-check-target="status"></div>
 <% else %>

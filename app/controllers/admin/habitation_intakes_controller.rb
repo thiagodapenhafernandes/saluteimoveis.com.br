@@ -497,6 +497,7 @@ module Admin
         missing << "Informe o bairro." if @habitation.bairro.blank?
         missing << "Informe a cidade." if @habitation.cidade.blank?
         missing << "Informe a UF." if @habitation.uf.blank?
+        missing << "Informe o empreendimento/condomínio." if @habitation.requires_intake_development_name? && @habitation.nome_empreendimento.blank?
         missing << "Informe o número da unidade." if @habitation.requires_unit_number? && @habitation.bloco.blank?
         missing
       when "caracteristicas"
@@ -512,6 +513,9 @@ module Admin
         if @habitation.property_kind_residencial? && @habitation.banheiros_qtd.to_i <= 0
           missing << "Informe a quantidade de banheiros."
         end
+        missing << "Informe a quantidade de vagas de garagem." if @habitation.vagas_qtd.nil?
+        missing << "Informe a ocupação do imóvel." if @habitation.ocupacao_status.blank?
+        missing << "Informe a situação do imóvel." if @habitation.situacao.blank?
         missing << "Marque ao menos uma característica do imóvel." if @habitation.caracteristicas.blank?
         missing
       when "infraestrutura"
@@ -531,6 +535,7 @@ module Admin
         if @habitation.rental_intake? && @habitation.salute_rental_management_answer.blank?
           missing << "Informe se a administração da locação será feita pela Salute."
         end
+        missing << "Informe o meio de garantia locatícia." if @habitation.rental_intake? && @habitation.rental_guarantee_method.blank?
         missing << "Informe em quantas vezes aceita parcelamento." if @habitation.aceita_parcelamento_flag? && @habitation.numero_prestacoes.blank?
         missing
       when "fotos"
@@ -539,6 +544,11 @@ module Admin
         missing << "Envie ao menos uma foto do imóvel." if @habitation.photo_flow_choice == "upload" && !@habitation.has_any_photo?
         missing << "Informe a data/hora agendada com fotógrafo." if @habitation.photo_flow_choice == "schedule" && @habitation.photo_session_requested_at.blank?
         missing << "Anexe a autorização do proprietário." unless @habitation.autorizacoes_venda.attached?
+        missing
+      when "visitas"
+        missing = []
+        missing << "Informe onde estão as chaves." if @habitation.key_location.blank?
+        missing << "Informe os melhores dias/horários para visita." if !@habitation.skip_visitas? && !@habitation.intake_visit_days_present?
         missing
       else
         []
@@ -559,6 +569,7 @@ module Admin
         fields[:neighborhood] = true if @habitation.bairro.blank?
         fields[:city] = true if @habitation.cidade.blank?
         fields[:state] = true if @habitation.uf.blank?
+        fields[:edificio_nome] = true if @habitation.requires_intake_development_name? && @habitation.nome_empreendimento.blank?
         fields[:unidade_numero] = true if @habitation.requires_unit_number? && @habitation.bloco.blank?
       when "caracteristicas"
         if @habitation.property_kind_terreno? && !@habitation.has_required_intake_area?
@@ -568,6 +579,9 @@ module Admin
         end
         fields[:dormitorios] = true if @habitation.property_kind_residencial? && @habitation.dormitorios_qtd.to_i <= 0
         fields[:banheiros] = true if @habitation.property_kind_residencial? && @habitation.banheiros_qtd.to_i <= 0
+        fields[:vagas_garagem] = true if @habitation.vagas_qtd.nil?
+        fields[:ocupacao] = true if @habitation.ocupacao_status.blank?
+        fields[:situacao_imovel] = true if @habitation.situacao.blank?
         fields[:caracteristicas_imovel] = true if @habitation.caracteristicas.blank?
       when "infraestrutura"
         fields[:caracteristicas_predio] = true if @habitation.uses_building_infrastructure? && @habitation.infra_estrutura.blank?
@@ -580,12 +594,16 @@ module Admin
         end
         fields[:aceita_permuta_answer] = true if @habitation.sale_intake? && @habitation.aceita_permuta_answer.blank?
         fields[:salute_rental_management_answer] = true if @habitation.rental_intake? && @habitation.salute_rental_management_answer.blank?
+        fields[:rental_guarantee_method] = true if @habitation.rental_intake? && @habitation.rental_guarantee_method.blank?
         fields[:numero_prestacoes] = true if @habitation.aceita_parcelamento_flag? && @habitation.numero_prestacoes.blank?
       when "fotos"
         fields[:photo_flow_choice] = true if @habitation.photo_flow_choice.blank?
         fields[:photos] = true if @habitation.photo_flow_choice == "upload" && !@habitation.has_any_photo?
         fields[:photo_session_requested_at] = true if @habitation.photo_flow_choice == "schedule" && @habitation.photo_session_requested_at.blank?
         fields[:autorizacoes_venda] = true unless @habitation.autorizacoes_venda.attached?
+      when "visitas"
+        fields[:chaves_com] = true if @habitation.key_location.blank?
+        fields[:dias_visitas] = true if !@habitation.skip_visitas? && !@habitation.intake_visit_days_present?
       end
       fields
     end
@@ -676,7 +694,7 @@ module Admin
         :proprietario_telefone_comercial, :proprietario_telefone_residencial,
         :proprietario_codigo, :proprietor_id, :admin_user_id,
         :photo_flow_choice, :photo_session_requested_at, :photo_session_url,
-        :salute_rental_management_answer, :aceita_permuta_answer,
+        :salute_rental_management_answer, :rental_guarantee_method, :aceita_permuta_answer,
         :aceita_parcelamento_flag, :numero_prestacoes, :aceita_financiamento_flag,
         :aceita_permuta_veiculo_flag, :aceita_permuta_imovel_flag, :aceita_permuta_outros_flag,
         :mobiliado_flag, :exclusivo_flag, :ocupacao_status, :estado_conservacao,

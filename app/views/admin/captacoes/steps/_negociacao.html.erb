@@ -43,7 +43,8 @@
     <div class="col-md-6">
       <div class="wizard-field-group">
         <%= f.label :aceita_parcelamento_flag, "Aceita parcelamento?", class: "form-label" %>
-        <%= f.select :aceita_parcelamento_flag, [["Sim", true], ["Não", false]], { include_blank: "Selecione" }, class: "form-select" %>
+        <span class="required-star">*</span>
+        <%= f.select :aceita_parcelamento_flag, [["Sim", true], ["Não", false]], {}, class: "form-select" %>
       </div>
     </div>
   </div>
@@ -76,6 +77,16 @@
                  { include_blank: "Selecione" },
                  class: field_state.call(:salute_rental_management_answer, "form-select") %>
     <% if field_invalid.call(:salute_rental_management_answer) %><div class="invalid-feedback d-block">Informe se a administração será feita pela Salute.</div><% end %>
+  </div>
+
+  <div class="wizard-field-group">
+    <%= f.label :rental_guarantee_method, "Meio de garantia locatícia", class: "form-label" %>
+    <span class="required-star">*</span>
+    <%= f.select :rental_guarantee_method,
+                 Habitation::RENTAL_GUARANTEE_METHOD_OPTIONS,
+                 { include_blank: "Selecione" },
+                 class: field_state.call(:rental_guarantee_method, "form-select") %>
+    <% if field_invalid.call(:rental_guarantee_method) %><div class="invalid-feedback d-block">Informe o meio de garantia locatícia.</div><% end %>
   </div>
 <% end %>
 

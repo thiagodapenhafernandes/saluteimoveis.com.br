@@ -1308,6 +1308,51 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include("Adicionar arquivos")
   end
 
+  it "anexa fichas de cadastro e autorizações pela aba de documentos" do
+    habitation = create(:habitation, codigo: "DOC-UP-#{SecureRandom.hex(6)}")
+    habitation.create_address!(
+      logradouro: "Rua Upload Documento",
+      numero: "10",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+    ficha = Rack::Test::UploadedFile.new(
+      StringIO.new("ficha de cadastro"),
+      "text/plain",
+      original_filename: "ficha-cadastro.txt"
+    )
+    autorizacao = Rack::Test::UploadedFile.new(
+      StringIO.new("autorizacao de venda"),
+      "text/plain",
+      original_filename: "autorizacao-venda.txt"
+    )
+
+    patch admin_habitation_path(habitation), params: {
+      save_navigation: "stay",
+      save_anchor: "documents",
+      document_upload: "fichas_cadastro",
+      habitation: {
+        fichas_cadastro: [ficha]
+      }
+    }
+
+    expect(response).to redirect_to(edit_admin_habitation_path(habitation, anchor: "documents"))
+    expect(habitation.reload.fichas_cadastro.attachments.map { |attachment| attachment.filename.to_s }).to include("ficha-cadastro.txt")
+
+    patch admin_habitation_path(habitation), params: {
+      save_navigation: "stay",
+      save_anchor: "documents",
+      document_upload: "autorizacoes_venda",
+      habitation: {
+        autorizacoes_venda: [autorizacao]
+      }
+    }
+
+    expect(response).to redirect_to(edit_admin_habitation_path(habitation, anchor: "documents"))
+    expect(habitation.reload.autorizacoes_venda.attachments.map { |attachment| attachment.filename.to_s }).to include("autorizacao-venda.txt")
+  end
+
   it "abre cadastro de proprietário em modal no formulário do imóvel" do
     habitation = create(:habitation, codigo: "PROP-MODAL-#{SecureRandom.hex(6)}")
 
@@ -1365,6 +1410,8 @@ RSpec.describe "Admin::Habitations", type: :request do
       proprietario_celular: "(47) 99999-9999",
       nome_empreendimento: "Edifício Visível",
       area_privativa_m2: 123,
+      caracteristicas: ["Sacada", "Cozinha planejada"],
+      infra_estrutura: ["Piscina", "Academia"],
       tour_virtual: "https://example.com/tour",
       videos: ["https://example.com/video"],
       permuta_localizacao: "Balneário Camboriú",
@@ -1416,6 +1463,10 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include("Valores")
     expect(response.body).to include("Endereço")
     expect(response.body).to include("Características")
+    expect(response.body).to include("Características do imóvel")
+    expect(response.body).to include("Cozinha planejada")
+    expect(response.body).to include("Infraestrutura")
+    expect(response.body).to include("Academia")
     expect(response.body).to include("Mídia complementar")
     expect(response.body).to include("Balneário Camboriú")
     expect(response.body).to include("https://example.com/tour")
@@ -1424,6 +1475,9 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).not_to include("Captação e revisão")
     expect(response.body).not_to include("Integrações e códigos externos")
     expect(response.body).not_to include("Publicação, portais e SEO")
+    expect(response.body).not_to include("Total aluguel")
+    expect(response.body).not_to include("Aceita financiamento")
+    expect(response.body).not_to include("Aceita permuta")
     expect(response.body).not_to include("VISTA-REF-1")
     expect(response.body).not_to include("SUV")
     expect(response.body).not_to include("Vínculo de captação")

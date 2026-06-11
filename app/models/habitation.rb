@@ -160,6 +160,7 @@ class Habitation < ApplicationRecord
   TOPOGRAFIA_OPTIONS = ["Plano", "Aclive", "Declive", "Irregular"].freeze
   FOTO_CLASSIFICACAO = ["Profissionais", "Boas", "Aceitáveis", "Amadoras", "Não tem fotos"].freeze
   KEY_LOCATION_OPTIONS = ["Imobiliária", "Corretor(a)", "Proprietário", "Zelador", "Portaria", "Inquilino", "Outro"].freeze
+  RENTAL_GUARANTEE_METHOD_OPTIONS = ["Seguro fiança", "Caução", "Fiador", "Título de capitalização", "Garantidora", "A combinar"].freeze
   REGIAO_FOCO_OPTIONS = ["Sim", "Não"].freeze
   PORTAL_PUBLICATION_FIELDS = {
     "zapimoveis" => :publicar_zapimoveis,
@@ -270,6 +271,7 @@ class Habitation < ApplicationRecord
             numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 100 },
             allow_nil: true
   validates :key_location, inclusion: { in: KEY_LOCATION_OPTIONS }, allow_blank: true
+  validates :rental_guarantee_method, inclusion: { in: RENTAL_GUARANTEE_METHOD_OPTIONS }, allow_blank: true
   validate :codigo_empreendimento_must_exist, if: :validate_codigo_empreendimento?
   validate :codigo_empreendimento_cannot_reference_self
   validate :key_location_notes_required_for_other
@@ -384,6 +386,10 @@ class Habitation < ApplicationRecord
 
   def uses_building_infrastructure?
     property_kind_apartment_unit?
+  end
+
+  def requires_intake_development_name?
+    property_kind_apartment_unit? || condominium_house?
   end
 
   def street_house?
@@ -540,6 +546,7 @@ class Habitation < ApplicationRecord
   def aceita_parcelamento = aceita_parcelamento_flag? ? "sim" : "nao"
   def outras_taxas = captacao_note_list("Outras taxas")
   def dias_visitas = captacao_note_list("Dias/horários para visita")
+  def intake_visit_days_present? = dias_visitas.any?
   def extras
     {
       "frente_metros" => dimensoes_terreno.to_s[/Frente:\s*([^|]+)/, 1]&.strip&.delete_suffix(" m"),
@@ -757,6 +764,7 @@ class Habitation < ApplicationRecord
     missing << "Título do anúncio coerente com a categoria" if title_category_inconsistent?
     missing << "Descrição do imóvel" if display_description_plain_text.blank?
     missing << "Endereço e localização" if address.blank? || cep.blank? || logradouro.blank? || bairro.blank? || cidade.blank? || uf.blank?
+    missing << "Empreendimento" if requires_intake_development_name? && nome_empreendimento.blank?
     missing << "Número da unidade" if requires_unit_number? && bloco.blank?
     if property_kind_terreno?
       missing << "Dimensões e estrutura física" if area_total_m2.to_f <= 0
@@ -767,12 +775,18 @@ class Habitation < ApplicationRecord
     elsif property_kind_residencial? && dormitorios_qtd.to_i <= 0 && suites_qtd.to_i <= 0 && vagas_qtd.to_i <= 0
       missing << "Dimensões e estrutura física"
     end
+    missing << "Vaga de garagem" if vagas_qtd.nil?
     missing << "Financeiro e valores" if valor_condominio_cents.blank? && valor_iptu_cents.blank?
+    missing << "Situação" if situacao.blank?
+    missing << "Ocupação" if ocupacao_status.blank?
     missing << "Mais características" if caracteristicas.blank?
     missing << "Infraestrutura & Lazer" if uses_building_infrastructure? && infra_estrutura.blank?
     missing << "Administração de locação feita pela Salute" if rental_intake? && salute_rental_management_answer.blank?
+    missing << "Meio de garantia locatícia" if rental_intake? && rental_guarantee_method.blank?
     missing << "Aceita permuta" if sale_intake? && aceita_permuta_answer.blank?
     missing << "Quantidade de parcelas" if aceita_parcelamento_flag? && numero_prestacoes.blank?
+    missing << "Chaves" if key_location.blank?
+    missing << "Dias de visita" if !skip_visitas? && !intake_visit_days_present?
     missing << "Fotos ou agenda com fotógrafo" if photo_flow_choice == "upload" && !has_any_photo?
     missing << "Agenda com fotógrafo" if photo_flow_choice == "schedule" && photo_session_requested_at.blank?
     missing << "Fotos ou agenda com fotógrafo" if photo_flow_choice.blank? && !has_any_photo?
@@ -1319,7 +1333,7 @@ class Habitation < ApplicationRecord
       :categoria, :status, :situacao,
       :nome_empreendimento,
       :proprietario, :proprietario_email,
-      :ocupacao_status, :estado_conservacao, :topografia, :foto_classificacao,
+      :ocupacao_status, :estado_conservacao, :topografia, :foto_classificacao, :rental_guarantee_method,
       :numero_box, :dimensoes_terreno, :podcast_url,
       :matricula_imovel, :zona, :responsavel_reserva, :zelador_nome, :zelador_telefone, :regiao_foco,
       :construtora, :tipo_fachada,
