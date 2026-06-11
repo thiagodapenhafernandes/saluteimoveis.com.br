@@ -116,9 +116,16 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(form_markup).to be_present
     expect(form_markup.scan("<form").size).to eq(1)
     expect(form_markup).not_to include('name="_method" value="delete"')
-    expect(response.body).to include('data-turbo-method="delete"')
-    expect(response.body).to include(purge_attachment_admin_habitation_path(habitation, association: "fichas_cadastro", attachment_id: habitation.fichas_cadastro.attachments.first.id))
-    expect(response.body).to include(purge_attachment_admin_habitation_path(habitation, association: "autorizacoes_venda", attachment_id: habitation.autorizacoes_venda.attachments.first.id))
+
+    ficha_attachment = habitation.fichas_cadastro.attachments.first
+    authorization_attachment = habitation.autorizacoes_venda.attachments.first
+    expect(response.body).to include(%(form="purge_attachment_#{ficha_attachment.id}"))
+    expect(response.body).to include(%(form="purge_attachment_#{authorization_attachment.id}"))
+    expect(response.body).to include(%(id="purge_attachment_#{ficha_attachment.id}"))
+    expect(response.body).to include(%(id="purge_attachment_#{authorization_attachment.id}"))
+    expect(response.body).to include('name="_method" value="delete"')
+    expect(response.body).to include(purge_attachment_admin_habitation_path(habitation, association: "fichas_cadastro", attachment_id: ficha_attachment.id))
+    expect(response.body).to include(purge_attachment_admin_habitation_path(habitation, association: "autorizacoes_venda", attachment_id: authorization_attachment.id))
   end
 
   it "exibe no topo o captador vindo dos responsáveis e agenciamento" do
@@ -232,6 +239,8 @@ RSpec.describe "Admin::Habitations", type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include(other_property.titulo_anuncio)
+    expect(response.body).to include("Captador:")
+    expect(response.body).to include(other_broker.name)
     expect(response.body).to include(CGI.escapeHTML(admin_habitation_path(other_property, return_to: request.fullpath)))
     expect(response.body).not_to include(%(data-clickable-card-url-value="#{CGI.escapeHTML(habitation_path(other_property))}"))
 
@@ -240,6 +249,8 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("Informações principais")
     expect(response.body).to include(other_property.titulo_anuncio)
+    expect(response.body).to include("Captador")
+    expect(response.body).to include(other_broker.name)
     expect(response.body).not_to include("Proprietário</div>")
     expect(response.body).not_to include("Proprietário Restrito")
 
@@ -1276,6 +1287,8 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include("foto-local-show.jpg")
     expect(response.body).to include("data-fancybox")
     expect(response.body).to include("Informações principais")
+    expect(response.body).to include("Captador")
+    expect(response.body).to include("Captador Responsável")
     expect(response.body).to include("Valores")
     expect(response.body).to include("Endereço")
     expect(response.body).to include("Características")

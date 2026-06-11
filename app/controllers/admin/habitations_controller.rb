@@ -99,7 +99,9 @@ class Admin::HabitationsController < Admin::BaseController
     @sort_direction = sort_direction
     filtered_scope = filtered_habitations_scope
     @filtered_count = filtered_scope.reorder(nil).count
-    @habitations = filtered_scope.order(Arel.sql("#{sort_expression} #{@sort_direction} NULLS LAST"))
+    @habitations = filtered_scope
+      .includes(:admin_user, broker_assignments: :admin_user)
+      .order(Arel.sql("#{sort_expression} #{@sort_direction} NULLS LAST"))
 
     @habitations = @habitations.paginate(page: params[:page], per_page: 20)
     @page_title = "Gerenciar Imóveis"
