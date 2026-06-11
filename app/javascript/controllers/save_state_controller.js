@@ -9,6 +9,24 @@ export default class extends Controller {
     this.saveOptionsConfirmed = false
     this.saveOptionsSubmitter = null
     this.defaultLabel = this.hasLabelTarget ? this.labelTarget.textContent : ""
+    this.directUploadProgress = new Map()
+
+    this.boundDirectUploadsStart = this.directUploadsStart.bind(this)
+    this.boundDirectUploadProgress = this.directUploadProgressed.bind(this)
+    this.boundDirectUploadsEnd = this.directUploadsEnd.bind(this)
+    this.boundDirectUploadError = this.directUploadError.bind(this)
+
+    this.element.addEventListener("direct-uploads:start", this.boundDirectUploadsStart)
+    this.element.addEventListener("direct-upload:progress", this.boundDirectUploadProgress)
+    this.element.addEventListener("direct-uploads:end", this.boundDirectUploadsEnd)
+    this.element.addEventListener("direct-upload:error", this.boundDirectUploadError)
+  }
+
+  disconnect() {
+    this.element.removeEventListener("direct-uploads:start", this.boundDirectUploadsStart)
+    this.element.removeEventListener("direct-upload:progress", this.boundDirectUploadProgress)
+    this.element.removeEventListener("direct-uploads:end", this.boundDirectUploadsEnd)
+    this.element.removeEventListener("direct-upload:error", this.boundDirectUploadError)
   }
 
   confirm(event) {
@@ -55,6 +73,35 @@ export default class extends Controller {
     // Em sucesso com redirect, o Turbo navega e este reset é irrelevante.
     // Em erro de validação, precisamos destravar os botões.
     if (!successful) this.reset()
+  }
+
+  directUploadsStart() {
+    this.submittingNow = true
+    this.directUploadProgress.clear()
+    this.disableActions()
+    this.showSpinner()
+    this.setLabel("Enviando fotos...")
+  }
+
+  directUploadProgressed(event) {
+    const id = event?.detail?.id
+    const progress = Number(event?.detail?.progress || 0)
+    if (!id) return
+
+    this.directUploadProgress.set(id, progress)
+    const values = Array.from(this.directUploadProgress.values())
+    const average = values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : progress
+    this.setLabel(`Enviando fotos ${average}%`)
+  }
+
+  directUploadsEnd() {
+    this.setLabel("Finalizando cadastro...")
+  }
+
+  directUploadError(event) {
+    event.preventDefault()
+    this.showToast("Não foi possível enviar as fotos. Verifique sua conexão e tente novamente.")
+    this.reset()
   }
 
   reset() {
@@ -106,6 +153,31 @@ export default class extends Controller {
 
   skipSaveOptionsFor(submitter) {
     return submitter?.name === "release_to_broker_after_save"
+  }
+
+  disableActions() {
+    if (this.hasSubmitButtonTarget) {
+      this.submitButtonTarget.disabled = true
+      this.submitButtonTarget.classList.add("disabled")
+    }
+
+    if (this.hasCancelButtonTarget) {
+      this.cancelButtonTarget.classList.add("disabled")
+      this.cancelButtonTarget.setAttribute("aria-disabled", "true")
+      this.cancelButtonTarget.style.pointerEvents = "none"
+    }
+  }
+
+  showSpinner() {
+    if (this.hasSpinnerTarget) {
+      this.spinnerTarget.classList.remove("d-none")
+    }
+  }
+
+  setLabel(text) {
+    if (this.hasLabelTarget) {
+      this.labelTarget.textContent = text
+    }
   }
 
   get hasSaveOptionsTargets() {

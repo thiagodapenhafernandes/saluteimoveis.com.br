@@ -80,7 +80,9 @@ RSpec.describe "Admin::Habitations", type: :request do
       codigo: "REV-ACTION-#{SecureRandom.hex(6)}"
     )
 
-    get edit_admin_habitation_path(habitation)
+    return_path = admin_habitations_path(ownership: "all", q: habitation.codigo)
+
+    get edit_admin_habitation_path(habitation, return_to: return_path)
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include('id="admin_habitation_form"')
@@ -109,7 +111,9 @@ RSpec.describe "Admin::Habitations", type: :request do
       content_type: "text/plain"
     )
 
-    get edit_admin_habitation_path(habitation)
+    return_path = admin_habitations_path(ownership: "all", q: habitation.codigo)
+
+    get edit_admin_habitation_path(habitation, return_to: return_path)
 
     expect(response).to have_http_status(:ok)
     form_markup = response.body[/<form[^>]*id="admin_habitation_form"[\s\S]*?<\/form>/]
@@ -124,6 +128,12 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include(%(id="purge_attachment_#{ficha_attachment.id}"))
     expect(response.body).to include(%(id="purge_attachment_#{authorization_attachment.id}"))
     expect(response.body).to include('name="_method" value="delete"')
+    [ficha_attachment, authorization_attachment].each do |attachment|
+      purge_form_markup = response.body[/<form[^>]*id="purge_attachment_#{attachment.id}"[\s\S]*?<\/form>/]
+      expect(purge_form_markup).to be_present
+      expect(purge_form_markup).to include('name="return_to"')
+      expect(purge_form_markup).to include(%(value="#{CGI.escapeHTML(return_path)}"))
+    end
     expect(response.body).to include(purge_attachment_admin_habitation_path(habitation, association: "fichas_cadastro", attachment_id: ficha_attachment.id))
     expect(response.body).to include(purge_attachment_admin_habitation_path(habitation, association: "autorizacoes_venda", attachment_id: authorization_attachment.id))
   end
@@ -294,6 +304,41 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include(own_property.titulo_anuncio)
     expect(response.body).to include(CGI.escapeHTML(admin_habitation_path(own_property, return_to: request.fullpath)))
     expect(response.body).to include(CGI.escapeHTML(edit_admin_habitation_path(own_property, return_to: request.fullpath)))
+  end
+
+  it "permite que corretor filtre imóveis por outro corretor na aba Todos" do
+    broker_profile = Profile.create!(
+      name: "Corretor filtro #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Corretor")
+    )
+    luciana = create(:admin_user, profile: broker_profile, name: "Luciana Filtro")
+    patricia = create(:admin_user, profile: broker_profile, name: "Patrícia Filtro")
+    own_property = create(
+      :habitation,
+      admin_user: luciana,
+      codigo: "FILTRO-OWN-#{SecureRandom.hex(6)}",
+      titulo_anuncio: "Imóvel da Luciana no filtro"
+    )
+    other_property = create(
+      :habitation,
+      admin_user: patricia,
+      codigo: "FILTRO-OTHER-#{SecureRandom.hex(6)}",
+      titulo_anuncio: "Imóvel da Patrícia no filtro"
+    )
+
+    sign_in luciana
+    get admin_habitations_path(ownership: "all")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include('name="corretor_id"')
+    expect(response.body).to include("Patrícia Filtro")
+    expect(response.body).not_to include('name="proprietor_id"')
+
+    get admin_habitations_path(ownership: "all", corretor_id: patricia.id)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(other_property.titulo_anuncio)
+    expect(response.body).not_to include(own_property.titulo_anuncio)
   end
 
   it "combina status, categoria e Frente Mar sem trazer imóveis incompatíveis" do
@@ -534,6 +579,24 @@ RSpec.describe "Admin::Habitations", type: :request do
     }
 
     expect(response).to redirect_to(return_path)
+  end
+
+  it "remove filtros vazios do retorno para manter a URL do cadastro enxuta" do
+    habitation = create(:habitation, codigo: "RET-LIMPO-#{SecureRandom.hex(6)}", titulo_anuncio: "Imóvel com retorno limpo")
+    noisy_return_path = "/admin/habitations?ownership=all&q=#{CGI.escape(habitation.codigo)}&bairro=&status=&dorms%5B%5D=&vagas%5B%5D="
+    clean_return_path = admin_habitations_path(ownership: "all", q: habitation.codigo)
+
+    get noisy_return_path
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(CGI.escapeHTML(edit_admin_habitation_path(habitation, return_to: clean_return_path)))
+    expect(response.body).not_to include(CGI.escapeHTML(edit_admin_habitation_path(habitation, return_to: noisy_return_path)))
+
+    get edit_admin_habitation_path(habitation, return_to: noisy_return_path)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(ERB::Util.html_escape(clean_return_path))
+    expect(response.body).not_to include(ERB::Util.html_escape(noisy_return_path))
   end
 
   it "não exibe Netimóveis 2 e Loft na área de portais" do
@@ -891,6 +954,65 @@ RSpec.describe "Admin::Habitations", type: :request do
   ensure
     uploaded_photo&.close
     uploaded_photo&.unlink
+  end
+
+  it "adiciona fotos enviadas por direct upload" do
+    habitation = create(:habitation, codigo: "FOTO-DIRECT-#{SecureRandom.hex(6)}", titulo_anuncio: "Título antigo")
+    habitation.create_address!(
+      logradouro: "Rua Fotos",
+      numero: "106",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+    blob = ActiveStorage::Blob.create_and_upload!(
+      io: StringIO.new("foto enviada direto"),
+      filename: "direct-upload.jpg",
+      content_type: "image/jpeg"
+    )
+
+    patch admin_habitation_path(habitation), params: {
+      habitation: {
+        titulo_anuncio: "Título com direct upload",
+        photos: [blob.signed_id]
+      }
+    }
+
+    expect(response).to redirect_to(admin_habitations_path)
+    expect(habitation.reload.photos.attachments.size).to eq(1)
+    expect(habitation.photos.attachments.first.blob).to eq(blob)
+  end
+
+  it "enfileira marca d'água das novas fotos fora da requisição" do
+    clear_enqueued_jobs
+    habitation = create(:habitation, codigo: "FOTO-WATERMARK-#{SecureRandom.hex(6)}", titulo_anuncio: "Título antigo")
+    habitation.create_address!(
+      logradouro: "Rua Fotos",
+      numero: "107",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+    setting = PropertySetting.instance
+    setting.watermark_image.attach(io: StringIO.new("watermark"), filename: "watermark.png", content_type: "image/png")
+    blob = ActiveStorage::Blob.create_and_upload!(
+      io: StringIO.new("foto enviada direto"),
+      filename: "direct-watermark.jpg",
+      content_type: "image/jpeg"
+    )
+
+    expect do
+      patch admin_habitation_path(habitation), params: {
+        habitation: {
+          titulo_anuncio: "Título com direct upload",
+          apply_photo_watermark: "1",
+          photos: [blob.signed_id]
+        }
+      }
+    end.to have_enqueued_job(HabitationPhotoWatermarkJob)
+
+    expect(response).to redirect_to(admin_habitations_path)
+    expect(habitation.reload.photos.attachments.size).to eq(1)
   end
 
   it "mantém fotos da API ao adicionar fotos anexadas" do
@@ -1599,10 +1721,12 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(upload_log.changed_fields).to include("autorizacoes_venda_attachments")
 
     attachment = habitation.reload.autorizacoes_venda.attachments.first
+    return_path = admin_habitations_path(ownership: "all", q: habitation.codigo)
     expect {
-      delete "/admin/habitations/#{habitation.id}/purge_attachment/autorizacoes_venda/#{attachment.id}"
+      delete "/admin/habitations/#{habitation.id}/purge_attachment/autorizacoes_venda/#{attachment.id}", params: { return_to: return_path }
     }.to change(HabitationAuditLog, :count).by(1)
 
+    expect(response).to redirect_to(edit_admin_habitation_path(habitation, return_to: return_path, anchor: "documents"))
     remove_log = HabitationAuditLog.last
     expect(remove_log).to have_attributes(action: "attachments_changed")
     expect(remove_log.changed_fields).to include("autorizacoes_venda_attachments")
