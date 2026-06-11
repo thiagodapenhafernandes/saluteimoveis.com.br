@@ -5,6 +5,7 @@ class Admin::HabitationsController < Admin::BaseController
   before_action :require_admin!, only: [:bulk_publish, :bulk_publish_eligibility]
   before_action :scope_habitations_by_permission, only: [:edit, :update, :destroy, :sync, :purge_attachment, :generate_ai_preview, :format_ai_suggestion, :apply_ai_suggestion]
   require "csv"
+  require "uri"
 
   REPORT_TYPES = {
     "photos_sheet" => "Ficha de fotos",
@@ -92,9 +93,11 @@ class Admin::HabitationsController < Admin::BaseController
   helper_method :can_view_proprietor_data?, :can_view_internal_documents?, :can_manage_internal_documents?,
                 :can_view_habitation_show_sensitive_data?, :can_edit_habitation?, :sort_options
   helper_method :can_release_intake_to_broker?, :can_manage_intake_status?, :can_complete_admin_intake_review?
+  helper_method :can_filter_by_broker?, :can_filter_by_proprietor?
 
   def index
     load_index_filters
+    @return_to_path = safe_admin_habitations_return_path(request.fullpath)
     @sort_column = sort_column
     @sort_direction = sort_direction
     filtered_scope = filtered_habitations_scope
@@ -554,17 +557,17 @@ class Admin::HabitationsController < Admin::BaseController
     association = params[:association].to_s
     allowed = %w[fichas_cadastro autorizacoes_venda photos]
     unless allowed.include?(association)
-      redirect_to edit_admin_habitation_path(@habitation, anchor: "documents"), alert: "Anexo inválido."
+      redirect_to edit_habitation_path_with_return(@habitation, anchor: "documents"), alert: "Anexo inválido."
       return
     end
     if association.in?(%w[fichas_cadastro autorizacoes_venda]) && !can_manage_internal_documents?
-      redirect_to edit_admin_habitation_path(@habitation, anchor: "documents"), alert: "Você não tem permissão para remover documentos internos."
+      redirect_to edit_habitation_path_with_return(@habitation, anchor: "documents"), alert: "Você não tem permissão para remover documentos internos."
       return
     end
 
     attachment = @habitation.public_send(association).attachments.find_by(id: params[:attachment_id])
     if attachment.nil?
-      redirect_to edit_admin_habitation_path(@habitation, anchor: "documents"), alert: "Anexo não encontrado."
+      redirect_to edit_habitation_path_with_return(@habitation, anchor: "documents"), alert: "Anexo não encontrado."
       return
     end
 
@@ -573,7 +576,7 @@ class Admin::HabitationsController < Admin::BaseController
     attachment.purge_later
     anchor = association == "photos" ? "media" : "documents"
     notice = association == "photos" ? "Foto removida." : "Anexo removido."
-    redirect_to edit_admin_habitation_path(@habitation, anchor: anchor), notice: notice
+    redirect_to edit_habitation_path_with_return(@habitation, anchor: anchor), notice: notice
   end
 
   private
@@ -1254,16 +1257,58 @@ class Admin::HabitationsController < Admin::BaseController
     end
   end
 
+  def edit_habitation_path_with_return(habitation, anchor:)
+    edit_admin_habitation_path(
+      habitation,
+      return_to: safe_admin_habitations_return_path(params[:return_to]),
+      anchor: anchor
+    )
+  end
+
   def touch_manual_habitation_update!(habitation, force: false)
     habitation.data_atualizacao_crm = Time.current if force || habitation.changed?
   end
 
   def safe_admin_habitations_return_path(value)
-    path = value.to_s
+    path = value.to_s.strip
     return nil if path.blank?
-    return path if path.start_with?(admin_habitations_path)
 
+    uri = URI.parse(path)
+    return nil if uri.scheme.present? || uri.host.present?
+    return nil unless uri.path == admin_habitations_path
+
+    query = compact_return_query(uri.query)
+    [uri.path, query].compact.join("?")
+  rescue URI::InvalidURIError
     nil
+  end
+
+  def compact_return_query(query)
+    compacted = compact_blank_return_params(Rack::Utils.parse_nested_query(query.to_s))
+    return nil if blank_return_param?(compacted)
+
+    Rack::Utils.build_nested_query(compacted)
+  end
+
+  def compact_blank_return_params(value)
+    case value
+    when Hash
+      value.each_with_object({}) do |(key, nested_value), compacted_hash|
+        compacted_value = compact_blank_return_params(nested_value)
+        compacted_hash[key] = compacted_value unless blank_return_param?(compacted_value)
+      end
+    when Array
+      value.filter_map do |nested_value|
+        compacted_value = compact_blank_return_params(nested_value)
+        compacted_value unless blank_return_param?(compacted_value)
+      end
+    else
+      value.to_s.strip.presence
+    end
+  end
+
+  def blank_return_param?(value)
+    value.blank? || (value.respond_to?(:empty?) && value.empty?)
   end
 
   def keep_admin_review_intake_hidden
@@ -1620,19 +1665,16 @@ class Admin::HabitationsController < Admin::BaseController
     end
     return if valid_uploads.blank?
 
-    processed_results = []
-    attachables =
-      if apply_watermark && @property_setting&.watermark_configured?
-        processed_results = valid_uploads.map { |upload| Images::WatermarkProcessor.call(upload, setting: @property_setting) }
-        processed_results.map(&:attachable)
-      else
-        valid_uploads
-      end
-
-    habitation.photos.attach(attachables)
+    existing_attachment_ids = habitation.photos.attachments.ids
+    habitation.photos.attach(valid_uploads)
     habitation.reload
-  ensure
-    Array(processed_results).each { |result| result.tempfile&.close! }
+
+    return unless apply_watermark && @property_setting&.watermark_configured?
+
+    new_attachment_ids = habitation.photos.attachments.ids - existing_attachment_ids
+    return if new_attachment_ids.blank?
+
+    HabitationPhotoWatermarkJob.perform_later(habitation.id, new_attachment_ids, @property_setting.id)
   end
 
   def apply_picture_removals_to_memory(habitation)
@@ -2017,6 +2059,10 @@ class Admin::HabitationsController < Admin::BaseController
 
   def can_filter_by_proprietor?
     current_admin_user&.admin? || administrative_profile?
+  end
+
+  def can_filter_by_broker?
+    current_admin_user&.admin? || current_admin_user&.profile&.can?(:view, :imoveis)
   end
 
   def can_export_proprietor_data?

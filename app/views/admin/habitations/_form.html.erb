@@ -1898,7 +1898,7 @@
                </div>
                <br>
                <%= f.label :photos, "Selecionar Arquivos", class: "btn btn-primary" %>
-               <%= f.file_field :photos, multiple: true, class: "d-none", 
+               <%= f.file_field :photos, multiple: true, direct_upload: true, class: "d-none",
                    id: "habitation_photos",
                    data: { action: "change->photo-upload#preview", photo_upload_target: "input" } %>
                <div class="alert alert-warning small mt-3 mb-0 d-none" data-photo-upload-target="uploadLimitFeedback"></div>
@@ -2358,6 +2358,7 @@
                       onsubmit: "return confirm('Remover este arquivo?')"
                     },
                     data: { turbo: false } do %>
+        <%= hidden_field_tag :return_to, @return_to_path if @return_to_path.present? %>
       <% end %>
     <% end %>
   <% end %>

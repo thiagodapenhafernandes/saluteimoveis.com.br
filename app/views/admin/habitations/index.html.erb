@@ -1023,7 +1023,7 @@
                                  }
                                } %>
                 </div>
-                <% if current_admin_user&.admin? || current_admin_user&.profile&.name == "Administrativo" %>
+                <% if can_filter_by_broker? %>
                   <div class="col-md-3">
                     <label class="form-label small fw-bold text-muted text-uppercase">Corretor</label>
                     <%= f.select :corretor_id,
@@ -1038,6 +1038,8 @@
                                    }
                                  } %>
                   </div>
+                <% end %>
+                <% if can_filter_by_proprietor? %>
                   <div class="col-md-3">
                     <label class="form-label small fw-bold text-muted text-uppercase">Proprietário</label>
                     <%= f.select :proprietor_id,
@@ -1640,9 +1642,9 @@
 <div class="row g-3">
   <% if @habitations.any? %>
     <% @habitations.each do |imovel| %>
-      <% details_path = admin_habitation_path(imovel, return_to: request.fullpath) %>
-      <% edit_path = edit_admin_habitation_path(imovel, return_to: request.fullpath) if admin_can_edit_habitation?(imovel) %>
-      <% catalog_card_path = admin_habitation_catalog_card_path(imovel, ownership_scope: @ownership_scope, intake_review: @intake_review, return_to: request.fullpath) %>
+      <% details_path = admin_habitation_path(imovel, return_to: @return_to_path) %>
+      <% edit_path = edit_admin_habitation_path(imovel, return_to: @return_to_path) if admin_can_edit_habitation?(imovel) %>
+      <% catalog_card_path = admin_habitation_catalog_card_path(imovel, ownership_scope: @ownership_scope, intake_review: @intake_review, return_to: @return_to_path) %>
       <div class="col-12">
         <div class="card shadow-sm border-0 overflow-hidden property-card-horizontal <%= 'property-card--inactive' if imovel.inactive_for_admin_card? %>"
              style="height: 240px; cursor: pointer;"
