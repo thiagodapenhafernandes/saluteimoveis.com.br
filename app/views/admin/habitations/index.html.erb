@@ -369,6 +369,22 @@
   }
   .habitations-master-pane .property-card-horizontal {
     border: 1px solid #e6edf5 !important;
+    min-height: 240px;
+  }
+  .habitations-master-pane .property-card-horizontal > .row {
+    align-items: stretch;
+    min-height: 240px;
+  }
+  .habitations-master-pane .property-card-horizontal > .row > .position-relative.h-100 {
+    height: auto !important;
+    min-height: 240px;
+  }
+  .habitations-master-pane .property-card-horizontal > .row > .position-relative.h-100 > img,
+  .habitations-master-pane .property-card-horizontal > .row > .position-relative.h-100 > .bg-light {
+    position: absolute;
+    inset: 0;
+    height: 100% !important;
+    width: 100%;
   }
   .property-card-horizontal.property-card--inactive {
     background: #f1f3f5;
@@ -716,6 +732,7 @@
     .property-card-horizontal .col-md-4,
     .property-card-horizontal .col-lg-3 {
       height: 220px !important;
+      min-height: 220px !important;
     }
     .habitations-master-pane .property-card-horizontal .card-body {
       padding: .85rem !important;
@@ -1647,7 +1664,7 @@
       <% catalog_card_path = admin_habitation_catalog_card_path(imovel, ownership_scope: @ownership_scope, intake_review: @intake_review, return_to: @return_to_path) %>
       <div class="col-12">
         <div class="card shadow-sm border-0 overflow-hidden property-card-horizontal <%= 'property-card--inactive' if imovel.inactive_for_admin_card? %>"
-             style="height: 240px; cursor: pointer;"
+             style="cursor: pointer;"
              data-controller="clickable-card"
              data-clickable-card-url-value="<%= catalog_card_path %>">
           <div class="row g-0 h-100">

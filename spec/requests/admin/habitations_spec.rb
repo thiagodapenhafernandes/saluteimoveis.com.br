@@ -251,6 +251,8 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include(other_property.titulo_anuncio)
     expect(response.body).to include("Captador:")
     expect(response.body).to include(other_broker.name)
+    card = Nokogiri::HTML(response.body).css(".property-card-horizontal").find { |node| node.text.include?(other_property.codigo) }
+    expect(card["style"]).not_to include("height: 240px")
     expect(response.body).to include(CGI.escapeHTML(admin_habitation_path(other_property, return_to: request.fullpath)))
     expect(response.body).not_to include(%(data-clickable-card-url-value="#{CGI.escapeHTML(habitation_path(other_property))}"))
 
