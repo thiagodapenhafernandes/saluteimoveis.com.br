@@ -81,7 +81,7 @@
   </div>
 <% end %>
 
-<%= form_with(model: [:admin, habitation], local: true, class: "needs-validation habitation-form-shell", data: { controller: "save-state", action: "submit->save-state#submitting turbo:submit-end->save-state#submitted", habitation_save_options_form: true }) do |f| %>
+<%= form_with(model: [:admin, habitation], local: true, class: "needs-validation habitation-form-shell", html: { novalidate: true }, data: { controller: "save-state", action: "submit->save-state#submitting turbo:submit-end->save-state#submitted", habitation_save_options_form: true }) do |f| %>
   <%= hidden_field_tag :save_navigation, "exit", data: { save_state_target: "choice", habitation_save_options_choice: true } %>
   <%= hidden_field_tag :return_to, @return_to_path if @return_to_path.present? %>
   <%

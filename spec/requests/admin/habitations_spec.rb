@@ -64,6 +64,7 @@ RSpec.describe "Admin::Habitations", type: :request do
     get new_admin_habitation_path
 
     expect(response).to have_http_status(:ok)
+    expect(response.body).to include('novalidate="novalidate"')
     expect(response.body).to include("Enviar para corretor")
     expect(response.body).to include("Salvar Interno")
     expect(response.body).to include("Salvar")
