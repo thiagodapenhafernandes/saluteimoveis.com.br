@@ -118,20 +118,12 @@
 </style>
 
 <%
-  can_view_sensitive_data = can_view_habitation_show_sensitive_data?(@habitation)
   linked_development = @habitation.empreendimento if @habitation.codigo_empreendimento.present?
   address_parts = [@habitation.endereco, @habitation.numero, @habitation.complemento.presence && "Apto. #{@habitation.complemento}", @habitation.bairro, @habitation.cidade, @habitation.uf].compact_blank
   description = @habitation.display_description
-  internal_description = @habitation.descricao_interna
-  development_description = @habitation.descricao_empreendimento
-  vista_document_assets = Array(@habitation_vista_document_assets)
 
   money = lambda do |cents|
     cents.to_i.positive? ? number_to_currency(cents.to_i / 100.0) : nil
-  end
-
-  percent = lambda do |value|
-    value.present? ? "#{number_with_precision(value, precision: 2, strip_insignificant_zeros: true)}%" : nil
   end
 
   yes_no = lambda do |value|
@@ -204,230 +196,53 @@
   photo_sources = attached_photo_sources + api_photo_sources + development_photo_sources
   primary_photo = photo_sources.first
 
-  core_fields = [
+  summary_fields = [
     ["Referência", @habitation.codigo],
-    ["Código DWV", @habitation.codigo_dwv],
-    ["Código Vista", @habitation.vista_codigo || @habitation.vista_imo_codigo],
-    ["Código empreendimento", @habitation.codigo_empreendimento],
-    ["Empreendimento", @habitation.nome_empreendimento],
     ["Tipo", @habitation.tipo],
-    ["Tipo de cadastro", @habitation.categoria_grupo],
     ["Categoria", @habitation.categoria],
-    ["Status comercial", @habitation.status],
-    ["Situação", @habitation.situacao],
-    ["Ocupação", @habitation.ocupacao_status],
-    ["Estado de conservação", @habitation.estado_conservacao],
-    ["Exclusivo", yes_no.call(@habitation.exclusivo_flag)],
-    ["Mobiliado", yes_no.call(@habitation.mobiliado_flag)],
-    ["Decorado", yes_no.call(@habitation.decorado_flag)]
+    ["Modalidade", @habitation.status],
+    ["Empreendimento", @habitation.nome_empreendimento],
+    ["Ocupação", @habitation.ocupacao_status]
   ]
 
   address_fields = [
-    ["Tipo de endereço", @habitation.tipo_endereco],
     ["Logradouro", @habitation.endereco],
     ["Número", @habitation.numero],
     ["Complemento", @habitation.complemento],
-    ["Bloco", @habitation.bloco],
-    ["Lote", @habitation.lote],
     ["Bairro", @habitation.bairro],
-    ["Bairro comercial", @habitation.bairro_comercial],
     ["Cidade", @habitation.cidade],
     ["UF", @habitation.uf],
-    ["CEP", @habitation.cep],
-    ["País", @habitation.pais],
-    ["Latitude", @habitation.latitude],
-    ["Longitude", @habitation.longitude],
-    ["Imediações", show_value.call(@habitation.imediacoes)]
+    ["CEP", @habitation.cep]
   ]
 
-  areas_fields = [
+  feature_fields = [
     ["Dormitórios", @habitation.dormitorios_qtd],
     ["Suítes", @habitation.suites_qtd],
-    ["Demi-suítes", @habitation.demi_suites_qtd],
     ["Banheiros", @habitation.banheiros_qtd],
-    ["Banheiro social", @habitation.banheiro_social_qtd],
-    ["Lavabos", @habitation.lavabo_flag? ? "Sim" : @habitation.lavabo_flag],
     ["Vagas", @habitation.vagas_qtd],
-    ["Tipo de vaga", @habitation.tipo_vaga],
-    ["Número do box", @habitation.numero_box],
-    ["Salas", @habitation.salas_qtd],
-    ["Varandas", @habitation.varandas_qtd],
-    ["Hidromassagem", @habitation.hidromassagem_qtd],
     ["Área privativa", @habitation.area_privativa_m2.present? ? "#{@habitation.area_privativa_m2} m²" : nil],
     ["Área total", @habitation.area_total_m2.present? ? "#{@habitation.area_total_m2} m²" : nil],
-    ["Área útil", @habitation.area_util_m2.present? ? "#{@habitation.area_util_m2} m²" : nil],
-    ["Área terreno", @habitation.area_terreno_m2.present? ? "#{@habitation.area_terreno_m2} m²" : nil],
-    ["Dimensões terreno", @habitation.dimensoes_terreno],
-    ["Topografia", @habitation.topografia],
-    ["Face", @habitation.face],
-    ["Andar", @habitation.andar],
-    ["Aptos por andar", @habitation.aptos_andar],
-    ["Aptos no edifício", @habitation.aptos_edificio],
-    ["Elevadores", @habitation.elevadores_qtd],
-    ["Ano construção", @habitation.ano_construcao],
-    ["Data entrega", @habitation.data_entrega]
+    ["Face", @habitation.face]
   ]
 
-  commercial_fields = [
+  value_fields = [
     ["Venda", money.call(@habitation.valor_venda_cents)],
-    ["Venda anterior", money.call(@habitation.valor_venda_anterior_cents)],
     ["Locação", money.call(@habitation.valor_locacao_cents)],
-    ["Aluguel anterior", money.call(@habitation.valor_locacao_anterior_cents)],
-    ["Valor promocional", money.call(@habitation.valor_promocional_cents)],
     ["Total aluguel", money.call(@habitation.valor_total_aluguel_cents)],
     ["Condomínio", money.call(@habitation.valor_condominio_cents)],
     ["IPTU", money.call(@habitation.valor_iptu_cents)],
-    ["Valor por m²", money.call(@habitation.valor_por_m2_cents)],
-    ["Valor livre proprietário", money.call(@habitation.valor_livre_proprietario_cents)],
-    ["Comissão", money.call(@habitation.valor_comissao_cents)],
-    ["Valor vendido por terceiros", money.call(@habitation.valor_vendido_terceiros_cents)],
-    ["Valor alugado por terceiros", money.call(@habitation.valor_alugado_terceiros_cents)],
-    ["Saldo devedor", money.call(@habitation.saldo_devedor_cents)],
-    ["Permuta aceita", money.call(@habitation.valor_aceito_permuta_cents)],
-    ["Permuta valor", money.call(@habitation.permuta_valor_cents)],
-    ["Comissão captador", percent.call(@habitation.captador_commission_percentage)],
-    ["Comissão corretor", percent.call(@habitation.broker_commission_percentage)],
     ["Aceita financiamento", yes_no.call(@habitation.aceita_financiamento_flag)],
-    ["Aceita permuta", yes_no.call(@habitation.aceita_permuta_flag)],
-    ["Permuta veículo", yes_no.call(@habitation.aceita_permuta_veiculo_flag)],
-    ["Permuta imóvel", yes_no.call(@habitation.aceita_permuta_imovel_flag)],
-    ["Permuta outros", yes_no.call(@habitation.aceita_permuta_outros_flag)],
-    ["Aceita parcelamento", yes_no.call(@habitation.aceita_parcelamento_flag)],
-    ["Aceita doação", yes_no.call(@habitation.aceita_doacao_flag)],
-    ["Condições negociação", @habitation.condicoes_negociacao],
-    ["Motivo venda", @habitation.motivo_venda],
-    ["Motivo suspensão", @habitation.motivo_suspensao]
+    ["Aceita permuta", yes_no.call(@habitation.aceita_permuta_flag)]
   ]
 
-  trade_fields = [
-    ["Aceita permuta", yes_no.call(@habitation.aceita_permuta_flag)],
-    ["Permuta veículo", yes_no.call(@habitation.aceita_permuta_veiculo_flag)],
-    ["Tipo de veículo aceito", @habitation.tipo_veiculo_aceito_permuta],
-    ["Ano mínimo veículo", @habitation.ano_minimo_veiculo_aceito_permuta],
-    ["Permuta imóvel", yes_no.call(@habitation.aceita_permuta_imovel_flag)],
-    ["Localização desejada", @habitation.permuta_localizacao],
-    ["Dormitórios desejados", @habitation.permuta_dormitorios_qtd],
-    ["Suítes desejadas", @habitation.permuta_suites_qtd],
-    ["Garagens desejadas", @habitation.permuta_garagens_qtd],
-    ["Permuta outros", yes_no.call(@habitation.aceita_permuta_outros_flag)],
-    ["Valor aceito", money.call(@habitation.valor_aceito_permuta_cents)],
-    ["Valor de permuta", money.call(@habitation.permuta_valor_cents)]
-  ]
-
-  internal_fields = [
-    ["Captador", @habitation.primary_captador_name],
-    ["Agenciador", @habitation.agenciador],
-    ["Corretor Vista", @habitation.corretor_nome],
-    ["Email corretor", @habitation.corretor_email],
-    ["Telefone corretor", @habitation.corretor_telefone],
-    ["Código corretor", @habitation.codigo_corretor],
-    ["Cadastro CRM", @habitation.data_cadastro_crm],
-    ["Atualização CRM", @habitation.data_atualizacao_crm],
-    ["Última sincronização", @habitation.last_sync_at],
-    ["Status sync", @habitation.last_sync_status],
-    ["Mensagem sync", @habitation.last_sync_message],
-    ["Status Vista", @habitation.status_vista],
-    ["DWV", @habitation.imovel_dwv],
-    ["Tem placa", yes_no.call(@habitation.tem_placa_flag)],
-    ["Chave/local", @habitation.key_location],
-    ["Observações da chave", @habitation.key_location_notes],
-    ["Responsável reserva", @habitation.responsavel_reserva],
-    ["Zelador", @habitation.zelador_nome],
-    ["Telefone zelador", @habitation.zelador_telefone],
-    ["Região foco", @habitation.regiao_foco],
-    ["Construtora", @habitation.construtora],
-    ["Tipo fachada", @habitation.tipo_fachada],
-    ["Andares", @habitation.andares_qtd],
-    ["Perfil construção", @habitation.perfil_construcao],
-    ["Matrícula", @habitation.matricula_imovel],
-    ["Inscrição imobiliária", @habitation.inscricao_imobiliaria],
-    ["Zona", @habitation.zona],
-    ["Número prestações", @habitation.numero_prestacoes]
-  ]
-
-  intake_fields = [
-    ["Origem da captação", @habitation.intake_origin],
-    ["Status da captação", @habitation.intake_status.present? ? @habitation.intake_status_label : nil],
-    ["Etapa atual", @habitation.intake_step],
-    ["Grupo da captação", @habitation.intake_group_uuid],
-    ["Modalidade", @habitation.intake_modalidade],
-    ["Enviado para revisão", @habitation.submitted_for_review_at],
-    ["Revisado em", @habitation.admin_reviewed_at],
-    ["Revisado por", @habitation.admin_reviewed_by&.name],
-    ["Notas da revisão", @habitation.admin_review_notes],
-    ["Liberado pelo corretor", @habitation.broker_released_at],
-    ["Escolha do fluxo de fotos", @habitation.photo_flow_choice],
-    ["Sessão de fotos solicitada", @habitation.photo_session_requested_at],
-    ["URL sessão de fotos", @habitation.photo_session_url]
-  ]
-
-  publication_fields = [
-    ["Exibir no site", yes_no.call(@habitation.exibir_no_site_flag)],
-    ["Exibir no site Salute", yes_no.call(@habitation.exibir_no_site_salute_flag)],
-    ["Destaque web", yes_no.call(@habitation.destaque_web_flag)],
-    ["Classificação das fotos", @habitation.foto_classificacao],
-    ["Usar fotos empreendimento", yes_no.call(@habitation.use_development_photos_flag)],
-    ["Publicar Zap", yes_no.call(@habitation.publicar_zapimoveis)],
-    ["Publicar Viva Real", yes_no.call(@habitation.publicar_viva_real_vrsync)],
-    ["Publicar Imovelweb", yes_no.call(@habitation.publicar_imovelweb)],
-    ["Publicar Chaves na Mão", yes_no.call(@habitation.publicar_chaves_na_mao)],
-    ["Publicar Casa Mineira", yes_no.call(@habitation.publicar_casa_mineira)],
-    ["Publicar Lais AI", yes_no.call(@habitation.publicar_lais_ai)],
-    ["Publicar Imovelweb 2", yes_no.call(@habitation.publicar_imovelweb_2)],
-    ["Publicar Loft", yes_no.call(@habitation.publicar_loft)],
-    ["Publicar Netimóveis 2", yes_no.call(@habitation.publicar_netimoveis_2)],
-    ["Destaque Chaves na Mão", yes_no.call(@habitation.destaque_chaves_na_mao)],
-    ["Período locação Chaves na Mão", @habitation.periodo_locacao_chaves_na_mao],
-    ["Tipo publicação Viva Real", @habitation.tipo_publicacao_viva_real],
-    ["Divulgar endereço Viva Real", yes_no.call(@habitation.divulgar_endereco_viva_real)],
-    ["Modelo Casa Mineira", @habitation.modelo_casa_mineira],
-    ["Tipo publicação Imovelweb", @habitation.tipo_publicacao_imovelweb],
-    ["Mostrar mapa Imovelweb", yes_no.call(@habitation.mostrar_mapa_imovelweb)],
-    ["Tipo publicação Imovelweb 2", @habitation.tipo_publicacao_imovelweb_2],
-    ["Mostrar mapa Imovelweb 2", yes_no.call(@habitation.mostrar_mapa_imovelweb_2)],
-    ["Meta title", @habitation.meta_title],
-    ["Meta description", strip_tags(@habitation.meta_description.to_s).squish],
-    ["Meta keywords", show_value.call(@habitation.meta_keywords)],
-    ["Slug", @habitation.slug],
-    ["Tour virtual", @habitation.tour_virtual],
-    ["Podcast", @habitation.podcast_url]
-  ]
-
-  location_flags = [
-    ["Terceira Avenida", @habitation.terceira_avenida_flag],
-    ["Arriba", @habitation.arriba_flag],
-    ["Avenida Brasil", @habitation.avenida_brasil_flag],
-    ["Bairro Fazenda Itajaí", @habitation.bairro_fazenda_itajai_flag],
-    ["Balneário Piçarras", @habitation.balneario_picarras_flag],
-    ["Barra", @habitation.barra_flag],
-    ["Barra Norte", @habitation.barra_norte_flag],
-    ["Barra Sul", @habitation.barra_sul_flag],
-    ["Cabeçudas", @habitation.cabecudas_flag],
-    ["Camboriú", @habitation.camboriu_flag],
-    ["Centro", @habitation.centro_flag],
-    ["Estaleirinho", @habitation.estaleirinho_flag],
-    ["Frente mar Av. Atlântica", @habitation.frente_mar_avenida_atlantica_flag],
-    ["Itajaí", @habitation.itajai_flag],
-    ["Itapema", @habitation.itapema_flag],
-    ["Nações", @habitation.nacoes_flag],
-    ["Pioneiros", @habitation.pioneiros_flag],
-    ["Praia Brava", @habitation.praia_brava_flag],
-    ["Praia dos Amores", @habitation.praia_dos_amores_flag],
-    ["Vista frente mar", @habitation.vista_frente_mar_flag]
-  ].select { |_label, value| value }
-
-  highlight_flags = [
-    ["Festival Salute", @habitation.festival_salute_flag],
-    ["Lançamento", @habitation.lancamento_flag],
-    ["Destaque web", @habitation.destaque_web_flag],
-    ["Home Corporate", @habitation.home_corporate_flag],
-    ["Posição Home Corporate", @habitation.home_corporate_position],
-    ["Garden", @habitation.garden_flag],
-    ["Quadra mar", @habitation.quadra_mar_flag],
+  public_flags = [
+    ["Mobiliado", @habitation.mobiliado_flag],
+    ["Decorado", @habitation.decorado_flag],
     ["Piscina", @habitation.piscina_flag],
     ["Lavabo", @habitation.lavabo_flag],
-    ["Varanda gourmet", @habitation.varanda_gourmet_flag],
-    ["Sem mobília", @habitation.sem_mobilia_flag]
+    ["Quadra mar", @habitation.quadra_mar_flag],
+    ["Vista frente mar", @habitation.vista_frente_mar_flag],
+    ["Frente mar Av. Atlântica", @habitation.frente_mar_avenida_atlantica_flag]
   ].select { |_label, value| value.present? && value != false }
 
   media_links = [
@@ -440,52 +255,10 @@
     [label, link] if link.present?
   end
 
-  broker_rows = []
-  captador_assignment_user_ids = @habitation.broker_assignments
-    .reject(&:marked_for_destruction?)
-    .select { |assignment| assignment.role == "captador" }
-    .map(&:admin_user_id)
-    .compact
-
-  if @habitation.admin_user.present? && !captador_assignment_user_ids.include?(@habitation.admin_user_id)
-    broker_rows << {
-      role: "Captador",
-      name: @habitation.admin_user.name,
-      commission: "Responsável principal",
-      notes: nil
-    }
-  end
-  @habitation.broker_assignments.includes(:admin_user).each do |assignment|
-    broker_rows << {
-      role: assignment.role.to_s.presence || "Vínculo",
-      name: assignment.admin_user&.name,
-      commission: [assignment.commission_type.presence, assignment.commission_value.presence].compact_blank.join(": "),
-      notes: assignment.observations
-    }
-  end
-
-  integration_fields = [
-    ["Código Vista", @habitation.vista_codigo],
-    ["Código imóvel Vista", @habitation.vista_imo_codigo],
-    ["Placa Vista", @habitation.vista_imo_placa],
-    ["Referência externa Vista", @habitation.vista_referencia_externa],
-    ["Batch Vista", @habitation.vista_import_batch_id],
-    ["Código DWV", @habitation.codigo_dwv],
-    ["DWV", @habitation.imovel_dwv],
-    ["Status Vista", @habitation.status_vista],
-    ["Última sincronização", @habitation.last_sync_at],
-    ["Status sync", @habitation.last_sync_status],
-    ["Mensagem sync", @habitation.last_sync_message]
-  ]
-
-  owner_fields = [
-    ["Proprietário", @habitation.proprietario.presence || @habitation.proprietor&.name],
-    ["Código proprietário", @habitation.proprietario_codigo],
-    ["Email proprietário", @habitation.proprietario_email],
-    ["Celular proprietário", @habitation.proprietario_celular],
-    ["Telefone comercial", @habitation.proprietario_telefone_comercial],
-    ["Telefone residencial", @habitation.proprietario_telefone_residencial]
-  ]
+  summary_fields = summary_fields.select { |_label, value| value.present? }
+  address_fields = address_fields.select { |_label, value| value.present? }
+  feature_fields = feature_fields.select { |_label, value| value.present? }
+  value_fields = value_fields.select { |_label, value| value.present? }
 %>
 
 <div class="habitation-show-page">
@@ -567,10 +340,10 @@
 
     <div class="col-12 col-xl-7">
       <div class="habitation-show-card h-100">
-        <div class="habitation-show-section-title">Identificação e cadastro</div>
+        <div class="habitation-show-section-title">Informações principais</div>
         <div class="row">
-          <% core_fields.each do |label, value| %>
-            <div class="col-sm-6 col-lg-4 habitation-show-field">
+          <% summary_fields.each do |label, value| %>
+            <div class="col-sm-6 habitation-show-field">
               <div class="habitation-show-label"><%= label %></div>
               <div class="habitation-show-value"><%= show_value.call(value) %></div>
             </div>
@@ -581,7 +354,21 @@
 
     <div class="col-12">
       <div class="habitation-show-card">
-        <div class="habitation-show-section-title">Endereço e localização</div>
+        <div class="habitation-show-section-title">Valores</div>
+        <div class="row">
+          <% value_fields.each do |label, value| %>
+            <div class="col-sm-6 col-lg-3 habitation-show-field">
+              <div class="habitation-show-label"><%= label %></div>
+              <div class="habitation-show-value"><%= show_value.call(value) %></div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="habitation-show-card">
+        <div class="habitation-show-section-title">Endereço</div>
         <div class="row">
           <% address_fields.each do |label, value| %>
             <div class="col-sm-6 col-lg-3 habitation-show-field">
@@ -595,9 +382,9 @@
 
     <div class="col-12">
       <div class="habitation-show-card">
-        <div class="habitation-show-section-title">Áreas, cômodos e construção</div>
+        <div class="habitation-show-section-title">Características</div>
         <div class="row">
-          <% areas_fields.each do |label, value| %>
+          <% feature_fields.each do |label, value| %>
             <div class="col-sm-6 col-lg-3 habitation-show-field">
               <div class="habitation-show-label"><%= label %></div>
               <div class="habitation-show-value"><%= show_value.call(value) %></div>
@@ -607,136 +394,10 @@
       </div>
     </div>
 
-    <div class="col-12">
-      <div class="habitation-show-card">
-        <div class="habitation-show-section-title">Comercial e negociação</div>
-        <div class="row">
-          <% commercial_fields.each do |label, value| %>
-            <div class="col-sm-6 col-lg-3 habitation-show-field">
-              <div class="habitation-show-label"><%= label %></div>
-              <div class="habitation-show-value"><%= show_value.call(value) %></div>
-            </div>
-          <% end %>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-12">
-      <div class="habitation-show-card">
-        <div class="habitation-show-section-title">Permuta</div>
-        <div class="row">
-          <% trade_fields.each do |label, value| %>
-            <div class="col-sm-6 col-lg-3 habitation-show-field">
-              <div class="habitation-show-label"><%= label %></div>
-              <div class="habitation-show-value"><%= show_value.call(value) %></div>
-            </div>
-          <% end %>
-        </div>
-      </div>
-    </div>
-
-    <% if can_view_sensitive_data %>
+    <% if media_links.any? %>
       <div class="col-12">
-        <div class="habitation-show-card">
-          <div class="habitation-show-section-title">Proprietário</div>
-          <div class="row">
-            <% owner_fields.each do |label, value| %>
-              <div class="col-sm-6 col-lg-4 habitation-show-field">
-                <div class="habitation-show-label"><%= label %></div>
-                <div class="habitation-show-value"><%= show_value.call(value) %></div>
-              </div>
-            <% end %>
-          </div>
-        </div>
-      </div>
-    <% end %>
-
-    <div class="col-12">
       <div class="habitation-show-card">
-        <div class="habitation-show-section-title">Dados internos</div>
-        <div class="row">
-          <% internal_fields.each do |label, value| %>
-            <div class="col-sm-6 col-lg-3 habitation-show-field">
-              <div class="habitation-show-label"><%= label %></div>
-              <div class="habitation-show-value"><%= show_value.call(value) %></div>
-            </div>
-          <% end %>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-12">
-      <div class="habitation-show-card">
-        <div class="habitation-show-section-title">Responsáveis e vínculos</div>
-        <% if broker_rows.any? %>
-          <div class="row g-2">
-            <% broker_rows.each do |row| %>
-              <div class="col-md-6 col-xl-4">
-                <div class="habitation-show-document h-100">
-                  <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
-                    <span class="badge bg-primary"><%= show_value.call(row[:role]) %></span>
-                    <span class="small text-muted text-truncate"><%= show_value.call(row[:commission]) %></span>
-                  </div>
-                  <div class="fw-bold text-dark"><%= show_value.call(row[:name]) %></div>
-                  <% if row[:notes].present? %>
-                    <div class="small text-muted mt-1"><%= row[:notes] %></div>
-                  <% end %>
-                </div>
-              </div>
-            <% end %>
-          </div>
-        <% else %>
-          <p class="habitation-show-muted mb-0">Nenhum responsável vinculado.</p>
-        <% end %>
-      </div>
-    </div>
-
-    <div class="col-12">
-      <div class="habitation-show-card">
-        <div class="habitation-show-section-title">Captação e revisão</div>
-        <div class="row">
-          <% intake_fields.each do |label, value| %>
-            <div class="col-sm-6 col-lg-3 habitation-show-field">
-              <div class="habitation-show-label"><%= label %></div>
-              <div class="habitation-show-value"><%= show_value.call(value) %></div>
-            </div>
-          <% end %>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-12">
-      <div class="habitation-show-card">
-        <div class="habitation-show-section-title">Integrações e códigos externos</div>
-        <div class="row">
-          <% integration_fields.each do |label, value| %>
-            <div class="col-sm-6 col-lg-3 habitation-show-field">
-              <div class="habitation-show-label"><%= label %></div>
-              <div class="habitation-show-value"><%= show_value.call(value) %></div>
-            </div>
-          <% end %>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-12">
-      <div class="habitation-show-card">
-        <div class="habitation-show-section-title">Publicação, portais e SEO</div>
-        <div class="row">
-          <% publication_fields.each do |label, value| %>
-            <div class="col-sm-6 col-lg-3 habitation-show-field">
-              <div class="habitation-show-label"><%= label %></div>
-              <div class="habitation-show-value"><%= show_value.call(value) %></div>
-            </div>
-          <% end %>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-12">
-      <div class="habitation-show-card">
-        <div class="habitation-show-section-title">Vídeos, plantas e links de mídia</div>
-        <% if media_links.any? %>
+        <div class="habitation-show-section-title">Mídia complementar</div>
           <div class="row g-2">
             <% media_links.each do |label, url| %>
               <div class="col-md-6 col-xl-4">
@@ -747,135 +408,31 @@
               </div>
             <% end %>
           </div>
-        <% else %>
-          <p class="habitation-show-muted mb-0">Nenhum vídeo, planta ou link complementar cadastrado.</p>
-        <% end %>
       </div>
-    </div>
+      </div>
+    <% end %>
 
-    <% if description.present? || internal_description.present? || development_description.present? || @habitation.observacoes.present? || @habitation.observacoes_visitas.present? %>
+    <% if description.present? %>
       <div class="col-12">
         <div class="habitation-show-card">
-          <div class="habitation-show-section-title">Descrições e observações</div>
-          <% if description.present? %>
-            <h6 class="fw-bold mb-2">Descrição do site</h6>
-            <div class="text-muted mb-4"><%= formatted_habitation_description(description) %></div>
-          <% end %>
-          <% if internal_description.present? %>
-            <h6 class="fw-bold mb-2">Descrição interna</h6>
-            <div class="text-muted mb-4"><%= formatted_habitation_description(internal_description) %></div>
-          <% end %>
-          <% if development_description.present? %>
-            <h6 class="fw-bold mb-2">Descrição do empreendimento</h6>
-            <div class="text-muted mb-4"><%= formatted_habitation_description(development_description) %></div>
-          <% end %>
-          <% if @habitation.observacoes.present? %>
-            <h6 class="fw-bold mb-2">Observações</h6>
-            <div class="text-muted mb-4"><%= simple_format(@habitation.observacoes) %></div>
-          <% end %>
-          <% if @habitation.observacoes_visitas.present? %>
-            <h6 class="fw-bold mb-2">Observações de visitas</h6>
-            <div class="text-muted"><%= simple_format(@habitation.observacoes_visitas) %></div>
-          <% end %>
+          <div class="habitation-show-section-title">Descrição</div>
+          <div class="text-muted"><%= formatted_habitation_description(description) %></div>
         </div>
       </div>
     <% end %>
 
-    <% if feature_names.any? || infrastructure_names.any? || unique_feature_names.any? %>
+    <% if feature_names.any? || infrastructure_names.any? || unique_feature_names.any? || public_flags.any? %>
       <div class="col-12">
         <div class="habitation-show-card">
-          <div class="habitation-show-section-title">Características e infraestrutura</div>
+          <div class="habitation-show-section-title">Itens do imóvel</div>
           <div class="habitation-show-badge-list">
             <% (feature_names + infrastructure_names + unique_feature_names).compact_blank.uniq.each do |name| %>
               <span class="badge rounded-pill bg-light text-dark border px-3 py-2"><%= name %></span>
             <% end %>
-          </div>
-        </div>
-      </div>
-    <% end %>
-
-    <% if location_flags.any? || highlight_flags.any? %>
-      <div class="col-12">
-        <div class="habitation-show-card">
-          <div class="habitation-show-section-title">Sinalizadores e localização estratégica</div>
-          <div class="habitation-show-badge-list">
-            <% (location_flags + highlight_flags).each do |label, value| %>
+            <% public_flags.each do |label, value| %>
               <span class="badge rounded-pill bg-light text-dark border px-3 py-2">
                 <%= label %><%= value.is_a?(Integer) ? ": #{value}" : "" %>
               </span>
-            <% end %>
-          </div>
-        </div>
-      </div>
-    <% end %>
-
-    <% if can_view_sensitive_data %>
-      <div class="col-12">
-        <div class="habitation-show-card">
-          <div class="habitation-show-section-title">Anexos e documentos internos</div>
-          <div class="row g-3">
-            <div class="col-lg-6">
-              <h6 class="fw-bold mb-2"><i class="bi bi-file-earmark-text me-1"></i>Fichas de cadastro</h6>
-              <% if @habitation.fichas_cadastro.attached? %>
-                <div class="d-grid gap-2">
-                  <% @habitation.fichas_cadastro.attachments.each do |attachment| %>
-                    <% next unless attachment.persisted? && attachment.blob&.persisted? %>
-                    <%= link_to rails_blob_path(attachment, disposition: "attachment"), target: "_blank", rel: "noopener", class: "habitation-show-document text-decoration-none d-flex align-items-center justify-content-between gap-2" do %>
-                      <span class="text-dark text-truncate"><i class="bi bi-paperclip text-muted me-1"></i><%= attachment.filename %></span>
-                      <span class="badge bg-light text-muted border"><%= number_to_human_size(attachment.byte_size) rescue "-" %></span>
-                    <% end %>
-                  <% end %>
-                </div>
-              <% else %>
-                <p class="habitation-show-muted">Nenhuma ficha anexada.</p>
-              <% end %>
-            </div>
-
-            <div class="col-lg-6">
-              <h6 class="fw-bold mb-2"><i class="bi bi-shield-check me-1"></i>Autorizações de venda</h6>
-              <% if @habitation.autorizacoes_venda.attached? %>
-                <div class="d-grid gap-2">
-                  <% @habitation.autorizacoes_venda.attachments.each do |attachment| %>
-                    <% next unless attachment.persisted? && attachment.blob&.persisted? %>
-                    <%= link_to rails_blob_path(attachment, disposition: "attachment"), target: "_blank", rel: "noopener", class: "habitation-show-document text-decoration-none d-flex align-items-center justify-content-between gap-2" do %>
-                      <span class="text-dark text-truncate">
-                        <% if attachment.image? %>
-                          <%= image_tag attachment, class: "rounded border me-1", style: "width: 32px; height: 32px; object-fit: cover;" %>
-                        <% else %>
-                          <i class="bi bi-file-earmark-pdf text-danger me-1"></i>
-                        <% end %>
-                        <%= attachment.filename %>
-                      </span>
-                      <span class="badge bg-light text-muted border"><%= number_to_human_size(attachment.byte_size) rescue "-" %></span>
-                    <% end %>
-                  <% end %>
-                </div>
-              <% else %>
-                <p class="habitation-show-muted">Nenhuma autorização anexada.</p>
-              <% end %>
-            </div>
-
-            <% if vista_document_assets.any? %>
-              <div class="col-12">
-                <h6 class="fw-bold mb-2"><i class="bi bi-database-down me-1"></i>Documentos do Vista</h6>
-                <div class="row g-2">
-                  <% vista_document_assets.each do |asset| %>
-                    <div class="col-md-6 col-xl-4">
-                      <div class="habitation-show-document">
-                        <div class="fw-semibold text-truncate"><%= asset.filename.presence || asset.source_path.presence || "Documento Vista" %></div>
-                        <div class="small text-muted text-truncate"><%= asset.status.to_s.presence || "Sem status" %></div>
-                        <% if asset.active_storage_attachment.present? %>
-                          <%= link_to "Abrir arquivo", rails_blob_path(asset.active_storage_attachment, disposition: "attachment"), target: "_blank", rel: "noopener", class: "btn btn-sm btn-outline-primary mt-2" %>
-                        <% elsif asset.source_url.present? %>
-                          <%= link_to "Abrir origem", asset.source_url, target: "_blank", rel: "noopener", class: "btn btn-sm btn-outline-secondary mt-2" %>
-                        <% else %>
-                          <div class="small text-muted mt-2">Arquivo ainda não disponível.</div>
-                        <% end %>
-                      </div>
-                    </div>
-                  <% end %>
-                </div>
-              </div>
             <% end %>
           </div>
         </div>

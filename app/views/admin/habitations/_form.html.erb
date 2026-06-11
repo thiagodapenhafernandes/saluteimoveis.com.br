@@ -476,7 +476,14 @@
               <div class="col-md-2">
                 <%= f.label :categoria, "Categoria:", class: "form-label small fw-bold mb-1" %>
                 <%= f.select :categoria, (@categories.presence || Habitation::CATEGORIES), { include_blank: true },
-                    data: { controller: "tom-select", tom_select_create_value: true, placeholder: "Selecione...", habitation_form_target: "category" },
+                    data: {
+                      controller: "tom-select",
+                      tom_select_create_value: true,
+                      placeholder: "Selecione...",
+                      habitation_form_target: "category",
+                      habitation_duplicate_check_target: "category",
+                      action: "change->habitation-duplicate-check#check"
+                    },
                     class: "form-select form-select-sm" %>
               </div>
               <div class="col-md-2">
@@ -691,7 +698,11 @@
                 <%= address_form.text_field :complemento,
                     class: "form-control form-control-sm",
                     readonly: !can_edit_protected_habitation_fields,
-                    data: { cep_search_target: "complemento" } %>
+                    data: {
+                      cep_search_target: "complemento",
+                      habitation_duplicate_check_target: "complement",
+                      action: "input->habitation-duplicate-check#schedule blur->habitation-duplicate-check#check"
+                    } %>
               </div>
               <div class="col-md-1">
                 <%= address_form.label :uf, "UF:", class: "form-label small fw-bold mb-1" %>
@@ -1890,6 +1901,7 @@
                <%= f.file_field :photos, multiple: true, class: "d-none", 
                    id: "habitation_photos",
                    data: { action: "change->photo-upload#preview", photo_upload_target: "input" } %>
+               <div class="alert alert-warning small mt-3 mb-0 d-none" data-photo-upload-target="uploadLimitFeedback"></div>
 	               <%= f.hidden_field :ordered_photo_ids, data: { photo_upload_target: "orderInput" }, value: attached_media_photos.map(&:id).join(',') %>
 	               <%= f.hidden_field :ordered_picture_indices,
 	                   data: { photo_upload_target: "apiOrderInput" },

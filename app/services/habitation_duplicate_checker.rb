@@ -5,7 +5,7 @@ class HabitationDuplicateChecker
     end
   end
 
-  def initialize(street:, number:, building:, unit:, status: nil, comparison: nil, ignored_id: nil)
+  def initialize(street:, number:, building:, unit:, status: nil, comparison: nil, ignored_id: nil, complement: nil, category: nil)
     @street = street
     @number = number
     @building = building
@@ -13,6 +13,8 @@ class HabitationDuplicateChecker
     @status = status
     @comparison = normalize_comparison(comparison)
     @ignored_id = ignored_id
+    @complement = complement
+    @category = category
   end
 
   def call
@@ -53,7 +55,14 @@ class HabitationDuplicateChecker
     base_complete = [@street, @number].all? { |value| normalize(value).present? } && normalized_status.present?
     return false unless base_complete
 
-    comparison == :street || normalize_unit(@unit).present?
+    case comparison
+    when :street
+      true
+    when :condominium_unit
+      normalize_unit(@unit).present? || normalize(@complement).present?
+    else
+      normalize_unit(@unit).present?
+    end
   end
 
   def active_duplicate_candidate?(habitation)
@@ -65,7 +74,14 @@ class HabitationDuplicateChecker
   end
 
   def same_identity?(habitation)
-    comparison == :unit ? same_unit?(habitation) : street_level_candidate?(habitation)
+    case comparison
+    when :unit
+      same_unit?(habitation)
+    when :condominium_unit
+      same_condominium_unit?(habitation)
+    else
+      street_level_candidate?(habitation)
+    end
   end
 
   def same_unit?(habitation)
@@ -75,16 +91,34 @@ class HabitationDuplicateChecker
     expected.present? && actual == expected
   end
 
+  def same_condominium_unit?(habitation)
+    normalize(@complement) == normalize(habitation.complemento) &&
+      normalize_unit(@unit) == normalize_unit(habitation.bloco)
+  end
+
   def street_level_candidate?(habitation)
     normalize_unit(habitation.bloco.presence || habitation.complemento).blank?
   end
 
   def comparison
-    @comparison ||= normalize_unit(@unit).present? ? :unit : :street
+    @comparison ||= if condominium_house_category? && (normalize_unit(@unit).present? || normalize(@complement).present?)
+                      :condominium_unit
+                    elsif normalize_unit(@unit).present?
+                      :unit
+                    else
+                      :street
+                    end
   end
 
   def normalize_comparison(value)
-    value.to_s == "unit" ? :unit : (value.to_s == "street" ? :street : nil)
+    case value.to_s
+    when "unit"
+      :unit
+    when "street"
+      :street
+    when "condominium_unit"
+      :condominium_unit
+    end
   end
 
   def normalized_status
@@ -97,6 +131,11 @@ class HabitationDuplicateChecker
 
   def normalize_unit(value)
     normalize(value).sub(/\A(apartamento|apto|unidade|unid|un|bloco|bl|ap)/, "")
+  end
+
+  def condominium_house_category?
+    normalized_category = I18n.transliterate(@category.to_s.downcase)
+    normalized_category.include?("casa em condominio")
   end
 
   def normalized_sql(expression)

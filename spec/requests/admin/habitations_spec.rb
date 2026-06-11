@@ -187,7 +187,7 @@ RSpec.describe "Admin::Habitations", type: :request do
     get admin_habitation_path(other_property, return_to: admin_habitations_path(ownership: "all", q: other_property.codigo))
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include("Identificação e cadastro")
+    expect(response.body).to include("Informações principais")
     expect(response.body).to include(other_property.titulo_anuncio)
     expect(response.body).not_to include("Proprietário</div>")
     expect(response.body).not_to include("Proprietário Restrito")
@@ -231,7 +231,7 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response).to have_http_status(:ok)
     expect(response.body).to include(own_property.titulo_anuncio)
     expect(response.body).to include(CGI.escapeHTML(admin_habitation_path(own_property, return_to: request.fullpath)))
-    expect(response.body).not_to include(CGI.escapeHTML(edit_admin_habitation_path(own_property, return_to: request.fullpath)))
+    expect(response.body).to include(CGI.escapeHTML(edit_admin_habitation_path(own_property, return_to: request.fullpath)))
   end
 
   it "combina status, categoria e Frente Mar sem trazer imóveis incompatíveis" do
@@ -496,7 +496,7 @@ RSpec.describe "Admin::Habitations", type: :request do
   it "marca cards inativos com classe visual cinza" do
     inactive = create(:habitation, codigo: "INATIVO-#{SecureRandom.hex(6)}", status: "Suspenso", titulo_anuncio: "Imóvel inativo")
 
-    get admin_habitations_path(q: inactive.codigo)
+    get admin_habitations_path(q: inactive.codigo, status: "Suspenso")
 
     expect(response).to have_http_status(:ok)
     card = Nokogiri::HTML(response.body).css(".property-card-horizontal").find { |node| node.text.include?(inactive.codigo) }
@@ -565,7 +565,7 @@ RSpec.describe "Admin::Habitations", type: :request do
     patch admin_habitation_path(intake), params: {
       release_to_broker_after_save: "1",
       habitation: {
-        titulo_anuncio: "Apartamento completo pelo administrativo",
+        titulo_anuncio: "Casa em Condomínio completa pelo administrativo",
         exibir_no_site_flag: "1"
       }
     }
@@ -573,7 +573,7 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response).to redirect_to(admin_habitations_path)
     expect(intake.reload).to have_attributes(
       intake_status: "admin_approved",
-      titulo_anuncio: "Apartamento completo pelo administrativo",
+      titulo_anuncio: "Casa em Condomínio completa pelo administrativo",
       exibir_no_site_flag: false,
       admin_reviewed_by_id: admin.id
     )
@@ -599,7 +599,7 @@ RSpec.describe "Admin::Habitations", type: :request do
     patch admin_habitation_path(intake), params: {
       release_to_broker_after_save: "1",
       habitation: {
-        titulo_anuncio: "Apartamento com autorização preservada",
+        titulo_anuncio: "Casa em Condomínio com autorização preservada",
         autorizacoes_venda: [""]
       }
     }
@@ -629,7 +629,7 @@ RSpec.describe "Admin::Habitations", type: :request do
     patch admin_habitation_path(intake), params: {
       release_to_broker_after_save: "1",
       habitation: {
-        titulo_anuncio: "Apartamento com autorização nova",
+        titulo_anuncio: "Casa em Condomínio com autorização nova",
         autorizacoes_venda: ["", authorization]
       }
     }
@@ -669,7 +669,7 @@ RSpec.describe "Admin::Habitations", type: :request do
     patch admin_habitation_path(intake), params: {
       save_internal_after_save: "1",
       habitation: {
-        titulo_anuncio: "Apartamento salvo internamente",
+        titulo_anuncio: "Casa em Condomínio salva internamente",
         exibir_no_site_flag: "1"
       }
     }
@@ -677,7 +677,7 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response).to redirect_to(admin_habitations_path)
     expect(intake.reload).to have_attributes(
       intake_status: "internal",
-      titulo_anuncio: "Apartamento salvo internamente",
+      titulo_anuncio: "Casa em Condomínio salva internamente",
       exibir_no_site_flag: false,
       admin_reviewed_by_id: admin.id
     )
@@ -730,9 +730,10 @@ RSpec.describe "Admin::Habitations", type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("Região foco?")
-    expect(response.body).to include(">Sim<")
-    expect(response.body).to include(">Não<")
-    expect(response.body).not_to include(">Centro<")
+    page = Nokogiri::HTML(response.body)
+    options = page.css('select[name="habitation[regiao_foco]"] option').map(&:text)
+    expect(options).to include("Sim", "Não")
+    expect(options).not_to include("Centro")
   end
 
   it "exibe telefone do proprietário vinculado quando o imóvel não tem telefone legado" do
@@ -1162,7 +1163,7 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(habitation.reload.fichas_cadastro.attachments.count).to eq(1)
   end
 
-  it "mostra cadastro e fotos no detalhe para corretor não captador sem expor proprietário ou anexos" do
+  it "mostra resumo e fotos no detalhe sem expor cadastro interno para corretor não captador" do
     broker_profile = Profile.create!(
       name: "Corretor show restrito #{SecureRandom.hex(6)}",
       permissions: Profile.default_permissions_for("Corretor")
@@ -1220,30 +1221,31 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("Apartamento completo para show")
     expect(response.body).to include("Edifício Visível")
-    expect(response.body).to include("Edifício Visível")
     expect(response.body).to include("https://example.com/foto-api-show.jpg")
     expect(response.body).to include("foto-local-show.jpg")
     expect(response.body).to include("data-fancybox")
-    expect(response.body).to include("Responsáveis e vínculos")
-    expect(response.body).to include("Captação e revisão")
-    expect(response.body).to include("Integrações e códigos externos")
-    expect(response.body).to include("Vídeos, plantas e links de mídia")
-    expect(response.body).to include("Permuta")
-    expect(response.body).to include("VISTA-REF-1")
+    expect(response.body).to include("Informações principais")
+    expect(response.body).to include("Valores")
+    expect(response.body).to include("Endereço")
+    expect(response.body).to include("Características")
+    expect(response.body).to include("Mídia complementar")
     expect(response.body).to include("Balneário Camboriú")
-    expect(response.body).to include("SUV")
     expect(response.body).to include("https://example.com/tour")
     expect(response.body).to include("https://example.com/video")
-    expect(response.body).to include("Praia Brava")
-    expect(response.body).to include("Home Corporate")
-    expect(response.body).to include("Vínculo de captação")
+    expect(response.body).not_to include("Responsáveis e vínculos")
+    expect(response.body).not_to include("Captação e revisão")
+    expect(response.body).not_to include("Integrações e códigos externos")
+    expect(response.body).not_to include("Publicação, portais e SEO")
+    expect(response.body).not_to include("VISTA-REF-1")
+    expect(response.body).not_to include("SUV")
+    expect(response.body).not_to include("Vínculo de captação")
     expect(response.body).not_to include("Proprietário Sigiloso")
     expect(response.body).not_to include("(47) 99999-9999")
     expect(response.body).not_to include("ficha-sigilosa.txt")
     expect(response.body).not_to include("Anexos e documentos internos")
   end
 
-  it "mostra proprietário e anexos no detalhe para o captador do imóvel" do
+  it "mantém proprietário e anexos fora do detalhe simplificado para o captador do imóvel" do
     broker_profile = Profile.create!(
       name: "Corretor show captador #{SecureRandom.hex(6)}",
       permissions: Profile.default_permissions_for("Corretor")
@@ -1267,10 +1269,12 @@ RSpec.describe "Admin::Habitations", type: :request do
     get admin_habitation_path(habitation)
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include("Proprietário do Captador")
-    expect(response.body).to include("proprietario@example.com")
-    expect(response.body).to include("Anexos e documentos internos")
-    expect(response.body).to include("ficha-captador.txt")
+    expect(response.body).to include("Imóvel do captador")
+    expect(response.body).to include("Editar cadastro")
+    expect(response.body).not_to include("Proprietário do Captador")
+    expect(response.body).not_to include("proprietario@example.com")
+    expect(response.body).not_to include("Anexos e documentos internos")
+    expect(response.body).not_to include("ficha-captador.txt")
   end
 
   it "bloqueia campos sensíveis para corretor ao editar imóvel atribuído" do
@@ -1618,6 +1622,39 @@ RSpec.describe "Admin::Habitations", type: :request do
 
     expect(response).to have_http_status(:unprocessable_entity)
     expect(response.body).to include("Já existe imóvel cadastrado")
+  end
+
+  it "permite casa em condomínio no mesmo endereço com complemento diferente" do
+    existing = create(:habitation, codigo: "COND-#{SecureRandom.hex(6)}", categoria: "Casa em Condomínio", bloco: "")
+    existing.create_address!(
+      logradouro: "Rua Higino João Pio",
+      numero: "420",
+      complemento: "01",
+      bairro: "Praia do Estaleirinho",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+
+    expect {
+      post admin_habitations_path, params: {
+        habitation: {
+          categoria: "Casa em Condomínio",
+          status: "Venda",
+          tipo: "Unitário",
+          bloco: "",
+          address_attributes: {
+            logradouro: "Rua Higino João Pio",
+            numero: "420",
+            complemento: "02",
+            bairro: "Praia do Estaleirinho",
+            cidade: "Balneário Camboriú",
+            uf: "SC"
+          }
+        }
+      }
+    }.to change(Habitation, :count).by(1)
+
+    expect(response).to redirect_to(admin_habitations_path)
   end
 
   it "retorna duplicidade em tempo real por endereço completo" do

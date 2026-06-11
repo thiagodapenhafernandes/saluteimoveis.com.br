@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["street", "number", "building", "unit", "commercialStatus", "comparison", "status", "submit"]
+  static targets = ["street", "number", "building", "unit", "complement", "category", "commercialStatus", "comparison", "status", "submit"]
   static values = {
     url: String,
     ignoredId: String
@@ -32,6 +32,8 @@ export default class extends Controller {
         number: this.numberTarget.value,
         building: this.targetValue("building"),
         unit: this.targetValue("unit"),
+        complement: this.targetValue("complement"),
+        category: this.targetValue("category"),
         status: this.statusValue(),
         comparison: this.comparisonValue()
       })
@@ -61,7 +63,16 @@ export default class extends Controller {
 
     return [this.streetTarget, this.numberTarget].every((target) => target.value.trim().length > 0) &&
       this.statusValue().trim().length > 0 &&
-      (this.comparisonValue() !== "unit" || this.targetValue("unit").trim().length > 0)
+      this.comparisonIdentityComplete()
+  }
+
+  comparisonIdentityComplete() {
+    if (this.comparisonValue() === "unit") return this.targetValue("unit").trim().length > 0
+    if (this.comparisonValue() === "condominium_unit") {
+      return this.targetValue("unit").trim().length > 0 || this.targetValue("complement").trim().length > 0
+    }
+
+    return true
   }
 
   statusValue() {
@@ -75,7 +86,15 @@ export default class extends Controller {
   }
 
   comparisonValue() {
+    if (this.condominiumHouseSelected() && (this.targetValue("unit").trim().length > 0 || this.targetValue("complement").trim().length > 0)) {
+      return "condominium_unit"
+    }
+
     return this.hasComparisonTarget ? this.comparisonTarget.value : ""
+  }
+
+  condominiumHouseSelected() {
+    return this.targetValue("category").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes("casa em condominio")
   }
 
   showDuplicate(matches) {
@@ -86,7 +105,9 @@ export default class extends Controller {
       const code = match.codigo ? `#${match.codigo}` : `ID ${match.id}`
       return `<a href="${match.edit_url}" class="alert-link" target="_blank" rel="noopener">${this.escapeHtml(code)}</a>`
     }).join(", ")
-    const identity = this.comparisonValue() === "unit" ? "este endereço, unidade e status comercial" : "este endereço e status comercial"
+    const identity = this.comparisonValue() === "unit"
+      ? "este endereço, unidade e status comercial"
+      : (this.comparisonValue() === "condominium_unit" ? "este endereço, complemento, bloco e status comercial" : "este endereço e status comercial")
     this.statusTarget.innerHTML = `Já existe imóvel com ${identity}${links ? `: ${links}` : "."}. Ajuste os dados antes de continuar.`
   }
 

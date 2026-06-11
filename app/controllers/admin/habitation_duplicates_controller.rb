@@ -9,6 +9,8 @@ module Admin
         building: params[:building],
         unit: params[:unit],
         status: params[:status],
+        complement: params[:complement],
+        category: params[:category],
         comparison: params[:comparison],
         ignored_id: params[:ignored_id]
       ).call

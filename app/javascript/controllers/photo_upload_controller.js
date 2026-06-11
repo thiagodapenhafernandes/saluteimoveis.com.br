@@ -11,8 +11,11 @@ export default class extends Controller {
     "hiddenPictureUrlsInput",
     "removePhotoIdsInput",
     "removePictureIndicesInput",
+    "uploadLimitFeedback",
     "previewContainer"
   ]
+
+  static maxUploadBytes = 250 * 1024 * 1024
 
   connect() {
     this.selectedNewFiles = []
@@ -20,6 +23,8 @@ export default class extends Controller {
     this.boundHandleDragOver = this.handleDragOver.bind(this)
     this.boundHandleDrop = this.handleDrop.bind(this)
     this.boundHandleDragLeave = this.handleDragLeave.bind(this)
+    this.boundValidateSubmit = this.validateSubmit.bind(this)
+    this.form = this.element.closest('form')
 
     this.initSortable()
 
@@ -27,6 +32,7 @@ export default class extends Controller {
     this.element.addEventListener('dragover', this.boundHandleDragOver)
     this.element.addEventListener('drop', this.boundHandleDrop)
     this.element.addEventListener('dragleave', this.boundHandleDragLeave)
+    if (this.form) this.form.addEventListener('submit', this.boundValidateSubmit, true)
   }
 
   disconnect() {
@@ -34,6 +40,7 @@ export default class extends Controller {
     this.element.removeEventListener('dragover', this.boundHandleDragOver)
     this.element.removeEventListener('drop', this.boundHandleDrop)
     this.element.removeEventListener('dragleave', this.boundHandleDragLeave)
+    if (this.form) this.form.removeEventListener('submit', this.boundValidateSubmit, true)
   }
 
   handleDragOver(e) {
@@ -121,6 +128,7 @@ export default class extends Controller {
     item.remove()
 
     this.syncInputFilesFromState()
+    this.clearUploadLimitFeedback()
     this.updateOrder()
     this.refreshPhotoBadges()
   }
@@ -222,6 +230,15 @@ export default class extends Controller {
       id: this.nextNewFileId(),
       file
     }))
+
+    const nextUploadBytes = this.uploadBytesFor(this.selectedNewFiles.concat(newFileEntries))
+    if (nextUploadBytes > this.constructor.maxUploadBytes) {
+      this.showUploadLimitFeedback(nextUploadBytes)
+      this.syncInputFilesFromState()
+      return
+    }
+
+    this.clearUploadLimitFeedback()
     this.selectedNewFiles = this.selectedNewFiles.concat(newFileEntries)
 
     if (newFileEntries.length === 0) {
@@ -278,6 +295,14 @@ export default class extends Controller {
     this.syncInputFilesFromState()
     this.updateOrder()
     this.refreshPhotoBadges()
+  }
+
+  validateSubmit(event) {
+    if (this.uploadBytesFor(this.selectedNewFiles) <= this.constructor.maxUploadBytes) return
+
+    event.preventDefault()
+    event.stopImmediatePropagation()
+    this.showUploadLimitFeedback()
   }
 
   syncNewFilesFromDom() {
@@ -349,6 +374,35 @@ export default class extends Controller {
 
   fileKey(file) {
     return [file.name, file.size, file.lastModified].join(':')
+  }
+
+  uploadBytesFor(entries) {
+    return entries.reduce((total, entry) => total + Number(entry.file?.size || 0), 0)
+  }
+
+  showUploadLimitFeedback(totalBytes = this.uploadBytesFor(this.selectedNewFiles)) {
+    const message = `As novas fotos selecionadas somam ${this.formatBytes(totalBytes)}. Envie no máximo ${this.formatBytes(this.constructor.maxUploadBytes)} por vez.`
+
+    if (this.hasUploadLimitFeedbackTarget) {
+      this.uploadLimitFeedbackTarget.textContent = message
+      this.uploadLimitFeedbackTarget.classList.remove('d-none')
+    } else {
+      window.alert(message)
+    }
+
+    if (this.hasInputTarget) this.inputTarget.value = ""
+    this.element.scrollIntoView({ behavior: "smooth", block: "center" })
+  }
+
+  clearUploadLimitFeedback() {
+    if (!this.hasUploadLimitFeedbackTarget) return
+
+    this.uploadLimitFeedbackTarget.textContent = ""
+    this.uploadLimitFeedbackTarget.classList.add('d-none')
+  }
+
+  formatBytes(bytes) {
+    return `${(bytes / (1024 * 1024)).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} MB`
   }
 
   escapeHtml(value) {
