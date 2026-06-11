@@ -1,63 +1,31 @@
 <style>
   .habitations-master-detail-layout {
     display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      "detail"
-      "master";
+    grid-template-columns: clamp(320px, 20vw, 360px) minmax(0, 1fr);
+    grid-template-areas: "detail master";
     gap: 0.85rem;
     align-items: start;
     width: 100%;
     max-width: none;
     flex: 1 1 auto;
     min-height: 0;
-    overflow: visible;
+    overflow: hidden;
   }
   .habitations-master-pane {
     grid-area: master;
     min-width: 0;
-    height: auto;
+    height: 100%;
     min-height: 0;
     display: flex;
     flex-direction: column;
-    overflow: visible;
+    overflow: hidden;
   }
   .habitations-detail-pane {
     grid-area: detail;
     min-width: 0;
-    height: auto;
+    height: 100%;
     min-height: 0;
-    overflow: visible;
-  }
-  .habitations-detail-pane > summary {
-    align-items: center;
-    background: #fff;
-    border: 1px solid #d8dde6;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
-    color: #334155;
-    cursor: pointer;
-    display: flex;
-    font-weight: 700;
-    gap: .5rem;
-    justify-content: space-between;
-    list-style: none;
-    margin-bottom: .75rem;
-    padding: .8rem 1rem;
-  }
-  .habitations-detail-pane > summary::-webkit-details-marker {
-    display: none;
-  }
-  .habitations-detail-pane > summary .filter-summary-label {
-    align-items: center;
-    display: inline-flex;
-    gap: .5rem;
-  }
-  .habitations-detail-pane > summary .filter-summary-chevron {
-    transition: transform .18s ease;
-  }
-  .habitations-detail-pane[open] > summary .filter-summary-chevron {
-    transform: rotate(180deg);
+    overflow: hidden;
   }
   .habitations-filter-workspace {
     border: 1px solid #c9ced6 !important;
@@ -65,9 +33,9 @@
     overflow: visible;
     background: #eef0f3;
     position: relative;
-    height: auto;
+    height: 100%;
     max-height: 100%;
-    overflow-y: visible;
+    overflow-y: auto;
     overscroll-behavior: contain;
   }
   .filter-sticky-toolbar {
@@ -822,7 +790,7 @@
     value = params[key]
     value.is_a?(Array) ? value.reject(&:blank?).any? : value.present?
   end
-  extras_open = active_extra_filters_count.positive?
+  extras_open = true
   vista_advanced_keys = %w[
     situacao face ocupacao_status estado_conservacao area_total_min area_total_max area_privativa_min area_privativa_max
     destaque_web festival_salute exibir_no_site_salute tem_placa exclusivo banheiros dorms suites vagas
@@ -838,29 +806,11 @@
     value = params[key]
     value.is_a?(Array) ? value.reject(&:blank?).any? : value.present?
   end
-  filters_panel_open = params[:q].present? || params[:status].present? || params[:categoria].present? || params[:promotion_status].present? ||
-                       params[:accepts_exchange].present? || params[:key_location].present? || params[:salute_rental_management].present? ||
-                       params[:min_price].present? || params[:max_price].present? || active_extra_filters_count.positive? || vista_advanced_open
   clear_extras_params = request.query_parameters.except(*extra_filter_keys, "page")
 %>
 
 <div class="habitations-master-detail-layout">
-  <details class="habitations-detail-pane" aria-label="Filtros do catálogo" <%= "open" if filters_panel_open %>>
-    <summary>
-      <span class="filter-summary-label">
-        <i class="bi bi-funnel"></i>
-        <span>Filtros e busca</span>
-      </span>
-      <span class="d-flex align-items-center gap-2">
-        <% if filters_panel_open %>
-          <span class="badge bg-warning-subtle text-warning border">Filtrando</span>
-        <% end %>
-        <% if active_extra_filters_count.positive? %>
-          <span class="filter-active-counter"><%= active_extra_filters_count %></span>
-        <% end %>
-        <i class="bi bi-chevron-down filter-summary-chevron"></i>
-      </span>
-    </summary>
+  <aside class="habitations-detail-pane" aria-label="Filtros do catálogo">
 <div class="card shadow-sm mb-4 border-0 habitations-filter-card habitations-filter-workspace" data-controller="collapse">
   <%= form_with url: admin_habitations_path, method: :get, local: true do |f| %>
     <div class="filter-sticky-toolbar">
@@ -1389,7 +1339,7 @@
   </div>
   <% end %>
 </div>
-  </details>
+  </aside>
 
   <section class="habitations-master-pane" aria-label="Catálogo de imóveis">
 
