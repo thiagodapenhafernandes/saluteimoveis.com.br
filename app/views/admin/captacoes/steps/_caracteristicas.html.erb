@@ -69,7 +69,9 @@
     <div class="col-4">
       <div class="wizard-field-group">
         <%= f.label :vagas_garagem, "Vagas", class: "form-label" %>
-        <%= f.number_field :vagas_garagem, min: 0, inputmode: "numeric", class: "form-control" %>
+        <span class="required-star">*</span>
+        <%= f.number_field :vagas_garagem, min: 0, inputmode: "numeric", class: field_state.call(:vagas_garagem) %>
+        <% if field_invalid.call(:vagas_garagem) %><div class="invalid-feedback d-block">Informe a quantidade de vagas.</div><% end %>
       </div>
     </div>
     <div class="col-4">
@@ -85,7 +87,9 @@
     <div class="col-md-4">
       <div class="wizard-field-group">
         <%= f.label :ocupacao, "Ocupação", class: "form-label" %>
-        <%= f.select :ocupacao, [["Desocupado", "desocupado"], ["Inquilino", "inquilino"], ["Proprietário", "proprietario"]], { include_blank: "—" }, class: "form-select" %>
+        <span class="required-star">*</span>
+        <%= f.select :ocupacao, [["Desocupado", "Desocupado"], ["Inquilino", "Inquilino"], ["Proprietário", "Proprietário"]], { include_blank: "—" }, class: field_state.call(:ocupacao, "form-select") %>
+        <% if field_invalid.call(:ocupacao) %><div class="invalid-feedback d-block">Informe a ocupação.</div><% end %>
       </div>
     </div>
     <div class="col-md-4">
@@ -97,7 +101,9 @@
     <div class="col-md-4">
       <div class="wizard-field-group">
         <%= f.label :situacao_imovel, "Situação", class: "form-label" %>
-        <%= f.select :situacao_imovel, [["Em construção", "construcao"], ["Novo", "novo"], ["Usado", "usado"]], { include_blank: "—" }, class: "form-select" %>
+        <span class="required-star">*</span>
+        <%= f.select :situacao_imovel, [["Em construção", "Em construção"], ["Novo", "Novo"], ["Usado", "Usado"]], { include_blank: "—" }, class: field_state.call(:situacao_imovel, "form-select") %>
+        <% if field_invalid.call(:situacao_imovel) %><div class="invalid-feedback d-block">Informe a situação.</div><% end %>
       </div>
     </div>
   </div>
@@ -130,7 +136,9 @@
     <div class="col-4">
       <div class="wizard-field-group">
         <%= f.label :vagas_garagem, "Vagas", class: "form-label" %>
-        <%= f.number_field :vagas_garagem, min: 0, inputmode: "numeric", class: "form-control" %>
+        <span class="required-star">*</span>
+        <%= f.number_field :vagas_garagem, min: 0, inputmode: "numeric", class: field_state.call(:vagas_garagem) %>
+        <% if field_invalid.call(:vagas_garagem) %><div class="invalid-feedback d-block">Informe a quantidade de vagas.</div><% end %>
       </div>
     </div>
   </div>
@@ -139,13 +147,17 @@
     <div class="col-md-6">
       <div class="wizard-field-group">
         <%= f.label :ocupacao, "Ocupação", class: "form-label" %>
-        <%= f.select :ocupacao, [["Desocupado", "desocupado"], ["Inquilino", "inquilino"], ["Proprietário", "proprietario"]], { include_blank: "—" }, class: "form-select" %>
+        <span class="required-star">*</span>
+        <%= f.select :ocupacao, [["Desocupado", "Desocupado"], ["Inquilino", "Inquilino"], ["Proprietário", "Proprietário"]], { include_blank: "—" }, class: field_state.call(:ocupacao, "form-select") %>
+        <% if field_invalid.call(:ocupacao) %><div class="invalid-feedback d-block">Informe a ocupação.</div><% end %>
       </div>
     </div>
     <div class="col-md-6">
       <div class="wizard-field-group">
         <%= f.label :situacao_imovel, "Situação", class: "form-label" %>
-        <%= f.select :situacao_imovel, [["Novo", "novo"], ["Usado", "usado"], ["Em construção", "construcao"]], { include_blank: "—" }, class: "form-select" %>
+        <span class="required-star">*</span>
+        <%= f.select :situacao_imovel, [["Novo", "Novo"], ["Usado", "Usado"], ["Em construção", "Em construção"]], { include_blank: "—" }, class: field_state.call(:situacao_imovel, "form-select") %>
+        <% if field_invalid.call(:situacao_imovel) %><div class="invalid-feedback d-block">Informe a situação.</div><% end %>
       </div>
     </div>
   </div>

@@ -2118,8 +2118,13 @@
 
               <% if can_manage_internal_documents %>
                 <div class="mb-3">
-                  <%= f.label :fichas_cadastro, "Adicionar arquivos", class: "btn btn-outline-primary btn-sm" %>
-                  <%= f.file_field :fichas_cadastro, multiple: true, class: "d-none", id: "habitation_fichas_cadastro" %>
+                  <% if habitation.persisted? %>
+                    <%= label_tag "habitation_fichas_cadastro", "Adicionar arquivos", class: "btn btn-outline-primary btn-sm", data: { internal_document_upload_label: true } %>
+                  <% else %>
+                    <%= f.label :fichas_cadastro, "Adicionar arquivos", class: "btn btn-outline-primary btn-sm" %>
+                    <%= f.file_field :fichas_cadastro, multiple: true, class: "d-none", id: "habitation_fichas_cadastro" %>
+                  <% end %>
+                  <div class="small text-muted mt-2 d-none" data-internal-document-upload-status="habitation_fichas_cadastro"></div>
                 </div>
               <% end %>
 
@@ -2169,8 +2174,13 @@
 
               <% if can_manage_internal_documents %>
                 <div class="mb-3">
-                  <%= f.label :autorizacoes_venda, "Adicionar arquivos", class: "btn btn-outline-primary btn-sm" %>
-                  <%= f.file_field :autorizacoes_venda, multiple: true, class: "d-none", id: "habitation_autorizacoes_venda" %>
+                  <% if habitation.persisted? %>
+                    <%= label_tag "habitation_autorizacoes_venda", "Adicionar arquivos", class: "btn btn-outline-primary btn-sm", data: { internal_document_upload_label: true } %>
+                  <% else %>
+                    <%= f.label :autorizacoes_venda, "Adicionar arquivos", class: "btn btn-outline-primary btn-sm" %>
+                    <%= f.file_field :autorizacoes_venda, multiple: true, class: "d-none", id: "habitation_autorizacoes_venda" %>
+                  <% end %>
+                  <div class="small text-muted mt-2 d-none" data-internal-document-upload-status="habitation_autorizacoes_venda"></div>
                 </div>
               <% end %>
 
@@ -2344,6 +2354,32 @@
 
 <% if habitation.persisted? && can_manage_internal_documents %>
   <% [
+       ["habitation_fichas_cadastro", :fichas_cadastro],
+       ["habitation_autorizacoes_venda", :autorizacoes_venda]
+     ].each do |input_id, association| %>
+    <%= form_with model: [:admin, habitation],
+                  local: true,
+                  html: {
+                    id: "#{association}_upload_form",
+                    class: "d-none",
+                    multipart: true
+                  },
+                  data: { turbo: false, internal_document_upload_form: true } do %>
+      <%= hidden_field_tag :save_navigation, "stay" %>
+      <%= hidden_field_tag :save_anchor, "documents" %>
+      <%= hidden_field_tag :document_upload, association %>
+      <%= hidden_field_tag :return_to, @return_to_path if @return_to_path.present? %>
+      <%= file_field_tag "habitation[#{association}][]",
+                         multiple: true,
+                         id: input_id,
+                         class: "d-none",
+                         data: { internal_document_upload_input: true } %>
+    <% end %>
+  <% end %>
+<% end %>
+
+<% if habitation.persisted? && can_manage_internal_documents %>
+  <% [
        ["fichas_cadastro", habitation.fichas_cadastro.attachments],
        ["autorizacoes_venda", habitation.autorizacoes_venda.attachments]
      ].each do |association, attachments| %>
@@ -2476,6 +2512,106 @@
       }
 
       submitWithChoice(form, "exit", "Salvando e saindo para o catálogo...");
+    });
+  })();
+</script>
+<script>
+  (() => {
+    if (window.saluteInternalDocumentUploadBound) return;
+    window.saluteInternalDocumentUploadBound = true;
+
+    const csrfToken = () => document.querySelector('meta[name="csrf-token"]')?.content || "";
+
+    const documentsUrl = (url) => {
+      if (!url) return `${window.location.pathname}${window.location.search}#documents`;
+      const parsed = new URL(url, window.location.origin);
+      parsed.hash = "documents";
+      return parsed.toString();
+    };
+
+    const renderProgress = (status, message, percent, variant = "primary") => {
+      if (!status) return;
+
+      const safePercent = Math.max(0, Math.min(100, Number(percent) || 0));
+      status.classList.remove("d-none", "text-danger", "text-muted");
+      status.classList.add(variant === "danger" ? "text-danger" : "text-muted");
+      status.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
+          <span>${message}</span>
+          <strong>${safePercent}%</strong>
+        </div>
+        <div class="progress" style="height: 6px;">
+          <div class="progress-bar bg-${variant}" role="progressbar" style="width: ${safePercent}%;" aria-valuenow="${safePercent}" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+      `;
+    };
+
+    const setLabelDisabled = (label, disabled) => {
+      if (!label) return;
+
+      label.classList.toggle("disabled", disabled);
+      if (disabled) {
+        label.setAttribute("aria-disabled", "true");
+      } else {
+        label.removeAttribute("aria-disabled");
+      }
+    };
+
+    document.addEventListener("change", (event) => {
+      const input = event.target.closest("[data-internal-document-upload-input='true']");
+      if (!input || input.files.length === 0) return;
+
+      const form = input.form;
+      if (!form) return;
+
+      const status = document.querySelector(`[data-internal-document-upload-status="${input.id}"]`);
+      const label = document.querySelector(`label[for="${input.id}"]`);
+      const count = input.files.length;
+      const fileLabel = count === 1 ? "1 arquivo" : `${count} arquivos`;
+
+      renderProgress(status, `Preparando envio de ${fileLabel}...`, 0);
+      setLabelDisabled(label, true);
+
+      if (!window.XMLHttpRequest || !window.FormData) {
+        form.requestSubmit();
+        return;
+      }
+
+      const request = new XMLHttpRequest();
+      request.open((form.method || "post").toUpperCase(), form.action, true);
+      request.setRequestHeader("Accept", "text/html");
+      const token = csrfToken();
+      if (token) request.setRequestHeader("X-CSRF-Token", token);
+
+      request.upload.addEventListener("progress", (progressEvent) => {
+        if (!progressEvent.lengthComputable) {
+          renderProgress(status, `Enviando ${fileLabel}...`, 5);
+          return;
+        }
+
+        const percent = Math.max(1, Math.min(99, Math.round((progressEvent.loaded / progressEvent.total) * 100)));
+        renderProgress(status, `Enviando ${fileLabel}...`, percent);
+      });
+
+      request.addEventListener("load", () => {
+        if (request.status >= 200 && request.status < 300) {
+          renderProgress(status, "100% - Anexo salvo. Atualizando lista...", 100, "success");
+          window.location.assign(documentsUrl(request.responseURL || form.action));
+          return;
+        }
+
+        renderProgress(status, "Não foi possível anexar. Tente novamente.", 100, "danger");
+        setLabelDisabled(label, false);
+        input.value = "";
+      });
+
+      request.addEventListener("error", () => {
+        renderProgress(status, "Falha de comunicação durante o envio.", 100, "danger");
+        setLabelDisabled(label, false);
+        input.value = "";
+      });
+
+      request.send(new FormData(form));
     });
   })();
 </script>
