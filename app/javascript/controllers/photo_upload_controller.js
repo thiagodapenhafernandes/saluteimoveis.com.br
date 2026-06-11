@@ -298,11 +298,12 @@ export default class extends Controller {
   }
 
   validateSubmit(event) {
-    if (this.uploadBytesFor(this.selectedNewFiles) <= this.constructor.maxUploadBytes) return
+    const uploadBytes = this.uploadBytesFor(this.selectedNewFiles)
+    if (uploadBytes <= this.constructor.maxUploadBytes) return
 
     event.preventDefault()
     event.stopImmediatePropagation()
-    this.showUploadLimitFeedback()
+    this.showUploadLimitFeedback(uploadBytes)
   }
 
   syncNewFilesFromDom() {
@@ -382,6 +383,7 @@ export default class extends Controller {
 
   showUploadLimitFeedback(totalBytes = this.uploadBytesFor(this.selectedNewFiles)) {
     const message = `As novas fotos selecionadas somam ${this.formatBytes(totalBytes)}. Envie no máximo ${this.formatBytes(this.constructor.maxUploadBytes)} por vez.`
+    this.showMediaTab()
 
     if (this.hasUploadLimitFeedbackTarget) {
       this.uploadLimitFeedbackTarget.textContent = message
@@ -392,6 +394,21 @@ export default class extends Controller {
 
     if (this.hasInputTarget) this.inputTarget.value = ""
     this.element.scrollIntoView({ behavior: "smooth", block: "center" })
+  }
+
+  showMediaTab() {
+    const panel = this.element.closest(".tab-pane")
+    if (!panel?.id) return
+
+    const tabButton = document.querySelector(`[data-bs-target="#${CSS.escape(panel.id)}"]`)
+    const bootstrapElement = window.bootstrap || (typeof bootstrap !== "undefined" ? bootstrap : null)
+
+    if (tabButton && bootstrapElement?.Tab) {
+      bootstrapElement.Tab.getOrCreateInstance(tabButton).show()
+      return
+    }
+
+    if (tabButton) tabButton.click()
   }
 
   clearUploadLimitFeedback() {

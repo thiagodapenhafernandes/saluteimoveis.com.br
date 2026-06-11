@@ -81,7 +81,7 @@
   </div>
 <% end %>
 
-<%= form_with(model: [:admin, habitation], local: true, class: "needs-validation habitation-form-shell", html: { novalidate: true }, data: { controller: "save-state", action: "submit->save-state#submitting turbo:submit-end->save-state#submitted", habitation_save_options_form: true }) do |f| %>
+<%= form_with(model: [:admin, habitation], local: true, class: "needs-validation habitation-form-shell", html: { id: "admin_habitation_form", novalidate: true }, data: { controller: "save-state", action: "submit->save-state#submitting", turbo: false, habitation_save_options_form: true }) do |f| %>
   <%= hidden_field_tag :save_navigation, "exit", data: { save_state_target: "choice", habitation_save_options_choice: true } %>
   <%= hidden_field_tag :return_to, @return_to_path if @return_to_path.present? %>
   <%
@@ -2139,10 +2139,9 @@
                         </span>
                       </div>
                       <% if habitation.persisted? && can_manage_internal_documents %>
-                        <%= button_to purge_attachment_admin_habitation_path(habitation, association: "fichas_cadastro", attachment_id: attachment.id),
-                                      method: :delete,
-                                      class: "btn btn-sm btn-link text-danger p-0 ms-2",
-                                      form: { data: { turbo_confirm: "Remover este arquivo?" } } do %>
+                        <%= link_to purge_attachment_admin_habitation_path(habitation, association: "fichas_cadastro", attachment_id: attachment.id),
+                                    class: "btn btn-sm btn-link text-danger p-0 ms-2",
+                                    data: { turbo_method: :delete, turbo_confirm: "Remover este arquivo?" } do %>
                           <i class="bi bi-trash"></i>
                         <% end %>
                       <% end %>
@@ -2194,10 +2193,9 @@
                         </span>
                       </div>
                       <% if habitation.persisted? && can_manage_internal_documents %>
-                        <%= button_to purge_attachment_admin_habitation_path(habitation, association: "autorizacoes_venda", attachment_id: attachment.id),
-                                      method: :delete,
-                                      class: "btn btn-sm btn-link text-danger p-0 ms-2",
-                                      form: { data: { turbo_confirm: "Remover este arquivo?" } } do %>
+                        <%= link_to purge_attachment_admin_habitation_path(habitation, association: "autorizacoes_venda", attachment_id: attachment.id),
+                                    class: "btn btn-sm btn-link text-danger p-0 ms-2",
+                                    data: { turbo_method: :delete, turbo_confirm: "Remover este arquivo?" } do %>
                           <i class="bi bi-trash"></i>
                         <% end %>
                       <% end %>
@@ -2270,6 +2268,7 @@
            <%= f.button type: "submit",
                         name: "release_to_broker_after_save",
                         value: "1",
+                        form: "admin_habitation_form",
                         class: "btn btn-success px-4 px-md-4 fw-bold",
                         data: { habitation_duplicate_check_target: "submit" } do %>
              <%= habitation.new_record? ? "Enviar para corretor" : "Devolver para captador" %>
@@ -2277,6 +2276,7 @@
            <%= f.button type: "submit",
                         name: "save_internal_after_save",
                         value: "1",
+                        form: "admin_habitation_form",
                         class: "btn btn-outline-primary px-4 px-md-4 fw-bold",
                         data: { habitation_duplicate_check_target: "submit" } do %>
              Salvar Interno
@@ -2285,6 +2285,7 @@
          <%= f.button type: "submit",
                       name: "save_navigation",
                       value: "stay",
+                      form: "admin_habitation_form",
                       class: "btn btn-primary px-4 px-md-5 fw-bold",
                       data: { save_state_target: "submitButton", habitation_duplicate_check_target: "submit", habitation_save_options_direct: true } do %>
            <span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true" data-save-state-target="spinner"></span>
@@ -2293,6 +2294,7 @@
          <%= f.button type: "submit",
                       name: "save_navigation",
                       value: "exit",
+                      form: "admin_habitation_form",
                       class: "btn btn-outline-primary px-4 px-md-4 fw-bold",
                       data: { habitation_duplicate_check_target: "submit", habitation_save_options_direct: true } do %>
            Salvar e sair

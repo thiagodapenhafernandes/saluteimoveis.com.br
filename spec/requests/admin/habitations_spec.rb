@@ -71,6 +71,56 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include("Salvar e sair")
   end
 
+  it "mantém ações de revisão administrativa vinculadas ao formulário principal" do
+    habitation = create(
+      :habitation,
+      :broker_intake,
+      admin_user: admin,
+      intake_status: "submitted_for_admin_review",
+      codigo: "REV-ACTION-#{SecureRandom.hex(6)}"
+    )
+
+    get edit_admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include('id="admin_habitation_form"')
+    expect(response.body).to include('data-turbo="false"')
+    expect(response.body).to include('name="release_to_broker_after_save"')
+    expect(response.body).to include('name="save_internal_after_save"')
+    expect(response.body.scan('form="admin_habitation_form"').size).to be >= 4
+  end
+
+  it "não inclui ações de exclusão de anexos como método do formulário principal" do
+    habitation = create(
+      :habitation,
+      :broker_intake,
+      admin_user: admin,
+      intake_status: "submitted_for_admin_review",
+      codigo: "REV-DOC-#{SecureRandom.hex(6)}"
+    )
+    habitation.fichas_cadastro.attach(
+      io: StringIO.new("ficha"),
+      filename: "ficha.txt",
+      content_type: "text/plain"
+    )
+    habitation.autorizacoes_venda.attach(
+      io: StringIO.new("autorizacao"),
+      filename: "autorizacao.txt",
+      content_type: "text/plain"
+    )
+
+    get edit_admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    form_markup = response.body[/<form[^>]*id="admin_habitation_form"[\s\S]*?<\/form>/]
+    expect(form_markup).to be_present
+    expect(form_markup.scan("<form").size).to eq(1)
+    expect(form_markup).not_to include('name="_method" value="delete"')
+    expect(response.body).to include('data-turbo-method="delete"')
+    expect(response.body).to include(purge_attachment_admin_habitation_path(habitation, association: "fichas_cadastro", attachment_id: habitation.fichas_cadastro.attachments.first.id))
+    expect(response.body).to include(purge_attachment_admin_habitation_path(habitation, association: "autorizacoes_venda", attachment_id: habitation.autorizacoes_venda.attachments.first.id))
+  end
+
   it "exibe no topo o captador vindo dos responsáveis e agenciamento" do
     captador = create(:admin_user, name: "Luciana Indalécio")
     habitation = create(
