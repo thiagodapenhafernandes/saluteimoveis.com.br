@@ -374,6 +374,10 @@ class Habitation < ApplicationRecord
     categoria.to_s.match?(/apartamento|cobertura|loft|studio/i)
   end
 
+  def condominium_house?
+    categoria.to_s.match?(/casa.*condom[ií]nio|condom[ií]nio.*casa/i)
+  end
+
   def requires_unit_number?
     property_kind_apartment_unit?
   end
@@ -393,6 +397,8 @@ class Habitation < ApplicationRecord
   end
 
   def duplicate_identity_scope
+    return :condominium_unit if condominium_house? && (complemento.present? || bloco.present?)
+
     requires_unit_number? || bloco.present? ? :unit : :street
   end
 

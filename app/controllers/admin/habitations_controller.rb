@@ -1213,6 +1213,8 @@ class Admin::HabitationsController < Admin::BaseController
       building: habitation.nome_empreendimento,
       unit: habitation.bloco,
       status: habitation.status,
+      complement: habitation.complemento,
+      category: habitation.categoria,
       comparison: habitation.duplicate_identity_scope,
       ignored_id: habitation.id
     ).call
@@ -1222,13 +1224,15 @@ class Admin::HabitationsController < Admin::BaseController
     code = duplicated&.codigo.present? ? " ##{duplicated.codigo}" : ""
     message = if habitation.duplicate_identity_scope == :unit
                 "Já existe imóvel cadastrado com esta rua, número, unidade e status comercial#{code}."
+              elsif habitation.duplicate_identity_scope == :condominium_unit
+                "Já existe casa em condomínio cadastrada com esta rua, número, complemento, bloco e status comercial#{code}."
               else
                 "Já existe imóvel cadastrado com esta rua, número e status comercial#{code}."
               end
     habitation.errors.add(:base, message)
     habitation.errors.add(:"address.logradouro", message)
     habitation.errors.add(:"address.numero", message)
-    habitation.errors.add(:bloco, message) if habitation.duplicate_identity_scope == :unit
+    habitation.errors.add(:bloco, message) if habitation.duplicate_identity_scope.in?(%i[unit condominium_unit])
     false
   end
 
