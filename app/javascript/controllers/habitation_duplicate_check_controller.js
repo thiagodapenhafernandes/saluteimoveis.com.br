@@ -50,7 +50,7 @@ export default class extends Controller {
       } else {
         this.showAvailable()
       }
-      this.toggleSubmit(this.hasDuplicate)
+      this.toggleSubmit(false)
     } catch (error) {
       console.error("[habitation-duplicate-check] erro:", error)
       this.clearStatus()
@@ -108,7 +108,7 @@ export default class extends Controller {
     const identity = this.comparisonValue() === "unit"
       ? "este endereço, unidade e status comercial"
       : (this.comparisonValue() === "condominium_unit" ? "este endereço, complemento, bloco e status comercial" : "este endereço e status comercial")
-    this.statusTarget.innerHTML = `Já existe imóvel com ${identity}${links ? `: ${links}` : "."}. Ajuste os dados antes de continuar.`
+    this.statusTarget.innerHTML = `Já existe imóvel com ${identity}${links ? `: ${links}` : "."}. Ajuste os dados antes de salvar.`
   }
 
   showAvailable() {
