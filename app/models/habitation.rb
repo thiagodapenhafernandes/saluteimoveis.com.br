@@ -849,8 +849,6 @@ class Habitation < ApplicationRecord
     attached_images = public_ordered_photos.map { |photo| { "attachment" => photo, "url" => blob_path_for(photo) } }
     api_images = image_payload_sources
 
-    return api_images.presence || attached_images if dwv_property?
-
     attached_images.presence || api_images
   end
 
