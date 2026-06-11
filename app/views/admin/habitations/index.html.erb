@@ -1807,6 +1807,13 @@
                     </span>
                  </div>
 
+                 <% if imovel.primary_captador_name.present? %>
+                   <div class="d-flex align-items-center text-muted small mb-3">
+                     <i class="bi bi-person-badge me-1"></i>
+                     <span>Captador: <span class="text-dark fw-semibold"><%= imovel.primary_captador_name %></span></span>
+                   </div>
+                 <% end %>
+
                  <!-- Features -->
                  <div class="d-flex gap-3 mb-4">
                     <div class="d-flex align-items-center text-dark small fw-semibold" title="Dormitórios">

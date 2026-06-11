@@ -2139,9 +2139,10 @@
                         </span>
                       </div>
                       <% if habitation.persisted? && can_manage_internal_documents %>
-                        <%= link_to purge_attachment_admin_habitation_path(habitation, association: "fichas_cadastro", attachment_id: attachment.id),
-                                    class: "btn btn-sm btn-link text-danger p-0 ms-2",
-                                    data: { turbo_method: :delete, turbo_confirm: "Remover este arquivo?" } do %>
+                        <%= button_tag type: "submit",
+                                       form: "purge_attachment_#{attachment.id}",
+                                       class: "btn btn-sm btn-link text-danger p-0 ms-2",
+                                       title: "Remover arquivo" do %>
                           <i class="bi bi-trash"></i>
                         <% end %>
                       <% end %>
@@ -2193,9 +2194,10 @@
                         </span>
                       </div>
                       <% if habitation.persisted? && can_manage_internal_documents %>
-                        <%= link_to purge_attachment_admin_habitation_path(habitation, association: "autorizacoes_venda", attachment_id: attachment.id),
-                                    class: "btn btn-sm btn-link text-danger p-0 ms-2",
-                                    data: { turbo_method: :delete, turbo_confirm: "Remover este arquivo?" } do %>
+                        <%= button_tag type: "submit",
+                                       form: "purge_attachment_#{attachment.id}",
+                                       class: "btn btn-sm btn-link text-danger p-0 ms-2",
+                                       title: "Remover arquivo" do %>
                           <i class="bi bi-trash"></i>
                         <% end %>
                       <% end %>
@@ -2338,6 +2340,27 @@
       </div>
     </div>
   </div>
+<% end %>
+
+<% if habitation.persisted? && can_manage_internal_documents %>
+  <% [
+       ["fichas_cadastro", habitation.fichas_cadastro.attachments],
+       ["autorizacoes_venda", habitation.autorizacoes_venda.attachments]
+     ].each do |association, attachments| %>
+    <% attachments.each do |attachment| %>
+      <% next unless attachment.persisted? && attachment.blob&.persisted? %>
+      <%= form_with url: purge_attachment_admin_habitation_path(habitation, association: association, attachment_id: attachment.id),
+                    method: :delete,
+                    local: true,
+                    html: {
+                      id: "purge_attachment_#{attachment.id}",
+                      class: "d-none",
+                      onsubmit: "return confirm('Remover este arquivo?')"
+                    },
+                    data: { turbo: false } do %>
+      <% end %>
+    <% end %>
+  <% end %>
 <% end %>
 
 <script>
