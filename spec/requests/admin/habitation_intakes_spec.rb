@@ -927,7 +927,7 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
       permissions: Profile.default_permissions_for("Corretor")
     )
     broker = create(:admin_user, profile: broker_profile)
-    intake = create(:habitation, :broker_intake, admin_user: broker)
+    intake = create(:habitation, :broker_intake, admin_user: broker, titulo_anuncio: nil, descricao_web: nil)
     intake.create_address!(
       cep: "88330-000",
       logradouro: "Rua Central",

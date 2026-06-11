@@ -29,6 +29,7 @@ class Habitation < ApplicationRecord
     'Alugado imobiliária', 'Alugado terceiros',
     'Vendido imobiliária', 'Vendido terceiros'
   ].freeze
+  INACTIVE_STATUS_KEYWORDS = %w[suspenso vendido alugado].freeze
 
   # Mapeia variações que aparecem na Vista (case mixed, sinônimos, etc.) para os
   # valores canônicos em STATUS_OPTIONS. Usado pelo SyncPropertyService no import
@@ -121,7 +122,8 @@ class Habitation < ApplicationRecord
   end
 
   def inactive_for_admin_card?
-    status.to_s.match?(/suspenso|vendido|alugado/i)
+    normalized_status = status.to_s.parameterize
+    INACTIVE_STATUS_KEYWORDS.any? { |keyword| normalized_status.include?(keyword) }
   end
 
   def unavailable_for_duplicate_check?
@@ -503,6 +505,13 @@ class Habitation < ApplicationRecord
 
   def area_total = area_total_m2
   def area_privativa = area_privativa_m2
+  def display_area_m2
+    primary_area = property_kind_terreno? ? area_total_m2 : area_privativa_m2
+    fallback_area = property_kind_terreno? ? area_privativa_m2 : area_total_m2
+
+    positive_decimal(primary_area) || positive_decimal(fallback_area)
+  end
+
   def dormitorios = dormitorios_qtd
   def suites = suites_qtd
   def demi_suites = demi_suites_qtd
@@ -681,6 +690,13 @@ class Habitation < ApplicationRecord
     cents
   end
 
+  def positive_decimal(value)
+    return nil if value.blank?
+
+    decimal = value.to_d
+    decimal.positive? ? decimal : nil
+  end
+
   def self.portal_publication_column_for(portal_key)
     PORTAL_PUBLICATION_FIELDS[portal_key.to_s]
   end
@@ -760,9 +776,7 @@ class Habitation < ApplicationRecord
     missing << intake_sale_price_requirement_message if requires_sale_price? && !valid_intake_sale_price?
     missing << intake_rent_price_requirement_message if requires_rent_price? && !valid_intake_rent_price?
     missing << "Definições básicas" if categoria.blank? || status.blank?
-    missing << "Título do anúncio" if titulo_anuncio.blank?
     missing << "Título do anúncio coerente com a categoria" if title_category_inconsistent?
-    missing << "Descrição do imóvel" if display_description_plain_text.blank?
     missing << "Endereço e localização" if address.blank? || cep.blank? || logradouro.blank? || bairro.blank? || cidade.blank? || uf.blank?
     missing << "Empreendimento" if requires_intake_development_name? && nome_empreendimento.blank?
     missing << "Número da unidade" if requires_unit_number? && bloco.blank?

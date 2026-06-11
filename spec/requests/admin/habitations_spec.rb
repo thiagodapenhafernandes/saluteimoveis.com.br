@@ -210,6 +210,44 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).not_to include(vista_property.titulo_anuncio)
   end
 
+  it "oculta imóveis inativos da aba todos até o usuário filtrar pelo status" do
+    active = create(:habitation, codigo: "ATIVO-#{SecureRandom.hex(6)}", status: "Venda", titulo_anuncio: "Imóvel ativo visível")
+    sold = create(:habitation, codigo: "VENDIDO-#{SecureRandom.hex(6)}", status: "Vendido terceiros", titulo_anuncio: "Imóvel vendido oculto", imovel_dwv: "Sim")
+    rented = create(:habitation, codigo: "ALUGADO-#{SecureRandom.hex(6)}", status: "Alugado terceiros", titulo_anuncio: "Imóvel alugado oculto")
+
+    get admin_habitations_path(ownership: "all")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(active.titulo_anuncio)
+    expect(response.body).not_to include(sold.titulo_anuncio)
+    expect(response.body).not_to include(rented.titulo_anuncio)
+
+    get admin_habitations_path(ownership: "all", status: "Vendido terceiros")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(sold.titulo_anuncio)
+  end
+
+  it "não exibe código DWV no card operacional quando o imóvel tem referência Salute" do
+    dwv_property = create(
+      :habitation,
+      codigo: "8630",
+      codigo_dwv: "325054",
+      imovel_dwv: "Sim",
+      titulo_anuncio: "Imóvel integrado com referência local"
+    )
+
+    get admin_habitations_path(ownership: "all", q: dwv_property.codigo)
+
+    expect(response).to have_http_status(:ok)
+    card = Nokogiri::HTML(response.body).css(".property-card-horizontal").find { |node| node.text.include?(dwv_property.codigo) }
+
+    expect(card.text).to include("8630")
+    expect(card.text).not_to include("325054")
+    expect(card.text).not_to include("DWV")
+    expect(card.to_html).not_to include("Código DWV")
+  end
+
   it "não inclui imóveis apenas vinculados como corretor secundário em Meus imóveis" do
     broker_profile = Profile.create!(
       name: "Corretor ownership #{SecureRandom.hex(6)}",

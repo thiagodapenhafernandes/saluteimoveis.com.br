@@ -262,7 +262,7 @@ module ApplicationHelper
   end
 
   def listing_floor_size_schema(habitation)
-    area = habitation.area_total_m2.presence || habitation.area_privativa_m2.presence
+    area = habitation.display_area_m2
     return if area.blank?
 
     {

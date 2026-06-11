@@ -272,11 +272,12 @@ module Habitation::SeoHelpers
   end
   
   def floor_size_data
-    return nil unless area_total_m2.present?
+    area = display_area_m2
+    return nil unless area.present?
     
     {
       '@type': 'QuantitativeValue',
-      value: area_total_m2.to_f,
+      value: area.to_f,
       unitCode: 'MTK' # Square Meter
     }
   end

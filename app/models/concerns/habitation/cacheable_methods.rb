@@ -89,7 +89,7 @@ module Habitation::CacheableMethods
         suites: suites_qtd,
         bathrooms: banheiros_qtd,
         parking: vagas_qtd,
-        area: area_total_m2&.to_i,
+        area: display_area_m2&.to_i,
         area_formatted: area_formatted,
         image: primary_image_url,
         images: image_urls,
@@ -104,10 +104,10 @@ module Habitation::CacheableMethods
   private
   
   def calculate_area_formatted
-    return nil unless area_total_m2.present? && area_total_m2 > 0
+    area = display_area_m2
+    return nil unless area.present?
     
-    area = area_total_m2.to_i
-    "#{area} m²"
+    "#{area.to_i} m²"
   end
   
   def calculate_full_address
@@ -169,11 +169,12 @@ module Habitation::CacheableMethods
       }
     end
     
-    if area_total_m2.to_f > 0
+    area = display_area_m2
+    if area.present?
       features << {
         icon: 'ruler',
         label: 'Área',
-        value: area_total_m2.to_i,
+        value: area.to_i,
         text: area_formatted
       }
     end
