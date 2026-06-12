@@ -387,6 +387,10 @@ class Habitation < ApplicationRecord
     property_kind_apartment_unit?
   end
 
+  def intake_unit_number_present?
+    bloco.present? || complemento.present?
+  end
+
   def uses_building_infrastructure?
     property_kind_apartment_unit?
   end
@@ -483,7 +487,7 @@ class Habitation < ApplicationRecord
   def state = uf
 
   def edificio_nome = nome_empreendimento
-  def unidade_numero = bloco
+  def unidade_numero = bloco.presence || complemento
 
   def proprietario_nome = proprietario
   def proprietario_telefone
@@ -503,7 +507,11 @@ class Habitation < ApplicationRecord
   end
 
   def proprietario_cpf_cnpj = proprietario_codigo
-  def proprietario_cidade = captacao_note_value("Cidade do proprietário")
+  def proprietario_cidade = captacao_note_value("Cidade do proprietário").presence || proprietor&.city
+
+  def proprietario_cidade=(value)
+    self.observacoes_visitas = upsert_captacao_note("Cidade do proprietário", value)
+  end
 
   def area_total = area_total_m2
   def area_privativa = area_privativa_m2
@@ -557,7 +565,31 @@ class Habitation < ApplicationRecord
   def aceita_parcelamento = aceita_parcelamento_flag? ? "sim" : "nao"
   def outras_taxas = captacao_note_list("Outras taxas")
   def dias_visitas = captacao_note_list("Dias/horários para visita")
-  def intake_visit_days_present? = dias_visitas.any?
+
+  def dias_visitas=(value)
+    values = Array(value).flat_map { |item| item.to_s.split(",") }.map(&:strip).compact_blank
+    self.observacoes_visitas = upsert_captacao_note("Dias/horários para visita", values.join(", "))
+  end
+
+  def intake_visit_days_present? = dias_visitas.any? || unstructured_visit_notes_present?
+
+  def unstructured_visit_notes_present?
+    structured_labels = [
+      "Cidade do proprietário",
+      "Outras taxas",
+      "Dias/horários para visita",
+      "Senha do imóvel",
+      "Senha da portaria",
+      "Distância da praia"
+    ]
+
+    observacoes_visitas.to_s.each_line.any? do |line|
+      stripped_line = line.strip
+      next false if structured_labels.any? { |label| stripped_line.start_with?("#{label}:") }
+
+      stripped_line.present?
+    end
+  end
   def extras
     {
       "frente_metros" => dimensoes_terreno.to_s[/Frente:\s*([^|]+)/, 1]&.strip&.delete_suffix(" m"),
@@ -634,6 +666,12 @@ class Habitation < ApplicationRecord
 
   def captacao_note_list(label)
     captacao_note_value(label).to_s.split(",").map(&:strip).compact_blank
+  end
+
+  def upsert_captacao_note(label, value)
+    lines = observacoes_visitas.to_s.lines.map(&:chomp).reject { |line| line.start_with?("#{label}:") }
+    lines << "#{label}: #{value.to_s.strip}" if value.present?
+    lines.join("\n")
   end
 
   def captacao_feature_enabled?(label)
@@ -789,7 +827,7 @@ class Habitation < ApplicationRecord
     missing << "Título do anúncio coerente com a categoria" if title_category_inconsistent?
     missing << "Endereço e localização" if address.blank? || cep.blank? || logradouro.blank? || bairro.blank? || cidade.blank? || uf.blank?
     missing << "Empreendimento" if requires_intake_development_name? && nome_empreendimento.blank?
-    missing << "Número da unidade" if requires_unit_number? && bloco.blank?
+    missing << "Número da unidade" if requires_unit_number? && !intake_unit_number_present?
     if property_kind_terreno?
       missing << "Dimensões e estrutura física" if area_total_m2.to_f <= 0
     elsif !has_required_intake_area?

@@ -130,8 +130,9 @@
   %>
   <% if habitation.errors.any? %>
 
-    <div class="alert alert-danger shadow-sm border-0 mb-4">
+    <div class="alert alert-danger alert-dismissible fade show shadow-sm border-0 mb-4" role="alert">
       <h5 class="alert-heading"><i class="bi bi-exclamation-triangle-fill me-2"></i>Ops! Verifique os erros abaixo:</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar aviso"></button>
       <% [:general, :features, :infra, :commercial, :media, :seo, :other].each do |tab_key| %>
         <% messages = grouped_errors[tab_key] %>
         <% next if messages.blank? %>
@@ -305,6 +306,62 @@
       overflow-x: hidden;
       padding-right: 0.25rem;
       scroll-behavior: smooth;
+      position: relative;
+      overscroll-behavior: contain;
+    }
+    .habitation-form-ui .media-gallery-scroll.is-photo-dragging {
+      scroll-behavior: auto;
+    }
+    .habitation-form-ui .media-autoscroll-zone {
+      height: 0;
+      opacity: 0;
+      pointer-events: none;
+      position: sticky;
+      z-index: 5;
+    }
+    .habitation-form-ui .media-autoscroll-zone--top {
+      top: 0;
+    }
+    .habitation-form-ui .media-autoscroll-zone--bottom {
+      bottom: 0;
+    }
+    .habitation-form-ui .media-photo-dirty-status {
+      background: #fff7e6;
+      border: 1px solid #ffd58a;
+      color: #7a4a00;
+      font-size: 0.78rem;
+    }
+    .habitation-form-ui .media-photo-upload-progress {
+      background: rgba(15, 23, 42, 0.2);
+      border-radius: 999px;
+      bottom: 0.35rem;
+      height: 5px;
+      left: 0.45rem;
+      opacity: 0;
+      overflow: hidden;
+      position: absolute;
+      right: 0.45rem;
+      transform: translateY(6px);
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      z-index: 3;
+    }
+    .habitation-form-ui .media-photo-upload-progress-bar {
+      background: #0d6efd;
+      height: 100%;
+      transition: width 0.15s ease;
+      width: 0;
+    }
+    .habitation-form-ui .media-photo-tile.is-uploading .media-photo-upload-progress,
+    .habitation-form-ui .media-photo-tile.is-uploaded .media-photo-upload-progress,
+    .habitation-form-ui .media-photo-tile.is-upload-error .media-photo-upload-progress {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .habitation-form-ui .media-photo-tile.is-uploaded .media-photo-upload-progress-bar {
+      background: #198754;
+    }
+    .habitation-form-ui .media-photo-tile.is-upload-error .media-photo-upload-progress-bar {
+      background: #dc3545;
     }
     .habitation-form-ui .media-photo-tile.is-site-hidden img {
       filter: grayscale(1);
@@ -1333,6 +1390,15 @@
                                        readonly: !can_edit_protected_habitation_fields,
                                        data: { controller: "mask", mask_type_value: "phone" } %>
                     </div>
+                    <div class="col-md-4">
+                      <%= label_tag "habitation_proprietario_cidade", "Cidade do proprietário", class: "form-label extra-small fw-bold mb-1" %>
+                      <%= text_field_tag "habitation[proprietario_cidade]",
+                                         habitation.proprietario_cidade,
+                                         id: "habitation_proprietario_cidade",
+                                         class: "form-control form-control-sm",
+                                         readonly: !can_edit_protected_habitation_fields,
+                                         placeholder: "Ex: Balneário Camboriú" %>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1362,6 +1428,20 @@
                       <span class="small fw-semibold">Administração de locação feita pela Salute</span>
                       <%= f.check_box :salute_rental_management_flag, class: "form-check-input mt-0" %>
                     </label>
+                  </div>
+                  <div class="col-12">
+                    <%= f.label :salute_rental_management_answer, "Resposta sobre administração Salute", class: "form-label extra-small fw-bold mb-1" %>
+                    <%= f.select :salute_rental_management_answer,
+                                 [["Sim", "sim"], ["Não", "nao"]],
+                                 { include_blank: "Selecione..." },
+                                 class: "form-select form-select-sm" %>
+                  </div>
+                  <div class="col-12">
+                    <%= f.label :rental_guarantee_method, "Meio de garantia locatícia", class: "form-label extra-small fw-bold mb-1" %>
+                    <%= f.select :rental_guarantee_method,
+                                 Habitation::RENTAL_GUARANTEE_METHOD_OPTIONS,
+                                 { include_blank: "Selecione..." },
+                                 class: "form-select form-select-sm" %>
                   </div>
                   <div class="col-md-8">
                     <label class="custom-checkbox-card w-100 justify-content-between">
@@ -1406,6 +1486,14 @@
                 <div class="col-md-12">
                   <%= f.label :observacoes_visitas, "Observações para visitas", class: "form-label small fw-bold mb-1" %>
                   <%= f.text_area :observacoes_visitas, class: "form-control form-control-sm", rows: 2 %>
+                </div>
+                <div class="col-md-12">
+                  <%= label_tag "habitation_dias_visitas", "Dias/horários para visita", class: "form-label small fw-bold mb-1" %>
+                  <%= text_field_tag "habitation[dias_visitas]",
+                                     habitation.dias_visitas.join(", "),
+                                     id: "habitation_dias_visitas",
+                                     class: "form-control form-control-sm",
+                                     placeholder: "Ex: Seg manhã, Qua tarde" %>
                 </div>
                 <div class="col-md-6">
                   <%= f.label :zelador_nome, "Zelador", class: "form-label small fw-bold mb-1" %>
@@ -1810,12 +1898,35 @@
                  ((habitation.use_development_photos? && linked_development.present? && habitation.own_public_image_sources.blank?) ? linked_development.own_public_image_sources.first(12).size : 0) %>
             <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap mb-3">
               <h6 class="small fw-semibold text-uppercase text-muted mb-0">Fotos</h6>
-              <% if media_gallery_count.positive? %>
-                <button type="button" class="btn btn-outline-primary btn-sm fw-semibold" data-gallery-open>
-                  <i class="bi bi-images me-1"></i>
-                  Abrir galeria
-                </button>
-              <% end %>
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="badge rounded-pill media-photo-dirty-status d-none" data-photo-upload-target="dirtyStatus">
+                  Alterações em fotos pendentes
+                </span>
+                <% if habitation.persisted? %>
+                  <%= f.button type: "submit",
+                               name: "photo_save",
+                               value: "1",
+                               form: "admin_habitation_form",
+                               formaction: update_photos_admin_habitation_path(habitation),
+                               formmethod: "post",
+                               class: "btn btn-primary btn-sm fw-semibold disabled",
+                               disabled: true,
+                               data: {
+                                 action: "photo-upload#preparePhotoSubmit",
+                                 photo_upload_target: "saveButton",
+                                 habitation_save_options_direct: true
+                               } do %>
+                    <i class="bi bi-check2-circle me-1"></i>
+                    <span data-photo-upload-target="saveButtonLabel">Salvar fotos</span>
+                  <% end %>
+                <% end %>
+                <% if media_gallery_count.positive? %>
+                  <button type="button" class="btn btn-outline-primary btn-sm fw-semibold" data-gallery-open>
+                    <i class="bi bi-images me-1"></i>
+                    Abrir galeria
+                  </button>
+                <% end %>
+              </div>
             </div>
             <% if linked_development.present? %>
               <div class="alert alert-light border d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4">
@@ -1885,7 +1996,8 @@
 	               <%= hidden_field_tag "habitation[remove_picture_indices]", "", data: { photo_upload_target: "removePictureIndicesInput" } %>
 	            </div>
 
-		            <div class="media-gallery-scroll">
+		            <div class="media-gallery-scroll" data-photo-upload-target="scrollContainer">
+                  <div class="media-autoscroll-zone media-autoscroll-zone--top" aria-hidden="true"></div>
 		              <div class="row g-3" data-photo-upload-target="previewContainer">
 		                <% if attached_media_photos.any? %>
 		                  <% attached_media_photos.each_with_index do |photo, index| %>
@@ -1895,7 +2007,7 @@
 		                        <%= link_to url_for(photo),
 		                            class: "d-block w-100 h-100",
 		                            data: { fancybox: "habitation-media-gallery", caption: "Foto ativa #{index + 1} - #{photo.filename}" } do %>
-		                          <%= image_tag photo, class: "rounded border w-100 h-100 object-fit-cover" %>
+		                          <%= image_tag photo.representation(resize_to_limit: [360, 360]), class: "rounded border w-100 h-100 object-fit-cover", loading: "lazy", decoding: "async" %>
 		                        <% end %>
 		                        <div class="media-photo-overlay position-absolute d-flex flex-column justify-content-between p-1">
 		                          <div class="d-flex justify-content-between align-items-start gap-1">
@@ -1954,7 +2066,7 @@
 		                        <%= link_to pic_url,
 		                            class: "d-block w-100 h-100",
 		                            data: { fancybox: "habitation-media-gallery", caption: "Foto API/Vista #{display_index + 1}" } do %>
-		                          <%= image_tag pic_url, class: "rounded border w-100 h-100 object-fit-cover opacity-75" %>
+		                          <%= image_tag pic_url, class: "rounded border w-100 h-100 object-fit-cover opacity-75", loading: "lazy", decoding: "async" %>
 		                        <% end %>
 		                        <div class="media-photo-overlay position-absolute d-flex flex-column justify-content-between p-1">
 		                          <div class="d-flex justify-content-between align-items-start gap-1">
@@ -2012,7 +2124,7 @@
 		                        <%= link_to development_photo_url,
 		                            class: "d-block w-100 h-100",
 		                            data: { fancybox: "habitation-media-gallery", caption: "Foto do empreendimento #{index + 1}" } do %>
-		                          <%= image_tag development_photo_url, class: "rounded border w-100 h-100 object-fit-cover opacity-75" %>
+		                          <%= image_tag development_photo_url, class: "rounded border w-100 h-100 object-fit-cover opacity-75", loading: "lazy", decoding: "async" %>
 		                        <% end %>
 		                        <div class="media-photo-overlay position-absolute d-flex flex-column justify-content-between p-1">
 		                          <div class="d-flex justify-content-between align-items-start gap-1">
@@ -2032,6 +2144,7 @@
 		                  <% end %>
 			                <% end %>
 			              </div>
+                    <div class="media-autoscroll-zone media-autoscroll-zone--bottom" aria-hidden="true"></div>
 			            </div>
 	       </div>
 	       </div>

@@ -3,7 +3,7 @@ class Admin::HabitationsController < Admin::BaseController
   before_action -> { check_permission!(:manage, :imoveis) }, only: [:new, :create]
   before_action :authorize_data_export!, only: [:print, :export]
   before_action :require_admin!, only: [:bulk_publish, :bulk_publish_eligibility]
-  before_action :scope_habitations_by_permission, only: [:edit, :update, :destroy, :sync, :purge_attachment, :generate_ai_preview, :format_ai_suggestion, :apply_ai_suggestion]
+  before_action :scope_habitations_by_permission, only: [:edit, :update, :update_photos, :destroy, :sync, :purge_attachment, :generate_ai_preview, :format_ai_suggestion, :apply_ai_suggestion]
   require "csv"
   require "uri"
 
@@ -85,11 +85,11 @@ class Admin::HabitationsController < Admin::BaseController
     "valor_total_aluguel_cents" => { label: "Valor total aluguel", column: "valor_total_aluguel_cents", default_direction: "desc" }
   }.freeze
 
-  before_action :set_habitation, only: [:show, :edit, :update, :destroy, :generate_ai_preview, :format_ai_suggestion, :apply_ai_suggestion]
-  before_action :authorize_habitation_edit!, only: [:edit, :update]
+  before_action :set_habitation, only: [:show, :edit, :update, :update_photos, :destroy, :generate_ai_preview, :format_ai_suggestion, :apply_ai_suggestion]
+  before_action :authorize_habitation_edit!, only: [:edit, :update, :update_photos]
 
-  before_action :load_autocomplete_data, only: [:new, :edit, :create, :update]
-  before_action :load_property_setting, only: [:new, :edit, :create, :update]
+  before_action :load_autocomplete_data, only: [:new, :edit, :create, :update, :update_photos]
+  before_action :load_property_setting, only: [:new, :edit, :create, :update, :update_photos]
   helper_method :can_view_proprietor_data?, :can_view_internal_documents?, :can_manage_internal_documents?,
                 :can_view_habitation_show_sensitive_data?, :can_edit_habitation?, :sort_options,
                 :can_manage_habitation_signal_flags?
@@ -468,6 +468,36 @@ class Admin::HabitationsController < Admin::BaseController
     else
       load_ai_suggestion
       load_habitation_audit_logs
+      render :edit, status: :unprocessable_entity
+    end
+  end
+
+  def update_photos
+    audit_snapshot_before = Habitations::AuditChangeRecorder.snapshot_for(@habitation)
+    @habitation.skip_auto_audit = true
+    permitted_attributes = habitation_photo_params
+    new_photo_uploads = extract_photo_uploads!(permitted_attributes)
+
+    @return_to_path = safe_admin_habitations_return_path(params[:return_to])
+    @habitation.assign_attributes(permitted_attributes)
+    apply_picture_removals_to_memory(@habitation)
+    touch_manual_habitation_update!(
+      @habitation,
+      force: new_photo_uploads.present? ||
+             selected_photo_attachment_ids_for_removal.present? ||
+             selected_picture_indices_for_removal.present? ||
+             permitted_attributes.present?
+    )
+
+    if @habitation.save(validate: false)
+      attach_new_photos(@habitation, new_photo_uploads, apply_watermark: apply_photo_watermark_requested?)
+      record_habitation_updated(@habitation, before_snapshot: audit_snapshot_before)
+      apply_saved_photo_removals(@habitation)
+      redirect_to edit_habitation_path_with_return(@habitation, anchor: "media"), notice: "Fotos salvas com sucesso."
+    else
+      load_ai_suggestion
+      load_habitation_audit_logs
+      @habitation.errors.add(:base, "Não foi possível salvar as fotos.")
       render :edit, status: :unprocessable_entity
     end
   end
@@ -1665,6 +1695,20 @@ class Admin::HabitationsController < Admin::BaseController
     permitted
   end
 
+  def habitation_photo_params
+    permitted = params.require(:habitation).permit(
+      :ordered_photo_ids,
+      :ordered_picture_indices,
+      :site_hidden_photo_ids,
+      :site_hidden_picture_urls,
+      :use_development_photos_flag,
+      :foto_classificacao,
+      photos: []
+    )
+    strip_blank_photo_uploads!(permitted)
+    permitted
+  end
+
   def strip_blank_photo_uploads!(permitted)
     return permitted unless permitted.key?(:photos)
 
@@ -1993,7 +2037,7 @@ class Admin::HabitationsController < Admin::BaseController
       :condicoes_negociacao, :observacoes_visitas, :motivo_suspensao,
       :corretor_nome, :corretor_telefone, :corretor_email, :proprietario_codigo,
       :proprietario, :proprietario_celular, :proprietario_telefone_comercial,
-      :proprietario_telefone_residencial, :proprietario_email,
+      :proprietario_telefone_residencial, :proprietario_email, :proprietario_cidade,
       :exibir_no_site_flag, :destaque_web_flag, :lancamento_flag, :aceita_permuta_flag, 
       :aceita_doacao_flag,
       :aceita_permuta_veiculo_flag, :aceita_permuta_imovel_flag, :aceita_permuta_outros_flag,
@@ -2027,6 +2071,7 @@ class Admin::HabitationsController < Admin::BaseController
       :tipo_veiculo_aceito_permuta, :ano_minimo_veiculo_aceito_permuta,
       :permuta_localizacao, :permuta_dormitorios_qtd, :permuta_suites_qtd, :permuta_garagens_qtd,
       :agenciador, :captador_commission_percentage, :broker_commission_percentage,
+      :salute_rental_management_answer, :dias_visitas,
       :salute_rental_management_flag, :home_corporate_flag, :home_corporate_position,
       :key_location, :key_location_notes, :ordered_photo_ids, :ordered_picture_indices, :site_hidden_photo_ids, :site_hidden_picture_urls, :intake_status,
       :use_development_photos_flag,

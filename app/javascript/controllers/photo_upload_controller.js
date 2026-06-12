@@ -12,7 +12,11 @@ export default class extends Controller {
     "removePhotoIdsInput",
     "removePictureIndicesInput",
     "uploadLimitFeedback",
-    "previewContainer"
+    "previewContainer",
+    "scrollContainer",
+    "dirtyStatus",
+    "saveButton",
+    "saveButtonLabel"
   ]
 
   static maxUploadBytes = 250 * 1024 * 1024
@@ -20,27 +24,52 @@ export default class extends Controller {
   connect() {
     this.selectedNewFiles = []
     this.newFileIdCounter = 0
+    this.directUploadCards = new Map()
+    this.photoStateDirty = false
+    this.dragScrollDirection = 0
+    this.dragScrollSpeed = 0
+    this.dragScrollFrame = null
     this.boundHandleDragOver = this.handleDragOver.bind(this)
     this.boundHandleDrop = this.handleDrop.bind(this)
     this.boundHandleDragLeave = this.handleDragLeave.bind(this)
     this.boundValidateSubmit = this.validateSubmit.bind(this)
+    this.boundHandleAutoScrollPointer = this.handleAutoScrollPointer.bind(this)
+    this.boundDirectUploadInitialize = this.directUploadInitialize.bind(this)
+    this.boundDirectUploadProgress = this.directUploadProgress.bind(this)
+    this.boundDirectUploadEnd = this.directUploadEnd.bind(this)
+    this.boundDirectUploadError = this.directUploadError.bind(this)
     this.form = this.element.closest('form')
 
     this.initSortable()
+    this.captureOriginalPhotoState()
+    this.updateDirtyState(false)
 
     // Drag and Drop
     this.element.addEventListener('dragover', this.boundHandleDragOver)
     this.element.addEventListener('drop', this.boundHandleDrop)
     this.element.addEventListener('dragleave', this.boundHandleDragLeave)
     if (this.form) this.form.addEventListener('submit', this.boundValidateSubmit, true)
+    if (this.hasInputTarget) {
+      this.inputTarget.addEventListener('direct-upload:initialize', this.boundDirectUploadInitialize)
+      this.inputTarget.addEventListener('direct-upload:progress', this.boundDirectUploadProgress)
+      this.inputTarget.addEventListener('direct-upload:end', this.boundDirectUploadEnd)
+      this.inputTarget.addEventListener('direct-upload:error', this.boundDirectUploadError)
+    }
   }
 
   disconnect() {
     if (this.sortable) this.sortable.destroy()
+    this.stopAutoScroll()
     this.element.removeEventListener('dragover', this.boundHandleDragOver)
     this.element.removeEventListener('drop', this.boundHandleDrop)
     this.element.removeEventListener('dragleave', this.boundHandleDragLeave)
     if (this.form) this.form.removeEventListener('submit', this.boundValidateSubmit, true)
+    if (this.hasInputTarget) {
+      this.inputTarget.removeEventListener('direct-upload:initialize', this.boundDirectUploadInitialize)
+      this.inputTarget.removeEventListener('direct-upload:progress', this.boundDirectUploadProgress)
+      this.inputTarget.removeEventListener('direct-upload:end', this.boundDirectUploadEnd)
+      this.inputTarget.removeEventListener('direct-upload:error', this.boundDirectUploadError)
+    }
   }
 
   handleDragOver(e) {
@@ -74,13 +103,27 @@ export default class extends Controller {
 
     this.sortable = new Sortable(this.previewContainerTarget, {
       animation: 150,
+      scroll: true,
+      bubbleScroll: true,
+      forceAutoScrollFallback: true,
+      scrollSensitivity: 90,
+      scrollSpeed: 18,
       ghostClass: 'sortable-ghost',
       handle: '.media-photo-drag-handle',
       draggable: '.draggable-item',
+      onStart: () => {
+        this.startAutoScroll()
+      },
+      onMove: (evt) => {
+        this.handleAutoScrollPointer(evt.originalEvent)
+        return true
+      },
       onEnd: (evt) => {
+        this.stopAutoScroll()
         this.syncNewFilesFromDom()
         this.updateOrder()
         this.refreshPhotoBadges()
+        if (evt.oldIndex !== evt.newIndex) this.markDirty()
       }
     })
   }
@@ -114,6 +157,7 @@ export default class extends Controller {
     this.syncNewFilesFromDom()
     this.updateOrder()
     this.refreshPhotoBadges()
+    this.markDirty()
   }
 
   removeNew(event) {
@@ -131,6 +175,7 @@ export default class extends Controller {
     this.clearUploadLimitFeedback()
     this.updateOrder()
     this.refreshPhotoBadges()
+    this.markDirty()
   }
 
   removeAttached(event) {
@@ -147,6 +192,7 @@ export default class extends Controller {
 
     this.updateOrder()
     this.refreshPhotoBadges()
+    this.markDirty()
   }
 
   removeApiPicture(event) {
@@ -163,6 +209,7 @@ export default class extends Controller {
 
     this.updateOrder()
     this.refreshPhotoBadges()
+    this.markDirty()
   }
 
   toggleSiteVisibility(event) {
@@ -186,6 +233,7 @@ export default class extends Controller {
     }
 
     this.setSiteToggleButton(button, hidden)
+    this.markDirty()
   }
 
   refreshPhotoBadges() {
@@ -252,10 +300,12 @@ export default class extends Controller {
       const file = fileEntry.file
       const imgContainer = document.createElement("div")
       const previewUrl = URL.createObjectURL(file)
+      const fileKey = this.fileKey(file)
 
       // Match standard column classes and add draggable-item
       imgContainer.classList.add("col-6", "col-md-3", "col-lg-2", "draggable-item", "new-photo-preview")
       imgContainer.dataset.newFileId = fileEntry.id
+      imgContainer.dataset.fileKey = fileKey
 
       imgContainer.innerHTML = `
         <div class="position-relative ratio ratio-1x1 group-hover media-photo-tile">
@@ -287,6 +337,9 @@ export default class extends Controller {
               </span>
             </div>
           </div>
+          <div class="media-photo-upload-progress" aria-hidden="true">
+            <div class="media-photo-upload-progress-bar" style="width: 0%"></div>
+          </div>
         </div>
       `
       this.previewContainerTarget.appendChild(imgContainer)
@@ -295,6 +348,7 @@ export default class extends Controller {
     this.syncInputFilesFromState()
     this.updateOrder()
     this.refreshPhotoBadges()
+    this.markDirty()
   }
 
   validateSubmit(event) {
@@ -304,6 +358,211 @@ export default class extends Controller {
     event.preventDefault()
     event.stopImmediatePropagation()
     this.showUploadLimitFeedback(uploadBytes)
+  }
+
+  preparePhotoSubmit(event) {
+    if (this.photoStateDirty || this.selectedNewFiles.length > 0) {
+      this.setSaveButtonLoading()
+      return
+    }
+
+    event.preventDefault()
+    event.stopPropagation()
+    this.showDirtyStatus("Nenhuma alteração em fotos para salvar.")
+  }
+
+  startAutoScroll() {
+    if (!this.hasScrollContainerTarget) return
+
+    this.scrollContainerTarget.classList.add("is-photo-dragging")
+    document.addEventListener("dragover", this.boundHandleAutoScrollPointer, true)
+    document.addEventListener("mousemove", this.boundHandleAutoScrollPointer, true)
+    document.addEventListener("touchmove", this.boundHandleAutoScrollPointer, true)
+  }
+
+  stopAutoScroll() {
+    if (this.hasScrollContainerTarget) this.scrollContainerTarget.classList.remove("is-photo-dragging")
+
+    document.removeEventListener("dragover", this.boundHandleAutoScrollPointer, true)
+    document.removeEventListener("mousemove", this.boundHandleAutoScrollPointer, true)
+    document.removeEventListener("touchmove", this.boundHandleAutoScrollPointer, true)
+    this.dragScrollDirection = 0
+    this.dragScrollSpeed = 0
+
+    if (this.dragScrollFrame) {
+      cancelAnimationFrame(this.dragScrollFrame)
+      this.dragScrollFrame = null
+    }
+  }
+
+  handleAutoScrollPointer(event) {
+    if (!this.hasScrollContainerTarget) return
+
+    const pointerY = this.pointerClientY(event)
+    if (pointerY === null) return
+
+    const rect = this.scrollContainerTarget.getBoundingClientRect()
+    const threshold = Math.min(120, Math.max(70, rect.height * 0.18))
+    const topDistance = pointerY - rect.top
+    const bottomDistance = rect.bottom - pointerY
+
+    if (topDistance >= 0 && topDistance < threshold) {
+      this.queueAutoScroll(-1, 1 - (topDistance / threshold))
+      return
+    }
+
+    if (bottomDistance >= 0 && bottomDistance < threshold) {
+      this.queueAutoScroll(1, 1 - (bottomDistance / threshold))
+      return
+    }
+
+    this.dragScrollDirection = 0
+    this.dragScrollSpeed = 0
+  }
+
+  pointerClientY(event) {
+    if (!event) return null
+    if (event.touches && event.touches[0]) return event.touches[0].clientY
+    if (event.changedTouches && event.changedTouches[0]) return event.changedTouches[0].clientY
+    return Number.isFinite(event.clientY) ? event.clientY : null
+  }
+
+  queueAutoScroll(direction, intensity) {
+    this.dragScrollDirection = direction
+    this.dragScrollSpeed = Math.max(8, Math.round(36 * Math.max(0.2, intensity)))
+
+    if (!this.dragScrollFrame) this.dragScrollFrame = requestAnimationFrame(() => this.performAutoScroll())
+  }
+
+  performAutoScroll() {
+    this.dragScrollFrame = null
+    if (!this.hasScrollContainerTarget || this.dragScrollDirection === 0) return
+
+    const container = this.scrollContainerTarget
+    const previousTop = container.scrollTop
+    container.scrollTop += this.dragScrollDirection * this.dragScrollSpeed
+
+    if (container.scrollTop === previousTop) {
+      window.scrollBy({ top: this.dragScrollDirection * this.dragScrollSpeed, behavior: "auto" })
+    }
+
+    this.dragScrollFrame = requestAnimationFrame(() => this.performAutoScroll())
+  }
+
+  directUploadInitialize(event) {
+    const card = this.cardForDirectUploadEvent(event)
+    if (!card) return
+
+    const id = event?.detail?.id
+    if (id) {
+      card.dataset.directUploadId = id
+      this.directUploadCards.set(id, card)
+    }
+
+    this.setCardUploadProgress(card, 1, "uploading")
+  }
+
+  directUploadProgress(event) {
+    const card = this.cardForDirectUploadEvent(event)
+    if (!card) return
+
+    const percent = Math.max(1, Math.min(99, Math.round(Number(event?.detail?.progress || 0))))
+    this.setCardUploadProgress(card, percent, "uploading")
+  }
+
+  directUploadEnd(event) {
+    const card = this.cardForDirectUploadEvent(event)
+    if (!card) return
+
+    this.setCardUploadProgress(card, 100, "uploaded")
+  }
+
+  directUploadError(event) {
+    const card = this.cardForDirectUploadEvent(event)
+    if (!card) return
+
+    this.setCardUploadProgress(card, 100, "error")
+  }
+
+  cardForDirectUploadEvent(event) {
+    const id = event?.detail?.id
+    if (id && this.directUploadCards.has(id)) return this.directUploadCards.get(id)
+
+    const file = event?.detail?.file
+    if (!file || !this.hasPreviewContainerTarget) return null
+
+    const fileKey = this.fileKey(file)
+    const card = Array.from(this.previewContainerTarget.querySelectorAll(".new-photo-preview"))
+      .find(item => item.dataset.fileKey === fileKey && (!item.dataset.directUploadId || item.dataset.directUploadId === id))
+
+    if (id && card) {
+      card.dataset.directUploadId = id
+      this.directUploadCards.set(id, card)
+    }
+
+    return card
+  }
+
+  setCardUploadProgress(card, percent, state) {
+    const tile = card.querySelector(".media-photo-tile")
+    const bar = card.querySelector(".media-photo-upload-progress-bar")
+    if (!tile || !bar) return
+
+    tile.classList.toggle("is-uploading", state === "uploading")
+    tile.classList.toggle("is-uploaded", state === "uploaded")
+    tile.classList.toggle("is-upload-error", state === "error")
+    bar.style.width = `${Math.max(0, Math.min(100, percent))}%`
+  }
+
+  captureOriginalPhotoState() {
+    this.originalPhotoState = this.currentPhotoState()
+  }
+
+  currentPhotoState() {
+    return [
+      this.hasOrderInputTarget ? this.orderInputTarget.value : "",
+      this.hasApiOrderInputTarget ? this.apiOrderInputTarget.value : "",
+      this.hasHiddenPhotoIdsInputTarget ? this.hiddenPhotoIdsInputTarget.value : "",
+      this.hasHiddenPictureUrlsInputTarget ? this.hiddenPictureUrlsInputTarget.value : "",
+      this.hasRemovePhotoIdsInputTarget ? this.removePhotoIdsInputTarget.value : "",
+      this.hasRemovePictureIndicesInputTarget ? this.removePictureIndicesInputTarget.value : "",
+      this.selectedNewFiles.map(entry => this.fileKey(entry.file)).join("|")
+    ].join("::")
+  }
+
+  markDirty() {
+    this.updateDirtyState(this.currentPhotoState() !== this.originalPhotoState)
+  }
+
+  updateDirtyState(dirty) {
+    this.photoStateDirty = dirty
+    if (this.hasSaveButtonTarget) {
+      this.saveButtonTarget.disabled = !dirty
+      this.saveButtonTarget.classList.toggle("disabled", !dirty)
+    }
+
+    if (this.hasDirtyStatusTarget) {
+      if (dirty) {
+        this.showDirtyStatus("Alterações em fotos pendentes")
+      } else {
+        this.dirtyStatusTarget.classList.add("d-none")
+      }
+    }
+  }
+
+  showDirtyStatus(message) {
+    if (!this.hasDirtyStatusTarget) return
+
+    this.dirtyStatusTarget.textContent = message
+    this.dirtyStatusTarget.classList.remove("d-none")
+  }
+
+  setSaveButtonLoading() {
+    if (!this.hasSaveButtonTarget) return
+
+    this.saveButtonTarget.disabled = true
+    this.saveButtonTarget.classList.add("disabled")
+    if (this.hasSaveButtonLabelTarget) this.saveButtonLabelTarget.textContent = "Salvando fotos..."
   }
 
   syncNewFilesFromDom() {
