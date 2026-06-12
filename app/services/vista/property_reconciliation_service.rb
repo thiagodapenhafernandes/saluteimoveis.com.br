@@ -74,7 +74,7 @@ module Vista
       keyword_init: true
     )
 
-    def initialize(codigos:, dry_run: true, report_path: nil, host: nil, key: nil, replace_photos: true, replace_documents: true, download_files: true, workers: 1, progress_callback: nil)
+    def initialize(codigos:, dry_run: true, report_path: nil, host: nil, key: nil, replace_photos: false, replace_documents: true, download_files: true, workers: 1, progress_callback: nil)
       @codigos = Array(codigos).map(&:to_s).map(&:strip).reject(&:blank?).uniq
       @dry_run = ActiveModel::Type::Boolean.new.cast(dry_run)
       @host = host.presence || ENV.fetch("VISTA_HOST")
@@ -371,7 +371,7 @@ module Vista
       features = normalized_feature_hash(api["Caracteristicas"])
       infrastructure = normalized_infrastructure_list(api["InfraEstrutura"])
       use_development_photos = photos.blank? && development_photos.present? && habitation_type(api) != "Empreendimento"
-      pictures = preserve_picture_order(habitation.pictures, pictures_payload(photos))
+      pictures = pictures_payload_for_update(habitation, photos)
       development_pictures = preserve_picture_order(habitation.fotos_empreendimento, pictures_payload(development_photos))
 
       attrs = compact_attrs(
@@ -602,6 +602,7 @@ module Vista
     end
 
     def sync_photos!(habitation, photos, counters, failures)
+      protected_attachment_ids = photos_attachment_scope(habitation).pluck(:id)
       ordered_attachment_ids = []
 
       photos.each_with_index do |photo, index|
@@ -612,9 +613,14 @@ module Vista
         asset = upsert_photo_asset!(habitation, photo, url, source_path, index)
 
         blob = asset_blob(asset)
+        restored_blob = false
+        if blob && !blob_exists?(blob)
+          blob = restore_missing_blob_from_url(blob, url, asset.filename, counters, failures)
+          restored_blob = blob.present?
+        end
         reused_blob = false
         if blob
-          counters[:photos_reused] += 1
+          counters[:photos_reused] += 1 unless restored_blob
           reused_blob = true
         elsif !@download_files
           counters[:photos_pending_download] += 1
@@ -636,20 +642,21 @@ module Vista
       end
 
       ordered_attachment_ids = preserve_attachment_order(habitation, ordered_attachment_ids.uniq)
+      final_attachment_ids = merge_protected_attachment_order(habitation, protected_attachment_ids, ordered_attachment_ids)
 
       if @replace_photos
-        stale = if ordered_attachment_ids.any?
-                  photos_attachment_scope(habitation).where.not(id: ordered_attachment_ids)
+        stale = if final_attachment_ids.any?
+                  photos_attachment_scope(habitation).where.not(id: final_attachment_ids)
                 else
                   photos_attachment_scope(habitation)
                 end
 
         counters[:photos_detached] += stale.count
         stale.destroy_all
-        habitation.update!(photo_ids_order: ordered_attachment_ids)
+        habitation.update!(photo_ids_order: final_attachment_ids)
       end
 
-      habitation.update!(photo_ids_order: ordered_attachment_ids) if ordered_attachment_ids.any? && !@replace_photos
+      habitation.update!(photo_ids_order: final_attachment_ids) if final_attachment_ids.any? && !@replace_photos
     end
 
     def api_file_asset_batch
@@ -928,6 +935,23 @@ module Vista
       )
     end
 
+    def blob_exists?(blob)
+      blob.service.exist?(blob.key)
+    rescue StandardError
+      false
+    end
+
+    def restore_missing_blob_from_url(blob, url, filename, counters, failures)
+      URI.open(url, read_timeout: 30, open_timeout: 10) do |io|
+        blob.service.upload(blob.key, io, checksum: blob.checksum, content_type: blob.content_type)
+      end
+      counters[:photos_downloaded] += 1
+      blob
+    rescue StandardError => e
+      failures << { source: url, error: "restore_missing_blob #{filename}: #{e.message}" }
+      nil
+    end
+
     def resolve_proprietor(api)
       code = value(api["CodigoProprietario"])
       return if code.blank?
@@ -1018,6 +1042,13 @@ module Vista
       end
     end
 
+    def pictures_payload_for_update(habitation, photos)
+      current_pictures = habitation.pictures
+      return current_pictures if photos_attachment_scope(habitation).exists? && current_pictures.is_a?(Array)
+
+      preserve_picture_order(current_pictures, pictures_payload(photos))
+    end
+
     def preserve_picture_order(current_pictures, incoming_pictures)
       return incoming_pictures unless current_pictures.is_a?(Array) && current_pictures.any?
       return incoming_pictures if incoming_pictures.blank?
@@ -1049,6 +1080,17 @@ module Vista
       return incoming_attachment_ids if preserved.blank?
 
       preserved + incoming_attachment_ids.reject { |id| preserved.include?(id) }
+    end
+
+    def merge_protected_attachment_order(habitation, protected_attachment_ids, incoming_attachment_ids)
+      protected_attachment_ids = Array(protected_attachment_ids).map(&:to_i).reject(&:zero?)
+      incoming_attachment_ids = Array(incoming_attachment_ids).map(&:to_i).reject(&:zero?)
+      return incoming_attachment_ids if protected_attachment_ids.blank?
+
+      current_order = Array(habitation.photo_ids_order).map(&:to_i)
+      protected_order = current_order.select { |id| protected_attachment_ids.include?(id) }
+      protected_order += protected_attachment_ids.reject { |id| protected_order.include?(id) }
+      (protected_order + incoming_attachment_ids).uniq
     end
 
     def photo_rows(raw)
