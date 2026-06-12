@@ -29,6 +29,29 @@ module Admin::HabitationsHelper
     admin_habitation_internal_action_label(habitation)
   end
 
+  def admin_habitation_media_preview(attachment)
+    image_classes = "rounded border w-100 h-100 object-fit-cover"
+
+    if attachment.blob.representable?
+      image_tag attachment.representation(resize_to_limit: [360, 360]),
+        class: image_classes,
+        loading: "lazy",
+        decoding: "async"
+    elsif attachment.blob.image?
+      image_tag url_for(attachment),
+        class: image_classes,
+        loading: "lazy",
+        decoding: "async"
+    else
+      content_tag :div, class: "rounded border w-100 h-100 bg-light text-muted d-flex flex-column align-items-center justify-content-center text-center p-2" do
+        safe_join([
+          content_tag(:i, "", class: "bi bi-file-earmark-zip fs-3 mb-2"),
+          content_tag(:span, attachment.filename.to_s, class: "small fw-semibold text-break")
+        ])
+      end
+    end
+  end
+
   def admin_can_edit_habitation?(habitation)
     return false unless current_admin_user && habitation
 

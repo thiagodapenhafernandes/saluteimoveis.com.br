@@ -103,6 +103,21 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include('data-photo-upload-target="dirtyStatus"')
   end
 
+  it "abre o cadastro quando existe arquivo não-imagem anexado como foto" do
+    habitation = create(:habitation, codigo: "PHOTO-ZIP-#{SecureRandom.hex(6)}")
+    habitation.photos.attach(
+      io: StringIO.new("zip-content"),
+      filename: "fotos-originais.zip",
+      content_type: "application/zip"
+    )
+
+    get edit_admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("fotos-originais.zip")
+    expect(response.body).to include("bi-file-earmark-zip")
+  end
+
   it "salva ordem e visibilidade das fotos pelo endpoint dedicado" do
     first_url = "https://example.com/first.jpg"
     second_url = "https://example.com/second.jpg"
