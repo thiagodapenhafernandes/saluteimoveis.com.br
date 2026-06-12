@@ -121,6 +121,29 @@
   outline: none;
 }
 
+.broker-share--disabled {
+  cursor: not-allowed;
+}
+
+.broker-share__trigger--disabled,
+.broker-share__trigger:disabled {
+  background: rgba(255, 255, 255, 0.38);
+  color: rgba(2, 43, 58, 0.42);
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: .64;
+}
+
+.broker-share__trigger--disabled:hover,
+.broker-share__trigger--disabled:focus-visible,
+.broker-share__trigger:disabled:hover,
+.broker-share__trigger:disabled:focus-visible {
+  background: rgba(255, 255, 255, 0.38);
+  color: rgba(2, 43, 58, 0.42);
+  box-shadow: none;
+  transform: none;
+}
+
 .broker-share__menu {
   position: absolute;
   right: 0;

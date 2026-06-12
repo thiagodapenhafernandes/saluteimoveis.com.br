@@ -1023,6 +1023,52 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(intake.reload).to have_attributes(intake_status: "published", exibir_no_site_flag: true)
   end
 
+  it "marca exibir no site quando o corretor publica uma captação devolvida pelo administrativo" do
+    broker_profile = Profile.create!(
+      name: "Corretor devolvido #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Corretor")
+    )
+    broker = create(:admin_user, profile: broker_profile)
+    intake = create(
+      :habitation,
+      :broker_intake,
+      admin_user: broker,
+      intake_status: "returned_to_broker",
+      titulo_anuncio: "Casa 2 dormitórios em Centro",
+      descricao_web: "Descrição pública revisada para publicação.",
+      categoria: "Casa",
+      dormitorios_qtd: 2,
+      exibir_no_site_flag: false
+    )
+    intake.create_address!(
+      cep: "88330-000",
+      logradouro: "Rua Central",
+      numero: "100",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+    intake.autorizacoes_venda.attach(
+      io: StringIO.new("autorizacao"),
+      filename: "autorizacao.txt",
+      content_type: "text/plain"
+    )
+
+    sign_in broker
+    get admin_captacao_path(intake)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Publicar Site")
+
+    post release_to_site_admin_captacao_path(intake)
+
+    expect(response).to redirect_to(admin_captacao_path(intake))
+    expect(intake.reload).to have_attributes(
+      intake_status: "published",
+      exibir_no_site_flag: true
+    )
+  end
+
   it "mostra título e descrição do anúncio para o corretor conferir antes da publicação" do
     broker_profile = Profile.create!(
       name: "Corretor anúncio #{SecureRandom.hex(6)}",

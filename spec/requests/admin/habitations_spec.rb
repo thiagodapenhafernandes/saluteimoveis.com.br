@@ -395,6 +395,13 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include('name="corretor_id"')
     expect(response.body).to include("Patrícia Filtro")
     expect(response.body).not_to include('name="proprietor_id"')
+    html = Nokogiri::HTML(response.body)
+    primary_filters = html.at_css(".filter-pane-primary")
+    advanced_filters = html.at_css(".filter-advanced-body")
+    expect(primary_filters.at_css('select[name="empreendimento_codigo"]')).to be_present
+    expect(primary_filters.at_css('select[name="corretor_id"]')).to be_present
+    expect(advanced_filters&.at_css('select[name="empreendimento_codigo"]')).to be_nil
+    expect(advanced_filters&.at_css('select[name="corretor_id"]')).to be_nil
 
     get admin_habitations_path(ownership: "all", corretor_id: patricia.id)
 
@@ -450,6 +457,38 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).not_to include(wrong_category.titulo_anuncio)
     expect(response.body).not_to include(wrong_status.titulo_anuncio)
     expect(response.body).not_to include(vista_only.titulo_anuncio)
+  end
+
+  it "permite filtrar por múltiplas categorias" do
+    apartment = create(
+      :habitation,
+      codigo: "CAT-APT-#{SecureRandom.hex(6)}",
+      titulo_anuncio: "Apartamento no filtro múltiplo",
+      categoria: "Apartamento"
+    )
+    house = create(
+      :habitation,
+      codigo: "CAT-CASA-#{SecureRandom.hex(6)}",
+      titulo_anuncio: "Casa no filtro múltiplo",
+      categoria: "Casa"
+    )
+    store = create(
+      :habitation,
+      codigo: "CAT-LOJA-#{SecureRandom.hex(6)}",
+      titulo_anuncio: "Loja fora do filtro múltiplo",
+      categoria: "Loja"
+    )
+
+    get admin_habitations_path(ownership: "all", categoria: ["Apartamento", "Casa"])
+
+    expect(response).to have_http_status(:ok)
+    html = Nokogiri::HTML(response.body)
+    category_select = html.at_css('select[name="categoria[]"]')
+    expect(category_select).to be_present
+    expect(category_select["multiple"]).to eq("multiple")
+    expect(response.body).to include(apartment.titulo_anuncio)
+    expect(response.body).to include(house.titulo_anuncio)
+    expect(response.body).not_to include(store.titulo_anuncio)
   end
 
   it "aplica o pill Frente Mar com a mesma regra estrita do checkbox" do
@@ -508,15 +547,26 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).not_to include(owned_by_other.titulo_anuncio)
   end
 
-  it "ordena imóveis novos no topo quando a data de cadastro CRM está vazia" do
-    old_property = create(:habitation, codigo: "OLD-#{SecureRandom.hex(6)}", titulo_anuncio: "Imóvel antigo", data_cadastro_crm: 2.days.ago)
-    new_property = create(:habitation, codigo: "NEW-#{SecureRandom.hex(6)}", titulo_anuncio: "Imóvel novo")
-    new_property.update_column(:data_cadastro_crm, nil)
+  it "ordena mais recentes pela referência Salute numérica, ignorando o código DWV" do
+    lower_salute_reference = create(
+      :habitation,
+      codigo: "8826",
+      codigo_dwv: "488124",
+      imovel_dwv: "Sim",
+      titulo_anuncio: "Imóvel DWV com referência Salute menor"
+    )
+    higher_salute_reference = create(
+      :habitation,
+      codigo: "8882",
+      codigo_dwv: "325054",
+      imovel_dwv: "Sim",
+      titulo_anuncio: "Imóvel DWV com referência Salute maior"
+    )
 
     get admin_habitations_path(sort: "data_cadastro_crm", direction: "desc")
 
     expect(response).to have_http_status(:ok)
-    expect(response.body.index(new_property.titulo_anuncio)).to be < response.body.index(old_property.titulo_anuncio)
+    expect(response.body.index(higher_salute_reference.titulo_anuncio)).to be < response.body.index(lower_salute_reference.titulo_anuncio)
   end
 
   it "filtra por rua considerando endereço estruturado e legado" do
@@ -1316,6 +1366,88 @@ RSpec.describe "Admin::Habitations", type: :request do
 
     expect(response).to redirect_to(admin_habitations_path)
     expect(habitation.reload.exibir_no_site_flag).to be(false)
+  end
+
+  it "bloqueia seletores operacionais na edição do captador" do
+    broker_profile = Profile.create!(
+      name: "Corretor #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Corretor")
+    )
+    broker = create(:admin_user, profile: broker_profile)
+    habitation = create(:habitation, admin_user: broker, codigo: "LOCK-UI-#{SecureRandom.hex(6)}")
+
+    sign_in broker
+    get edit_admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    html = Nokogiri::HTML(response.body)
+    %w[
+      exibir_no_site_flag
+      destaque_web_flag
+      festival_salute_flag
+      lancamento_flag
+      tem_placa_flag
+      exclusivo_flag
+      imovel_dwv
+    ].each do |field|
+      input = html.at_css(%(input[type="checkbox"][name="habitation[#{field}]"]))
+      expect(input).to be_present
+      expect(input["disabled"]).to eq("disabled")
+    end
+  end
+
+  it "ignora alteração manual dos seletores operacionais enviada por captador" do
+    broker_profile = Profile.create!(
+      name: "Corretor #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Corretor")
+    )
+    broker = create(:admin_user, profile: broker_profile)
+    habitation = create(
+      :habitation,
+      admin_user: broker,
+      codigo: "LOCK-PARAMS-#{SecureRandom.hex(6)}",
+      observacoes: "Observação inicial",
+      exibir_no_site_flag: false,
+      destaque_web_flag: false,
+      festival_salute_flag: false,
+      lancamento_flag: false,
+      tem_placa_flag: false,
+      exclusivo_flag: false,
+      imovel_dwv: "Não"
+    )
+    habitation.create_address!(
+      logradouro: "Rua Bloqueio",
+      numero: "10",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+
+    sign_in broker
+    patch admin_habitation_path(habitation), params: {
+      habitation: {
+        observacoes: "Observação atualizada pelo captador",
+        exibir_no_site_flag: "1",
+        destaque_web_flag: "1",
+        festival_salute_flag: "1",
+        lancamento_flag: "1",
+        tem_placa_flag: "1",
+        exclusivo_flag: "1",
+        imovel_dwv: "Sim"
+      }
+    }
+
+    expect(response).to redirect_to(admin_habitations_path)
+    expect(habitation.reload).to have_attributes(
+      observacoes: "Observação atualizada pelo captador",
+      exibir_no_site_flag: false,
+      destaque_web_flag: false,
+      festival_salute_flag: false,
+      lancamento_flag: false,
+      tem_placa_flag: false,
+      exclusivo_flag: false,
+      imovel_dwv: "Não"
+    )
   end
 
   it "oculta classificação de fotos da ficha de pré-cadastro do corretor" do

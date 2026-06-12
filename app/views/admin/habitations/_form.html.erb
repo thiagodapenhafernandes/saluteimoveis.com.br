@@ -37,6 +37,7 @@
     }
   end
   intake_waiting_admin_review = habitation.broker_intake? && habitation.intake_submitted_for_admin_review?
+  signal_flags_locked = !can_manage_habitation_signal_flags?
   can_manage_internal_documents = can_manage_internal_documents?
   can_edit_protected_habitation_fields = current_admin_user&.admin? || owns_all_resource?(:imoveis)
   vista_document_assets = Array(@habitation_vista_document_assets)
@@ -392,31 +393,31 @@
               <div class="col-12">
                 <div class="d-flex flex-wrap gap-2 pb-1">
                   <label class="custom-checkbox-card">
-                    <%= f.check_box :exibir_no_site_flag, class: "form-check-input mt-0", disabled: intake_waiting_admin_review %>
+                    <%= f.check_box :exibir_no_site_flag, class: "form-check-input mt-0", disabled: signal_flags_locked || intake_waiting_admin_review %>
                     <span class="small fw-semibold">Exibir no site</span>
                   </label>
                   <label class="custom-checkbox-card">
-                    <%= f.check_box :destaque_web_flag, class: "form-check-input mt-0" %>
+                    <%= f.check_box :destaque_web_flag, class: "form-check-input mt-0", disabled: signal_flags_locked %>
                     <span class="small fw-semibold">Destaque Web</span>
                   </label>
                   <label class="custom-checkbox-card">
-                    <%= f.check_box :festival_salute_flag, class: "form-check-input mt-0" %>
+                    <%= f.check_box :festival_salute_flag, class: "form-check-input mt-0", disabled: signal_flags_locked %>
                     <span class="small fw-semibold">Super Destaque</span>
                   </label>
                   <label class="custom-checkbox-card">
-                    <%= f.check_box :lancamento_flag, class: "form-check-input mt-0" %>
+                    <%= f.check_box :lancamento_flag, class: "form-check-input mt-0", disabled: signal_flags_locked %>
                     <span class="small fw-semibold">Lançamento</span>
                   </label>
                   <label class="custom-checkbox-card">
-                    <%= f.check_box :tem_placa_flag, class: "form-check-input mt-0" %>
+                    <%= f.check_box :tem_placa_flag, class: "form-check-input mt-0", disabled: signal_flags_locked %>
                     <span class="small fw-semibold">Tem Placa</span>
                   </label>
                   <label class="custom-checkbox-card">
-                    <%= f.check_box :exclusivo_flag, class: "form-check-input mt-0" %>
+                    <%= f.check_box :exclusivo_flag, class: "form-check-input mt-0", disabled: signal_flags_locked %>
                     <span class="small fw-semibold">Exclusivo</span>
                   </label>
                   <label class="custom-checkbox-card">
-                    <%= f.check_box :imovel_dwv, { class: "form-check-input mt-0" }, "Sim", "Não" %>
+                    <%= f.check_box :imovel_dwv, { class: "form-check-input mt-0", disabled: signal_flags_locked }, "Sim", "Não" %>
                     <span class="small fw-semibold">Imóvel DWV</span>
                   </label>
                 </div>

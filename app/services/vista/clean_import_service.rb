@@ -274,6 +274,7 @@ module Vista
         end
 
         habitation = Habitation.find_or_initialize_by(codigo: codigo)
+        attrs.delete(:exibir_no_site_flag) if habitation.persisted?
         habitation.skip_auto_audit = true if habitation.respond_to?(:skip_auto_audit=)
         habitation.assign_attributes(attrs)
         habitation.save!
@@ -416,8 +417,7 @@ module Vista
         proprietor_id: @proprietor_id_by_vista_code[owner_code],
         proprietario: value(row["SR_PROPRIETARIO"]),
         proprietario_codigo: owner_code,
-        exibir_no_site_flag: yes?(row["EXIBIR_NO_SITE_SALUTE"]) || yes?(row["EXIBIR_NO_SIT_SALUTE"]) || yes?(row["DA_WEB"]),
-        exibir_no_site_salute_flag: yes?(row["EXIBIR_NO_SITE_SALUTE"]) || yes?(row["EXIBIR_NO_SIT_SALUTE"]),
+        exibir_no_site_flag: vista_salute_publication_flag(row),
         destaque_web_flag: yes?(row["DESTAQUE_WEB"]),
         lancamento_flag: yes?(row["LANCAMENTO"]),
         mobiliado_flag: yes?(row["MOBILIADO"]),
@@ -509,6 +509,10 @@ module Vista
         vista_import_batch_id: @batch.id,
         vista_payload: row
       }.merge(location_flag_attrs(row)).compact
+    end
+
+    def vista_salute_publication_flag(row)
+      yes?(row["EXIBIR_NO_SITE_SALUTE"]) || yes?(row["EXIBIR_NO_SIT_SALUTE"])
     end
 
     def upsert_address(habitation, row)

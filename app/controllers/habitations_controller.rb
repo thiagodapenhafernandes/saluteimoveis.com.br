@@ -1,8 +1,9 @@
 class HabitationsController < ApplicationController
   include HabitationCaching
   include ActionView::Helpers::NumberHelper
-  before_action :set_habitation, only: [:show, :schedule_visit, :share_link]
   before_action :authenticate_admin_user!, only: [:share_link]
+  before_action :set_habitation, only: [:show, :schedule_visit]
+  before_action :set_share_habitation, only: [:share_link]
   
   # GET /habitations
   # GET /imoveis
@@ -243,6 +244,18 @@ class HabitationsController < ApplicationController
     reason = @habitation&.public_unavailable_reason || "nao encontrado"
     Rails.logger.info("[HabitationPublicShow] id=#{params[:id].inspect} indisponivel: #{reason}")
     redirect_to habitations_path, alert: 'Imóvel não encontrado ou indisponível no momento.'
+  end
+
+  def set_share_habitation
+    @habitation = find_public_habitation(params[:id])
+    return if @habitation&.publicly_viewable?
+
+    reason = @habitation&.public_unavailable_reason || "nao encontrado"
+    Rails.logger.info("[HabitationShare] id=#{params[:id].inspect} indisponivel: #{reason}")
+    render json: {
+      success: false,
+      error: "Publique o imóvel no site antes de compartilhar."
+    }, status: :unprocessable_entity
   end
 
   def find_public_habitation(identifier)

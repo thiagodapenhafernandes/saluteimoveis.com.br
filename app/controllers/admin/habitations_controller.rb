@@ -69,8 +69,8 @@ class Admin::HabitationsController < Admin::BaseController
     "codigo_empreendimento" => "Cod empreendimento"
   }.freeze
   SORT_OPTIONS = {
-    "data_cadastro_crm" => { label: "Mais recentes", column: "COALESCE(habitations.data_cadastro_crm, habitations.created_at)", default_direction: "desc" },
-    "codigo" => { label: "Referência", column: "codigo", default_direction: "asc" },
+    "data_cadastro_crm" => { label: "Mais recentes", column: "(CASE WHEN habitations.codigo ~ '^[0-9]+$' THEN habitations.codigo::bigint END)", default_direction: "desc" },
+    "codigo" => { label: "Referência", column: "(CASE WHEN habitations.codigo ~ '^[0-9]+$' THEN habitations.codigo::bigint END)", default_direction: "asc" },
     "categoria" => { label: "Categoria", column: "categoria", default_direction: "asc" },
     "endereco" => { label: "Endereço", column: "endereco", default_direction: "asc" },
     "numero" => { label: "Endereço número", column: "numero", default_direction: "asc" },
@@ -91,7 +91,8 @@ class Admin::HabitationsController < Admin::BaseController
   before_action :load_autocomplete_data, only: [:new, :edit, :create, :update]
   before_action :load_property_setting, only: [:new, :edit, :create, :update]
   helper_method :can_view_proprietor_data?, :can_view_internal_documents?, :can_manage_internal_documents?,
-                :can_view_habitation_show_sensitive_data?, :can_edit_habitation?, :sort_options
+                :can_view_habitation_show_sensitive_data?, :can_edit_habitation?, :sort_options,
+                :can_manage_habitation_signal_flags?
   helper_method :can_release_intake_to_broker?, :can_manage_intake_status?, :can_complete_admin_intake_review?
   helper_method :can_filter_by_broker?, :can_filter_by_proprietor?
 
@@ -767,6 +768,14 @@ class Admin::HabitationsController < Admin::BaseController
       .uniq
   end
 
+  def extract_multi_select_strings(param_key)
+    Array(params[param_key])
+      .flatten
+      .map { |value| value.to_s.strip }
+      .reject { |value| value.blank? || value == "Todas" }
+      .uniq
+  end
+
   def excluded_commercial_neighborhood?(name)
     I18n.transliterate(name.to_s).squish.downcase == "praia brava balneario camboriu"
   end
@@ -784,7 +793,8 @@ class Admin::HabitationsController < Admin::BaseController
     @q = params[:q]
     @referencia = params[:referencia]
     @status = params[:status]
-    @categoria = params[:categoria]
+    @categorias = extract_multi_select_strings(:categoria)
+    @categoria = @categorias
     @logradouro = params[:logradouro]
     @numero = params[:numero]
     @cep = params[:cep]
@@ -818,7 +828,7 @@ class Admin::HabitationsController < Admin::BaseController
     @proprietor_id = can_filter_by_proprietor? ? params[:proprietor_id] : nil
     @destaque_web = params[:destaque_web]
     @festival_salute = params[:festival_salute]
-    @exibir_no_site_salute = params[:exibir_no_site_salute]
+    @exibir_no_site = params[:exibir_no_site].presence || params[:exibir_no_site_salute]
     @publicar_imovelweb_2 = params[:publicar_imovelweb_2]
     @publicar_netimoveis_2 = params[:publicar_netimoveis_2]
     @publicar_lais_ai = params[:publicar_lais_ai]
@@ -985,7 +995,7 @@ class Admin::HabitationsController < Admin::BaseController
     scope = scope.where("area_privativa_m2 <= ?", area_privativa_max) if area_privativa_max
     scope = apply_boolean_filter(scope, @destaque_web, :destaque_web_flag)
     scope = apply_boolean_filter(scope, @festival_salute, :festival_salute_flag)
-    scope = apply_boolean_filter(scope, @exibir_no_site_salute, :exibir_no_site_salute_flag)
+    scope = apply_boolean_filter(scope, @exibir_no_site, :exibir_no_site_flag)
     scope = apply_boolean_filter(scope, @publicar_imovelweb_2, :publicar_imovelweb_2)
     scope = apply_boolean_filter(scope, @publicar_netimoveis_2, :publicar_netimoveis_2)
     scope = apply_boolean_filter(scope, @publicar_lais_ai, :publicar_lais_ai)
@@ -1213,6 +1223,10 @@ class Admin::HabitationsController < Admin::BaseController
     current_admin_user&.admin? || administrative_profile?
   end
 
+  def can_manage_habitation_signal_flags?
+    current_admin_user&.admin? || owns_all_resource?(:imoveis)
+  end
+
   def no_duplicate_address?(habitation)
     result = HabitationDuplicateChecker.new(
       street: habitation.logradouro,
@@ -1401,30 +1415,45 @@ class Admin::HabitationsController < Admin::BaseController
   end
 
   def apply_category_filter(scope, raw_category)
-    category = raw_category.to_s.squish
-    return scope if category.blank? || category == "Todas"
+    categories = Array(raw_category).map(&:to_s).map(&:squish).reject { |category| category.blank? || category == "Todas" }.uniq
+    return scope if categories.blank?
 
+    predicates = categories.map { |category| category_filter_predicate(category) }
+    sql = predicates.map(&:first).map { |predicate| "(#{predicate})" }.join(" OR ")
+    binds = predicates.flat_map { |predicate| predicate.drop(1) }
+
+    scope.where([sql, *binds])
+  end
+
+  def category_filter_predicate(category)
     normalized_category = I18n.transliterate(category).downcase
 
     case normalized_category
     when "apartamento"
-      scope.where("unaccent(habitations.categoria) ILIKE unaccent(?)", "%apartamento%")
+      ["unaccent(habitations.categoria) ILIKE unaccent(?)", "%apartamento%"]
     when "casa"
-      scope.where("unaccent(habitations.categoria) IN (unaccent('Casa'), unaccent('Casa de Rua'))")
+      ["unaccent(habitations.categoria) IN (unaccent('Casa'), unaccent('Casa de Rua'))"]
     when "casa em condominio"
-      scope.where("unaccent(habitations.categoria) ILIKE unaccent(?)", "%casa%condominio%")
+      ["unaccent(habitations.categoria) ILIKE unaccent(?)", "%casa%condominio%"]
     when "sala comercial"
-      scope.where("unaccent(habitations.categoria) ILIKE unaccent(?)", "%sala%comercial%")
+      ["unaccent(habitations.categoria) ILIKE unaccent(?)", "%sala%comercial%"]
     when "terreno"
-      scope.where("unaccent(habitations.categoria) ILIKE unaccent(?)", "%terreno%")
+      ["unaccent(habitations.categoria) ILIKE unaccent(?)", "%terreno%"]
     when "empreendimento"
-      scope.where(tipo: "Empreendimento")
+      ["habitations.tipo = ?", "Empreendimento"]
     when "garden"
-      scope.garden
+      ["habitations.garden_flag = ?", true]
     when "diferenciado"
-      scope.diferenciado
+      [
+        "unaccent(habitations.categoria) ILIKE unaccent('Diferenciado') OR " \
+        "habitations.caracteristicas ? 'Diferenciado' OR " \
+        "EXISTS (" \
+        "SELECT 1 FROM unnest((#{Habitation::SearchScopes::UNIQUE_FEATURES_ARRAY_SQL})) AS feature " \
+        "WHERE unaccent(feature) ILIKE unaccent('Diferenciado')" \
+        ")"
+      ]
     else
-      scope.where("unaccent(TRIM(habitations.categoria)) = unaccent(?)", category)
+      ["unaccent(TRIM(habitations.categoria)) = unaccent(?)", category]
     end
   end
 
@@ -1619,7 +1648,7 @@ class Admin::HabitationsController < Admin::BaseController
     permitted = params.require(:habitation).permit(*permitted_habitation_fields)
     strip_blank_photo_uploads!(permitted)
 
-    unless current_admin_user&.admin? || owns_all_resource?(:imoveis)
+    unless can_manage_habitation_signal_flags?
       permitted = permitted.except(*broker_protected_habitation_param_keys)
     end
 
@@ -1982,7 +2011,7 @@ class Admin::HabitationsController < Admin::BaseController
       :cabecudas_flag, :camboriu_flag, :centro_flag, :estaleirinho_flag, 
       :frente_mar_avenida_atlantica_flag, :itajai_flag, :itapema_flag, :nacoes_flag, 
       :pioneiros_flag, :praia_brava_flag, :praia_dos_amores_flag, :vista_frente_mar_flag, 
-      :festival_salute_flag, :exibir_no_site_salute_flag, :tem_placa_flag, :imovel_dwv,
+      :festival_salute_flag, :tem_placa_flag, :imovel_dwv,
       :publicar_imovelweb_2, :publicar_netimoveis_2, :publicar_lais_ai, :publicar_loft,
       :publicar_chaves_na_mao, :publicar_casa_mineira, :publicar_imovelweb, :publicar_viva_real_vrsync,
       :destaque_chaves_na_mao, :periodo_locacao_chaves_na_mao,
@@ -2022,6 +2051,13 @@ class Admin::HabitationsController < Admin::BaseController
     %w[
       admin_user_id
       broker_assignments_attributes
+      exibir_no_site_flag
+      destaque_web_flag
+      festival_salute_flag
+      lancamento_flag
+      tem_placa_flag
+      exclusivo_flag
+      imovel_dwv
       codigo_empreendimento
       nome_empreendimento
       titulo_anuncio

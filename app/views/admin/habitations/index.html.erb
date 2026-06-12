@@ -145,9 +145,16 @@
   }
   .filter-search-input .form-control,
   .filter-search-input .input-group-text,
+  .filter-primary-relations .form-select,
   .filter-inline-fields .form-select {
     min-height: 31px;
     height: 31px;
+  }
+  .filter-primary-relations {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.38rem;
+    margin-top: 0.75rem;
   }
   .filter-inline-fields {
     display: grid;
@@ -798,7 +805,7 @@
     permuta_vehicle permuta_property permuta_others permuta_min_value permuta_location
     permuta_min_dorms permuta_min_suites permuta_min_garagens
     situacao face ocupacao_status estado_conservacao area_total_min area_total_max area_privativa_min area_privativa_max
-    destaque_web festival_salute exibir_no_site_salute tem_placa exclusivo empreendimento_codigo corretor_id proprietor_id regiao_foco
+    destaque_web festival_salute exibir_no_site tem_placa exclusivo proprietor_id regiao_foco
     publicar_imovelweb_2 publicar_lais_ai
     publicar_chaves_na_mao publicar_casa_mineira publicar_imovelweb publicar_viva_real_vrsync
     captacao_inicio captacao_fim somente_com_imagens somente_sem_imagens somente_dwv
@@ -810,12 +817,12 @@
   extras_open = true
   vista_advanced_keys = %w[
     situacao face ocupacao_status estado_conservacao area_total_min area_total_max area_privativa_min area_privativa_max
-    destaque_web festival_salute exibir_no_site_salute tem_placa exclusivo banheiros dorms suites vagas
+    destaque_web festival_salute exibir_no_site tem_placa exclusivo banheiros dorms suites vagas
     foto_classificacao
     amenities
     publicar_imovelweb_2 publicar_lais_ai
     publicar_chaves_na_mao publicar_casa_mineira publicar_imovelweb publicar_viva_real_vrsync
-    empreendimento_codigo corretor_id proprietor_id permuta_vehicle permuta_property permuta_others permuta_min_value
+    proprietor_id permuta_vehicle permuta_property permuta_others permuta_min_value
     permuta_location permuta_min_dorms permuta_min_suites permuta_min_garagens regiao_foco
     captacao_inicio captacao_fim somente_com_imagens somente_sem_imagens somente_dwv
   ]
@@ -873,6 +880,38 @@
             <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
             <%= f.text_field :q, value: params[:q], class: "form-control border-start-0", placeholder: "Empreendimento, endereço, bairro..." %>
           </div>
+          <div class="filter-primary-relations">
+            <div>
+              <label class="form-label small fw-bold text-muted text-uppercase">Empreendimento</label>
+              <%= f.select :empreendimento_codigo,
+                           @filter_empreendimentos,
+                           { include_blank: "Todos", selected: params[:empreendimento_codigo] },
+                           {
+                             class: "form-select",
+                             data: {
+                               controller: "tom-select",
+                               tom_select_create_value: false,
+                               tom_select_options_value: { placeholder: "Selecione empreendimento" }
+                             }
+                           } %>
+            </div>
+            <% if can_filter_by_broker? %>
+              <div>
+                <label class="form-label small fw-bold text-muted text-uppercase">Corretor</label>
+                <%= f.select :corretor_id,
+                             @filter_brokers,
+                             { include_blank: "Todos", selected: params[:corretor_id] },
+                             {
+                               class: "form-select",
+                               data: {
+                                 controller: "tom-select",
+                                 tom_select_create_value: false,
+                                 tom_select_options_value: { placeholder: "Selecione corretor" }
+                               }
+                             } %>
+              </div>
+            <% end %>
+          </div>
         </div>
 
         <div class="filter-pane filter-pane-secondary">
@@ -887,7 +926,18 @@
             </div>
             <div>
               <label class="form-label small fw-bold text-muted text-uppercase">Categoria</label>
-              <%= f.select :categoria, @filter_categories, { include_blank: "Todas", selected: params[:categoria] }, class: "form-select" %>
+              <%= f.select :categoria,
+                           options_for_select(@filter_categories, @categorias),
+                           {},
+                           {
+                             multiple: true,
+                             class: "form-select filter-multi-compact",
+                             data: {
+                               controller: "tom-select",
+                               tom_select_create_value: false,
+                               tom_select_options_value: { placeholder: "Todas" }
+                             }
+                           } %>
             </div>
           </div>
         </div>
@@ -1028,40 +1078,10 @@
             <i class="bi bi-grid-3x3-gap me-2"></i>Filtro avançado
           </summary>
           <div class="p-3 border-top rounded-bottom-3 filter-advanced-body">
-            <div class="border rounded-3 p-3 mb-3">
-              <h6 class="fw-bold text-secondary mb-3">Localização</h6>
-              <div class="row g-3">
-                <div class="col-md-3">
-                  <label class="form-label small fw-bold text-muted text-uppercase">Empreendimento</label>
-                  <%= f.select :empreendimento_codigo,
-                               @filter_empreendimentos,
-                               { include_blank: "Todos", selected: params[:empreendimento_codigo] },
-                               {
-                                 class: "form-select",
-                                 data: {
-                                   controller: "tom-select",
-                                   tom_select_create_value: false,
-                                   tom_select_options_value: { placeholder: "Selecione empreendimento" }
-                                 }
-                               } %>
-                </div>
-                <% if can_filter_by_broker? %>
-                  <div class="col-md-3">
-                    <label class="form-label small fw-bold text-muted text-uppercase">Corretor</label>
-                    <%= f.select :corretor_id,
-                                 @filter_brokers,
-                                 { include_blank: "Todos", selected: params[:corretor_id] },
-                                 {
-                                   class: "form-select",
-                                   data: {
-                                     controller: "tom-select",
-                                     tom_select_create_value: false,
-                                     tom_select_options_value: { placeholder: "Selecione corretor" }
-                                   }
-                                 } %>
-                  </div>
-                <% end %>
-                <% if can_filter_by_proprietor? %>
+            <% if can_filter_by_proprietor? %>
+              <div class="border rounded-3 p-3 mb-3">
+                <h6 class="fw-bold text-secondary mb-3">Vínculos</h6>
+                <div class="row g-3">
                   <div class="col-md-3">
                     <label class="form-label small fw-bold text-muted text-uppercase">Proprietário</label>
                     <%= f.select :proprietor_id,
@@ -1076,9 +1096,9 @@
                                    }
                                  } %>
                   </div>
-                <% end %>
+                </div>
               </div>
-            </div>
+            <% end %>
 
             <div class="border rounded-3 p-3 mb-3">
               <h6 class="fw-bold text-secondary mb-3">Características</h6>
@@ -1197,10 +1217,10 @@
                                class: "form-select" %>
                 </div>
                 <div class="col-md-3">
-                  <label class="form-label small fw-bold text-muted text-uppercase">Exibir no site Salute</label>
-                  <%= f.select :exibir_no_site_salute,
+                  <label class="form-label small fw-bold text-muted text-uppercase">Exibir no site</label>
+                  <%= f.select :exibir_no_site,
                                [["Sim", "1"], ["Não", "0"]],
-                               { include_blank: "Todos", selected: params[:exibir_no_site_salute] },
+                               { include_blank: "Todos", selected: params[:exibir_no_site].presence || params[:exibir_no_site_salute] },
                                class: "form-select" %>
                 </div>
               </div>
@@ -1603,7 +1623,8 @@
   active_filter_chips << "Referência: #{params[:referencia]}" if params[:referencia].present?
   active_filter_chips << "Busca: #{params[:q]}" if params[:q].present?
   active_filter_chips << "Status: #{params[:status]}" if params[:status].present?
-  active_filter_chips << "Categoria: #{params[:categoria]}" if params[:categoria].present?
+	  selected_category_labels = Array(params[:categoria]).map(&:to_s).map(&:strip).reject(&:blank?)
+	  active_filter_chips << "Categoria: #{selected_category_labels.join(', ')}" if selected_category_labels.any?
   active_filter_chips << "Rua: #{params[:logradouro]}" if params[:logradouro].present?
   active_filter_chips << "Número: #{params[:numero]}" if params[:numero].present?
   active_filter_chips << "CEP: #{params[:cep]}" if params[:cep].present?
