@@ -33,10 +33,10 @@
           <a href="<%= image_url.call(images.first) %>"
              data-fancybox="property-gallery"
              data-caption="<%= title %> - Foto 1"
-             class="relative block h-full overflow-hidden bg-gray-950">
-            <%= image_tag public_image_url(images.first, resize_to_limit: [1200, 900]),
+             class="relative block h-full overflow-hidden bg-gray-100">
+            <%= image_tag public_image_url(images.first, resize_to_fill: [1200, 900]),
                 alt: "#{title} - Foto 1",
-                class: "h-full w-full object-contain",
+                class: "h-full w-full object-cover object-center",
                 fetchpriority: "high",
                 loading: "eager",
                 decoding: "async",
@@ -50,10 +50,10 @@
               <a href="<%= image_url.call(photo) %>"
                  data-fancybox="property-gallery"
                  data-caption="<%= title %> - Foto <%= index + 2 %>"
-                 class="relative block overflow-hidden bg-gray-950">
-                <%= image_tag public_image_url(photo, resize_to_limit: [720, 520]),
+                 class="relative block overflow-hidden bg-gray-100">
+                <%= image_tag public_image_url(photo, resize_to_fill: [720, 520]),
                     alt: "#{title} - Foto #{index + 2}",
-                    class: "h-full w-full object-contain",
+                    class: "h-full w-full object-cover object-center",
                     loading: "lazy",
                     decoding: "async",
                     width: 720,
