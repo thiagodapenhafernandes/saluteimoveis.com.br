@@ -863,10 +863,15 @@
             <span class="filter-pane-kicker">Busca</span>
             <strong>Localizar imóvel</strong>
           </div>
+          <label class="form-label small fw-bold text-muted text-uppercase">Código / referência</label>
+          <div class="input-group filter-search-input mb-3">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-hash text-muted"></i></span>
+            <%= f.text_field :referencia, value: params[:referencia], class: "form-control border-start-0", placeholder: "Ex.: 8615" %>
+          </div>
           <label class="form-label small fw-bold text-muted text-uppercase">Palavra-chave</label>
           <div class="input-group filter-search-input">
             <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-            <%= f.text_field :q, value: params[:q], class: "form-control border-start-0", placeholder: "Código, empreendimento, endereço..." %>
+            <%= f.text_field :q, value: params[:q], class: "form-control border-start-0", placeholder: "Empreendimento, endereço, bairro..." %>
           </div>
         </div>
 
@@ -1517,7 +1522,7 @@
     <span class="small text-muted fw-semibold">
       <span class="text-dark fw-bold"><%= @habitations.count %></span> de <%= Habitation.count %>
     </span>
-    <% if params[:q].present? || params[:status].present? || params[:categoria].present? || params[:scope].present? || @ownership_scope == "mine" || @intake_review.present? || active_extra_filters_count.positive? %>
+    <% if params[:q].present? || params[:referencia].present? || params[:status].present? || params[:categoria].present? || params[:scope].present? || @ownership_scope == "mine" || @intake_review.present? || active_extra_filters_count.positive? %>
       <span class="badge bg-warning-subtle text-warning border">Filtrando</span>
     <% end %>
   </div>
@@ -1595,6 +1600,7 @@
 
 <%
   active_filter_chips = []
+  active_filter_chips << "Referência: #{params[:referencia]}" if params[:referencia].present?
   active_filter_chips << "Busca: #{params[:q]}" if params[:q].present?
   active_filter_chips << "Status: #{params[:status]}" if params[:status].present?
   active_filter_chips << "Categoria: #{params[:categoria]}" if params[:categoria].present?

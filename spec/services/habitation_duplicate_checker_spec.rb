@@ -74,6 +74,28 @@ RSpec.describe HabitationDuplicateChecker do
     expect(result.matches).to include(house)
   end
 
+  it "compara logradouros antigos com tipo embutido contra logradouros normalizados" do
+    house = create(:habitation, status: "Venda", nome_empreendimento: nil, bloco: nil, complemento: nil)
+    house.create_address!(
+      tipo_endereco: nil,
+      logradouro: "Rua 3000",
+      numero: "50",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+
+    result = described_class.new(
+      street: "3000",
+      number: "50",
+      building: "",
+      unit: "",
+      status: "Venda"
+    ).call
+
+    expect(result.matches).to include(house)
+  end
+
   it "libera casa em condomínio no mesmo endereço quando complemento é diferente" do
     existing = create(:habitation, categoria: "Casa em Condomínio", status: "Venda", bloco: nil)
     existing.create_address!(

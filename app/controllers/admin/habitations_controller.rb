@@ -782,6 +782,7 @@ class Admin::HabitationsController < Admin::BaseController
 
   def load_index_filters
     @q = params[:q]
+    @referencia = params[:referencia]
     @status = params[:status]
     @categoria = params[:categoria]
     @logradouro = params[:logradouro]
@@ -855,6 +856,7 @@ class Admin::HabitationsController < Admin::BaseController
               catalog_visible_habitations_scope(scope)
             end
 
+    scope = scope.where("LOWER(TRIM(habitations.codigo)) = LOWER(?)", @referencia.to_s.strip) if @referencia.present?
     scope = scope.admin_search_text(@q) if @q.present?
 
     scope = apply_status_filter(scope, @status)
@@ -1115,7 +1117,7 @@ class Admin::HabitationsController < Admin::BaseController
 
   def data_export_filters
     params.to_unsafe_h.slice(
-      "q", "status", "categoria", "tipo", "bairro", "cidade", "codigo", "corretor",
+      "q", "referencia", "status", "categoria", "tipo", "bairro", "cidade", "codigo", "corretor",
       "selected_ids", "report_type", "data_format", "fields", "sort", "direction"
     )
   end

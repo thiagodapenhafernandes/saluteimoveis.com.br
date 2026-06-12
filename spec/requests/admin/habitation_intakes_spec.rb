@@ -446,6 +446,66 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(intake.reload.intake_step).to eq("endereco")
   end
 
+  it "exibe tipo de endereço separado do logradouro na ficha de captação" do
+    intake = create(:habitation, :broker_intake, admin_user: admin, intake_step: "endereco")
+
+    get edit_admin_captacao_path(intake, step: "endereco")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Tipo de endereço")
+    expect(response.body).to include("Logradouro")
+    expect(response.body).to include("Avenida")
+    expect(response.body).to include("Rua")
+    expect(response.body).not_to include("Rua / Avenida")
+  end
+
+  it "salva tipo de endereço sem duplicar rua ou avenida no logradouro" do
+    intake = create(:habitation, :broker_intake, admin_user: admin, intake_step: "endereco")
+
+    patch admin_captacao_path(intake), params: {
+      current_step: "endereco",
+      direction: "forward",
+      habitation: {
+        zip_code: "88330-000",
+        street_type: "Rua",
+        street: "Rua 3000",
+        street_number: "50",
+        neighborhood: "Centro",
+        city: "Balneário Camboriú",
+        state: "SC",
+        edificio_nome: "Residencial Central",
+        unidade_numero: "101"
+      }
+    }
+
+    expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "caracteristicas"))
+    intake.reload
+    expect(intake.address.tipo_endereco).to eq("Rua")
+    expect(intake.address.logradouro).to eq("3000")
+  end
+
+  it "infere o tipo quando o corretor cola rua ou avenida no logradouro" do
+    intake = create(:habitation, :broker_intake, admin_user: admin, categoria: "Casa", intake_step: "endereco")
+
+    patch admin_captacao_path(intake), params: {
+      current_step: "endereco",
+      direction: "forward",
+      habitation: {
+        zip_code: "88330-000",
+        street: "Avenida Brasil",
+        street_number: "100",
+        neighborhood: "Centro",
+        city: "Balneário Camboriú",
+        state: "SC"
+      }
+    }
+
+    expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "caracteristicas"))
+    intake.reload
+    expect(intake.address.tipo_endereco).to eq("Avenida")
+    expect(intake.address.logradouro).to eq("Brasil")
+  end
+
   it "exige cidade do proprietário no passo de proprietário" do
     intake = create(:habitation, :broker_intake, admin_user: admin, intake_step: "proprietario")
 
@@ -1166,7 +1226,8 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     intake.reload
     expect(intake.nome_empreendimento).to eq("Residencial Alterado")
     expect(intake.address).to have_attributes(
-      logradouro: "Rua Alterada",
+      tipo_endereco: "Rua",
+      logradouro: "Alterada",
       numero: "200",
       bairro: "Barra Sul",
       cidade: "Itajaí",

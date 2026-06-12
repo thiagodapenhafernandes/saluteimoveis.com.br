@@ -492,7 +492,7 @@ module Admin
       when "endereco"
         missing = []
         missing << "Informe o CEP." if @habitation.cep.blank?
-        missing << "Informe a rua/avenida." if @habitation.logradouro.blank?
+        missing << "Informe o logradouro." if @habitation.logradouro.blank?
         missing << "Informe o número." if @habitation.numero.blank?
         missing << "Informe o bairro." if @habitation.bairro.blank?
         missing << "Informe a cidade." if @habitation.cidade.blank?
@@ -701,7 +701,7 @@ module Admin
         :andar, :ano_construcao, :demi_suites_qtd, :numero_box, :tipo_vaga,
         :dimensoes_terreno, :topografia, :key_location, :key_location_notes,
         :corretor_nome, :corretor_telefone, :corretor_email, :ordered_photo_ids,
-        :zip_code, :street, :street_number, :neighborhood, :city, :state, :edificio_nome, :unidade_numero,
+        :zip_code, :street_type, :street, :street_number, :neighborhood, :city, :state, :edificio_nome, :unidade_numero,
         :chaves_com, :senha_imovel, :senha_portaria,
         { caracteristicas: [], infra_estrutura: [], caracteristica_unica: [],
           caracteristicas_imovel: [], caracteristicas_predio: [], aceita_permuta: [], outras_taxas: [], dias_visitas: [],
@@ -765,11 +765,16 @@ module Admin
       attrs["photos"] = attrs.delete("fotos") if attrs["fotos"].present?
       attrs["autorizacoes_venda"] = Array(attrs.delete("autorizacao_pdf")) if attrs["autorizacao_pdf"].present?
       normalize_intake_land_extra_fields!(attrs)
-      address_keys = %w[zip_code street street_number neighborhood city state]
+      address_keys = %w[zip_code street_type street street_number neighborhood city state]
       if address_keys.any? { |key| attrs.key?(key) }
+        street_type = attrs.delete("street_type")
+        street = attrs.delete("street")
+        street_type, street = Address.extract_street_type(street) if street_type.blank? && street.present?
+
         attrs["address_attributes"] = {
           cep: attrs.delete("zip_code"),
-          logradouro: attrs.delete("street"),
+          tipo_endereco: street_type,
+          logradouro: street,
           numero: attrs.delete("street_number"),
           bairro: attrs.delete("neighborhood"),
           cidade: attrs.delete("city"),

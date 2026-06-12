@@ -12,6 +12,7 @@ class LeadsController < ApplicationController
     @lead = Lead.new(lead_params)
     @lead.source_url = request.referer
     apply_share_attribution(@lead)
+    responsible_broker = lead_responsible_broker(@lead)
     
     if @lead.save
       habitation = Habitation.find_by(id: @lead.property_id)
@@ -43,7 +44,7 @@ class LeadsController < ApplicationController
         gclid: params.dig(:lead, :gclid),
         fbclid: params.dig(:lead, :fbclid),
         msclkid: params.dig(:lead, :msclkid)
-      ).compact, request: request)
+      ).merge(responsible_broker_payload(responsible_broker)).compact, request: request)
 
       # Send Emails (Async)
       LeadMailer.with(lead: @lead).new_lead_notification.deliver_later
@@ -93,5 +94,23 @@ class LeadsController < ApplicationController
     lead.admin_user_id = share_link.admin_user_id
     lead.shared_by_admin_user_id = share_link.admin_user_id
     lead.origin = "Compartilhamento Corretor" if lead.origin.blank?
+  end
+
+  def lead_responsible_broker(lead)
+    return AdminUser.find_by(id: lead.admin_user_id) if lead.admin_user_id.present?
+
+    nil
+  end
+
+  def responsible_broker_payload(admin_user)
+    return {} unless admin_user
+
+    {
+      responsible_broker_id: admin_user.id,
+      responsible_broker_name: admin_user.name,
+      responsible_broker_email: admin_user.email,
+      responsible_broker_phone: admin_user.phone,
+      responsible_broker_creci: admin_user.creci
+    }
   end
 end

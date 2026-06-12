@@ -21,7 +21,7 @@ class HabitationDuplicateChecker
     return Result.new(complete: false, matches: [], comparison: comparison) unless complete_identity?
 
     candidates = base_scope
-      .where("#{normalized_sql("COALESCE(addresses.logradouro, habitations.endereco)")} = :street", street: normalize(@street))
+      .where(street_match_sql("COALESCE(addresses.logradouro, habitations.endereco)"), street: normalize_street(@street))
       .where("#{normalized_sql("COALESCE(addresses.numero, habitations.numero)")} = :number", number: normalize(@number))
       .where(status: normalized_status)
       .where(exibir_no_site_flag: true)
@@ -129,6 +129,10 @@ class HabitationDuplicateChecker
     I18n.transliterate(value.to_s.downcase).gsub(/[^a-z0-9]+/, "")
   end
 
+  def normalize_street(value)
+    normalize(Address.extract_street_type(value).last)
+  end
+
   def normalize_unit(value)
     normalize(value).sub(/\A(apartamento|apto|unidade|unid|un|bloco|bl|ap)/, "")
   end
@@ -140,5 +144,13 @@ class HabitationDuplicateChecker
 
   def normalized_sql(expression)
     "regexp_replace(unaccent(lower(COALESCE(#{expression}, ''))), '[^a-z0-9]+', '', 'g')"
+  end
+
+  def normalized_street_sql(expression)
+    "regexp_replace(#{Address.street_type_prefix_sql(expression)}, '[^a-z0-9]+', '', 'g')"
+  end
+
+  def street_match_sql(expression)
+    "(#{normalized_sql(expression)} = :street OR #{normalized_street_sql(expression)} = :street)"
   end
 end

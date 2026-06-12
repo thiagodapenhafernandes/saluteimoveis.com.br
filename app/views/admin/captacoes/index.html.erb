@@ -156,7 +156,7 @@
             <span>Código</span>
             <strong>
               <% if c.codigo.present? %>
-                <%= link_to c.codigo, admin_habitations_path(q: c.codigo), class: "text-decoration-none" %>
+                <%= link_to c.codigo, admin_habitations_path(referencia: c.codigo), class: "text-decoration-none" %>
               <% else %>
                 —
               <% end %>
@@ -245,7 +245,7 @@
               </td>
               <td class="small">
                 <% if c.codigo.present? %>
-                  <%= link_to c.codigo, admin_habitations_path(q: c.codigo), class: "badge bg-light text-dark border text-decoration-none" %>
+                  <%= link_to c.codigo, admin_habitations_path(referencia: c.codigo), class: "badge bg-light text-dark border text-decoration-none" %>
                 <% else %>
                   —
                 <% end %>
