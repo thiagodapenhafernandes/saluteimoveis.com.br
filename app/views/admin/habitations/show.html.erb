@@ -69,19 +69,80 @@
   }
 
   .habitation-show-photo {
-    aspect-ratio: 16 / 10;
     background: #f8fafc;
-    border-radius: 12px;
     object-fit: cover;
     width: 100%;
   }
 
-  .habitation-show-gallery-thumb {
-    aspect-ratio: 1 / 1;
+  .habitation-show-gallery-mosaic {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    box-shadow: 0 8px 28px rgba(15, 23, 42, .08);
+    display: grid;
+    gap: .375rem;
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+    height: clamp(340px, 38vw, 480px);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .habitation-show-gallery-mosaic--single {
+    grid-template-columns: 1fr;
+  }
+
+  .habitation-show-gallery-main,
+  .habitation-show-gallery-tile {
     background: #f8fafc;
-    border-radius: 10px;
+    display: block;
+    min-height: 0;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .habitation-show-gallery-main img,
+  .habitation-show-gallery-tile img {
+    height: 100%;
     object-fit: cover;
     width: 100%;
+  }
+
+  .habitation-show-gallery-side {
+    display: grid;
+    gap: .375rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    min-height: 0;
+  }
+
+  .habitation-show-gallery-button {
+    align-items: center;
+    background: #fff;
+    border: 0;
+    border-radius: .75rem;
+    bottom: 1.25rem;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, .18);
+    color: #0f172a;
+    display: inline-flex;
+    font-weight: 800;
+    gap: .5rem;
+    padding: .65rem 1rem;
+    position: absolute;
+    right: 1.25rem;
+    z-index: 2;
+  }
+
+  .habitation-show-gallery-button:hover {
+    background: #f8fafc;
+  }
+
+  .habitation-show-gallery-placeholder {
+    align-items: center;
+    background: #f8fafc;
+    border-radius: 16px;
+    color: #94a3b8;
+    display: flex;
+    height: 360px;
+    justify-content: center;
   }
 
   .habitation-show-badge-list {
@@ -113,6 +174,15 @@
 
     .habitation-show-actions .btn {
       flex: 1 1 auto;
+    }
+
+    .habitation-show-gallery-mosaic {
+      display: block;
+      height: 360px;
+    }
+
+    .habitation-show-gallery-side {
+      display: none;
     }
   }
 </style>
@@ -346,45 +416,59 @@
   </div>
 
   <div class="row g-3">
-    <div class="col-12 col-xl-5">
-      <div class="habitation-show-card h-100" data-controller="fancybox-gallery">
-        <% if primary_photo.present? %>
-          <%= link_to primary_photo[:url], data: { fancybox: "admin-habitation-show-gallery", caption: primary_photo[:caption] } do %>
-            <%= image_tag primary_photo[:thumb], class: "habitation-show-photo mb-3", alt: primary_photo[:caption] %>
-          <% end %>
-        <% else %>
-          <div class="habitation-show-photo mb-3 d-flex align-items-center justify-content-center text-muted">
-            <i class="bi bi-image display-4 opacity-25"></i>
-          </div>
-        <% end %>
-
-        <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
-          <div class="habitation-show-section-title mb-0">Fotos</div>
-          <% if photo_sources.any? %>
-            <button type="button" class="btn btn-outline-primary btn-sm fw-semibold" data-gallery-open>
-              <i class="bi bi-images me-1"></i>Abrir galeria
-            </button>
-          <% end %>
-        </div>
-
+    <div class="col-12">
+      <div data-controller="fancybox-gallery">
         <% if photo_sources.any? %>
-          <div class="row g-2">
-            <% photo_sources.drop(1).each do |photo| %>
-              <div class="col-4">
-                <%= link_to photo[:url], class: "d-block position-relative", data: { fancybox: "admin-habitation-show-gallery", caption: photo[:caption] } do %>
-                  <%= image_tag photo[:thumb], class: "habitation-show-gallery-thumb", alt: photo[:caption] %>
-                  <span class="position-absolute top-0 start-0 badge bg-dark bg-opacity-75 m-1"><%= photo[:badge] %></span>
+          <div class="habitation-show-gallery-mosaic <%= 'habitation-show-gallery-mosaic--single' if photo_sources.one? %>">
+            <%= link_to primary_photo[:url],
+                        class: "habitation-show-gallery-main",
+                        data: { fancybox: "admin-habitation-show-gallery", caption: primary_photo[:caption] } do %>
+              <%= image_tag primary_photo[:thumb],
+                            class: "habitation-show-photo",
+                            alt: primary_photo[:caption],
+                            loading: "eager",
+                            decoding: "async" %>
+            <% end %>
+
+            <% if photo_sources.many? %>
+              <div class="habitation-show-gallery-side">
+                <% photo_sources.drop(1).first(4).each do |photo| %>
+                  <%= link_to photo[:url],
+                              class: "habitation-show-gallery-tile",
+                              data: { fancybox: "admin-habitation-show-gallery", caption: photo[:caption] } do %>
+                    <%= image_tag photo[:thumb],
+                                  class: "habitation-show-photo",
+                                  alt: photo[:caption],
+                                  loading: "lazy",
+                                  decoding: "async" %>
+                  <% end %>
                 <% end %>
               </div>
             <% end %>
+
+            <% photo_sources.drop(5).each do |photo| %>
+              <%= link_to "", photo[:url],
+                          class: "d-none",
+                          data: { fancybox: "admin-habitation-show-gallery", caption: photo[:caption] } %>
+            <% end %>
+
+            <button type="button" class="habitation-show-gallery-button" data-gallery-open>
+              <i class="bi bi-images"></i>
+              Ver <%= photo_sources.size %> <%= photo_sources.size == 1 ? "foto" : "fotos" %>
+            </button>
           </div>
         <% else %>
-          <p class="habitation-show-muted mb-0">Nenhuma foto cadastrada.</p>
+          <div class="habitation-show-gallery-placeholder">
+            <div class="text-center">
+              <i class="bi bi-image display-4 opacity-50"></i>
+              <p class="mt-2 mb-0">Nenhuma foto cadastrada.</p>
+            </div>
+          </div>
         <% end %>
       </div>
     </div>
 
-    <div class="col-12 col-xl-7">
+    <div class="col-12">
       <div class="habitation-show-card h-100">
         <div class="habitation-show-section-title">Informações principais</div>
         <div class="row">

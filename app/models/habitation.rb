@@ -474,6 +474,7 @@ class Habitation < ApplicationRecord
   end
 
   def zip_code = cep
+  def street_type = tipo_endereco
   def street = logradouro
   def street_number = numero
   def neighborhood = bairro

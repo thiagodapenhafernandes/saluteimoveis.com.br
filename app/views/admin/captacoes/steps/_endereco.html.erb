@@ -21,21 +21,35 @@
   </div>
 
   <div class="row g-2">
-    <div class="col-8">
+    <div class="col-12 col-md-3">
       <div class="wizard-field-group">
-        <%= f.label :street, "Rua / Avenida", class: "form-label" %>
+        <%= f.label :street_type, "Tipo de endereço", class: "form-label" %>
+        <%= f.select :street_type,
+                     options_for_select(Habitation::STREET_TYPES, @captacao.street_type),
+                     { include_blank: "Selecione..." },
+                     class: field_state.call(:street_type, "form-select"),
+                     data: {
+                       cep_lookup_target: "streetType",
+                       action: "change->habitation-duplicate-check#schedule"
+                     } %>
+      </div>
+    </div>
+    <div class="col-12 col-md-5">
+      <div class="wizard-field-group">
+        <%= f.label :street, "Logradouro", class: "form-label" %>
         <span class="required-star">*</span>
         <%= f.text_field :street,
                          class: field_state.call(:street),
+                         placeholder: "Ex.: 129, Brasil, Central",
                          data: {
                            cep_lookup_target: "address",
                            habitation_duplicate_check_target: "street",
                            action: "input->habitation-duplicate-check#schedule blur->habitation-duplicate-check#check"
                          } %>
-        <% if field_invalid.call(:street) %><div class="invalid-feedback d-block">Informe a rua/avenida.</div><% end %>
+        <% if field_invalid.call(:street) %><div class="invalid-feedback d-block">Informe o logradouro.</div><% end %>
       </div>
     </div>
-    <div class="col-4">
+    <div class="col-12 col-md-4">
       <div class="wizard-field-group">
         <%= f.label :street_number, "Número", class: "form-label" %>
         <span class="required-star">*</span>

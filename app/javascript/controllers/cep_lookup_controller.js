@@ -7,6 +7,7 @@ import { Controller } from "@hotwired/stimulus"
 //
 // Targets:
 //   cep           — input do CEP (obrigatório)
+//   streetType    — seletor do tipo de endereço
 //   address       — logradouro
 //   neighborhood  — bairro
 //   city          — cidade
@@ -15,7 +16,7 @@ import { Controller } from "@hotwired/stimulus"
 //   button        — opcional: botão "Buscar" (troca ícone enquanto carrega)
 //   status        — opcional: elemento para mostrar mensagens de status
 export default class extends Controller {
-  static targets = ["cep", "address", "neighborhood", "city", "uf", "number", "button", "status"]
+  static targets = ["cep", "streetType", "address", "neighborhood", "city", "uf", "number", "button", "status"]
 
   connect() {
     // Formata CEP enquanto digita (xxxxx-xxx)
@@ -94,10 +95,60 @@ export default class extends Controller {
   }
 
   fillFields(data) {
-    if (this.hasAddressTarget && data.logradouro) this.addressTarget.value = data.logradouro
+    const address = this.extractStreetType(data.logradouro)
+
+    if (this.hasStreetTypeTarget && address.type) {
+      this.streetTypeTarget.value = address.type
+      this.dispatchInputEvents(this.streetTypeTarget)
+    }
+
+    if (this.hasAddressTarget && data.logradouro) {
+      this.addressTarget.value = address.street || data.logradouro
+      this.dispatchInputEvents(this.addressTarget)
+    }
+
     if (this.hasNeighborhoodTarget && data.bairro) this.neighborhoodTarget.value = data.bairro
     if (this.hasCityTarget && data.localidade) this.cityTarget.value = data.localidade
     if (this.hasUfTarget && data.uf) this.ufTarget.value = data.uf.toUpperCase()
+  }
+
+  extractStreetType(logradouro) {
+    const street = (logradouro || "").trim()
+    if (!street || !this.hasStreetTypeTarget) return { type: "", street }
+
+    const streetTypes = Array.from(this.streetTypeTarget.options)
+      .map((option) => option.value)
+      .filter(Boolean)
+
+    const aliases = {
+      Avenida: ["Avenida", "Av"],
+      Rua: ["Rua", "R"],
+      Alameda: ["Alameda", "Al"],
+      Travessa: ["Travessa", "Tv", "Trav"],
+      Rodovia: ["Rodovia", "Rod"],
+      Estrada: ["Estrada", "Est", "Estr"],
+      "Servidão": ["Servidão", "Servidao", "Serv"],
+      Beco: ["Beco"],
+      "Praça": ["Praça", "Praca", "Pç", "Pc"]
+    }
+
+    for (const type of streetTypes) {
+      for (const alias of (aliases[type] || [type]).sort((a, b) => b.length - a.length)) {
+        const escapedAlias = alias.replace(".", "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+        const pattern = new RegExp(`^${escapedAlias}\\.?\\s+`, "i")
+
+        if (pattern.test(street)) {
+          return { type, street: street.replace(pattern, "").trim() }
+        }
+      }
+    }
+
+    return { type: "", street }
+  }
+
+  dispatchInputEvents(target) {
+    target.dispatchEvent(new Event("input", { bubbles: true }))
+    target.dispatchEvent(new Event("change", { bubbles: true }))
   }
 
   async triggerGeocode(cepData = null) {

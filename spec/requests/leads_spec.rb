@@ -82,5 +82,53 @@ RSpec.describe "Leads", type: :request do
       expect(body["success"]).to be(true)
       expect(body["whatsapp_url"]).to include("wa.me/5547999990001")
     end
+
+    it "attributes share-token leads to the responsible broker and sends broker data to the webhook" do
+      broker = create(
+        :admin_user,
+        name: "Eliane Rosa",
+        email: "eliane@example.com",
+        phone: "(47) 99905-8447",
+        creci: "24685"
+      )
+      habitation = create(:habitation, valor_venda_cents: 0, valor_locacao_cents: 4_500_00, status: "Aluguel")
+      share_link = HabitationShareLink.create!(habitation: habitation, admin_user: broker)
+
+      expect(WebhookService).to receive(:send_form_data).with(
+        "whatsapp_lead",
+        hash_including(
+          property_code: habitation.codigo,
+          responsible_broker_id: broker.id,
+          responsible_broker_name: "Eliane Rosa",
+          responsible_broker_email: "eliane@example.com",
+          responsible_broker_phone: "(47) 99905-8447",
+          responsible_broker_creci: "24685",
+          "share_token" => share_link.token,
+          "admin_user_id" => broker.id,
+          "shared_by_admin_user_id" => broker.id
+        ),
+        request: kind_of(ActionDispatch::Request)
+      )
+
+      expect {
+        post leads_path, params: {
+          lead: {
+            name: "Cliente Compartilhado",
+            phone: "(47) 98888-7777",
+            property_id: habitation.id,
+            lead_type: "whatsapp_modal",
+            whatsapp_message: "Tenho interesse",
+            share_token: share_link.token,
+            business_type: "rent"
+          }
+        }, as: :json
+      }.to change(Lead, :count).by(1)
+
+      lead = Lead.last
+      expect(lead.admin_user_id).to eq(broker.id)
+      expect(lead.shared_by_admin_user_id).to eq(broker.id)
+      expect(lead.origin).to eq("Compartilhamento Corretor")
+      expect(response).to have_http_status(:ok)
+    end
   end
 end

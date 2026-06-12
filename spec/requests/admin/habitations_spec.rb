@@ -169,9 +169,31 @@ RSpec.describe "Admin::Habitations", type: :request do
     get edit_admin_habitation_path(development)
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include("Pesquisar por código/referência")
+    expect(response.body).not_to include("Pesquisar por código/referência")
     expect(response.body).to include("Nome do empreendimento:")
     expect(response.body).to include("Empreendimento Centro Cod. 54")
+  end
+
+  it "filtra por referência na listagem sem buscar número de rua ou prédio" do
+    reference_match = create(
+      :habitation,
+      codigo: "8615",
+      titulo_anuncio: "Imóvel correto por referência",
+      numero: "999"
+    )
+    address_number_match = create(
+      :habitation,
+      codigo: "9999",
+      titulo_anuncio: "Imóvel que só bate no número do endereço",
+      numero: "8615"
+    )
+
+    get admin_habitations_path(ownership: "all", referencia: "8615")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Código / referência")
+    expect(response.body).to include(reference_match.titulo_anuncio)
+    expect(response.body).not_to include(address_number_match.titulo_anuncio)
   end
 
   it "abre o cadastro pesquisando pelo código" do
@@ -1492,6 +1514,8 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("Apartamento completo para show")
     expect(response.body).to include("Edifício Visível")
+    expect(response.body).to include("habitation-show-gallery-mosaic")
+    expect(response.body).to include("Ver 2 fotos")
     expect(response.body).to include("https://example.com/foto-api-show.jpg")
     expect(response.body).to include("foto-local-show.jpg")
     expect(response.body).to include("data-fancybox")
