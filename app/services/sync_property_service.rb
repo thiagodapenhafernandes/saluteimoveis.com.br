@@ -71,7 +71,7 @@ class SyncPropertyService
         'Latitude', 'Longitude', 'TituloSite', 'Dormitorios', 'Suites', 'TotalBanheiros', 'Vagas',
         'AreaPrivativa', 'AreaTotal', 'Status', 'Situacao', 'ValorVenda', 'ValorLocacao',
         'ValorCondominio', 'ValorIptu', 'Empreendimento', 'CodigoEmpreendimento', 'Lancamento',
-        'DescricaoWeb', 'CaracteristicaUnica', 'Caracteristicas', 'InfraEstrutura', 'ExibirNoSite', 'DestaqueWeb', 'Categoria', 'Construtora',
+        'DescricaoWeb', 'CaracteristicaUnica', 'Caracteristicas', 'InfraEstrutura', 'ExibirNoSiteSalute', 'DestaqueWeb', 'Categoria', 'Construtora',
         'Proprietario', 'CodigoProprietario',
         { 'proprietarios' => ['Nome', 'Email', 'Celular', 'FoneComercial', 'FoneResidencial'] },
         'Corretor', 'CodigoCorretor',
@@ -153,7 +153,7 @@ class SyncPropertyService
       proprietario_celular: proprietor&.mobile_phone,
       proprietario_telefone_comercial: proprietor&.business_phone,
       proprietario_telefone_residencial: proprietor&.residential_phone,
-      exibir_no_site_flag: hb['ExibirNoSite'] == 'Sim',
+      exibir_no_site_flag: vista_salute_publication_flag(hb),
       destaque_web_flag: hb['DestaqueWeb'] == 'Sim',
       lancamento_flag: hb['Lancamento'] == 'Sim',
       data_cadastro_crm: parse_datetime_value(hb['DataCadastro']),
@@ -203,10 +203,17 @@ class SyncPropertyService
   end
 
   def filtered_habitation_attrs(attrs, existing_record:)
-    return attrs unless existing_record
-    return attrs unless preserve_manual_fields?
+    filtered_attrs = attrs.dup
+    filtered_attrs.delete(:exibir_no_site_flag) if existing_record
 
-    attrs.slice(*PRESERVED_MANUAL_MODE_FIELDS)
+    return filtered_attrs unless existing_record
+    return filtered_attrs unless preserve_manual_fields?
+
+    filtered_attrs.slice(*PRESERVED_MANUAL_MODE_FIELDS)
+  end
+
+  def vista_salute_publication_flag(hb)
+    hb['ExibirNoSiteSalute'].to_s.strip.casecmp("sim").zero?
   end
 
   def sync_address_for?(existing_record:)

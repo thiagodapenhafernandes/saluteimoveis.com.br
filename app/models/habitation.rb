@@ -93,6 +93,7 @@ class Habitation < ApplicationRecord
     "internal" => "Disponível internamente",
     "published" => "Liberado para site"
   }.freeze
+  BROKER_RELEASABLE_INTAKE_STATUSES = %w[admin_approved returned_to_broker].freeze
   CATALOG_VISIBLE_INTAKE_STATUSES = %w[internal published].freeze
   PENDING_REVIEW_INTAKE_STATUSES = %w[submitted_for_admin_review admin_approved].freeze
   PHOTO_FLOW_CHOICES = {
@@ -730,6 +731,14 @@ class Habitation < ApplicationRecord
     intake_status == "admin_approved"
   end
 
+  def intake_returned_to_broker?
+    intake_status == "returned_to_broker"
+  end
+
+  def broker_release_pending?
+    BROKER_RELEASABLE_INTAKE_STATUSES.include?(intake_status)
+  end
+
   def intake_internal?
     intake_status == "internal"
   end
@@ -814,7 +823,7 @@ class Habitation < ApplicationRecord
   end
 
   def broker_can_release_to_site?
-    intake_admin_approved? && intake_ready_for_admin_review?
+    broker_release_pending? && intake_ready_for_admin_review?
   end
 
   def intake_display_title

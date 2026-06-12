@@ -1,6 +1,8 @@
 require "rails_helper"
 
 RSpec.describe "Habitation details", type: :request do
+  include Devise::Test::IntegrationHelpers
+
   before do
     host! "localhost"
   end
@@ -275,6 +277,41 @@ RSpec.describe "Habitation details", type: :request do
       expect(page_text).to include("Locação com preço reduzido")
       expect(page_text).to include("R$ 6.000,00")
       expect(page_text).to include("R$ 5.000,00")
+    end
+  end
+
+  describe "POST /imoveis/:id/share_link" do
+    it "generates a broker share link for a public habitation" do
+      admin = create(:admin_user)
+      habitation = create(:habitation, codigo: "SHARE-OK", slug: "imovel-compartilhavel")
+
+      sign_in admin
+
+      expect do
+        post share_link_habitation_path(habitation), headers: { "ACCEPT" => "application/json" }
+      end.to change(HabitationShareLink, :count).by(1)
+
+      expect(response).to have_http_status(:ok)
+      payload = JSON.parse(response.body)
+      expect(payload.fetch("success")).to be(true)
+      expect(payload.fetch("url")).to include("share_token=")
+      expect(payload.fetch("url")).to include("/imoveis/imovel-compartilhavel")
+    end
+
+    it "does not generate a broker share link for a habitation unavailable on the site" do
+      admin = create(:admin_user)
+      habitation = create(:habitation, :unavailable, codigo: "SHARE-NO", slug: "imovel-interno")
+
+      sign_in admin
+
+      expect do
+        post share_link_habitation_path(habitation), headers: { "ACCEPT" => "application/json" }
+      end.not_to change(HabitationShareLink, :count)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      payload = JSON.parse(response.body)
+      expect(payload.fetch("success")).to be(false)
+      expect(payload.fetch("error")).to eq("Publique o imóvel no site antes de compartilhar.")
     end
   end
 

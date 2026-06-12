@@ -383,9 +383,9 @@ module Habitation::SearchScopes
       where(festival_salute_flag: true)
     }
 
-    # Exibir no Site Salute
+    # Compatibilidade para filtros antigos que usavam "Exibir no Site Salute".
     scope :exibir_site_salute, lambda {
-      where(exibir_no_site_salute_flag: true)
+      where(exibir_no_site_flag: true)
     }
 
     # Oportunidade (Preço Reduzido)
@@ -715,7 +715,7 @@ module Habitation::SearchScopes
           when 'aceita_financiamento_flag' then char_conditions = char_conditions.or(Habitation.aceita_financiamento)
           when 'garden_flag' then char_conditions = char_conditions.or(Habitation.garden)
           when 'festival_salute_flag' then char_conditions = char_conditions.or(Habitation.festival_salute)
-          when 'exibir_no_site_salute_flag' then char_conditions = char_conditions.or(Habitation.exibir_site_salute)
+          when 'exibir_no_site_flag', 'exibir_no_site_salute_flag' then char_conditions = char_conditions.or(Habitation.exibir_site_salute)
           when 'opportunity' then char_conditions = char_conditions.or(Habitation.opportunity)
           when 'na_planta' then char_conditions = char_conditions.or(Habitation.na_planta)
           when 'lancamento' then char_conditions = char_conditions.or(Habitation.lancamento)

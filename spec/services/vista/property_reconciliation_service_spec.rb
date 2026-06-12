@@ -122,6 +122,53 @@ RSpec.describe Vista::PropertyReconciliationService do
     end
   end
 
+  describe "publication mapping" do
+    let(:service) { described_class.new(codigos: ["9001"], dry_run: false) }
+
+    it "does not publish a new local property using only Vista ExibirNoSite" do
+      habitation = build(:habitation, codigo: "9001", exibir_no_site_flag: false)
+
+      service.send(
+        :update_property!,
+        habitation,
+        { "Codigo" => "9001", "ExibirNoSite" => "Sim", "ExibirNoSiteSalute" => "Nao" },
+        nil,
+        nil,
+        [],
+        []
+      )
+
+      expect(habitation.reload.exibir_no_site_flag).to be(false)
+    end
+
+    it "publishes a new local property when Vista ExibirNoSiteSalute is enabled" do
+      habitation = build(:habitation, codigo: "9002", exibir_no_site_flag: false)
+
+      service.send(
+        :update_property!,
+        habitation,
+        { "Codigo" => "9002", "ExibirNoSite" => "Nao", "ExibirNoSiteSalute" => "Sim" },
+        nil,
+        nil,
+        [],
+        []
+      )
+
+      expect(habitation.reload.exibir_no_site_flag).to be(true)
+    end
+
+    it "preserves the local publication flag for existing properties" do
+      published = create(:habitation, codigo: "9003", exibir_no_site_flag: true)
+      unpublished = create(:habitation, codigo: "9004", exibir_no_site_flag: false)
+
+      service.send(:update_property!, published, { "Codigo" => "9003", "ExibirNoSiteSalute" => "Nao" }, nil, nil, [], [])
+      service.send(:update_property!, unpublished, { "Codigo" => "9004", "ExibirNoSiteSalute" => "Sim" }, nil, nil, [], [])
+
+      expect(published.reload.exibir_no_site_flag).to be(true)
+      expect(unpublished.reload.exibir_no_site_flag).to be(false)
+    end
+  end
+
   describe "commission and rental management mapping" do
     let(:service) { described_class.new(codigos: ["8573"], dry_run: true) }
 

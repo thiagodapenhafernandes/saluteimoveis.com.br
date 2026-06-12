@@ -293,7 +293,7 @@ module Vista
         proprietor_id: proprietor&.id,
         proprietario: owner_name,
         proprietario_codigo: normalize_code(row["CODIGO_C"]),
-        exibir_no_site_flag: yes?(row["EXIBIR_NO_SITE_SALUTE"]) || yes?(row["EXIBIR_NO_SIT_SALUTE"]) || yes?(row["DA_WEB"]),
+        exibir_no_site_flag: vista_salute_publication_flag(row),
         destaque_web_flag: yes?(row["DESTAQUE_WEB"]),
         lancamento_flag: yes?(row["LANCAMENTO"]),
         mobiliado_flag: yes?(row["MOBILIADO"]),
@@ -327,6 +327,10 @@ module Vista
       return "Loja" if title.match?(/\bloja\b/)
 
       nil
+    end
+
+    def vista_salute_publication_flag(row)
+      yes?(row["EXIBIR_NO_SITE_SALUTE"]) || yes?(row["EXIBIR_NO_SIT_SALUTE"])
     end
 
     def default_title(row, category)

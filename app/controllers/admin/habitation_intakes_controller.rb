@@ -268,7 +268,7 @@ module Admin
     end
 
     def can_broker_release_to_site?(habitation)
-      return false unless habitation&.intake_admin_approved?
+      return false unless habitation&.broker_release_pending?
       return false if current_admin_user&.admin? || administrative_profile? || can?(:review, :captacoes)
 
       habitation.admin_user_id == current_admin_user&.id
