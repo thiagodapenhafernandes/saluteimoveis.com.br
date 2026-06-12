@@ -57,6 +57,31 @@ RSpec.describe "Habitation details", type: :request do
       expect(response.body).not_to include("Entrega")
     end
 
+    it "renders public gallery images filling their tiles without letterboxing" do
+      habitation = create(
+        :habitation,
+        codigo: "GALLERY-COVER",
+        slug: "galeria-sem-bordas",
+        pictures: [
+          { "url" => "https://example.com/foto-1.jpg" },
+          { "url" => "https://example.com/foto-2.jpg" },
+          { "url" => "https://example.com/foto-3.jpg" }
+        ]
+      )
+
+      get habitation_path(habitation)
+
+      expect(response).to have_http_status(:ok)
+      document = Nokogiri::HTML(response.body)
+      gallery_images = document.css("[data-fancybox='property-gallery'] img")
+      gallery_image_classes = gallery_images.map { |image| image["class"].to_s }
+
+      expect(gallery_images).not_to be_empty
+      expect(gallery_image_classes).to all(include("object-cover"))
+      expect(gallery_image_classes).not_to include(a_string_including("object-contain"))
+      expect(document.css("[data-fancybox='property-gallery'].bg-gray-950")).to be_empty
+    end
+
     it "does not expose broker phone or direct whatsapp link in the responsible attendant card" do
       broker = create(:admin_user, name: "Eliane Rosa", creci: "CREI24685", phone: "(47) 99905-8447")
       habitation = create(:habitation, codigo: "BROKER-CARD", slug: "apartamento-broker-card")
