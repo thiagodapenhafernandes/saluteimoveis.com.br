@@ -98,6 +98,7 @@ Rails.application.routes.draw do
     resource :impersonation, only: [:destroy]
     resources :habitations do
       post :sync, on: :member
+      patch :update_photos, on: :member
       post :generate_ai_preview, on: :member
       patch :format_ai_suggestion, on: :member
       patch :apply_ai_suggestion, on: :member

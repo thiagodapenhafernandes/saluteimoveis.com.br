@@ -85,6 +85,48 @@ RSpec.describe Habitation, type: :model do
     end
   end
 
+  describe "intake visit note fields" do
+    it "stores owner city and visit days inside structured visit notes" do
+      habitation = described_class.new(observacoes_visitas: "Senha do imóvel: 123")
+
+      habitation.proprietario_cidade = "Itajaí"
+      habitation.dias_visitas = "Seg manhã, Qua tarde"
+
+      expect(habitation.proprietario_cidade).to eq("Itajaí")
+      expect(habitation.dias_visitas).to eq(["Seg manhã", "Qua tarde"])
+      expect(habitation.observacoes_visitas).to include("Senha do imóvel: 123")
+      expect(habitation.observacoes_visitas).to include("Cidade do proprietário: Itajaí")
+      expect(habitation.observacoes_visitas).to include("Dias/horários para visita: Seg manhã, Qua tarde")
+    end
+  end
+
+  describe "#intake_missing_requirements" do
+    it "accepts address complement as the apartment unit number" do
+      habitation = build(:habitation, categoria: "Apartamento", bloco: "")
+      habitation.ensure_address.complemento = "101"
+
+      expect(habitation).to be_requires_unit_number
+      expect(habitation).to be_intake_unit_number_present
+      expect(habitation.intake_missing_requirements).not_to include("Número da unidade")
+    end
+
+    it "uses the linked proprietor city for owner data requirements" do
+      proprietor = build(:proprietor, city: "Balneário Camboriú")
+      habitation = build(:habitation, proprietor: proprietor, proprietario: "Hans", proprietario_celular: "(47) 99999-0000")
+
+      expect(habitation.proprietario_cidade).to eq("Balneário Camboriú")
+      expect(habitation.intake_missing_requirements).not_to include("Dados do proprietário")
+    end
+
+    it "accepts manual visit notes without treating technical note lines as visit availability" do
+      technical_notes = described_class.new(observacoes_visitas: "Cidade do proprietário: Itajaí")
+      manual_notes = described_class.new(observacoes_visitas: "Proprietário libera acesso com a portaria")
+
+      expect(technical_notes).not_to be_intake_visit_days_present
+      expect(manual_notes).to be_intake_visit_days_present
+    end
+  end
+
   describe "#unavailable_for_duplicate_check?" do
     it "keeps hidden-from-site properties unavailable for duplicate blocking" do
       habitation = described_class.new(status: "Aluguel", exibir_no_site_flag: false)

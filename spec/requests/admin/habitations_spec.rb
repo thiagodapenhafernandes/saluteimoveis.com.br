@@ -92,6 +92,45 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body.scan('form="admin_habitation_form"').size).to be >= 4
   end
 
+  it "exibe salvamento dedicado para fotos no cadastro do imóvel" do
+    habitation = create(:habitation, codigo: "PHOTO-BTN-#{SecureRandom.hex(6)}")
+
+    get edit_admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Salvar fotos")
+    expect(response.body).to include(update_photos_admin_habitation_path(habitation))
+    expect(response.body).to include('data-photo-upload-target="dirtyStatus"')
+  end
+
+  it "salva ordem e visibilidade das fotos pelo endpoint dedicado" do
+    first_url = "https://example.com/first.jpg"
+    second_url = "https://example.com/second.jpg"
+    habitation = create(
+      :habitation,
+      codigo: "PHOTO-SAVE-#{SecureRandom.hex(6)}",
+      pictures: [
+        { "url" => first_url, "ordem" => 1 },
+        { "url" => second_url, "ordem" => 2 }
+      ]
+    )
+
+    patch update_photos_admin_habitation_path(habitation), params: {
+      habitation: {
+        ordered_picture_indices: "1,0",
+        site_hidden_picture_urls: second_url,
+        foto_classificacao: "Profissionais"
+      }
+    }
+
+    expect(response).to redirect_to(edit_admin_habitation_path(habitation, anchor: "media"))
+    habitation.reload
+    expect(habitation.pictures.map { |picture| picture["url"] }).to eq([second_url, first_url])
+    expect(habitation.pictures.first["site_hidden"]).to eq(true)
+    expect(habitation.pictures.second["site_hidden"]).to eq(false)
+    expect(habitation.foto_classificacao).to eq("Profissionais")
+  end
+
   it "não inclui ações de exclusão de anexos como método do formulário principal" do
     habitation = create(
       :habitation,
