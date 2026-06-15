@@ -3,6 +3,7 @@ class HabitationsController < ApplicationController
   include ActionView::Helpers::NumberHelper
   before_action :authenticate_admin_user!, only: [:share_link]
   before_action :set_habitation, only: [:show, :schedule_visit]
+  before_action :redirect_to_canonical_habitation_url, only: [:show]
   before_action :set_share_habitation, only: [:share_link]
   
   # GET /habitations
@@ -167,9 +168,12 @@ class HabitationsController < ApplicationController
     # increment_view_count(@habitation.id)
     
     # Meta tags dinâmicas
-    @page_title = @habitation.seo_title
-    @page_description = @habitation.seo_description.presence || default_property_description(@habitation)
-    @page_keywords = @habitation.seo_keywords
+    property_metadata = Seo::PropertyMetadataBuilder.new(@habitation).attributes
+    @page_title = property_metadata[:meta_title]
+    @page_description = property_metadata[:meta_description].presence || default_property_description(@habitation)
+    @page_keywords = property_metadata[:meta_keywords]
+    @page_name = property_metadata[:page_name]
+    @canonical_url = habitation_url(@habitation)
     
     # Image for social sharing (Open Graph)
     @page_image = share_image_url_for(@habitation)
@@ -256,6 +260,19 @@ class HabitationsController < ApplicationController
       success: false,
       error: "Publique o imóvel no site antes de compartilhar."
     }, status: :unprocessable_entity
+  end
+
+  def redirect_to_canonical_habitation_url
+    return unless @habitation&.publicly_viewable?
+    return unless request.get? && request.format.html?
+    return unless request.path.start_with?("/imoveis/")
+
+    canonical_path = habitation_path(@habitation)
+    return if request.path == canonical_path
+
+    query_string = request.query_string.to_s
+    target = query_string.present? ? "#{canonical_path}?#{query_string}" : canonical_path
+    redirect_to target, status: :moved_permanently
   end
 
   def find_public_habitation(identifier)

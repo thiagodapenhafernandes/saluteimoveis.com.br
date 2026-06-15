@@ -5,7 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     
     <%
-      seo = current_public_seo_setting || SeoSetting.for_page(@page_name || 'home')
+      social_property = defined?(@habitation) ? @habitation : nil
+      property_page = social_property.present?
+      seo = current_public_seo_setting
+      if seo.blank? && property_page
+        property_key = "property:#{social_property.codigo.presence || social_property.id}"
+        property_seo = SeoSetting.for_canonical_key(property_key)
+        seo = property_seo if property_seo&.public_applicable? && property_seo.manual_mode?
+      end
+      seo ||= SeoSetting.for_page(@page_name || 'home') unless property_page
       seo_public = seo&.public_applicable?
       effective_title = (seo_public ? seo.meta_title.presence : nil) || @page_title || "#{@layout_setting&.site_name.presence || 'Salute Imóveis'} - Encontre seu Imóvel Ideal"
       effective_description = (seo_public ? seo.meta_description.presence : nil) || @page_description || "Os melhores imóveis para venda e locação. Encontre seu imóvel ideal com a #{@layout_setting&.site_name.presence || 'Salute Imóveis'}."
@@ -42,10 +50,9 @@
     <% 
       sanitize_utf8 = ->(value) { value.to_s.encode("UTF-8", invalid: :replace, undef: :replace, replace: "").scrub }
       final_image = seo&.social_image_url(base_url: request.base_url, page_image: @page_image) || "#{request.base_url}/icon.png"
-      canonical_url = sanitize_utf8.call(seo_public ? seo.public_url(request.base_url) : request.original_url)
+      canonical_url = sanitize_utf8.call(@canonical_url.presence || (seo_public ? seo.public_url(request.base_url) : request.original_url))
       og_title = sanitize_utf8.call((seo_public ? seo.og_title.presence : nil) || effective_title)
       og_description = strip_tags((seo_public ? seo.og_description.presence : nil) || effective_description)
-      social_property = defined?(@habitation) ? @habitation : nil
       og_type = social_property.present? ? "product" : "website"
       image_alt = sanitize_utf8.call([og_title, @layout_setting&.site_name.presence || "Salute Imóveis"].reject(&:blank?).join(" | "))
       social_price_cents = if social_property.present?

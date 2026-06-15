@@ -50,7 +50,7 @@ module Habitation::SeoHelpers
   
   # URL canônica para SEO
   def canonical_url
-    "#{ENV.fetch('APP_HOST', 'https://saluteimoveis.com')}/imovel/#{slug}"
+    "#{ENV.fetch('APP_HOST', 'https://saluteimoveis.com.br')}/imoveis/#{slug}"
   end
   
   # Open Graph tags

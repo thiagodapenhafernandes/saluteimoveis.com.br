@@ -26,6 +26,64 @@ RSpec.describe "Habitation details", type: :request do
       expect(JSON.parse(response.body).fetch("codigo")).to eq("8397")
     end
 
+    it "redirects legacy html slugs to the current canonical property URL preserving share token" do
+      create(
+        :habitation,
+        codigo: "8565",
+        categoria: "Casa",
+        slug: "casa-balneario-camboriu-centro-8565"
+      )
+
+      get "/imoveis/apartamento-8565?share_token=abc123"
+
+      expect(response).to redirect_to("/imoveis/casa-balneario-camboriu-centro-8565?share_token=abc123")
+      expect(response).to have_http_status(:moved_permanently)
+    end
+
+    it "renders property metadata from current property data instead of home or stale automatic SEO" do
+      create(
+        :seo_setting,
+        page_name: "home",
+        canonical_key: "home",
+        meta_title: "SEO da Home",
+        og_title: "SEO da Home",
+        canonical_path: "/"
+      )
+      seo = create(
+        :seo_setting,
+        page_name: "imovel:8565",
+        canonical_key: "property:8565",
+        page_type: "property_show",
+        canonical_path: "/imoveis/apartamento-8565",
+        meta_title: "Apartamento 8565 em Balneário Camboriú",
+        og_title: "Apartamento 8565 em Balneário Camboriú",
+        manual_mode: false
+      )
+      habitation = create(
+        :habitation,
+        codigo: "8565",
+        categoria: "Casa",
+        slug: "casa-balneario-camboriu-centro-8565",
+        titulo_anuncio: "Casa locação anual com 3 dormitórios no Centro"
+      )
+
+      get habitation_path(habitation)
+
+      expect(response).to have_http_status(:ok)
+      document = Nokogiri::HTML(response.body)
+      expect(document.at_css("title").text).to eq("Casa locação anual com 3 dormitórios no Centro | Salute Imóveis")
+      expect(document.at_css("meta[property='og:title']")["content"]).to eq("Casa locação anual com 3 dormitórios no Centro | Salute Imóveis")
+      expect(document.at_css("meta[property='og:url']")["content"]).to eq("http://localhost/imoveis/casa-balneario-camboriu-centro-8565")
+      expect(document.at_css("link[rel='canonical']")["href"]).to eq("http://localhost/imoveis/casa-balneario-camboriu-centro-8565")
+      expect(document.at_css("title").text).not_to include("Apartamento 8565")
+      expect(document.at_css("title").text).not_to include("SEO da Home")
+      expect(seo.reload).to have_attributes(
+        meta_title: "Casa locação anual com 3 dormitórios no Centro | Salute Imóveis",
+        og_title: "Casa locação anual com 3 dormitórios no Centro | Salute Imóveis",
+        canonical_path: "/imoveis/casa-balneario-camboriu-centro-8565"
+      )
+    end
+
     it "treats a numeric public URL as the property code" do
       create(:habitation, codigo: "8397", slug: "casa-em-condominio-8397")
 
