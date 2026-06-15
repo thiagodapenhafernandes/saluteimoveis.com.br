@@ -23,7 +23,7 @@ module Seo
           next
         end
 
-        attributes = PropertyMetadataBuilder.new(habitation).attributes.merge(
+        attributes = PropertyMetadataBuilder.new(habitation).attributes.except(:canonical_key, :page_name).merge(
           controller_name: "habitations",
           action_name: "show",
           normalized_params: {},
