@@ -71,6 +71,42 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include("Salvar e sair")
   end
 
+  it "mantém cadastro administrativo vinculado a corretor em revisão ao salvar sem concluir" do
+    broker = create(:admin_user, name: "Adriana Stark")
+
+    expect {
+      post admin_habitations_path, params: {
+        save_navigation: "exit",
+        habitation: {
+          admin_user_id: broker.id,
+          categoria: "Apartamento",
+          status: "Venda",
+          tipo: "Unitário",
+          titulo_anuncio: "Apartamento à venda 3 suítes no Centro de Itapema",
+          address_attributes: {
+            logradouro: "Governador Celso Ramos",
+            numero: "00",
+            complemento: "3701",
+            bairro: "Centro",
+            cidade: "Itapema",
+            uf: "SC",
+            cep: "88220-000"
+          }
+        }
+      }
+    }.to change(Habitation, :count).by(1)
+
+    expect(response).to redirect_to(admin_habitations_path)
+    habitation = Habitation.order(:created_at).last
+    expect(habitation).to have_attributes(
+      intake_origin: Habitation::INTAKE_ORIGIN_BROKER,
+      intake_status: "submitted_for_admin_review",
+      admin_user_id: broker.id,
+      exibir_no_site_flag: false
+    )
+    expect(habitation.submitted_for_review_at).to be_present
+  end
+
   it "mantém ações de revisão administrativa vinculadas ao formulário principal" do
     habitation = create(
       :habitation,
