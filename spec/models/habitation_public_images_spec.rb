@@ -47,6 +47,49 @@ RSpec.describe Habitation, type: :model do
       expect(first_source["url"]).to eq(vista_picture["url"])
     end
 
+    it "combina fotos próprias com fotos do empreendimento vinculado" do
+      development = create(:habitation, codigo: "DEV-1150", tipo: "Empreendimento", pictures: [], skip_auto_audit: true)
+      development.photos.attach(
+        io: StringIO.new("foto empreendimento"),
+        filename: "empreendimento.jpg",
+        content_type: "image/jpeg"
+      )
+
+      habitation = create(:habitation, codigo_empreendimento: development.codigo, pictures: [], skip_auto_audit: true)
+      habitation.photos.attach(
+        io: StringIO.new("foto unidade"),
+        filename: "unidade.jpg",
+        content_type: "image/jpeg"
+      )
+
+      public_attachments = habitation.reload.public_image_sources.filter_map { |source| source["attachment"] }
+
+      expect(public_attachments).to eq([
+        habitation.photos.attachments.first,
+        development.photos.attachments.first
+      ])
+    end
+
+    it "usa fotos do empreendimento vinculado mesmo sem flag manual quando o imóvel não tem foto própria" do
+      development = create(:habitation, codigo: "DEV-4120", tipo: "Empreendimento", pictures: [], skip_auto_audit: true)
+      development.photos.attach(
+        io: StringIO.new("foto empreendimento"),
+        filename: "empreendimento.jpg",
+        content_type: "image/jpeg"
+      )
+      habitation = create(
+        :habitation,
+        codigo_empreendimento: development.codigo,
+        pictures: [],
+        use_development_photos_flag: false,
+        skip_auto_audit: true
+      )
+
+      public_attachments = habitation.reload.public_image_sources.filter_map { |source| source["attachment"] }
+
+      expect(public_attachments).to contain_exactly(development.photos.attachments.first)
+    end
+
     it "não inclui fotos anexadas marcadas como internas no conjunto público" do
       habitation = create(:habitation, imovel_dwv: "Nao")
       habitation.photos.attach(

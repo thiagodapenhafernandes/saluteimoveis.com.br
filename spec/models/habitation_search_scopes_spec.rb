@@ -21,6 +21,27 @@ RSpec.describe Habitation::SearchScopes, type: :model do
       expect(result).not_to include(unit_without_public_photo)
     end
 
+    it "treats linked development photos as public photos for linked units" do
+      development = create(
+        :habitation,
+        codigo: "DEV-PHOTOS",
+        tipo: "Empreendimento",
+        pictures: [],
+        fotos_empreendimento: [{ "url" => "https://example.com/development.jpg" }],
+        skip_auto_audit: true
+      )
+      linked_unit = create(
+        :habitation,
+        tipo: "Unitário",
+        pictures: [],
+        codigo_empreendimento: development.codigo,
+        use_development_photos_flag: false,
+        skip_auto_audit: true
+      )
+
+      expect(Habitation.with_photos).to include(linked_unit)
+    end
+
     it "allows development photos for developments" do
       development = create(
         :habitation,
