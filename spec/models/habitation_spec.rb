@@ -42,6 +42,28 @@ RSpec.describe Habitation, type: :model do
     end
   end
 
+  describe "#display_title" do
+    it "replaces a conflicting neighborhood from imported titles with the current neighborhood" do
+      habitation = described_class.new(
+        titulo_anuncio: "Casa para alugar com 3 suítes na Barra Sul",
+        bairro: "Pioneiros",
+        categoria: "Casa"
+      )
+
+      expect(habitation.display_title).to eq("Casa para alugar com 3 suítes em Pioneiros")
+    end
+
+    it "keeps the imported title when its neighborhood matches the record" do
+      habitation = described_class.new(
+        titulo_anuncio: "Apartamento para venda na Barra Sul",
+        bairro: "Barra Sul",
+        categoria: "Apartamento"
+      )
+
+      expect(habitation.display_title).to eq("Apartamento para venda na Barra Sul")
+    end
+  end
+
   describe "third-party commercial values" do
     it "stores formatted third-party values in cents" do
       habitation = described_class.new(

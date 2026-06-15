@@ -23,6 +23,12 @@ class Habitation < ApplicationRecord
   ].freeze
 
   TITLE_CATEGORY_TERMS = (CATEGORIES + PUBLIC_FILTER_EXTRA_CATEGORIES).sort_by { |category| -category.length }.freeze
+  TITLE_LOCATION_TERMS = [
+    "Barra Sul", "Barra Norte", "Centro", "Pioneiros", "Nações", "Praia Brava",
+    "Cabeçudas", "Fazenda", "Tabuleiro", "Estados", "Municípios", "Vila Real",
+    "Nova Esperança", "São Judas", "Ariribá", "Estaleirinho", "Itajaí", "Itapema",
+    "Camboriú", "Balneário Camboriú", "Porto Belo"
+  ].freeze
 
   STATUS_OPTIONS = [
     'Venda', 'Aluguel', 'Diária', 'Pendente', 'Lançamento', 'Suspenso',
@@ -1224,7 +1230,7 @@ class Habitation < ApplicationRecord
   
   # Retorna o título para exibição
   def display_title
-    titulo_anuncio.presence || default_title
+    sanitized_display_title.presence || default_title
   end
 
   # Description fallback for legacy/plain-text and rich text sources.
@@ -1253,6 +1259,20 @@ class Habitation < ApplicationRecord
     parts << "em #{bairro}" if bairro.present?
     parts << cidade if cidade.present?
     parts.join(' ')
+  end
+
+  def sanitized_display_title
+    title = titulo_anuncio.to_s.strip
+    return if title.blank?
+    title_neighborhood = bairro.presence || self[:bairro]
+    return title if title_neighborhood.blank?
+
+    normalized_neighborhood = title_neighborhood.to_s.parameterize
+    location_terms = TITLE_LOCATION_TERMS.reject { |term| term.parameterize == normalized_neighborhood }
+    return title if location_terms.blank?
+
+    location_pattern = Regexp.union(location_terms.sort_by { |term| -term.length })
+    title.gsub(/\b(?:na|no|em)\s+(#{location_pattern})\b/i, "em #{title_neighborhood}")
   end
 
   def title_category_terms_in_title
