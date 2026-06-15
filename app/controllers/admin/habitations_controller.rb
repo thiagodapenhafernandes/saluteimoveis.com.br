@@ -1385,6 +1385,7 @@ class Admin::HabitationsController < Admin::BaseController
     return if habitation.admin_user_id.blank? || habitation.admin_user_id == current_admin_user&.id
 
     habitation.intake_status = "submitted_for_admin_review"
+    habitation.intake_step = "review" if habitation.intake_step.blank? || habitation.intake_step == "intro"
   end
 
   def mark_intake_as_admin_approved(habitation)
