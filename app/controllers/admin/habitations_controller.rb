@@ -376,6 +376,7 @@ class Admin::HabitationsController < Admin::BaseController
     end
 
     assign_proprietor_from_legacy_fields(@habitation) if current_admin_user&.admin?
+    normalize_admin_paper_intake_plain_save_status(@habitation, releasing_to_broker:, saving_internal_intake:)
     apply_intake_status_transition_metadata(@habitation)
 
     unless no_duplicate_address?(@habitation)
@@ -1375,6 +1376,15 @@ class Admin::HabitationsController < Admin::BaseController
     habitation.intake_status ||= "draft"
     habitation.admin_user ||= current_admin_user
     habitation.exibir_no_site_flag = false unless habitation.intake_internal? || habitation.intake_published?
+  end
+
+  def normalize_admin_paper_intake_plain_save_status(habitation, releasing_to_broker:, saving_internal_intake:)
+    return if releasing_to_broker || saving_internal_intake
+    return unless habitation.new_record? && admin_paper_intake_form?
+    return unless habitation.broker_intake? && habitation.intake_draft?
+    return if habitation.admin_user_id.blank? || habitation.admin_user_id == current_admin_user&.id
+
+    habitation.intake_status = "submitted_for_admin_review"
   end
 
   def mark_intake_as_admin_approved(habitation)
