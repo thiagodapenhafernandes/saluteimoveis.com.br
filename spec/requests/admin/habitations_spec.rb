@@ -101,6 +101,7 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(habitation).to have_attributes(
       intake_origin: Habitation::INTAKE_ORIGIN_BROKER,
       intake_status: "submitted_for_admin_review",
+      intake_step: "review",
       admin_user_id: broker.id,
       exibir_no_site_flag: false
     )
