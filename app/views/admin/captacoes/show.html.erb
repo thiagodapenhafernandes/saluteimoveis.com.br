@@ -29,7 +29,7 @@
 <% end %>
 
 <% if can_broker_release_to_site?(@captacao) && !@captacao.broker_can_release_to_site? %>
-  <% missing_requirements = @captacao.intake_missing_requirements %>
+  <% missing_requirements = @captacao.intake_missing_requirements(require_owner_city: true) %>
   <div class="alert alert-danger">
     <i class="bi bi-exclamation-triangle-fill me-1"></i>
     <strong>Esta captação ainda não está pronta para liberar no site.</strong>

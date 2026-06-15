@@ -99,8 +99,8 @@ module Admin
         end
 
         if current_step == "review"
-          unless @habitation.intake_ready_for_admin_review?
-            @habitation.intake_missing_requirements.each { |message| @habitation.errors.add(:base, message) }
+          unless @habitation.intake_ready_for_admin_review?(require_owner_city: true)
+            @habitation.intake_missing_requirements(require_owner_city: true).each { |message| @habitation.errors.add(:base, message) }
             @step = current_step
             render "admin/captacoes/edit", status: :unprocessable_entity
             return
@@ -152,12 +152,12 @@ module Admin
         return
       end
 
-      if @habitation.intake_ready_for_admin_review? && @habitation.save
+      if @habitation.intake_ready_for_admin_review?(require_owner_city: true) && @habitation.save
         submitted_records = HabitationIntakeSplitter.new(@habitation).call!
         redirect_to admin_captacao_path(@habitation), notice: submission_notice(submitted_records)
       else
         load_form_options
-        @missing_requirements = @habitation.intake_missing_requirements
+        @missing_requirements = @habitation.intake_missing_requirements(require_owner_city: true)
         flash.now[:alert] = "Complete os campos obrigatórios antes de enviar."
         @captacao = @habitation
         @step = "review"
@@ -168,8 +168,8 @@ module Admin
     def approve
       link_proprietor_from_intake_fields
 
-      unless @habitation.intake_ready_for_admin_review?
-        missing = @habitation.intake_missing_requirements.to_sentence
+      unless @habitation.intake_ready_for_admin_review?(require_owner_city: true)
+        missing = @habitation.intake_missing_requirements(require_owner_city: true).to_sentence
         redirect_to admin_captacao_path(@habitation),
                     alert: "Complete os campos obrigatórios antes de aprovar: #{missing}."
         return
@@ -201,7 +201,7 @@ module Admin
       end
 
       unless @habitation.broker_can_release_to_site?
-        missing = @habitation.intake_missing_requirements.to_sentence
+        missing = @habitation.intake_missing_requirements(require_owner_city: true).to_sentence
         alert = "Esta captação ainda não está pronta para liberar no site."
         alert = "#{alert} Pendências: #{missing}." if missing.present?
         redirect_to admin_captacao_path(@habitation), alert: alert
