@@ -1362,6 +1362,8 @@ module Vista
     def clearable_property_attrs(api)
       {
         pais: clearable_value(api, "Pais"),
+        complemento: clearable_value(api, "Complemento"),
+        nome_empreendimento: clearable_value(api, "Empreendimento"),
         agenciador: clearable_value(api, "AdministradoraCondominio"),
         data_entrega: clearable_datetime(api, "DataEntrega"),
         andar: clearable_integer(api, "AndarDoApto"),
@@ -1398,7 +1400,8 @@ module Vista
 
     def clearable_address_attrs(api)
       {
-        pais: clearable_value(api, "Pais")
+        pais: clearable_value(api, "Pais"),
+        complemento: clearable_value(api, "Complemento")
       }.reject { |_key, attr_value| attr_value == :__not_available__ }
     end
 

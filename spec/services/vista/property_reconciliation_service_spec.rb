@@ -169,6 +169,29 @@ RSpec.describe Vista::PropertyReconciliationService do
     end
   end
 
+  describe "clearable Vista fields" do
+    let(:service) { described_class.new(codigos: ["6659"], dry_run: false) }
+
+    it "clears stale development name and complement when Vista sends those fields blank" do
+      property_attrs = service.send(
+        :clearable_property_attrs,
+        {
+          "Empreendimento" => "",
+          "Complemento" => ""
+        }
+      )
+      address_attrs = service.send(
+        :clearable_address_attrs,
+        {
+          "Complemento" => ""
+        }
+      )
+
+      expect(property_attrs).to include(nome_empreendimento: nil, complemento: nil)
+      expect(address_attrs).to include(complemento: nil)
+    end
+  end
+
   describe "commission and rental management mapping" do
     let(:service) { described_class.new(codigos: ["8573"], dry_run: true) }
 

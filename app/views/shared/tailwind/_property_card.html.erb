@@ -48,13 +48,14 @@
     <div class="swiper card-swiper h-full w-full" data-controller="card-swiper" style="overflow: hidden !important;">
       <div class="swiper-wrapper" style="display: flex !important; width: 100% !important;">
         <% card_images = property.card_image_sources(5) %>
+        <% property_title = property.display_title %>
         <% if card_images.present? %>
           <% card_images.each_with_index do |pic, index| %>
             <div class="swiper-slide w-full aspect-[4/3]" style="width: 100% !important; flex-shrink: 0 !important;">
               <% image_source = public_image_url(pic, resize_to_fill: [640, 480]) %>
               <% placeholder = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" %>
               <%= image_tag(index.zero? ? image_source : placeholder,
-                    alt: property.titulo_anuncio,
+                    alt: property_title,
                     width: 640,
                     height: 480,
                     class: "w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700",
@@ -92,7 +93,7 @@
                   action: "click->marketing-tracker#track",
                   marketing_tracker_event_type_value: "property_card_click",
                   marketing_tracker_placement_value: "property_card_image",
-                  marketing_tracker_label_value: property.titulo_anuncio,
+                  marketing_tracker_label_value: property_title,
                   marketing_tracker_target_url_value: habitation_path(property),
                   marketing_tracker_habitation_id_value: property.id
                 } %>
@@ -110,7 +111,7 @@
     <!-- Title -->
     <div class="mb-3 min-h-[3rem]">
       <h3 class="text-base font-bold text-blue-three line-clamp-2 leading-tight group-hover:text-blue-one transition-colors">
-        <%= property.titulo_anuncio %>
+        <%= property_title %>
       </h3>
     </div>
 
@@ -150,14 +151,14 @@
                   data-controller="marketing-tracker"
                   data-marketing-tracker-event-type-value="whatsapp_click"
                   data-marketing-tracker-placement-value="property_card"
-                  data-marketing-tracker-label-value="<%= property.titulo_anuncio %>"
+                  data-marketing-tracker-label-value="<%= property_title %>"
                   data-marketing-tracker-target-url-value="<%= habitation_path(property) %>"
                   data-marketing-tracker-habitation-id-value="<%= property.id %>"
                   data-property-id="<%= property.id %>"
                   data-property-code="<%= property.codigo %>"
-                  data-property-title="<%= property.titulo_anuncio %>"
+                  data-property-title="<%= property_title %>"
                   data-negotiation-type="<%= property.whatsapp_negotiation_type %>"
-                  data-whatsapp-message="Olá, vi o imóvel <%= property.titulo_anuncio %> (Cód: <%= property.codigo %>) no site e gostaria de mais informações."
+                  data-whatsapp-message="Olá, vi o imóvel <%= property_title %> (Cód: <%= property.codigo %>) no site e gostaria de mais informações."
                   title="Falar no WhatsApp">
             <i class="bi bi-whatsapp text-lg"></i>
           </button>
@@ -174,14 +175,14 @@
                   data-controller="marketing-tracker"
                   data-marketing-tracker-event-type-value="whatsapp_click"
                   data-marketing-tracker-placement-value="property_card"
-                  data-marketing-tracker-label-value="<%= property.titulo_anuncio %>"
+                  data-marketing-tracker-label-value="<%= property_title %>"
                   data-marketing-tracker-target-url-value="<%= habitation_path(property) %>"
                   data-marketing-tracker-habitation-id-value="<%= property.id %>"
                   data-property-id="<%= property.id %>"
                   data-property-code="<%= property.codigo %>"
-                  data-property-title="<%= property.titulo_anuncio %>"
+                  data-property-title="<%= property_title %>"
                   data-negotiation-type="<%= property.whatsapp_negotiation_type %>"
-                  data-whatsapp-message="Olá, vi o imóvel <%= property.titulo_anuncio %> (Cód: <%= property.codigo %>) no site e gostaria de mais informações."
+                  data-whatsapp-message="Olá, vi o imóvel <%= property_title %> (Cód: <%= property.codigo %>) no site e gostaria de mais informações."
                   title="Falar no WhatsApp">
             <i class="bi bi-whatsapp text-lg"></i>
           </button>
