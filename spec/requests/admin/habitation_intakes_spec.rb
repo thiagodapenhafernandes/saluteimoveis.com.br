@@ -606,6 +606,80 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(intake.area_total_m2.to_f).to eq(0)
   end
 
+  it "cria e vincula cadastro de proprietário pelos dados preenchidos na captação" do
+    intake = create(
+      :habitation,
+      :broker_intake,
+      admin_user: admin,
+      intake_step: "proprietario",
+      proprietario: nil,
+      proprietario_celular: nil,
+      proprietario_email: nil,
+      observacoes_visitas: nil,
+      proprietor_id: nil
+    )
+
+    expect {
+      patch admin_captacao_path(intake), params: {
+        current_step: "proprietario",
+        direction: "forward",
+        habitation: {
+          proprietario_nome: "Maria Proprietária",
+          proprietario_telefone: "(47) 99988-7766",
+          proprietario_email: "maria@example.com",
+          proprietario_cidade: "Balneário Camboriú"
+        }
+      }
+    }.to change(Proprietor, :count).by(1)
+
+    expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "endereco"))
+    proprietor = Proprietor.last
+    expect(intake.reload.proprietor_id).to eq(proprietor.id)
+    expect(proprietor).to have_attributes(
+      name: "Maria Proprietária",
+      mobile_phone: "(47) 99988-7766",
+      email: "maria@example.com",
+      city: "Balneário Camboriú"
+    )
+  end
+
+  it "reaproveita proprietário existente pelo telefone normalizado na captação" do
+    proprietor = create(
+      :proprietor,
+      name: "Proprietária Existente",
+      mobile_phone: "47999887766",
+      email: "existente@example.com"
+    )
+    intake = create(
+      :habitation,
+      :broker_intake,
+      admin_user: admin,
+      intake_step: "proprietario",
+      proprietario: nil,
+      proprietario_celular: nil,
+      proprietario_email: nil,
+      observacoes_visitas: nil,
+      proprietor_id: nil
+    )
+
+    expect {
+      patch admin_captacao_path(intake), params: {
+        current_step: "proprietario",
+        direction: "forward",
+        habitation: {
+          proprietario_nome: "Proprietária Existente",
+          proprietario_telefone: "(47) 99988-7766",
+          proprietario_email: "existente@example.com",
+          proprietario_cidade: "Itajaí"
+        }
+      }
+    }.not_to change(Proprietor, :count)
+
+    expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "endereco"))
+    expect(intake.reload.proprietor_id).to eq(proprietor.id)
+    expect(proprietor.reload.city).to eq("Itajaí")
+  end
+
   it "carrega características do catálogo do cadastro completo na captação" do
     AttributeOption.create!(context: "habitation", category: "feature", name: "Vista panorâmica")
     AttributeOption.create!(context: "habitation", category: "infrastructure", name: "Espaço gourmet")
@@ -679,6 +753,36 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(intake.valor_condominio_cents).to eq(100_000)
     expect(intake.valor_iptu_cents).to eq(50_000)
     expect(intake.saldo_devedor_cents).to eq(12_000_000)
+  end
+
+  it "não exige condomínio ou IPTU para sala comercial, galpão e terreno" do
+    ["Sala Comercial", "Galpão", "Terreno"].each do |category|
+      intake = create(
+        :habitation,
+        :broker_intake,
+        admin_user: admin,
+        categoria: category,
+        intake_step: "negociacao",
+        valor_condominio_cents: nil,
+        valor_iptu_cents: nil
+      )
+
+      patch admin_captacao_path(intake), params: {
+        current_step: "negociacao",
+        direction: "forward",
+        habitation: {
+          valor_venda: "1.234.567,89",
+          valor_condominio: "",
+          valor_iptu: "",
+          aceita_permuta_answer: "nao",
+          aceita_parcelamento_flag: "false"
+        }
+      }
+
+      expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "visitas")), "esperava #{category} avançar sem taxas"
+      expect(intake.reload.valor_condominio_cents).to be_nil
+      expect(intake.valor_iptu_cents).to be_nil
+    end
   end
 
   it "mantém venda e locação como modalidade única durante o rascunho" do
@@ -973,12 +1077,45 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
         valor_condominio: "500,00",
         valor_iptu: "100,00",
         salute_rental_management_answer: "sim",
-        rental_guarantee_method: ""
+        rental_guarantee_method: []
       }
     }
 
     expect(response).to have_http_status(:unprocessable_entity)
     expect(response.body).to include("Informe o meio de garantia locatícia.")
+  end
+
+  it "persiste meio de garantia locatícia preenchido na captação de aluguel" do
+    intake = create(
+      :habitation,
+      :broker_intake,
+      admin_user: admin,
+      status: "Aluguel",
+      intake_modalidade: "locacao_anual",
+      valor_venda_cents: 0,
+      valor_locacao_cents: 8_000_00,
+      valor_condominio_cents: nil,
+      valor_iptu_cents: nil,
+      salute_rental_management_answer: nil,
+      rental_guarantee_method: nil,
+      intake_step: "negociacao"
+    )
+
+    patch admin_captacao_path(intake), params: {
+      current_step: "negociacao",
+      direction: "forward",
+      habitation: {
+        valor_locacao: "8.000,00",
+        valor_condominio: "500,00",
+        valor_iptu: "100,00",
+        salute_rental_management_answer: "sim",
+        rental_guarantee_method: ["Seguro fiança", "Caução"]
+      }
+    }
+
+    expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "visitas"))
+    expect(intake.reload.rental_guarantee_method).to eq("Seguro fiança, Caução")
+    expect(intake.rental_guarantee_methods).to eq(["Seguro fiança", "Caução"])
   end
 
   it "envia, aprova e libera para o site quando a ficha está completa" do

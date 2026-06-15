@@ -280,7 +280,7 @@ class Habitation < ApplicationRecord
             numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 100 },
             allow_nil: true
   validates :key_location, inclusion: { in: KEY_LOCATION_OPTIONS }, allow_blank: true
-  validates :rental_guarantee_method, inclusion: { in: RENTAL_GUARANTEE_METHOD_OPTIONS }, allow_blank: true
+  validate :rental_guarantee_methods_must_be_valid
   validate :codigo_empreendimento_must_exist, if: :validate_codigo_empreendimento?
   validate :codigo_empreendimento_cannot_reference_self
   validate :key_location_notes_required_for_other
@@ -321,6 +321,21 @@ class Habitation < ApplicationRecord
 
   def submitted_at
     submitted_for_review_at
+  end
+
+  def rental_guarantee_method=(value)
+    values = Array(value)
+      .flatten
+      .flat_map { |item| item.to_s.split(",") }
+      .map(&:strip)
+      .compact_blank
+      .uniq
+
+    super(values.join(", "))
+  end
+
+  def rental_guarantee_methods
+    rental_guarantee_method.to_s.split(",").map(&:strip).compact_blank
   end
 
   def corretor
@@ -413,6 +428,14 @@ class Habitation < ApplicationRecord
     return area_total_m2.to_f.positive? if property_kind_terreno?
 
     area_privativa_m2.to_f.positive?
+  end
+
+  def requires_intake_expense_amount?
+    !property_kind_terreno? && !property_kind_sala_comercial? && !property_kind_galpao?
+  end
+
+  def requires_intake_key_location?
+    !property_kind_terreno?
   end
 
   def duplicate_identity_scope
@@ -844,7 +867,7 @@ class Habitation < ApplicationRecord
       missing << "Dimensões e estrutura física"
     end
     missing << "Vaga de garagem" if vagas_qtd.nil?
-    missing << "Financeiro e valores" if valor_condominio_cents.blank? && valor_iptu_cents.blank?
+    missing << "Financeiro e valores" if requires_intake_expense_amount? && valor_condominio_cents.blank? && valor_iptu_cents.blank?
     missing << "Situação" if situacao.blank?
     missing << "Ocupação" if ocupacao_status.blank?
     missing << "Mais características" if caracteristicas.blank?
@@ -853,7 +876,7 @@ class Habitation < ApplicationRecord
     missing << "Meio de garantia locatícia" if rental_intake? && rental_guarantee_method.blank?
     missing << "Aceita permuta" if sale_intake? && aceita_permuta_answer.blank?
     missing << "Quantidade de parcelas" if aceita_parcelamento_flag? && numero_prestacoes.blank?
-    missing << "Chaves" if key_location.blank?
+    missing << "Chaves" if requires_intake_key_location? && key_location.blank?
     missing << "Dias de visita" if !skip_visitas? && !intake_visit_days_present?
     missing << "Fotos ou agenda com fotógrafo" if photo_flow_choice == "upload" && !has_any_photo?
     missing << "Agenda com fotógrafo" if photo_flow_choice == "schedule" && photo_session_requested_at.blank?
@@ -1371,6 +1394,13 @@ class Habitation < ApplicationRecord
     return unless key_location == "Outro" && key_location_notes.blank?
 
     errors.add(:key_location_notes, "deve ser informado quando o local da chave for Outro")
+  end
+
+  def rental_guarantee_methods_must_be_valid
+    invalid_options = rental_guarantee_methods - RENTAL_GUARANTEE_METHOD_OPTIONS
+    return if invalid_options.blank?
+
+    errors.add(:rental_guarantee_method, "possui opção inválida")
   end
 
   def codigo_empreendimento_cannot_reference_self

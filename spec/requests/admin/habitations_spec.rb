@@ -938,6 +938,54 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(intake.autorizacoes_venda.attachments.map { |attachment| attachment.filename.to_s }).to include("autorizacao-existente.txt")
   end
 
+  it "salva meio de garantia locatícia ao devolver captação de aluguel para captador" do
+    intake = create(
+      :habitation,
+      :broker_intake,
+      admin_user: admin,
+      codigo: "RENT-GUARANTEE-#{SecureRandom.hex(6)}",
+      categoria: "Apartamento",
+      nome_empreendimento: "Edifício Garantia",
+      bloco: "702",
+      status: "Aluguel",
+      intake_modalidade: "locacao_anual",
+      valor_venda_cents: 0,
+      valor_locacao_cents: 8_000_00,
+      salute_rental_management_answer: "sim",
+      rental_guarantee_method: nil,
+      intake_status: "submitted_for_admin_review"
+    )
+    intake.create_address!(
+      cep: "88330-000",
+      logradouro: "Rua Garantia",
+      numero: "100",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+    intake.autorizacoes_venda.attach(
+      io: StringIO.new("autorizacao"),
+      filename: "autorizacao.txt",
+      content_type: "text/plain"
+    )
+
+    patch admin_habitation_path(intake), params: {
+      release_to_broker_after_save: "1",
+      habitation: {
+        rental_guarantee_method: ["Caução"],
+        titulo_anuncio: "Apartamento aluguel anual com garantia"
+      }
+    }
+
+    expect(response).to redirect_to(admin_habitations_path)
+    expect(intake.reload).to have_attributes(
+      intake_status: "admin_approved",
+      rental_guarantee_method: "Caução",
+      titulo_anuncio: "Apartamento aluguel anual com garantia"
+    )
+    expect(intake.intake_missing_requirements).not_to include("Meio de garantia locatícia")
+  end
+
   it "salva autorização nova antes de validar devolução para captador" do
     intake = create(:habitation, :broker_intake, admin_user: admin, codigo: "AUTH-NEW-#{SecureRandom.hex(6)}", intake_status: "submitted_for_admin_review")
     intake.create_address!(

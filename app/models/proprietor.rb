@@ -77,6 +77,28 @@ class Proprietor < ApplicationRecord
 
   scope :ordered, -> { order(name: :asc) }
 
+  def self.normalized_phone(value)
+    value.to_s.gsub(/\D/, "")
+  end
+
+  def self.find_by_phone(value)
+    digits = normalized_phone(value)
+    return if digits.blank?
+
+    where(
+      "regexp_replace(COALESCE(phone_primary, ''), '\\D', '', 'g') = :digits OR " \
+      "regexp_replace(COALESCE(mobile_phone, ''), '\\D', '', 'g') = :digits OR " \
+      "regexp_replace(COALESCE(residential_phone, ''), '\\D', '', 'g') = :digits OR " \
+      "regexp_replace(COALESCE(business_phone, ''), '\\D', '', 'g') = :digits",
+      digits: digits
+    ).order(:id).first
+  end
+
+  def select_label
+    phones = [phone_primary, mobile_phone, residential_phone, business_phone].compact_blank.uniq
+    [name, phones.first, email].compact_blank.join(" · ")
+  end
+
   def display_role
     {
       "owner" => "Proprietário",

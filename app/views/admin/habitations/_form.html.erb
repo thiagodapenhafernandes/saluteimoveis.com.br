@@ -643,13 +643,13 @@
                     <div class="col-md-5">
                       <%= f.label :proprietor_id, "Proprietário:", class: "form-label small fw-bold mb-1" %>
                       <div class="input-group input-group-sm">
-                        <%= f.collection_select :proprietor_id, @proprietors, :id, :name, { include_blank: "Selecione..." }, {
+                        <%= f.collection_select :proprietor_id, @proprietors, :id, :select_label, { include_blank: "Selecione..." }, {
                             class: "form-select form-select-sm",
-                            data: { controller: "tom-select", placeholder: "Selecione..." }
+                            data: { controller: "tom-select", placeholder: "Busque por nome, telefone ou e-mail..." }
                         } %>
                         <%= link_to "#quickProprietorModal",
                             class: "btn btn-outline-secondary",
-                            title: "Cadastrar novo proprietário",
+                            title: "Buscar ou cadastrar proprietário por telefone",
                             data: { bs_toggle: "modal", bs_target: "#quickProprietorModal" } do %>
                           <i class="bi bi-plus"></i>
                         <% end %>
@@ -1439,8 +1439,10 @@
                   <div class="col-12">
                     <%= f.label :rental_guarantee_method, "Meio de garantia locatícia", class: "form-label extra-small fw-bold mb-1" %>
                     <%= f.select :rental_guarantee_method,
-                                 Habitation::RENTAL_GUARANTEE_METHOD_OPTIONS,
-                                 { include_blank: "Selecione..." },
+                                 options_for_select(Habitation::RENTAL_GUARANTEE_METHOD_OPTIONS, f.object.rental_guarantee_methods),
+                                 {},
+                                 multiple: true,
+                                 size: Habitation::RENTAL_GUARANTEE_METHOD_OPTIONS.size,
                                  class: "form-select form-select-sm" %>
                   </div>
                   <div class="col-md-8">
@@ -2739,7 +2741,7 @@
 
     modalElement?.addEventListener("shown.bs.modal", () => {
       clearError();
-      form.querySelector("#quick_proprietor_name")?.focus();
+      form.querySelector("#quick_proprietor_phone")?.focus();
     });
 
     form.addEventListener("submit", async (event) => {
@@ -2780,7 +2782,7 @@
   <div class="modal-dialog modal-md modal-dialog-centered">
     <div class="modal-content border-0 shadow-lg">
       <div class="modal-header">
-        <h5 class="modal-title" id="quickProprietorModalLabel">Novo proprietário</h5>
+        <h5 class="modal-title" id="quickProprietorModalLabel">Buscar ou cadastrar proprietário</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
       </div>
       <div class="modal-body">
@@ -2796,7 +2798,6 @@
                    class="form-control"
                    id="quick_proprietor_name"
                    name="proprietor[name]"
-                   required
                    autocomplete="name">
           </div>
           <div class="row g-2">

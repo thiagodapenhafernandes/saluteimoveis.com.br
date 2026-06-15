@@ -77,6 +77,7 @@ module Admin
       else
         @habitation.assign_attributes(captacao_style_params)
       end
+      link_proprietor_from_intake_fields
       touch_manual_habitation_update!(@habitation)
 
       if duplicate_address_blocks_intake?(current_step)
@@ -130,8 +131,13 @@ module Admin
       habitation.data_atualizacao_crm = Time.current if habitation.changed?
     end
 
+    def link_proprietor_from_intake_fields
+      Habitations::ProprietorLinker.new(@habitation).call
+    end
+
     def submit_for_review
       @habitation.assign_attributes(captacao_style_params) if intake_param_key.present?
+      link_proprietor_from_intake_fields
       touch_manual_habitation_update!(@habitation)
 
       if duplicate_address_blocks_intake?("review")
@@ -158,6 +164,8 @@ module Admin
     end
 
     def approve
+      link_proprietor_from_intake_fields
+
       unless @habitation.intake_ready_for_admin_review?
         missing = @habitation.intake_missing_requirements.to_sentence
         redirect_to admin_captacao_path(@habitation),
@@ -530,7 +538,9 @@ module Admin
         if @habitation.requires_rent_price? && !@habitation.valid_intake_rent_price?
           missing << @habitation.intake_rent_price_requirement_message
         end
-        missing << "Informe ao menos condomínio ou IPTU." if @habitation.valor_condominio_cents.blank? && @habitation.valor_iptu_cents.blank?
+        if @habitation.requires_intake_expense_amount? && @habitation.valor_condominio_cents.blank? && @habitation.valor_iptu_cents.blank?
+          missing << "Informe ao menos condomínio ou IPTU."
+        end
         missing << "Informe se aceita permuta." if @habitation.sale_intake? && @habitation.aceita_permuta_answer.blank?
         if @habitation.rental_intake? && @habitation.salute_rental_management_answer.blank?
           missing << "Informe se a administração da locação será feita pela Salute."
@@ -547,7 +557,7 @@ module Admin
         missing
       when "visitas"
         missing = []
-        missing << "Informe onde estão as chaves." if @habitation.key_location.blank?
+        missing << "Informe onde estão as chaves." if @habitation.requires_intake_key_location? && @habitation.key_location.blank?
         missing << "Informe os melhores dias/horários para visita." if !@habitation.skip_visitas? && !@habitation.intake_visit_days_present?
         missing
       else
@@ -588,7 +598,7 @@ module Admin
       when "negociacao"
         fields[:valor_venda] = true if @habitation.requires_sale_price? && !@habitation.valid_intake_sale_price?
         fields[:valor_locacao] = true if @habitation.requires_rent_price? && !@habitation.valid_intake_rent_price?
-        if @habitation.valor_condominio_cents.blank? && @habitation.valor_iptu_cents.blank?
+        if @habitation.requires_intake_expense_amount? && @habitation.valor_condominio_cents.blank? && @habitation.valor_iptu_cents.blank?
           fields[:valor_condominio] = true
           fields[:valor_iptu] = true
         end
@@ -602,7 +612,7 @@ module Admin
         fields[:photo_session_requested_at] = true if @habitation.photo_flow_choice == "schedule" && @habitation.photo_session_requested_at.blank?
         fields[:autorizacoes_venda] = true unless @habitation.autorizacoes_venda.attached?
       when "visitas"
-        fields[:chaves_com] = true if @habitation.key_location.blank?
+        fields[:chaves_com] = true if @habitation.requires_intake_key_location? && @habitation.key_location.blank?
         fields[:dias_visitas] = true if !@habitation.skip_visitas? && !@habitation.intake_visit_days_present?
       end
       fields
@@ -694,7 +704,7 @@ module Admin
         :proprietario_telefone_comercial, :proprietario_telefone_residencial,
         :proprietario_codigo, :proprietor_id, :admin_user_id,
         :photo_flow_choice, :photo_session_requested_at, :photo_session_url,
-        :salute_rental_management_answer, :rental_guarantee_method, :aceita_permuta_answer,
+        :salute_rental_management_answer, :aceita_permuta_answer,
         :aceita_parcelamento_flag, :numero_prestacoes, :aceita_financiamento_flag,
         :aceita_permuta_veiculo_flag, :aceita_permuta_imovel_flag, :aceita_permuta_outros_flag,
         :mobiliado_flag, :exclusivo_flag, :ocupacao_status, :estado_conservacao,
@@ -703,7 +713,8 @@ module Admin
         :corretor_nome, :corretor_telefone, :corretor_email, :ordered_photo_ids,
         :zip_code, :street_type, :street, :street_number, :neighborhood, :city, :state, :edificio_nome, :unidade_numero,
         :chaves_com, :senha_imovel, :senha_portaria,
-        { caracteristicas: [], infra_estrutura: [], caracteristica_unica: [],
+        { rental_guarantee_method: [],
+          caracteristicas: [], infra_estrutura: [], caracteristica_unica: [],
           caracteristicas_imovel: [], caracteristicas_predio: [], aceita_permuta: [], outras_taxas: [], dias_visitas: [],
           photos: [], fotos: [], autorizacoes_venda: [], fichas_cadastro: [], autorizacao_pdf: [],
           extras: {},

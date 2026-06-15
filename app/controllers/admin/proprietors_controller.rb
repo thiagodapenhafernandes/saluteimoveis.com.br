@@ -161,10 +161,19 @@ module Admin
     end
 
     def quick_create
-      @proprietor = Proprietor.new(quick_proprietor_params.merge(role: :owner))
+      permitted = quick_proprietor_params
+      phone = permitted[:mobile_phone].presence || permitted[:phone_primary].presence
+      @proprietor = Proprietor.find_by_phone(phone) if phone.present?
+      @proprietor ||= Proprietor.new(role: :owner)
+
+      @proprietor.name = permitted[:name] if permitted[:name].present?
+      @proprietor.email = permitted[:email] if permitted[:email].present?
+      @proprietor.phone_primary = permitted[:phone_primary] if permitted[:phone_primary].present?
+      @proprietor.mobile_phone = permitted[:mobile_phone] if permitted[:mobile_phone].present?
+      @proprietor.cpf_cnpj = permitted[:cpf_cnpj] if permitted[:cpf_cnpj].present?
 
       if @proprietor.save
-        render json: { id: @proprietor.id, name: @proprietor.name }, status: :created
+        render json: { id: @proprietor.id, name: @proprietor.select_label }, status: :created
       else
         render json: { errors: @proprietor.errors.full_messages }, status: :unprocessable_entity
       end
@@ -265,12 +274,23 @@ module Admin
       end
 
       if filters[:phone].present?
-        phone_like = like(filters[:phone])
-        scope = scope.where(
-          "proprietors.phone_primary ILIKE :q OR proprietors.mobile_phone ILIKE :q OR " \
-          "proprietors.residential_phone ILIKE :q OR proprietors.business_phone ILIKE :q",
-          q: phone_like
-        )
+        phone_digits = Proprietor.normalized_phone(filters[:phone])
+        if phone_digits.present?
+          scope = scope.where(
+            "regexp_replace(COALESCE(proprietors.phone_primary, ''), '\\D', '', 'g') LIKE :q OR " \
+            "regexp_replace(COALESCE(proprietors.mobile_phone, ''), '\\D', '', 'g') LIKE :q OR " \
+            "regexp_replace(COALESCE(proprietors.residential_phone, ''), '\\D', '', 'g') LIKE :q OR " \
+            "regexp_replace(COALESCE(proprietors.business_phone, ''), '\\D', '', 'g') LIKE :q",
+            q: "%#{phone_digits}%"
+          )
+        else
+          phone_like = like(filters[:phone])
+          scope = scope.where(
+            "proprietors.phone_primary ILIKE :q OR proprietors.mobile_phone ILIKE :q OR " \
+            "proprietors.residential_phone ILIKE :q OR proprietors.business_phone ILIKE :q",
+            q: phone_like
+          )
+        end
       end
 
       if filters[:cpf_cnpj].present?
