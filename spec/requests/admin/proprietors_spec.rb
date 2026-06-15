@@ -24,7 +24,7 @@ RSpec.describe "Admin::Proprietors", type: :request do
     expect(response).to have_http_status(:created)
     payload = JSON.parse(response.body)
     proprietor = Proprietor.last
-    expect(payload).to include("id" => proprietor.id, "name" => "Proprietário Modal")
+    expect(payload).to include("id" => proprietor.id, "name" => proprietor.select_label)
     expect(proprietor).to have_attributes(
       role: "owner",
       phone_primary: "(47) 99999-1111",
@@ -44,6 +44,25 @@ RSpec.describe "Admin::Proprietors", type: :request do
          headers: { "ACCEPT" => "application/json" }
 
     expect(response).to have_http_status(:created)
-    expect(JSON.parse(response.body)["name"]).to eq("Proprietário Administrativo")
+    expect(JSON.parse(response.body)["name"]).to eq(Proprietor.last.select_label)
+  end
+
+  it "reaproveita proprietário existente por telefone no cadastro rápido" do
+    admin = create(:admin_user, :admin)
+    existing = create(:proprietor, name: "Proprietário Existente", mobile_phone: "47999991111")
+    sign_in admin
+
+    expect {
+      post quick_create_admin_proprietors_path,
+           params: {
+             proprietor: {
+               phone_primary: "(47) 99999-1111"
+             }
+           },
+           headers: { "ACCEPT" => "application/json" }
+    }.not_to change(Proprietor, :count)
+
+    expect(response).to have_http_status(:created)
+    expect(JSON.parse(response.body)).to include("id" => existing.id, "name" => existing.reload.select_label)
   end
 end

@@ -697,7 +697,9 @@ class Admin::HabitationsController < Admin::BaseController
   end
 
   def load_autocomplete_data
-    @proprietors = Proprietor.select(:id, :name).order(name: :asc)
+    @proprietors = Proprietor
+      .select(:id, :name, :email, :phone_primary, :mobile_phone, :residential_phone, :business_phone)
+      .order(name: :asc)
     @developments = Habitation.empreendimentos
                               .select(:id, :slug, :codigo, :nome_empreendimento, :constructor_id)
                               .where("NULLIF(TRIM(nome_empreendimento), '') IS NOT NULL AND nome_empreendimento != '.'")
@@ -2086,6 +2088,7 @@ class Admin::HabitationsController < Admin::BaseController
       :salute_rental_management_flag, :home_corporate_flag, :home_corporate_position,
       :key_location, :key_location_notes, :ordered_photo_ids, :ordered_picture_indices, :site_hidden_photo_ids, :site_hidden_picture_urls, :intake_status,
       :use_development_photos_flag,
+      rental_guarantee_method: [],
       videos: [], plantas: [], fotos_empreendimento: [], photos: [],
       fichas_cadastro: [], autorizacoes_venda: [],
       meta_keywords: [],
@@ -2209,42 +2212,6 @@ class Admin::HabitationsController < Admin::BaseController
   end
 
   def assign_proprietor_from_legacy_fields(habitation)
-    if habitation.proprietor_id.present?
-      selected = Proprietor.find_by(id: habitation.proprietor_id)
-      if selected.present?
-        habitation.proprietario = selected.name
-        habitation.proprietario_codigo = selected.vista_code if selected.vista_code.present?
-        habitation.proprietario_email = selected.email if selected.email.present?
-        habitation.proprietario_celular = selected.mobile_phone if selected.mobile_phone.present?
-        habitation.proprietario_telefone_comercial = selected.business_phone if selected.business_phone.present?
-        habitation.proprietario_telefone_residencial = selected.residential_phone if selected.residential_phone.present?
-      end
-      return
-    end
-
-    name = habitation.proprietario.to_s.strip
-    email = habitation.proprietario_email.to_s.strip
-    phone = habitation.proprietario_celular.to_s.strip
-    vista_code = habitation.proprietario_codigo.to_s.strip
-    return if name.blank? && email.blank? && phone.blank? && vista_code.blank?
-
-    proprietor = nil
-    proprietor = Proprietor.find_by(vista_code: vista_code) if vista_code.present?
-    proprietor ||= Proprietor.find_by(email: email) if email.present?
-    proprietor ||= Proprietor.find_by(name: name) if name.present?
-    proprietor ||= Proprietor.new(name: name.presence || "Proprietário sem nome", role: :owner)
-
-    proprietor.name = name if name.present?
-    proprietor.email = email if email.present?
-    proprietor.mobile_phone = phone if phone.present?
-    proprietor.business_phone ||= habitation.proprietario_telefone_comercial.presence
-    proprietor.residential_phone ||= habitation.proprietario_telefone_residencial.presence
-    proprietor.vista_code = vista_code if vista_code.present?
-    proprietor.save!
-
-    habitation.proprietor_id = proprietor.id
-  rescue ActiveRecord::RecordInvalid
-    # Se o proprietário não puder ser salvo, não bloqueia o fluxo do imóvel.
-    nil
+    Habitations::ProprietorLinker.new(habitation).call
   end
 end

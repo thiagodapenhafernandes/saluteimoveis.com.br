@@ -147,6 +147,49 @@ RSpec.describe Habitation, type: :model do
       expect(technical_notes).not_to be_intake_visit_days_present
       expect(manual_notes).to be_intake_visit_days_present
     end
+
+    it "does not require condo or IPTU for commercial, warehouse and land intakes" do
+      %w[Sala\ Comercial Galpão Terreno].each do |category|
+        habitation = build(:habitation, categoria: category, valor_condominio_cents: nil, valor_iptu_cents: nil)
+
+        expect(habitation.intake_missing_requirements).not_to include("Financeiro e valores")
+      end
+    end
+
+    it "keeps condo or IPTU required for residential intakes" do
+      habitation = build(:habitation, categoria: "Apartamento", valor_condominio_cents: nil, valor_iptu_cents: nil)
+
+      expect(habitation.intake_missing_requirements).to include("Financeiro e valores")
+    end
+
+    it "does not require key location for land intakes" do
+      habitation = build(:habitation, categoria: "Terreno", key_location: nil)
+
+      expect(habitation.intake_missing_requirements).not_to include("Chaves")
+    end
+
+    it "keeps key location required for non-land intakes" do
+      habitation = build(:habitation, categoria: "Apartamento", key_location: nil)
+
+      expect(habitation.intake_missing_requirements).to include("Chaves")
+    end
+  end
+
+  describe "#rental_guarantee_method=" do
+    it "normalizes multiple guarantee methods into a compatible string" do
+      habitation = build(:habitation, rental_guarantee_method: ["Seguro fiança", "", "Caução", "Seguro fiança"])
+
+      expect(habitation.rental_guarantee_method).to eq("Seguro fiança, Caução")
+      expect(habitation.rental_guarantee_methods).to eq(["Seguro fiança", "Caução"])
+      expect(habitation).to be_valid
+    end
+
+    it "rejects invalid guarantee methods inside the list" do
+      habitation = build(:habitation, rental_guarantee_method: ["Seguro fiança", "Garantia inválida"])
+
+      expect(habitation).not_to be_valid
+      expect(habitation.errors[:rental_guarantee_method]).to include("possui opção inválida")
+    end
   end
 
   describe "#unavailable_for_duplicate_check?" do

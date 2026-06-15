@@ -7,6 +7,9 @@
                              when "sala_comercial"
                                ["Ar-condicionado", "Recepção", "Sanitários", "Copa/cozinha", "Piso elevado", "Sprinklers",
                                 "Sistema de segurança", "Divisórias prontas"]
+                             when "galpao"
+                               ["Pé-direito alto", "Docas", "Pátio de manobra", "Escritório", "Vestiário", "Copa",
+                                "Sistema de segurança", "Entrada para caminhão"]
                              else  # terreno
                                ["Murado", "Cercado", "Aterrado", "Com edificação", "Esquina", "Frente para mar"]
                              end
@@ -119,11 +122,11 @@
     <% end %>
   </div>
 
-<% elsif @captacao.property_kind_sala_comercial? %>
+<% elsif @captacao.property_kind_sala_comercial? || @captacao.property_kind_galpao? %>
   <div class="row g-2">
     <div class="col-4">
       <div class="wizard-field-group">
-        <%= f.label :salas, "Salas/Ambientes", class: "form-label" %>
+        <%= f.label :salas, @captacao.property_kind_galpao? ? "Ambientes" : "Salas/Ambientes", class: "form-label" %>
         <%= f.number_field :salas, min: 0, inputmode: "numeric", class: "form-control" %>
       </div>
     </div>
@@ -163,6 +166,15 @@
   </div>
 
 <% else  # terreno %>
+  <div class="row g-2">
+    <div class="col-md-6">
+      <div class="wizard-field-group">
+        <%= f.label :banheiros, "Banheiros", class: "form-label" %>
+        <%= f.number_field :banheiros, min: 0, inputmode: "numeric", class: "form-control" %>
+      </div>
+    </div>
+  </div>
+
   <div class="row g-2">
     <div class="col-md-6">
       <div class="wizard-field-group">
