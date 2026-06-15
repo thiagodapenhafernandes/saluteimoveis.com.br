@@ -20,7 +20,7 @@ RSpec.describe Habitation, type: :model do
       first_source = habitation.public_image_sources.first
 
       expect(first_source["attachment"]).to be_present
-      expect(first_source["url"]).to include("/rails/active_storage/")
+      expect(first_source["url"]).to include("/rails/active_storage/blobs/proxy/")
       expect(first_source["url"]).not_to include("vistahost.com.br")
     end
 
@@ -35,7 +35,7 @@ RSpec.describe Habitation, type: :model do
       first_source = habitation.public_image_sources.first
 
       expect(first_source["attachment"]).to be_present
-      expect(first_source["url"]).to include("/rails/active_storage/")
+      expect(first_source["url"]).to include("/rails/active_storage/blobs/proxy/")
       expect(first_source["url"]).not_to include("vistahost.com.br")
     end
 

@@ -158,6 +158,7 @@
       <%= link_to (@return_to_path || admin_habitations_path), class: "btn btn-outline-secondary btn-sm" do %>
         <i class="bi bi-arrow-left"></i><span class="ms-1">Voltar</span>
       <% end %>
+      <%= render "shared/broker_share_menu", property: @habitation %>
       <%= link_to habitation_path(@habitation), target: "_blank", rel: "noopener", class: "btn btn-primary btn-sm" do %>
         <i class="bi bi-eye"></i><span class="ms-1">Ver no site</span>
       <% end %>

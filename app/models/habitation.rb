@@ -63,11 +63,16 @@ class Habitation < ApplicationRecord
   PUBLIC_STATUSES = ['Venda', 'Aluguel', 'Locação', 'Locacao'].freeze
   NUMERIC_CODIGO_SQL = "codigo ~ '^[0-9]+$'".freeze
   VISTA_REFERENCE_CODIGO_SQL = "#{NUMERIC_CODIGO_SQL} AND COALESCE(imovel_dwv, '') <> 'Sim'".freeze
+  STANDALONE_CATEGORIES_WITHOUT_DEVELOPMENT_NAME = %w[casa sobrado rural chacara sitio].freeze
 
   def self.normalize_status(value)
     return nil if value.blank?
     key = value.to_s.strip.downcase
     STATUS_NORMALIZATION_MAP[key] || value.to_s.strip
+  end
+
+  def self.standalone_category_without_development_name?(category)
+    STANDALONE_CATEGORIES_WITHOUT_DEVELOPMENT_NAME.include?(category.to_s.parameterize)
   end
 
   def self.highest_numeric_codigo
@@ -287,8 +292,10 @@ class Habitation < ApplicationRecord
   
   # Callbacks
   before_validation :assign_codigo_automaticamente, on: :create
+  before_validation :clear_category_mismatched_slug, prepend: true
   before_validation :set_data_cadastro_crm, on: :create
   before_validation :normalize_codigo_empreendimento
+  before_validation :clear_unlinked_standalone_development_name
   before_validation :sync_hierarchy_data
   before_validation :sync_construtora_from_constructor
   before_validation :sanitize_fields
@@ -422,6 +429,10 @@ class Habitation < ApplicationRecord
 
   def street_house?
     categoria.to_s.match?(/\bcasa\b|sobrado|rural|chácara|chacara|sítio|sitio/i)
+  end
+
+  def standalone_category_without_development_name?
+    self.class.standalone_category_without_development_name?(categoria)
   end
 
   def has_required_intake_area?
@@ -1006,7 +1017,7 @@ class Habitation < ApplicationRecord
   end
 
   def blob_path_for(attachment)
-    Rails.application.routes.url_helpers.rails_blob_path(attachment, only_path: true)
+    Rails.application.routes.url_helpers.rails_storage_proxy_path(attachment, only_path: true)
   rescue StandardError
     nil
   end
@@ -1414,6 +1425,14 @@ class Habitation < ApplicationRecord
     self.codigo_empreendimento = codigo_empreendimento.to_s.strip.presence
   end
 
+  def clear_unlinked_standalone_development_name
+    return if empreendimento?
+    return if codigo_empreendimento.present?
+    return unless standalone_category_without_development_name?
+
+    self.nome_empreendimento = nil
+  end
+
   def sync_hierarchy_data
     if empreendimento?
       self.codigo_empreendimento = nil
@@ -1500,7 +1519,7 @@ class Habitation < ApplicationRecord
   end
 
   def should_generate_new_friendly_id?
-    slug.blank? || (empreendimento? && will_save_change_to_nome_empreendimento?)
+    slug.blank? || slug_category_mismatch? || (empreendimento? && will_save_change_to_nome_empreendimento?)
   end
   
   # Métodos auxiliares para o slug
@@ -1511,16 +1530,33 @@ class Habitation < ApplicationRecord
   def tipo_imovel_slug
     categoria&.parameterize
   end
+
+  def slug_category_mismatch?
+    return false if empreendimento?
+    return false if slug.blank? || categoria.blank? || codigo.blank?
+
+    current_slug = slug.to_s
+    code_suffix = codigo.to_s.parameterize
+    expected_prefix = tipo_imovel_slug.to_s
+    return false if code_suffix.blank? || expected_prefix.blank?
+    return false unless current_slug.end_with?("-#{code_suffix}")
+
+    !current_slug.start_with?("#{expected_prefix}-")
+  end
   
   def cidade_slug
-    cidade&.parameterize
+    (address&.cidade.presence || self[:cidade])&.parameterize
   end
   
   def bairro_slug
-    bairro&.parameterize
+    (address&.bairro.presence || self[:bairro])&.parameterize
   end
   
   private
+
+  def clear_category_mismatched_slug
+    self.slug = nil if slug_category_mismatch?
+  end
 
   def skip_auto_audit?
     ActiveModel::Type::Boolean.new.cast(skip_auto_audit)

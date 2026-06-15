@@ -13,9 +13,9 @@
           <span class="hidden lg:flex items-center">
             <% if @layout_setting&.logo&.attached? %>
               <% if @layout_setting.logo.content_type == 'image/svg+xml' || @layout_setting.logo.filename.to_s.downcase.end_with?('.svg') %>
-                <%= image_tag @layout_setting.logo, alt: @layout_setting.site_name, class: 'h-10', style: 'width: 170px; object-fit: contain;' %>
+                <%= image_tag public_image_url(@layout_setting.logo), alt: @layout_setting.site_name, class: 'h-10', style: 'width: 170px; object-fit: contain;' %>
               <% else %>
-                <%= image_tag @layout_setting.logo.variant(resize_to_limit: [400, 100]), alt: @layout_setting.site_name, class: 'h-10', style: 'width: 170px; object-fit: contain;' %>
+                <%= image_tag public_image_url(@layout_setting.logo, resize_to_limit: [400, 100]), alt: @layout_setting.site_name, class: 'h-10', style: 'width: 170px; object-fit: contain;' %>
               <% end %>
             <% else %>
               <%= image_tag 'salute-imoveis.svg', alt: 'Salute Imóveis', class: 'h-10', style: 'width: 170px;' %>

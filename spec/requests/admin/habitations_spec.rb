@@ -140,6 +140,28 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include('data-photo-upload-target="dirtyStatus"')
   end
 
+  it "mantém compartilhamento disponível ao visualizar o cadastro do imóvel" do
+    habitation = create(:habitation, codigo: "SHARE-SHOW-#{SecureRandom.hex(6)}")
+
+    get admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include('data-controller="broker-share"')
+    expect(response.body).to include(share_link_habitation_path(habitation))
+    expect(response.body).to include("Compartilhar imóvel")
+  end
+
+  it "mantém compartilhamento disponível ao editar o cadastro do imóvel" do
+    habitation = create(:habitation, codigo: "SHARE-EDIT-#{SecureRandom.hex(6)}")
+
+    get edit_admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include('data-controller="broker-share"')
+    expect(response.body).to include(share_link_habitation_path(habitation))
+    expect(response.body).to include("Compartilhar imóvel")
+  end
+
   it "abre o cadastro quando existe arquivo não-imagem anexado como foto" do
     habitation = create(:habitation, codigo: "PHOTO-ZIP-#{SecureRandom.hex(6)}")
     habitation.photos.attach(
@@ -1867,6 +1889,9 @@ RSpec.describe "Admin::Habitations", type: :request do
       descricao_web: "Descrição Original",
       proprietario: "Proprietário Original",
       proprietario_email: "original@example.com",
+      salute_rental_management_flag: false,
+      salute_rental_management_answer: "nao",
+      foto_classificacao: "Boas",
       valor_venda_cents: 500_000_00
     )
     habitation.create_address!(
@@ -1889,6 +1914,10 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(page.at_css('input[name="habitation[nome_empreendimento]"]')["readonly"]).to eq("readonly")
     expect(page.at_css('input[name="habitation[proprietario]"]')["readonly"]).to eq("readonly")
     expect(page.at_css('input[name="habitation[address_attributes][logradouro]"]')["readonly"]).to eq("readonly")
+    expect(page.at_css('input[type="checkbox"][name="habitation[salute_rental_management_flag]"]')["disabled"]).to eq("disabled")
+    expect(page.at_css('select[name="habitation[salute_rental_management_answer]"]')["disabled"]).to eq("disabled")
+    photo_classification_select = page.at_css('select[name="habitation[foto_classificacao]"]')
+    expect(photo_classification_select["disabled"]).to eq("disabled") if photo_classification_select
     expect(response.body).not_to include("Adicionar arquivos")
 
     patch admin_habitation_path(habitation), params: {
@@ -1903,6 +1932,9 @@ RSpec.describe "Admin::Habitations", type: :request do
         descricao_web: "Descrição Alterada",
         proprietario: "Proprietário Alterado",
         proprietario_email: "alterado@example.com",
+        salute_rental_management_flag: "1",
+        salute_rental_management_answer: "sim",
+        foto_classificacao: "Profissionais",
         fichas_cadastro: [Rack::Test::UploadedFile.new(file.path, "text/plain")],
         address_attributes: {
           id: habitation.address.id,
@@ -1925,7 +1957,10 @@ RSpec.describe "Admin::Habitations", type: :request do
       nome_empreendimento: "Empreendimento Original",
       titulo_anuncio: "Título Original",
       proprietario: "Proprietário Original",
-      proprietario_email: "original@example.com"
+      proprietario_email: "original@example.com",
+      salute_rental_management_flag: false,
+      salute_rental_management_answer: "nao",
+      foto_classificacao: "Boas"
     )
     expect(habitation.caracteristicas).to include("Mobiliado", "Vista mar")
     expect(habitation.display_description).to include("Descrição Original")
@@ -1937,6 +1972,15 @@ RSpec.describe "Admin::Habitations", type: :request do
       cidade: "Balneário Camboriú"
     )
     expect(habitation.fichas_cadastro).not_to be_attached
+
+    patch update_photos_admin_habitation_path(habitation), params: {
+      habitation: {
+        foto_classificacao: "Profissionais"
+      }
+    }
+
+    expect(response).to redirect_to(edit_admin_habitation_path(habitation, anchor: "media"))
+    expect(habitation.reload.foto_classificacao).to eq("Boas")
   ensure
     file&.close
     file&.unlink

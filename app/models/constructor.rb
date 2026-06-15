@@ -12,6 +12,6 @@ class Constructor < ApplicationRecord
 
   def dynamic_logo_url
     return nil unless logo.attached?
-    Rails.application.routes.url_helpers.rails_blob_path(logo, only_path: true)
+    Rails.application.routes.url_helpers.rails_storage_proxy_path(logo, only_path: true)
   end
 end
