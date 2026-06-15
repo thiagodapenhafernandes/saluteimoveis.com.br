@@ -1,4 +1,6 @@
 class Admin::HabitationsController < Admin::BaseController
+  include RentalGuaranteeParamNormalizer
+
   before_action -> { check_permission!(:view, :imoveis) }
   before_action -> { check_permission!(:manage, :imoveis) }, only: [:new, :create]
   before_action :authorize_data_export!, only: [:print, :export]
@@ -1688,6 +1690,7 @@ class Admin::HabitationsController < Admin::BaseController
   end
 
   def habitation_params
+    normalize_rental_guarantee_method_param!
     permitted = params.require(:habitation).permit(*permitted_habitation_fields)
     strip_blank_photo_uploads!(permitted)
 

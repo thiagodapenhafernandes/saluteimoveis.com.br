@@ -1118,6 +1118,39 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(intake.rental_guarantee_methods).to eq(["Seguro fiança", "Caução"])
   end
 
+  it "aceita meio de garantia locatícia escalar vindo de formulário antigo" do
+    intake = create(
+      :habitation,
+      :broker_intake,
+      admin_user: admin,
+      status: "Aluguel",
+      intake_modalidade: "locacao_anual",
+      valor_venda_cents: 0,
+      valor_locacao_cents: 8_000_00,
+      valor_condominio_cents: nil,
+      valor_iptu_cents: nil,
+      salute_rental_management_answer: nil,
+      rental_guarantee_method: nil,
+      intake_step: "negociacao"
+    )
+
+    patch admin_captacao_path(intake), params: {
+      current_step: "negociacao",
+      direction: "forward",
+      habitation: {
+        valor_locacao: "8.000,00",
+        valor_condominio: "500,00",
+        valor_iptu: "100,00",
+        salute_rental_management_answer: "sim",
+        rental_guarantee_method: "Fiador"
+      }
+    }
+
+    expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "visitas"))
+    expect(intake.reload.rental_guarantee_method).to eq("Fiador")
+    expect(intake.rental_guarantee_methods).to eq(["Fiador"])
+  end
+
   it "envia, aprova e libera para o site quando a ficha está completa" do
     broker_profile = Profile.create!(
       name: "Corretor fluxo #{SecureRandom.hex(6)}",

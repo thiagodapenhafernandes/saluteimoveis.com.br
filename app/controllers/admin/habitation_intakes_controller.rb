@@ -1,5 +1,7 @@
 module Admin
   class HabitationIntakesController < Admin::BaseController
+    include RentalGuaranteeParamNormalizer
+
     before_action -> { check_permission!(:view, :captacoes) }
     before_action -> { check_permission!(:manage, :captacoes) }, only: %i[new create edit update destroy submit_for_review release_to_site publish]
     before_action :authorize_export!, only: %i[export]
@@ -686,6 +688,9 @@ module Admin
     end
 
     def captacao_style_params
+      normalize_rental_guarantee_method_param!(:habitation)
+      normalize_rental_guarantee_method_param!(:captacao)
+
       permitted_keys = [
         :categoria, :status, :situacao, :tipo, :nome_empreendimento, :titulo_anuncio,
         :property_kind, :modalidade, :step,
