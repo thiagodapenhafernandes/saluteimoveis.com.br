@@ -930,6 +930,50 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(intake.admin_reviewed_at).to be_present
   end
 
+  it "libera captação administrativa com proprietário antigo vinculado sem cidade cadastrada" do
+    proprietor = create(:proprietor, city: nil, email: nil, phone_primary: "(47) 99601-2553")
+    intake = create(
+      :habitation,
+      :broker_intake,
+      admin_user: admin,
+      proprietor: proprietor,
+      codigo: "REL-OWNER-#{SecureRandom.hex(6)}",
+      intake_status: "submitted_for_admin_review",
+      proprietario: nil,
+      proprietario_celular: nil,
+      proprietario_email: nil,
+      observacoes_visitas: "Dias/horários para visita: Seg, Manhã"
+    )
+    intake.create_address!(
+      cep: "88330-000",
+      logradouro: "Rua Central",
+      numero: "100",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+    intake.autorizacoes_venda.attach(
+      io: StringIO.new("autorizacao"),
+      filename: "autorizacao.txt",
+      content_type: "text/plain"
+    )
+
+    patch admin_habitation_path(intake), params: {
+      release_to_broker_after_save: "1",
+      habitation: {
+        titulo_anuncio: "Casa em Condomínio completa pelo administrativo"
+      }
+    }
+
+    expect(response).to redirect_to(admin_habitations_path)
+    expect(intake.reload).to have_attributes(
+      intake_status: "admin_approved",
+      admin_reviewed_by_id: admin.id
+    )
+    expect(intake.intake_missing_requirements).not_to include("Dados do proprietário")
+    expect(intake.intake_missing_requirements(require_owner_city: true)).to include("Dados do proprietário")
+  end
+
   it "não remove autorização existente quando devolve para captador com campo de arquivo vazio" do
     intake = create(:habitation, :broker_intake, admin_user: admin, codigo: "AUTH-KEEP-#{SecureRandom.hex(6)}", intake_status: "submitted_for_admin_review")
     intake.create_address!(

@@ -858,9 +858,9 @@ class Habitation < ApplicationRecord
     "sale"
   end
 
-  def intake_missing_requirements
+  def intake_missing_requirements(require_owner_city: false)
     missing = []
-    missing << "Dados do proprietário" if proprietario.blank? || (proprietario_celular.blank? && proprietario_email.blank?) || proprietario_cidade.blank?
+    missing << "Dados do proprietário" if intake_owner_data_missing?(require_owner_city: require_owner_city)
     missing << intake_sale_price_requirement_message if requires_sale_price? && !valid_intake_sale_price?
     missing << intake_rent_price_requirement_message if requires_rent_price? && !valid_intake_rent_price?
     missing << "Definições básicas" if categoria.blank? || status.blank?
@@ -896,12 +896,19 @@ class Habitation < ApplicationRecord
     missing
   end
 
-  def intake_ready_for_admin_review?
-    intake_missing_requirements.empty?
+  def intake_owner_data_missing?(require_owner_city: false)
+    owner_name = proprietario.presence || proprietor&.name
+    owner_contact = proprietario_telefone.presence || proprietario_email.presence || proprietor&.email
+
+    owner_name.blank? || owner_contact.blank? || (require_owner_city && proprietario_cidade.blank?)
+  end
+
+  def intake_ready_for_admin_review?(require_owner_city: false)
+    intake_missing_requirements(require_owner_city: require_owner_city).empty?
   end
 
   def broker_can_release_to_site?
-    broker_release_pending? && intake_ready_for_admin_review?
+    broker_release_pending? && intake_ready_for_admin_review?(require_owner_city: true)
   end
 
   def intake_display_title

@@ -140,6 +140,20 @@ RSpec.describe Habitation, type: :model do
       expect(habitation.intake_missing_requirements).not_to include("Dados do proprietário")
     end
 
+    it "does not require proprietor city for administrative property review when a linked proprietor has contact data" do
+      proprietor = build(:proprietor, city: nil, phone_primary: "(47) 99601-2553", email: nil)
+      habitation = build(:habitation, proprietor: proprietor, proprietario: nil, proprietario_celular: nil, proprietario_email: nil)
+
+      expect(habitation.intake_missing_requirements).not_to include("Dados do proprietário")
+    end
+
+    it "keeps proprietor city required for broker intake submission" do
+      proprietor = build(:proprietor, city: nil, phone_primary: "(47) 99601-2553", email: nil)
+      habitation = build(:habitation, proprietor: proprietor, proprietario: nil, proprietario_celular: nil, proprietario_email: nil)
+
+      expect(habitation.intake_missing_requirements(require_owner_city: true)).to include("Dados do proprietário")
+    end
+
     it "accepts manual visit notes without treating technical note lines as visit availability" do
       technical_notes = described_class.new(observacoes_visitas: "Cidade do proprietário: Itajaí")
       manual_notes = described_class.new(observacoes_visitas: "Proprietário libera acesso com a portaria")
