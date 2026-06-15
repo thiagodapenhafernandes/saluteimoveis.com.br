@@ -45,6 +45,7 @@ Rails.application.configure do
     "local"
   end
   config.active_storage.service = storage_service.to_sym
+  config.active_storage.resolve_model_to_route = :rails_storage_proxy
 
   # Mount Action Cable outside main process or domain.
   # config.action_cable.mount_path = nil

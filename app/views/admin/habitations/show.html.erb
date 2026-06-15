@@ -409,6 +409,7 @@
           <i class="bi bi-pencil-square"></i><span class="ms-1">Editar cadastro</span>
         <% end %>
       <% end %>
+      <%= render "shared/broker_share_menu", property: @habitation %>
       <%= link_to habitation_path(@habitation), target: "_blank", rel: "noopener", class: "btn btn-outline-primary btn-sm" do %>
         <i class="bi bi-box-arrow-up-right"></i><span class="ms-1">Ver no site</span>
       <% end %>

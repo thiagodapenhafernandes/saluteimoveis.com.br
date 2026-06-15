@@ -2,10 +2,16 @@ require "rails_helper"
 
 RSpec.describe ApplicationHelper, type: :helper do
   describe "#public_image_url" do
-    it "remove host absoluto de URLs internas do Active Storage" do
+    it "remove host absoluto e troca redirect por proxy em URLs internas do Active Storage" do
       url = "https://143.110.138.67/rails/active_storage/blobs/redirect/signed/file.jpg"
 
-      expect(helper.public_image_url(url)).to eq("/rails/active_storage/blobs/redirect/signed/file.jpg")
+      expect(helper.public_image_url(url)).to eq("/rails/active_storage/blobs/proxy/signed/file.jpg")
+    end
+
+    it "troca redirects internos antigos por proxy mesmo quando a URL ja e relativa" do
+      url = "/rails/active_storage/representations/redirect/blob-signed/variation-signed/file.jpg"
+
+      expect(helper.public_image_url(url)).to eq("/rails/active_storage/representations/proxy/blob-signed/variation-signed/file.jpg")
     end
 
     it "mantem URLs externas sem alterar" do
@@ -21,7 +27,7 @@ RSpec.describe ApplicationHelper, type: :helper do
         content_type: "image/jpeg"
       )
 
-      expect(helper.public_image_url(blob)).to start_with("/rails/active_storage/blobs/redirect/")
+      expect(helper.public_image_url(blob)).to start_with("/rails/active_storage/blobs/proxy/")
     end
 
     it "gera caminho relativo para anexos Active Storage diretos" do
@@ -32,7 +38,18 @@ RSpec.describe ApplicationHelper, type: :helper do
         content_type: "image/jpeg"
       )
 
-      expect(helper.public_image_url(setting.hero_background_desktop)).to start_with("/rails/active_storage/blobs/redirect/")
+      expect(helper.public_image_url(setting.hero_background_desktop)).to start_with("/rails/active_storage/blobs/proxy/")
+    end
+
+    it "gera caminho proxy para ActiveStorage::Attachment" do
+      setting = HomeSetting.instance
+      setting.hero_background_desktop.attach(
+        io: StringIO.new("image"),
+        filename: "attachment.jpg",
+        content_type: "image/jpeg"
+      )
+
+      expect(helper.public_image_url(setting.hero_background_desktop.attachment)).to start_with("/rails/active_storage/blobs/proxy/")
     end
   end
 end

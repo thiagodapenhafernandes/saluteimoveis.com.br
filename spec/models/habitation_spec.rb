@@ -192,6 +192,135 @@ RSpec.describe Habitation, type: :model do
     end
   end
 
+  describe "category-aware slugs" do
+    it "regenerates a code-based slug when it no longer matches the current category" do
+      habitation = create(
+        :habitation,
+        codigo: "8546",
+        categoria: "Apartamento",
+        cidade: "Balneário Camboriú",
+        bairro: "Centro",
+        slug: "apartamento-balneario-camboriu-centro-8546"
+      )
+      habitation.update_columns(slug: "sobrado-8546")
+
+      habitation.update!(titulo_anuncio: "Apartamento no Centro")
+
+      expect(habitation.reload.slug).to eq("apartamento-balneario-camboriu-centro-8546")
+    end
+
+    it "keeps a code-based slug that already matches the current category" do
+      habitation = create(
+        :habitation,
+        codigo: "8546",
+        categoria: "Apartamento",
+        cidade: "Balneário Camboriú",
+        bairro: "Centro",
+        slug: "apartamento-balneario-camboriu-centro-8546"
+      )
+
+      habitation.update!(titulo_anuncio: "Apartamento atualizado")
+
+      expect(habitation.reload.slug).to eq("apartamento-balneario-camboriu-centro-8546")
+    end
+
+    it "does not change existing image data while fixing a mismatched slug" do
+      habitation = create(
+        :habitation,
+        codigo: "8546",
+        categoria: "Apartamento",
+        cidade: "Balneário Camboriú",
+        bairro: "Centro",
+        slug: "apartamento-balneario-camboriu-centro-8546",
+        pictures: []
+      )
+      habitation.photos.attach(
+        io: StringIO.new("\x89PNG\r\n\x1A\n".b),
+        filename: "foto.png",
+        content_type: "image/png"
+      )
+      photo_ids_order = habitation.photos.attachments.pluck(:id)
+      pictures = [
+        {
+          "url" => "https://cdn.example.com/imoveis/8546/foto-vista.jpg",
+          "ordem" => 1,
+          "principal" => true
+        }
+      ]
+      habitation.update_columns(
+        slug: "sobrado-8546",
+        pictures: pictures,
+        photo_ids_order: photo_ids_order
+      )
+
+      habitation.reload.update!(titulo_anuncio: "Apartamento com fotos preservadas")
+
+      habitation.reload
+      expect(habitation.slug).to eq("apartamento-balneario-camboriu-centro-8546")
+      expect(habitation.photos.attachments.pluck(:id)).to eq(photo_ids_order)
+      expect(habitation.pictures).to eq(pictures)
+      expect(habitation.photo_ids_order).to eq(photo_ids_order)
+    end
+  end
+
+  describe "development name hierarchy" do
+    it "clears standalone house development names when there is no linked development code" do
+      habitation = described_class.new(
+        categoria: "Casa",
+        codigo_empreendimento: "",
+        nome_empreendimento: "Albatroz"
+      )
+
+      habitation.validate
+
+      expect(habitation.codigo_empreendimento).to be_nil
+      expect(habitation.nome_empreendimento).to be_nil
+    end
+
+    it "keeps apartment development names even before a development code is linked" do
+      habitation = described_class.new(
+        categoria: "Apartamento",
+        codigo_empreendimento: "",
+        nome_empreendimento: "Residencial Teste"
+      )
+
+      habitation.validate
+
+      expect(habitation.nome_empreendimento).to eq("Residencial Teste")
+    end
+
+    it "keeps condominium house development names even before a development code is linked" do
+      habitation = described_class.new(
+        categoria: "Casa em Condomínio",
+        codigo_empreendimento: "",
+        nome_empreendimento: "Condomínio Teste"
+      )
+
+      habitation.validate
+
+      expect(habitation.nome_empreendimento).to eq("Condomínio Teste")
+    end
+
+    it "uses the linked development name when a standalone house has a valid development code" do
+      parent = create(
+        :habitation,
+        tipo: "Empreendimento",
+        categoria: "Empreendimento",
+        codigo: "9901",
+        nome_empreendimento: "Residencial Correto"
+      )
+      habitation = described_class.new(
+        categoria: "Casa",
+        codigo_empreendimento: parent.codigo,
+        nome_empreendimento: "Albatroz"
+      )
+
+      habitation.validate
+
+      expect(habitation.nome_empreendimento).to eq("Residencial Correto")
+    end
+  end
+
   describe "#unavailable_for_duplicate_check?" do
     it "keeps hidden-from-site properties unavailable for duplicate blocking" do
       habitation = described_class.new(status: "Aluguel", exibir_no_site_flag: false)

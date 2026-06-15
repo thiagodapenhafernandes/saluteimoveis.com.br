@@ -115,6 +115,12 @@ class SyncPropertyService
     proprietor = resolve_proprietor(hb, owner_data)
     broker_id = resolve_broker(hb)
     raw_imediacoes = hb['Imediacoes']
+    codigo_empreendimento = @detach_orphan_parent ? nil : hb['CodigoEmpreendimento'].to_s.strip.presence
+    nome_empreendimento = development_name_from_vista(
+      categoria,
+      codigo_empreendimento,
+      hb['Empreendimento'].to_s.strip.presence
+    )
 
     habitation_attrs = {
       titulo_anuncio: hb['TituloSite'],
@@ -141,8 +147,8 @@ class SyncPropertyService
       caracteristica_unica: normalize_csv_list(hb['CaracteristicaUnica']),
       caracteristicas: extract_characteristics(hb),
       infra_estrutura: extract_infrastructure(hb),
-      codigo_empreendimento: @detach_orphan_parent ? nil : hb['CodigoEmpreendimento'].to_s.strip.presence,
-      nome_empreendimento: hb['Empreendimento'].to_s.strip.presence,
+      codigo_empreendimento: codigo_empreendimento,
+      nome_empreendimento: nome_empreendimento,
       construtora: hb['Construtora'].to_s.strip.presence,
       constructor_id: constructor_id,
       admin_user_id: broker_id,
@@ -214,6 +220,14 @@ class SyncPropertyService
 
   def vista_salute_publication_flag(hb)
     hb['ExibirNoSiteSalute'].to_s.strip.casecmp("sim").zero?
+  end
+
+  def development_name_from_vista(categoria, codigo_empreendimento, raw_name)
+    return nil if raw_name.blank?
+    return raw_name if codigo_empreendimento.present?
+    return nil if Habitation.standalone_category_without_development_name?(categoria)
+
+    raw_name
   end
 
   def sync_address_for?(existing_record:)

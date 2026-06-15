@@ -214,11 +214,12 @@
             
             <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
               <% @habitation.all_images.each_with_index do |photo, index| %>
-                <a href="<%= photo['url'] %>" 
+                <% photo_url = public_image_url(photo) %>
+                <a href="<%= photo_url %>"
                    data-fancybox="development-gallery" 
                    data-caption="<%= @habitation.nome_empreendimento %> - Foto <%= index + 1 %>"
                    class="group relative aspect-video bg-gray-100 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all">
-                  <%= image_tag photo['url'], 
+                  <%= image_tag photo_url,
                       alt: "#{@habitation.nome_empreendimento} - Foto #{index + 1}",
                       class: "w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" %>
                   <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">

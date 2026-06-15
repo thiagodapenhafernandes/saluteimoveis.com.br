@@ -1722,6 +1722,7 @@ class Admin::HabitationsController < Admin::BaseController
       photos: []
     )
     strip_blank_photo_uploads!(permitted)
+    permitted.delete(:foto_classificacao) unless can_manage_habitation_signal_flags?
     permitted
   end
 
@@ -2135,6 +2136,9 @@ class Admin::HabitationsController < Admin::BaseController
       address_attributes
       fichas_cadastro
       autorizacoes_venda
+      salute_rental_management_flag
+      salute_rental_management_answer
+      foto_classificacao
     ]
   end
 

@@ -1426,7 +1426,9 @@
                   <div class="col-12">
                     <label class="custom-checkbox-card w-100 justify-content-between">
                       <span class="small fw-semibold">Administração de locação feita pela Salute</span>
-                      <%= f.check_box :salute_rental_management_flag, class: "form-check-input mt-0" %>
+                      <%= f.check_box :salute_rental_management_flag,
+                                      class: "form-check-input mt-0",
+                                      disabled: !can_edit_protected_habitation_fields %>
                     </label>
                   </div>
                   <div class="col-12">
@@ -1434,7 +1436,8 @@
                     <%= f.select :salute_rental_management_answer,
                                  [["Sim", "sim"], ["Não", "nao"]],
                                  { include_blank: "Selecione..." },
-                                 class: "form-select form-select-sm" %>
+                                 class: "form-select form-select-sm",
+                                 disabled: !can_edit_protected_habitation_fields %>
                   </div>
                   <div class="col-12">
                     <%= f.label :rental_guarantee_method, "Meio de garantia locatícia", class: "form-label extra-small fw-bold mb-1" %>
@@ -1953,7 +1956,11 @@
                  <div class="row justify-content-center mb-3">
                    <div class="col-md-4">
                      <%= f.label :foto_classificacao, "Classificação das Fotos:", class: "form-label small fw-bold mb-1" %>
-                     <%= f.select :foto_classificacao, Habitation::FOTO_CLASSIFICACAO, { include_blank: "Selecione..." }, class: "form-select form-select-sm" %>
+                     <%= f.select :foto_classificacao,
+                                  Habitation::FOTO_CLASSIFICACAO,
+                                  { include_blank: "Selecione..." },
+                                  class: "form-select form-select-sm",
+                                  disabled: !can_edit_protected_habitation_fields %>
                    </div>
                  </div>
                <% end %>

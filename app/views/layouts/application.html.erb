@@ -85,7 +85,7 @@
     
     <link rel="canonical" href="<%= canonical_url %>">
     <% if @layout_setting&.favicon&.attached? %>
-      <link rel="icon" href="<%= rails_blob_path(@layout_setting.favicon) %>">
+      <link rel="icon" href="<%= public_image_url(@layout_setting.favicon) %>">
     <% else %>
       <link rel="icon" href="<%= asset_path "salute.icon.svg" %>">
     <% end %>

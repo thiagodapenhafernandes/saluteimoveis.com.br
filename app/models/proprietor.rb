@@ -114,6 +114,6 @@ class Proprietor < ApplicationRecord
   def profile_image_url
     return nil unless profile_image.attached?
 
-    Rails.application.routes.url_helpers.rails_blob_path(profile_image, only_path: true)
+    Rails.application.routes.url_helpers.rails_storage_proxy_path(profile_image, only_path: true)
   end
 end
