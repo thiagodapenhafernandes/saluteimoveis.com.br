@@ -938,7 +938,7 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(intake.autorizacoes_venda.attachments.map { |attachment| attachment.filename.to_s }).to include("autorizacao-existente.txt")
   end
 
-  it "salva meio de garantia locatícia ao devolver captação de aluguel para captador" do
+  it "salva meio de garantia locatícia escalar ao devolver captação de aluguel para captador" do
     intake = create(
       :habitation,
       :broker_intake,
@@ -972,7 +972,7 @@ RSpec.describe "Admin::Habitations", type: :request do
     patch admin_habitation_path(intake), params: {
       release_to_broker_after_save: "1",
       habitation: {
-        rental_guarantee_method: ["Caução"],
+        rental_guarantee_method: "Caução",
         titulo_anuncio: "Apartamento aluguel anual com garantia"
       }
     }
