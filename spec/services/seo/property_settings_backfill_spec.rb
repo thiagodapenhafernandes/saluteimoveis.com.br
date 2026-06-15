@@ -87,4 +87,41 @@ RSpec.describe Seo::PropertySettingsBackfill do
       meta_title: "Apartamento 8567"
     )
   end
+
+  it "does not rewrite the SEO identity when a canonical record already exists" do
+    habitation = create(
+      :habitation,
+      codigo: "8568",
+      categoria: "Casa",
+      slug: "casa-balneario-camboriu-centro-8568",
+      titulo_anuncio: "Casa anual com piscina no Centro"
+    )
+    create(
+      :seo_setting,
+      page_name: "imovel:8568",
+      canonical_key: "property:8568",
+      page_type: "property_show",
+      canonical_path: "/imoveis/casa-balneario-camboriu-centro-8568",
+      manual_mode: false
+    )
+    legacy_seo = create(
+      :seo_setting,
+      page_name: "imovel:#{habitation.id}",
+      canonical_key: "property:#{habitation.id}",
+      page_type: "property_show",
+      canonical_path: "/imoveis/apartamento-8568",
+      meta_title: "Apartamento 8568",
+      manual_mode: false
+    )
+
+    result = described_class.new(scope: SeoSetting.where(id: legacy_seo.id)).call
+
+    expect(result.updated).to eq(1)
+    expect(legacy_seo.reload).to have_attributes(
+      page_name: "imovel:#{habitation.id}",
+      canonical_key: "property:#{habitation.id}",
+      canonical_path: "/imoveis/casa-balneario-camboriu-centro-8568",
+      meta_title: "Casa anual com piscina no Centro | Salute Imóveis"
+    )
+  end
 end
