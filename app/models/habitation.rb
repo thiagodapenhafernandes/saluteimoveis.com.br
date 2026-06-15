@@ -914,11 +914,11 @@ class Habitation < ApplicationRecord
 
   def public_image_sources
     own_sources = own_public_image_sources
-    return own_sources if own_sources.present?
+    return own_sources if empreendimento? || codigo_empreendimento.blank?
 
-    return [] unless use_development_photos?
-
-    empreendimento&.own_public_image_sources.presence || development_image_payload_sources
+    (own_sources + linked_development_public_image_sources).uniq do |source|
+      public_image_source_key(source)
+    end
   end
 
   def own_public_image_sources
@@ -930,6 +930,12 @@ class Habitation < ApplicationRecord
 
   def use_development_photos?
     use_development_photos_flag? && !empreendimento? && codigo_empreendimento.present?
+  end
+
+  def linked_development_public_image_sources
+    return [] if empreendimento? || codigo_empreendimento.blank?
+
+    empreendimento&.own_public_image_sources.presence || development_image_payload_sources
   end
   
   # Retorna todas as imagens (Hash format)
@@ -961,6 +967,13 @@ class Habitation < ApplicationRecord
       payload = pic.is_a?(Hash) ? pic : { "url" => pic }
       payload unless picture_hidden_from_site?(payload)
     end
+  end
+
+  def public_image_source_key(source)
+    attachment = source.try(:[], "attachment") || source.try(:[], :attachment)
+    return "attachment:#{attachment.id}" if attachment&.id
+
+    source.try(:[], "url") || source.try(:[], :url) || source.object_id
   end
 
   def blob_path_for(attachment)
