@@ -882,10 +882,10 @@ class Habitation < ApplicationRecord
     elsif property_kind_residencial? && dormitorios_qtd.to_i <= 0 && suites_qtd.to_i <= 0 && vagas_qtd.to_i <= 0
       missing << "Dimensões e estrutura física"
     end
-    missing << "Vaga de garagem" if vagas_qtd.nil?
+    missing << "Vaga de garagem" if vagas_qtd.nil? && !property_kind_terreno?
     missing << "Financeiro e valores" if requires_intake_expense_amount? && valor_condominio_cents.blank? && valor_iptu_cents.blank?
-    missing << "Situação" if situacao.blank?
-    missing << "Ocupação" if ocupacao_status.blank?
+    missing << "Situação" if situacao.blank? && !property_kind_terreno?
+    missing << "Ocupação" if ocupacao_status.blank? && !property_kind_terreno?
     missing << "Mais características" if caracteristicas.blank?
     missing << "Infraestrutura & Lazer" if uses_building_infrastructure? && infra_estrutura.blank?
     missing << "Administração de locação feita pela Salute" if rental_intake? && salute_rental_management_answer.blank?

@@ -25,6 +25,22 @@ RSpec.describe HabitationDuplicateChecker do
     expect(result.matches).not_to include(rental)
   end
 
+  it "bloqueia duplicidade contra captação de corretor ainda em rascunho (não publicada)" do
+    draft = create(:habitation, :broker_intake, status: "Venda", nome_empreendimento: nil, bloco: nil, complemento: nil)
+    draft.create_address!(logradouro: "Rua 4000", numero: "77", bairro: "Centro", cidade: "Balneário Camboriú", uf: "SC")
+
+    result = described_class.new(
+      street: "Rua 4000",
+      number: "77",
+      building: "",
+      unit: "",
+      status: "Venda"
+    ).call
+
+    expect(result.complete).to be(true)
+    expect(result.matches).to include(draft)
+  end
+
   it "bloqueia duplicidade somente quando o status comercial é igual" do
     sale = create(:habitation, status: "Venda", nome_empreendimento: "Edifício Solar", bloco: "501")
     sale.create_address!(logradouro: "Rua 1500", numero: "10", bairro: "Centro", cidade: "Balneário Camboriú", uf: "SC")
