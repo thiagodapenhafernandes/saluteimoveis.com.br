@@ -46,12 +46,13 @@
             fetchpriority="high">
     <% end %>
     
-    <%# Image Metadata Logic %>
-    <% 
-      sanitize_utf8 = ->(value) { value.to_s.encode("UTF-8", invalid: :replace, undef: :replace, replace: "").scrub }
-      final_image = seo&.social_image_url(base_url: request.base_url, page_image: @page_image) || "#{request.base_url}/icon.png"
-      canonical_url = sanitize_utf8.call(@canonical_url.presence || (seo_public ? seo.public_url(request.base_url) : request.original_url))
-      og_title = sanitize_utf8.call((seo_public ? seo.og_title.presence : nil) || effective_title)
+      <%# Image Metadata Logic %>
+      <% 
+        sanitize_utf8 = ->(value) { value.to_s.encode("UTF-8", invalid: :replace, undef: :replace, replace: "").scrub }
+        social_image_source = seo&.social_image_url(base_url: request.base_url, page_image: @page_image)
+        final_image = social_image_source.presence || @page_image.presence || "#{request.base_url}/icon.png"
+        canonical_url = sanitize_utf8.call(@canonical_url.presence || (seo_public ? seo.public_url(request.base_url) : request.original_url))
+        og_title = sanitize_utf8.call((seo_public ? seo.og_title.presence : nil) || effective_title)
       og_description = strip_tags((seo_public ? seo.og_description.presence : nil) || effective_description)
       og_type = social_property.present? ? "product" : "website"
       image_alt = sanitize_utf8.call([og_title, @layout_setting&.site_name.presence || "Salute Imóveis"].reject(&:blank?).join(" | "))
