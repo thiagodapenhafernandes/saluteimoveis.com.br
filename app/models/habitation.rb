@@ -105,6 +105,9 @@ class Habitation < ApplicationRecord
     "published" => "Liberado para site"
   }.freeze
   BROKER_RELEASABLE_INTAKE_STATUSES = %w[admin_approved returned_to_broker].freeze
+  # Status a partir dos quais o imóvel pode ser publicado no site. Inclui "internal",
+  # que antes era um beco que travava a publicação do corretor.
+  SITE_RELEASABLE_INTAKE_STATUSES = %w[admin_approved returned_to_broker internal].freeze
   CATALOG_VISIBLE_INTAKE_STATUSES = %w[internal published].freeze
   PENDING_REVIEW_INTAKE_STATUSES = %w[submitted_for_admin_review admin_approved].freeze
   PHOTO_FLOW_CHOICES = {
@@ -819,7 +822,16 @@ class Habitation < ApplicationRecord
   end
 
   def broker_release_pending?
-    BROKER_RELEASABLE_INTAKE_STATUSES.include?(intake_status)
+    SITE_RELEASABLE_INTAKE_STATUSES.include?(intake_status)
+  end
+
+  # Corretor responsável pela captação: o dono (admin_user) OU qualquer corretor
+  # atribuído via broker_assignments. Usado para permitir publicar no site.
+  def broker_responsible_for?(user)
+    return false if user.nil?
+    return true if admin_user_id == user.id
+
+    broker_assignments.any? { |assignment| assignment.admin_user_id == user.id }
   end
 
   def intake_internal?

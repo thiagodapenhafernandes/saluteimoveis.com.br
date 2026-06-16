@@ -279,9 +279,11 @@ module Admin
 
     def can_broker_release_to_site?(habitation)
       return false unless habitation&.broker_release_pending?
-      return false if current_admin_user&.admin? || administrative_profile? || can?(:review, :captacoes)
+      # Administrativo/admin também pode publicar no site.
+      return true if current_admin_user&.admin? || administrative_profile? || can?(:review, :captacoes)
 
-      habitation.admin_user_id == current_admin_user&.id
+      # Corretor responsável (dono ou atribuído via broker_assignments).
+      habitation.broker_responsible_for?(current_admin_user)
     end
 
     def scoped_intakes
