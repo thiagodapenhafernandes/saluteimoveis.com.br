@@ -338,6 +338,24 @@ RSpec.describe "Habitation details", type: :request do
       expect(response.body).not_to include("R$ 1,00")
     end
 
+    it "shows whether rental management is available in the value block" do
+      habitation = create(
+        :habitation,
+        codigo: "SALUTE-MANAGEMENT",
+        slug: "imovel-aluguel-admin",
+        status: "Aluguel",
+        valor_locacao_cents: 4_000_00,
+        valor_venda_cents: 0,
+        salute_rental_management_answer: "sim"
+      )
+
+      get habitation_path(habitation)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Administração")
+      expect(response.body).to include("Sim")
+    end
+
     it "shows reduced rent in the public details page" do
       habitation = create(
         :habitation,

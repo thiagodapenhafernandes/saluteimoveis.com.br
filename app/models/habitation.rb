@@ -605,6 +605,11 @@ class Habitation < ApplicationRecord
   def aceita_parcelamento = aceita_parcelamento_flag? ? "sim" : "nao"
   def outras_taxas = captacao_note_list("Outras taxas")
   def dias_visitas = captacao_note_list("Dias/horários para visita")
+  def salute_rental_management_label
+    return "Sim" if salute_rental_management_answer == "sim" || salute_rental_management_flag?
+    "Não" if salute_rental_management_answer == "nao" || !salute_rental_management_flag?
+    nil
+  end
 
   def dias_visitas=(value)
     values = Array(value).flat_map { |item| item.to_s.split(",") }.map(&:strip).compact_blank

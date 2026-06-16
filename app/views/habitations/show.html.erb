@@ -255,6 +255,12 @@
               <dt class="text-gray-500">Tipo</dt>
               <dd class="font-bold text-gray-900"><%= @habitation.categoria %></dd>
             </div>
+            <% if @habitation.rental_intake? && @habitation.salute_rental_management_label.present? %>
+              <div class="flex justify-between gap-4">
+                <dt class="text-gray-500">Administração</dt>
+                <dd class="font-bold text-gray-900"><%= @habitation.salute_rental_management_label %></dd>
+              </div>
+            <% end %>
             <% if @habitation.displayable_condominio_cents.present? %>
               <div class="flex justify-between gap-4">
                 <dt class="text-gray-500">Condomínio</dt>
