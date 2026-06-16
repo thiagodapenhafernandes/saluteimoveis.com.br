@@ -162,6 +162,28 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include("Compartilhar imóvel")
   end
 
+  it "exibe Administração de locação feita pela Salute no bloco de valores do detalhe administrativo" do
+    habitation = create(
+      :habitation,
+      codigo: "SHOW-ADMIN-MGMT-#{SecureRandom.hex(6)}",
+      status: "Aluguel",
+      valor_locacao_cents: 3_000_00,
+      valor_condominio_cents: 280_00,
+      valor_iptu_cents: 786_00,
+      aceita_financiamento_flag: false,
+      aceita_permuta_flag: false,
+      salute_rental_management_answer: "sim"
+    )
+
+    get admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Valores")
+    expect(response.body).to include("Administração de locação feita pela Salute")
+    expect(response.body).to include("Sim")
+    expect(response.body).to include("Aceita permuta")
+  end
+
   it "abre o cadastro quando existe arquivo não-imagem anexado como foto" do
     habitation = create(:habitation, codigo: "PHOTO-ZIP-#{SecureRandom.hex(6)}")
     habitation.photos.attach(
