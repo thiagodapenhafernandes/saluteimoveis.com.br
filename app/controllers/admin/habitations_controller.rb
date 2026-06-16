@@ -97,6 +97,7 @@ class Admin::HabitationsController < Admin::BaseController
                 :can_manage_habitation_signal_flags?
   helper_method :can_release_intake_to_broker?, :can_manage_intake_status?, :can_complete_admin_intake_review?
   helper_method :can_filter_by_broker?, :can_filter_by_proprietor?
+  helper_method :admin_paper_intake_form?
 
   def index
     load_index_filters
