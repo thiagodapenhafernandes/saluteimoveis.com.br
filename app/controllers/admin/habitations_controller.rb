@@ -1318,7 +1318,7 @@ class Admin::HabitationsController < Admin::BaseController
 
   def normalize_admin_paper_intake_save_navigation(habitation:, requested_navigation:, releasing_to_broker:, saving_internal_intake:)
     return requested_navigation.to_s if releasing_to_broker || saving_internal_intake
-    return requested_navigation.to_s if !habitation.new_record? || !habitation.broker_intake? || !admin_paper_intake_form?
+    return requested_navigation.to_s if !habitation.broker_intake? || !admin_paper_intake_form?
 
     requested_navigation.presence || "stay"
   end
