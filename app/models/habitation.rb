@@ -905,7 +905,12 @@ class Habitation < ApplicationRecord
     owner_name = proprietario.presence || proprietor&.name
     owner_contact = proprietario_telefone.presence || proprietario_email.presence || proprietor&.email
 
-    owner_name.blank? || owner_contact.blank? || (require_owner_city && proprietario_cidade.blank?)
+    # A cidade do proprietário não bloqueia mais a liberação: o wizard do corretor
+    # grava a cidade em observacoes_visitas (não na coluna proprietario_cidade), o que
+    # gerava pendência fantasma de "Dados do proprietário" mesmo com nome e contato
+    # preenchidos. Nome + contato já identificam o proprietário. (require_owner_city
+    # mantido na assinatura por compatibilidade com os call sites, mas não bloqueia.)
+    owner_name.blank? || owner_contact.blank?
   end
 
   def intake_ready_for_admin_review?(require_owner_city: false)
