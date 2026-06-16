@@ -82,12 +82,17 @@
   <div class="wizard-field-group">
     <%= f.label :rental_guarantee_method, "Meio de garantia locatícia", class: "form-label" %>
     <span class="required-star">*</span>
-    <%= f.select :rental_guarantee_method,
-                 options_for_select(Habitation::RENTAL_GUARANTEE_METHOD_OPTIONS, @captacao.rental_guarantee_methods),
-                 {},
-                 multiple: true,
-                 size: Habitation::RENTAL_GUARANTEE_METHOD_OPTIONS.size,
-                 class: field_state.call(:rental_guarantee_method, "form-select") %>
+    <small class="d-block text-muted mb-1">Pode marcar mais de um.</small>
+    <%= hidden_field_tag "captacao[rental_guarantee_method][]", "" %>
+    <div class="<%= 'wizard-invalid-choice' if field_invalid.call(:rental_guarantee_method) %>">
+      <% Habitation::RENTAL_GUARANTEE_METHOD_OPTIONS.each do |opt| %>
+        <% selected = @captacao.rental_guarantee_methods.include?(opt) %>
+        <label class="wizard-feature-chip <%= 'selected' if selected %>">
+          <%= check_box_tag "captacao[rental_guarantee_method][]", opt, selected, onchange: "this.closest('label').classList.toggle('selected', this.checked)" %>
+          <%= opt %>
+        </label>
+      <% end %>
+    </div>
     <% if field_invalid.call(:rental_guarantee_method) %><div class="invalid-feedback d-block">Informe o meio de garantia locatícia.</div><% end %>
   </div>
 <% end %>

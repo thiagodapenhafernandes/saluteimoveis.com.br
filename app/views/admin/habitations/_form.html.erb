@@ -1441,12 +1441,20 @@
                   </div>
                   <div class="col-12">
                     <%= f.label :rental_guarantee_method, "Meio de garantia locatícia", class: "form-label extra-small fw-bold mb-1" %>
-                    <%= f.select :rental_guarantee_method,
-                                 options_for_select(Habitation::RENTAL_GUARANTEE_METHOD_OPTIONS, f.object.rental_guarantee_methods),
-                                 {},
-                                 multiple: true,
-                                 size: Habitation::RENTAL_GUARANTEE_METHOD_OPTIONS.size,
-                                 class: "form-select form-select-sm" %>
+                    <div class="small text-muted mb-1">Pode marcar mais de um.</div>
+                    <%= hidden_field_tag "habitation[rental_guarantee_method][]", "" %>
+                    <div class="d-flex flex-wrap gap-3">
+                      <% Habitation::RENTAL_GUARANTEE_METHOD_OPTIONS.each_with_index do |opt, i| %>
+                        <% checked = f.object.rental_guarantee_methods.include?(opt) %>
+                        <div class="form-check">
+                          <%= check_box_tag "habitation[rental_guarantee_method][]", opt, checked,
+                                            id: "habitation_rental_guarantee_method_#{i}",
+                                            class: "form-check-input",
+                                            disabled: !can_edit_protected_habitation_fields %>
+                          <%= label_tag "habitation_rental_guarantee_method_#{i}", opt, class: "form-check-label small" %>
+                        </div>
+                      <% end %>
+                    </div>
                   </div>
                   <div class="col-md-8">
                     <label class="custom-checkbox-card w-100 justify-content-between">
