@@ -84,6 +84,27 @@ RSpec.describe "Habitation details", type: :request do
       )
     end
 
+    it "uses the first valid property image as sharing image" do
+      habitation = create(
+        :habitation,
+        codigo: "SHARE-IMG-EMPTY-FIRST",
+        slug: "casa-uso-compartilhamento",
+        categoria: "Casa",
+        pictures: [
+          {},
+          { "url" => "https://example.com/foto-2.jpg" },
+          { "url" => "https://example.com/foto-3.jpg" }
+        ]
+      )
+
+      get habitation_path(habitation)
+
+      expect(response).to have_http_status(:ok)
+      document = Nokogiri::HTML(response.body)
+      expect(document.at_css("meta[property='og:image']")["content"]).to eq("https://example.com/foto-2.jpg")
+      expect(document.at_css("meta[name='twitter:image']")["content"]).to eq("https://example.com/foto-2.jpg")
+    end
+
     it "treats a numeric public URL as the property code" do
       create(:habitation, codigo: "8397", slug: "casa-em-condominio-8397")
 

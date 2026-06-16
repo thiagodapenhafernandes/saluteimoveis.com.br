@@ -628,18 +628,51 @@ class HabitationsController < ApplicationController
   end
 
   def share_image_url_for(habitation)
-    first_photo = habitation.all_images.first
-    image = first_photo.is_a?(Hash) ? (first_photo["url"] || first_photo[:url]) : first_photo
+    image = first_public_image_url(habitation.all_images)
     image = habitation.primary_image_url if image.blank?
     return nil if image.blank?
 
-    image = image.to_s
+    normalize_share_image_url(image)
+  end
+
+  def first_public_image_url(images)
+    return nil if images.blank?
+
+    Array(images).each do |source|
+      url = extract_public_image_url(source)
+      next if url.blank?
+      return url
+    end
+
+    nil
+  end
+
+  def extract_public_image_url(source)
+    return if source.blank?
+    return source if source.respond_to?(:to_str) && !source.is_a?(Hash)
+
+    if source.is_a?(Hash)
+      source["url"] || source[:url] ||
+        source["url_pequena"] || source[:url_pequena] ||
+        source["url_small"] || source[:url_small] ||
+        source["thumbnail_url"] || source[:thumbnail_url] ||
+        source["src"] || source[:src] ||
+        source["link"] || source[:link]
+    else
+      source
+    end
+  end
+
+  def normalize_share_image_url(image)
+    image = image.to_s.strip
+    return nil if image.blank?
+
     if image.start_with?("http://")
       image.sub("http://", "https://")
     elsif image.start_with?("https://")
       image
     else
-      "#{request.base_url}#{image.start_with?('/') ? image : "/#{image}"}"
+      "#{request.base_url}#{image.start_with?("/") ? image : "/#{image}"}"
     end
   end
 end
