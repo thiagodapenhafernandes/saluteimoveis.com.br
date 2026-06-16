@@ -1234,7 +1234,10 @@ class Admin::HabitationsController < Admin::BaseController
 
   def can_release_intake_to_broker?(habitation)
     return false unless habitation&.broker_intake?
-    return false unless habitation.intake_submitted_for_admin_review?
+    # Admin pode devolver ao corretor a partir de qualquer estado de revisão
+    # (em revisão, interno, aprovado, devolvido). Só não faz sentido em rascunho
+    # (corretor ainda preenchendo) ou já publicado no site.
+    return false if habitation.intake_draft? || habitation.intake_published?
 
     can_complete_admin_intake_review?(habitation)
   end
