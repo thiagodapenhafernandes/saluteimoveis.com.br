@@ -24,7 +24,7 @@ class HabitationDuplicateChecker
       .where(street_match_sql("COALESCE(addresses.logradouro, habitations.endereco)"), street: normalize_street(@street))
       .where("#{normalized_sql("COALESCE(addresses.numero, habitations.numero)")} = :number", number: normalize(@number))
       .where(status: normalized_status)
-      .where(exibir_no_site_flag: true)
+      .where("habitations.exibir_no_site_flag = ? OR habitations.intake_origin = ?", true, Habitation::INTAKE_ORIGIN_BROKER)
       .where.not("habitations.status ~* ?", "suspenso|vendido|alugado")
       .limit(20)
 
@@ -66,7 +66,17 @@ class HabitationDuplicateChecker
   end
 
   def active_duplicate_candidate?(habitation)
+    # Captações de corretor (rascunho em diante) reservam o imóvel mesmo sem
+    # estarem publicadas, protegendo quem subiu a ficha primeiro. Fichas
+    # descartadas são apagadas, então não travam ninguém.
+    return true if active_broker_intake?(habitation)
+
     !habitation.unavailable_for_duplicate_check?
+  end
+
+  def active_broker_intake?(habitation)
+    habitation.intake_origin == Habitation::INTAKE_ORIGIN_BROKER &&
+      !habitation.exibir_no_site_flag?
   end
 
   def same_status?(habitation)

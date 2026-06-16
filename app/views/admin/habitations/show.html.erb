@@ -341,7 +341,9 @@
       ["IPTU", money.call(@habitation.valor_iptu_cents)],
       ["Aceita financiamento", yes_no.call(@habitation.aceita_financiamento_flag)],
       ["Aceita permuta", yes_no.call(@habitation.aceita_permuta_flag)]
-    ]
+    ].tap do |fields|
+      fields << ["Administração de locação feita pela Salute", @habitation.salute_rental_management_label] if @habitation.rental_intake?
+    end
   end
 
   public_flags = [

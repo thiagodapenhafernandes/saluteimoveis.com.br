@@ -605,6 +605,11 @@ class Habitation < ApplicationRecord
   def aceita_parcelamento = aceita_parcelamento_flag? ? "sim" : "nao"
   def outras_taxas = captacao_note_list("Outras taxas")
   def dias_visitas = captacao_note_list("Dias/horários para visita")
+  def salute_rental_management_label
+    return "Sim" if salute_rental_management_answer == "sim" || salute_rental_management_flag?
+    "Não" if salute_rental_management_answer == "nao" || !salute_rental_management_flag?
+    nil
+  end
 
   def dias_visitas=(value)
     values = Array(value).flat_map { |item| item.to_s.split(",") }.map(&:strip).compact_blank
@@ -877,10 +882,10 @@ class Habitation < ApplicationRecord
     elsif property_kind_residencial? && dormitorios_qtd.to_i <= 0 && suites_qtd.to_i <= 0 && vagas_qtd.to_i <= 0
       missing << "Dimensões e estrutura física"
     end
-    missing << "Vaga de garagem" if vagas_qtd.nil?
+    missing << "Vaga de garagem" if vagas_qtd.nil? && !property_kind_terreno?
     missing << "Financeiro e valores" if requires_intake_expense_amount? && valor_condominio_cents.blank? && valor_iptu_cents.blank?
-    missing << "Situação" if situacao.blank?
-    missing << "Ocupação" if ocupacao_status.blank?
+    missing << "Situação" if situacao.blank? && !property_kind_terreno?
+    missing << "Ocupação" if ocupacao_status.blank? && !property_kind_terreno?
     missing << "Mais características" if caracteristicas.blank?
     missing << "Infraestrutura & Lazer" if uses_building_infrastructure? && infra_estrutura.blank?
     missing << "Administração de locação feita pela Salute" if rental_intake? && salute_rental_management_answer.blank?
