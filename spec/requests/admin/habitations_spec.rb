@@ -108,6 +108,34 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(habitation.submitted_for_review_at).to be_present
   end
 
+  it "mantém o novo cadastro administrativo na própria ficha ao salvar sem indicar saída" do
+    expect {
+      post admin_habitations_path, params: {
+        habitation: {
+          categoria: "Apartamento",
+          status: "Venda",
+          tipo: "Unitário",
+          titulo_anuncio: "Casa em Condomínio para teste de permanência",
+          address_attributes: {
+            logradouro: "Rua Permanecer",
+            numero: "101",
+            bairro: "Centro",
+            cidade: "Balneário Camboriú",
+            uf: "SC",
+            cep: "88330-000"
+          }
+        }
+      }
+    }.to change(Habitation, :count).by(1)
+
+    habitation = Habitation.order(:created_at).last
+    expect(response).to redirect_to(edit_admin_habitation_path(habitation))
+    expect(habitation).to have_attributes(
+      intake_origin: Habitation::INTAKE_ORIGIN_BROKER,
+      intake_status: "draft"
+    )
+  end
+
   it "mantém ações de revisão administrativa vinculadas ao formulário principal" do
     habitation = create(
       :habitation,

@@ -398,7 +398,7 @@ class Admin::HabitationsController < Admin::BaseController
                else
                  "Imóvel criado com sucesso."
                end
-      redirect_after_habitation_save(@habitation, notice: notice)
+      redirect_after_habitation_save(@habitation, notice: notice, save_navigation: params[:save_navigation])
     else
       load_autocomplete_data
       render :new, status: :unprocessable_entity
@@ -467,7 +467,7 @@ class Admin::HabitationsController < Admin::BaseController
                else
                  "Imóvel atualizado com sucesso."
                end
-      redirect_after_habitation_save(@habitation, notice: notice)
+      redirect_after_habitation_save(@habitation, notice: notice, save_navigation: params[:save_navigation])
     else
       load_ai_suggestion
       load_habitation_audit_logs
@@ -1300,14 +1300,27 @@ class Admin::HabitationsController < Admin::BaseController
     params[:save_internal_after_save].present?
   end
 
-  def redirect_after_habitation_save(habitation, notice:)
+  def redirect_after_habitation_save(habitation, notice:, save_navigation:)
     anchor = params[:save_anchor].to_s.presence_in(%w[documents media])
+    save_navigation = normalize_admin_paper_intake_save_navigation(
+      habitation: habitation,
+      requested_navigation: save_navigation,
+      releasing_to_broker: release_intake_to_broker_requested?,
+      saving_internal_intake: save_internal_intake_requested?
+    )
 
-    if params[:save_navigation].to_s == "stay"
+    if save_navigation == "stay"
       redirect_to edit_admin_habitation_path(habitation, return_to: safe_admin_habitations_return_path(params[:return_to]), anchor: anchor), notice: "#{notice} Você permaneceu na ficha de cadastro."
     else
       redirect_to safe_admin_habitations_return_path(params[:return_to]) || admin_habitations_path, notice: "#{notice} Você saiu para o catálogo."
     end
+  end
+
+  def normalize_admin_paper_intake_save_navigation(habitation:, requested_navigation:, releasing_to_broker:, saving_internal_intake:)
+    return requested_navigation.to_s if releasing_to_broker || saving_internal_intake
+    return requested_navigation.to_s if !habitation.new_record? || !habitation.broker_intake? || !admin_paper_intake_form?
+
+    requested_navigation.presence || "stay"
   end
 
   def edit_habitation_path_with_return(habitation, anchor:)
