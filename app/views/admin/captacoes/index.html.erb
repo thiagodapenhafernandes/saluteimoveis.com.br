@@ -122,7 +122,16 @@
                        options_for_select([["Todos status", ""], ["Rascunhos", "draft"], ["Finalizadas", "completed"], ["Publicadas no site", "published"]], params[:status]),
                        class: "form-select form-select-sm", onchange: "this.form.submit()" %>
       </div>
-      <% if params[:property_kind].present? || params[:status].present? %>
+      <% if can_filter_intakes_by_broker? && @captacao_brokers.present? %>
+        <div class="col-md-3">
+          <%= select_tag :corretor_id,
+                         options_for_select([["Todos os corretores", ""]] + @captacao_brokers.map { |broker| [broker.name, broker.id] }, params[:corretor_id]),
+                         class: "form-select form-select-sm",
+                         data: { controller: "tom-select", placeholder: "Filtrar por corretor" },
+                         onchange: "this.form.submit()" %>
+        </div>
+      <% end %>
+      <% if params[:property_kind].present? || params[:status].present? || params[:corretor_id].present? %>
         <div class="col-md-2">
           <%= link_to "Limpar", admin_captacoes_path, class: "btn btn-sm btn-outline-secondary" %>
         </div>
@@ -138,6 +147,9 @@
         <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
           <div class="min-w-0">
             <div class="fw-bold captacao-mobile-title"><%= c.display_title %></div>
+            <% if c.nome_empreendimento.present? %>
+              <div class="small text-muted"><i class="bi bi-building me-1"></i><%= c.nome_empreendimento %></div>
+            <% end %>
             <div class="small text-muted">
               <% if c.city.present? %><i class="bi bi-geo-alt me-1"></i><%= c.city %><% else %>Sem cidade<% end %>
             </div>
@@ -239,6 +251,9 @@
             <tr>
               <td class="px-3">
                 <div class="fw-semibold"><%= c.display_title %></div>
+                <% if c.nome_empreendimento.present? %>
+                  <div class="small text-muted"><i class="bi bi-building me-1"></i><%= c.nome_empreendimento %></div>
+                <% end %>
                 <div class="small text-muted">
                   <% if c.city.present? %><i class="bi bi-geo-alt me-1"></i><%= c.city %><% end %>
                 </div>

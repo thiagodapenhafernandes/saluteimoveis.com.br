@@ -60,6 +60,23 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include("Aguardando aceite do corretor")
   end
 
+  it "mostra ao administrativo somente o que está em revisão administrativa" do
+    administrative_profile = Profile.create!(
+      name: "Administrativo",
+      permissions: Profile.default_permissions_for("Administrativo")
+    )
+    administrativo = create(:admin_user, profile: administrative_profile, name: "Administrativo Salute")
+    submitted = create(:habitation, :broker_intake, admin_user: admin, codigo: "ADM-SUB-#{SecureRandom.hex(6)}", intake_status: "submitted_for_admin_review", titulo_anuncio: "Ficha aguardando revisão #{SecureRandom.hex(4)}")
+    approved = create(:habitation, :broker_intake, admin_user: admin, codigo: "ADM-APP-#{SecureRandom.hex(6)}", intake_status: "admin_approved", titulo_anuncio: "Ficha já aprovada #{SecureRandom.hex(4)}")
+
+    sign_in administrativo
+    get admin_habitations_path(intake_review: "pending", ownership: "all")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(submitted.titulo_anuncio)
+    expect(response.body).not_to include(approved.titulo_anuncio)
+  end
+
   it "exibe ações de ficha de papel no novo cadastro administrativo" do
     get new_admin_habitation_path
 
