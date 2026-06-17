@@ -1088,7 +1088,7 @@ class Admin::HabitationsController < Admin::BaseController
   end
 
   def pending_intake_review_scope(scope)
-    scope = scope.broker_intakes.where(intake_status: Habitation::PENDING_REVIEW_INTAKE_STATUSES)
+    scope = scope.broker_intakes.where(intake_status: pending_review_visible_statuses)
 
     if can_review_intakes?
       return restrict_pending_review_to_manager_team(scope) if manager_profile? && !administrative_profile? && !current_admin_user&.admin?
@@ -1096,6 +1096,17 @@ class Admin::HabitationsController < Admin::BaseController
       scope
     else
       scope_for_current_user_properties(scope.where(intake_status: "admin_approved"))
+    end
+  end
+
+  # Administrativo (sem ser admin) só acompanha o que está aguardando a revisão
+  # dele; "Aguardando aceite do corretor" sai da fila para deixar a área limpa.
+  # Administrador e Gerente continuam vendo até o imóvel ser publicado no site.
+  def pending_review_visible_statuses
+    if administrative_profile? && !current_admin_user&.admin?
+      %w[submitted_for_admin_review]
+    else
+      Habitation::PENDING_REVIEW_INTAKE_STATUSES
     end
   end
 

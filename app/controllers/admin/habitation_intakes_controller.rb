@@ -11,7 +11,7 @@ module Admin
     before_action :authorize_review!, only: %i[approve return_to_broker]
     before_action :load_form_options, only: %i[edit update]
     layout :resolve_layout
-    helper_method :can_export_captacoes?, :can_broker_release_to_site?
+    helper_method :can_export_captacoes?, :can_broker_release_to_site?, :can_filter_intakes_by_broker?
 
     def index
       @status = params[:status].presence
@@ -20,6 +20,7 @@ module Admin
       @habitations = filtered_intakes_scope.includes(:admin_user, :admin_reviewed_by, :address)
       @habitations = @habitations.order(updated_at: :desc).paginate(page: params[:page], per_page: 20)
       @captacoes = @habitations
+      @captacao_brokers = captacao_broker_options
       render "admin/captacoes/index"
     end
 
@@ -299,6 +300,16 @@ module Admin
       scope.where(admin_user_id: current_admin_user.id)
     end
 
+    def can_filter_intakes_by_broker?
+      current_admin_user&.admin? || can?(:review, :captacoes) || owns_all_resource?(:captacoes)
+    end
+
+    def captacao_broker_options
+      return AdminUser.none unless can_filter_intakes_by_broker?
+
+      AdminUser.where(id: scoped_intakes.reorder(nil).distinct.select(:admin_user_id)).order(:name)
+    end
+
     def filtered_intakes_scope
       scope = scoped_intakes
       scope = scope.where(categoria: "Terreno") if params[:property_kind] == "terreno"
@@ -312,8 +323,19 @@ module Admin
         scope = scope.where(intake_status: %w[submitted_for_admin_review admin_approved])
       when "published"
         scope = scope.where(intake_status: "published")
+      when nil, ""
+        # Lista de trabalho: fichas já publicadas no site ou liberadas
+        # internamente saem da visão padrão para deixar só o que falta agir.
+        scope = scope.where(
+          "habitations.intake_status IS NULL OR habitations.intake_status NOT IN (:hidden)",
+          hidden: %w[published internal]
+        )
       else
-        scope = scope.where(intake_status: params[:status]) if params[:status].present?
+        scope = scope.where(intake_status: params[:status])
+      end
+
+      if params[:corretor_id].present? && can_filter_intakes_by_broker?
+        scope = scope.where(admin_user_id: params[:corretor_id])
       end
 
       q = params[:q].to_s.strip

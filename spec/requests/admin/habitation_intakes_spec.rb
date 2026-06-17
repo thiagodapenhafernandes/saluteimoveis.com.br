@@ -1500,4 +1500,42 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(rental.address.logradouro).to eq("Rua Dupla")
     expect(rental.autorizacoes_venda).to be_attached
   end
+
+  describe "lista de captações (organização da área de trabalho)" do
+    it "esconde por padrão fichas publicadas no site e liberadas internamente" do
+      create(:habitation, :broker_intake, admin_user: admin, codigo: "LIST-DRAFT", intake_status: "draft", categoria: "Apartamento")
+      create(:habitation, :broker_intake, admin_user: admin, codigo: "LIST-REVIEW", intake_status: "submitted_for_admin_review", categoria: "Apartamento")
+      create(:habitation, :broker_intake, admin_user: admin, codigo: "LIST-PUBLISHED", intake_status: "published", exibir_no_site_flag: true, categoria: "Apartamento")
+      create(:habitation, :broker_intake, admin_user: admin, codigo: "LIST-INTERNAL", intake_status: "internal", categoria: "Apartamento")
+
+      get admin_captacoes_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("LIST-DRAFT")
+      expect(response.body).to include("LIST-REVIEW")
+      expect(response.body).not_to include("LIST-PUBLISHED")
+      expect(response.body).not_to include("LIST-INTERNAL")
+    end
+
+    it "filtra captações por corretor" do
+      other = create(:admin_user, name: "Outro Corretor")
+      create(:habitation, :broker_intake, admin_user: admin, codigo: "LIST-MINE", intake_status: "submitted_for_admin_review", categoria: "Apartamento")
+      create(:habitation, :broker_intake, admin_user: other, codigo: "LIST-THEIRS", intake_status: "submitted_for_admin_review", categoria: "Apartamento")
+
+      get admin_captacoes_path(corretor_id: other.id)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("LIST-THEIRS")
+      expect(response.body).not_to include("LIST-MINE")
+    end
+
+    it "mostra o nome do empreendimento dentro da célula do imóvel" do
+      create(:habitation, :broker_intake, admin_user: admin, codigo: "LIST-EMP", intake_status: "submitted_for_admin_review", categoria: "Apartamento", nome_empreendimento: "Edifício Aurora Mar")
+
+      get admin_captacoes_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Edifício Aurora Mar")
+    end
+  end
 end
