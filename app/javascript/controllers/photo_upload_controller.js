@@ -72,18 +72,30 @@ export default class extends Controller {
     }
   }
 
+  // Só tratamos como dropzone de upload quando o arraste traz ARQUIVOS do
+  // sistema. Para o drag interno do SortableJS (reordenar fotos) isso é falso,
+  // evitando que o preventDefault/drop nativos dupliquem a foto arrastada.
+  isFileDrag(e) {
+    const types = e?.dataTransfer?.types
+    if (!types) return false
+    return Array.from(types).includes('Files')
+  }
+
   handleDragOver(e) {
+    if (!this.isFileDrag(e)) return
     e.preventDefault()
     e.stopPropagation()
     this.element.classList.add('border-primary', 'bg-light-subtle')
   }
 
   handleDragLeave(e) {
+    if (!this.isFileDrag(e)) return
     e.preventDefault()
     this.element.classList.remove('border-primary', 'bg-light-subtle')
   }
 
   handleDrop(e) {
+    if (!this.isFileDrag(e)) return
     e.preventDefault()
     e.stopPropagation()
     this.element.classList.remove('border-primary', 'bg-light-subtle')
@@ -103,6 +115,11 @@ export default class extends Controller {
 
     this.sortable = new Sortable(this.previewContainerTarget, {
       animation: 150,
+      // Usa arraste por ponteiro (não o HTML5 Drag&Drop nativo). Sem isso, o
+      // drag nativo do Sortable colide com a dropzone de upload no mesmo
+      // elemento e o navegador solta uma cópia da foto (duplicação).
+      forceFallback: true,
+      fallbackOnBody: true,
       scroll: true,
       bubbleScroll: true,
       forceAutoScrollFallback: true,
