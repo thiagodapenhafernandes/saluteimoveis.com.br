@@ -1367,7 +1367,7 @@ class Habitation < ApplicationRecord
     parts = []
     parts << categoria if categoria.present?
     parts << "#{dormitorios_qtd} dormitórios" if dormitorios_qtd > 0
-    parts << "em #{bairro}" if bairro.present?
+    parts << "em #{display_neighborhood}" if display_neighborhood.present?
     parts << cidade if cidade.present?
     parts.join(' ')
   end
@@ -1375,7 +1375,9 @@ class Habitation < ApplicationRecord
   def sanitized_display_title
     title = titulo_anuncio.to_s.strip
     return if title.blank?
-    title_neighborhood = bairro.presence || self[:bairro]
+    # Usa o bairro exibido no site (comercial, com fallback) para não reescrever
+    # o título salvo com o bairro interno (ex.: trocar "na Barra Sul" por "em Centro").
+    title_neighborhood = display_neighborhood
     return title if title_neighborhood.blank?
 
     normalized_neighborhood = title_neighborhood.to_s.parameterize
