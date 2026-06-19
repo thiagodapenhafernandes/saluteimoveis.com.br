@@ -143,10 +143,10 @@
                   <%= empreendimento.nome_empreendimento %>
                 </h3>
                 
-                <% if empreendimento.bairro.present? %>
+                <% if empreendimento.display_neighborhood.present? %>
                   <div class="flex items-center gap-1.5 text-gray-400 text-sm mb-4">
                     <i class="bi bi-geo-alt-fill text-golden-one"></i>
-                    <span class="font-medium"><%= empreendimento.bairro %><%= ", #{empreendimento.cidade}" if empreendimento.cidade.present? %></span>
+                    <span class="font-medium"><%= empreendimento.display_neighborhood %><%= ", #{empreendimento.cidade}" if empreendimento.cidade.present? %></span>
                   </div>
                 <% end %>
 

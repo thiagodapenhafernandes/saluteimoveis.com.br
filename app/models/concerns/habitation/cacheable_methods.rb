@@ -43,7 +43,7 @@ module Habitation::CacheableMethods
   def short_address
     Rails.cache.fetch([cache_key, 'short_address'], expires_in: CACHE_EXPIRATION) do
       parts = []
-      parts << bairro if bairro.present?
+      parts << display_neighborhood if display_neighborhood.present?
       parts << cidade if cidade.present?
       parts.join(', ')
     end
