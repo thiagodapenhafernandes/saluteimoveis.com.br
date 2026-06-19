@@ -929,7 +929,8 @@ class Habitation < ApplicationRecord
     missing << "Infraestrutura & Lazer" if uses_building_infrastructure? && infra_estrutura.blank?
     missing << "Administração de locação feita pela Salute" if rental_intake? && salute_rental_management_answer.blank?
     missing << "Meio de garantia locatícia" if rental_intake? && rental_guarantee_method.blank?
-    missing << "Aceita permuta" if sale_intake? && aceita_permuta_answer.blank?
+    # Aceita permuta não é mais obrigatório: campo não marcado é tratado como "não"
+    # automaticamente (veículo/imóvel/outros são flags com default falso).
     missing << "Quantidade de parcelas" if aceita_parcelamento_flag? && numero_prestacoes.blank?
     missing << "Chaves" if requires_intake_key_location? && key_location.blank?
     missing << "Dias de visita" if !skip_visitas? && !intake_visit_days_present?
@@ -962,6 +963,10 @@ class Habitation < ApplicationRecord
   # captação do corretor (que não edita esses campos).
   def admin_intake_completion_missing_requirements(require_owner_city: false)
     missing = intake_missing_requirements(require_owner_city: require_owner_city)
+    # No administrativo (Salvar Interno/Devolver), foto não é obrigatória: a ficha
+    # de papel pode não ter foto e o fotógrafo é agendado depois. (No wizard do
+    # corretor a foto continua exigida.)
+    missing -= ["Fotos ou agenda com fotógrafo", "Agenda com fotógrafo"]
     missing << "Título do anúncio" if titulo_anuncio.blank?
     missing << "Descrição do imóvel para Internet" if descricao_web_blank?
     missing
