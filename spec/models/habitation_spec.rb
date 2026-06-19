@@ -366,4 +366,40 @@ RSpec.describe Habitation, type: :model do
       )
     end
   end
+
+  describe "#display_neighborhood" do
+    def build_with_address(bairro:, bairro_comercial:)
+      habitation = create(:habitation)
+      Address.create!(
+        addressable: habitation,
+        tipo_endereco: "Rua",
+        logradouro: "2000",
+        numero: "120",
+        bairro: bairro,
+        bairro_comercial: bairro_comercial,
+        cidade: "Balneário Camboriú",
+        uf: "SC",
+        cep: "88330-590"
+      )
+      habitation.reload
+    end
+
+    it "prefere o bairro comercial quando preenchido" do
+      habitation = build_with_address(bairro: "Centro", bairro_comercial: "Barra Sul")
+
+      expect(habitation.display_neighborhood).to eq("Barra Sul")
+    end
+
+    it "recai para o bairro comum quando o comercial está vazio" do
+      habitation = build_with_address(bairro: "Centro", bairro_comercial: "")
+
+      expect(habitation.display_neighborhood).to eq("Centro")
+    end
+
+    it "ignora o placeholder '.' do bairro comercial" do
+      habitation = build_with_address(bairro: "Centro", bairro_comercial: ".")
+
+      expect(habitation.display_neighborhood).to eq("Centro")
+    end
+  end
 end

@@ -194,6 +194,7 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include('data-controller="broker-share"')
     expect(response.body).to include(share_link_habitation_path(habitation))
     expect(response.body).to include("Compartilhar imóvel")
+    expect(response.body).to include("broker-share--toolbar")
   end
 
   it "mantém compartilhamento disponível ao editar o cadastro do imóvel" do
@@ -205,6 +206,7 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include('data-controller="broker-share"')
     expect(response.body).to include(share_link_habitation_path(habitation))
     expect(response.body).to include("Compartilhar imóvel")
+    expect(response.body).to include("broker-share--toolbar")
   end
 
   it "exibe Administração de locação feita pela Salute no bloco de valores do detalhe administrativo" do
@@ -467,6 +469,24 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response).to have_http_status(:ok)
     expect(response.body).to include(own_property.titulo_anuncio)
     expect(response.body).not_to include(secondary_property.titulo_anuncio)
+  end
+
+  it "permite ao corretor encontrar imóveis de um colega ao filtrar por corretor mesmo no escopo Meus imóveis" do
+    broker_profile = Profile.create!(
+      name: "Corretor filtro #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Corretor")
+    )
+    luciana = create(:admin_user, profile: broker_profile, name: "Luciana Indalécio")
+    patricia = create(:admin_user, profile: broker_profile, name: "Patrícia Paula")
+    own_property = create(:habitation, admin_user: luciana, codigo: "OWN-#{SecureRandom.hex(6)}", titulo_anuncio: "Imóvel da Luciana")
+    colleague_property = create(:habitation, admin_user: patricia, codigo: "COL-#{SecureRandom.hex(6)}", titulo_anuncio: "Imóvel da Patrícia")
+
+    sign_in luciana
+    get admin_habitations_path(ownership: "mine", corretor_id: patricia.id)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(colleague_property.titulo_anuncio)
+    expect(response.body).not_to include(own_property.titulo_anuncio)
   end
 
   it "abre imóvel de Todos no detalhe interno para corretor sem permissão de edição" do

@@ -887,6 +887,10 @@ class Admin::HabitationsController < Admin::BaseController
     @permuta_min_value = params[:permuta_min_value].to_s.gsub(/[^\d]/, '').to_i
     @scope = params[:scope]
     @ownership_scope = params[:ownership].presence_in(%w[mine all]) || (owns_all_resource?(:imoveis) ? "all" : "mine")
+    # Ao filtrar por um corretor específico, o usuário (inclusive corretores)
+    # quer ver os imóveis daquele colega — então o filtro por corretor prevalece
+    # sobre a restrição de escopo "meus imóveis".
+    @ownership_scope = "all" if @corretor_id.present?
     @intake_review = params[:intake_review].presence_in(%w[pending])
     @captacao_inicio = params[:captacao_inicio]
     @captacao_fim = params[:captacao_fim]

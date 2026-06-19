@@ -527,6 +527,21 @@ class Habitation < ApplicationRecord
   def street_number = numero
   def neighborhood = bairro
   def city = cidade
+
+  # Bairro exibido em cards (admin e site): prioriza o "Bairro Comercial"
+  # (do endereço e, em fallback, da coluna legada do imóvel) e só recai para
+  # o bairro comum quando o comercial estiver vazio. Espelha o COALESCE usado
+  # nas buscas (addresses.bairro_comercial -> habitations.bairro_comercial -> bairro).
+  def display_neighborhood
+    [
+      bairro_comercial,
+      read_attribute(:bairro_comercial),
+      bairro,
+      read_attribute(:bairro)
+    ].map { |value| value.to_s.strip }
+     .reject { |value| value.blank? || value == "." }
+     .first
+  end
   def state = uf
 
   def edificio_nome = nome_empreendimento

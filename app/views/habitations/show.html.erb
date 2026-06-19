@@ -1,7 +1,7 @@
 <% images = @habitation.public_image_sources %>
 <% image_url = ->(photo) { public_image_url(photo) } %>
 <% title = @habitation.display_title %>
-<% address_parts = [@habitation.endereco, @habitation.bairro, @habitation.cidade].compact_blank %>
+<% address_parts = [@habitation.endereco, @habitation.display_neighborhood, @habitation.cidade].compact_blank %>
 <% address_text = address_parts.join(" - ") %>
 <% area_text = @habitation.display_area_m2 %>
 <% has_sale_price = @habitation.valor_venda_cents.to_i.positive? %>

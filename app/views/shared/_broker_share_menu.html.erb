@@ -1,6 +1,7 @@
 <% shareable_property = property.publicly_viewable? %>
+<% share_appearance = local_assigns.fetch(:appearance, "overlay") %>
 
-<div class="broker-share <%= 'broker-share--disabled' unless shareable_property %>"
+<div class="broker-share <%= 'broker-share--toolbar' if share_appearance == 'toolbar' %> <%= 'broker-share--disabled' unless shareable_property %>"
      <% if shareable_property %>
        data-controller="broker-share"
        data-broker-share-generate-url-value="<%= current_admin_user.present? ? share_link_habitation_path(property) : '' %>"
