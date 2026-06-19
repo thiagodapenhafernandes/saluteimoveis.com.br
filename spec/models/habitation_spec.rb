@@ -396,6 +396,15 @@ RSpec.describe Habitation, type: :model do
     end
   end
 
+  describe "#uses_building_infrastructure?" do
+    it "vale para apartamento e casa em condomínio, mas não para casa de rua/terreno" do
+      expect(build(:habitation, categoria: "Apartamento").uses_building_infrastructure?).to be(true)
+      expect(build(:habitation, categoria: "Casa em Condomínio").uses_building_infrastructure?).to be(true)
+      expect(build(:habitation, categoria: "Casa").uses_building_infrastructure?).to be(false)
+      expect(build(:habitation, categoria: "Terreno").uses_building_infrastructure?).to be(false)
+    end
+  end
+
   describe "#display_neighborhood" do
     def build_with_address(bairro:, bairro_comercial:)
       habitation = create(:habitation)
