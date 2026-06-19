@@ -1536,20 +1536,30 @@
                   <%= f.label :numero_prestacoes, "Nº de prestações", class: "form-label small fw-bold mb-1" %>
                   <%= f.number_field :numero_prestacoes, class: "form-control form-control-sm", min: 0 %>
                 </div>
-                <div class="col-md-12">
-                  <label class="custom-checkbox-card">
-                    <%= f.check_box :aceita_permuta_flag, class: "form-check-input mt-0" %>
-                    <span class="small fw-semibold">Aceita permuta</span>
-                  </label>
-                </div>
               </div>
 
               <div class="border rounded p-3 mb-3">
                 <div class="d-flex align-items-center justify-content-between mb-2">
-                  <h6 class="small fw-bold mb-0">Condições de permuta</h6>
-                  <span class="badge text-bg-light border">Opcional</span>
+                  <h6 class="small fw-bold mb-0">Aceita permuta de</h6>
+                  <span class="badge text-bg-light border">Marque o que aceita (não marcado = não)</span>
                 </div>
 
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                  <label class="custom-checkbox-card">
+                    <%= f.check_box :aceita_permuta_veiculo_flag, class: "form-check-input mt-0" %>
+                    <span class="small fw-semibold">Veículo</span>
+                  </label>
+                  <label class="custom-checkbox-card">
+                    <%= f.check_box :aceita_permuta_imovel_flag, class: "form-check-input mt-0" %>
+                    <span class="small fw-semibold">Imóvel</span>
+                  </label>
+                  <label class="custom-checkbox-card">
+                    <%= f.check_box :aceita_permuta_outros_flag, class: "form-check-input mt-0" %>
+                    <span class="small fw-semibold">Outros</span>
+                  </label>
+                </div>
+
+                <div class="small text-muted mb-1 fw-semibold">Detalhes da permuta (opcional)</div>
                 <div class="row g-2 mb-2">
                   <div class="col-md-5">
                     <%= f.label :valor_aceito_permuta_formatted, "Valor aceito na permuta", class: "form-label extra-small fw-bold mb-1" %>
@@ -1566,21 +1576,6 @@
                     <%= f.label :ano_minimo_veiculo_aceito_permuta, "Ano mínimo do veículo", class: "form-label extra-small fw-bold mb-1" %>
                     <%= f.number_field :ano_minimo_veiculo_aceito_permuta, class: "form-control form-control-sm", min: 1900, max: 2100 %>
                   </div>
-                </div>
-
-                <div class="d-flex flex-wrap gap-2 mb-2">
-                  <label class="custom-checkbox-card">
-                    <%= f.check_box :aceita_permuta_veiculo_flag, class: "form-check-input mt-0" %>
-                    <span class="small fw-semibold">Aceita permuta veículo</span>
-                  </label>
-                  <label class="custom-checkbox-card">
-                    <%= f.check_box :aceita_permuta_imovel_flag, class: "form-check-input mt-0" %>
-                    <span class="small fw-semibold">Aceita permuta imóvel</span>
-                  </label>
-                  <label class="custom-checkbox-card">
-                    <%= f.check_box :aceita_permuta_outros_flag, class: "form-check-input mt-0" %>
-                    <span class="small fw-semibold">Aceita permuta outros</span>
-                  </label>
                 </div>
 
                 <div class="small text-muted mb-1 fw-semibold">Características do imóvel aceito na permuta</div>

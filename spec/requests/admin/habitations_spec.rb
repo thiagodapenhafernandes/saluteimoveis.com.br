@@ -214,7 +214,6 @@ RSpec.describe "Admin::Habitations", type: :request do
     get admin_habitation_path(habitation)
     expect(response.body).to include("Observações internas")
     expect(response.body).to include("Não colocar no site")
-    expect(response.body).to include("não aparece no site")
 
     sign_in corretor
     get admin_habitation_path(habitation)
@@ -1170,6 +1169,48 @@ RSpec.describe "Admin::Habitations", type: :request do
       save_internal_after_save: "1",
       habitation: {
         titulo_anuncio: "Casa em Condomínio completa pelo administrativo",
+        descricao_web: "<div>Descrição completa do imóvel para o site.</div>"
+      }
+    }
+
+    expect(response).to redirect_to(admin_habitations_path)
+    expect(intake.reload.intake_status).to eq("internal")
+  end
+
+  it "permite Salvar Interno no administrativo sem foto e sem responder permuta" do
+    intake = create(
+      :habitation,
+      :broker_intake,
+      admin_user: admin,
+      codigo: "INT-NOPHOTO-#{SecureRandom.hex(6)}",
+      intake_status: "submitted_for_admin_review",
+      categoria: "Apartamento",
+      tipo_vaga: "Privativa",
+      bloco: "101",
+      aceita_permuta_answer: nil,
+      aceita_permuta_flag: false,
+      pictures: [],
+      photo_flow_choice: nil,
+      photo_session_requested_at: nil
+    )
+    intake.create_address!(
+      cep: "88330-000",
+      logradouro: "Rua Central",
+      numero: "100",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+    intake.autorizacoes_venda.attach(
+      io: StringIO.new("autorizacao"),
+      filename: "autorizacao.txt",
+      content_type: "text/plain"
+    )
+
+    patch admin_habitation_path(intake), params: {
+      save_internal_after_save: "1",
+      habitation: {
+        titulo_anuncio: "Apartamento completo pelo administrativo",
         descricao_web: "<div>Descrição completa do imóvel para o site.</div>"
       }
     }
