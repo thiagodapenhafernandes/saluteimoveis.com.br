@@ -61,7 +61,7 @@
   </div>
 
   <div class="row g-2">
-    <div class="col-4">
+    <div class="col-6">
       <div class="wizard-field-group">
         <%= f.label :banheiros, "Banheiros", class: "form-label" %>
         <span class="required-star">*</span>
@@ -69,15 +69,7 @@
         <% if field_invalid.call(:banheiros) %><div class="invalid-feedback d-block">Informe a quantidade de banheiros.</div><% end %>
       </div>
     </div>
-    <div class="col-4">
-      <div class="wizard-field-group">
-        <%= f.label :vagas_garagem, "Vagas", class: "form-label" %>
-        <span class="required-star">*</span>
-        <%= f.number_field :vagas_garagem, min: 0, inputmode: "numeric", class: field_state.call(:vagas_garagem) %>
-        <% if field_invalid.call(:vagas_garagem) %><div class="invalid-feedback d-block">Informe a quantidade de vagas.</div><% end %>
-      </div>
-    </div>
-    <div class="col-4">
+    <div class="col-6">
       <div class="wizard-field-group">
         <%= f.label :salas, "Salas", class: "form-label" %>
         <%= f.number_field :salas, min: 0, inputmode: "numeric", class: field_state.call(:salas) %>
@@ -85,6 +77,8 @@
       </div>
     </div>
   </div>
+
+  <%= render "admin/captacoes/steps/parking_fields", f: f, captacao: @captacao, field_state: field_state, field_invalid: field_invalid %>
 
   <div class="row g-2">
     <div class="col-md-4">
@@ -124,27 +118,21 @@
 
 <% elsif @captacao.property_kind_sala_comercial? || @captacao.property_kind_galpao? %>
   <div class="row g-2">
-    <div class="col-4">
+    <div class="col-6">
       <div class="wizard-field-group">
         <%= f.label :salas, @captacao.property_kind_galpao? ? "Ambientes" : "Salas/Ambientes", class: "form-label" %>
         <%= f.number_field :salas, min: 0, inputmode: "numeric", class: "form-control" %>
       </div>
     </div>
-    <div class="col-4">
+    <div class="col-6">
       <div class="wizard-field-group">
         <%= f.label :banheiros, "Banheiros", class: "form-label" %>
         <%= f.number_field :banheiros, min: 0, inputmode: "numeric", class: "form-control" %>
       </div>
     </div>
-    <div class="col-4">
-      <div class="wizard-field-group">
-        <%= f.label :vagas_garagem, "Vagas", class: "form-label" %>
-        <span class="required-star">*</span>
-        <%= f.number_field :vagas_garagem, min: 0, inputmode: "numeric", class: field_state.call(:vagas_garagem) %>
-        <% if field_invalid.call(:vagas_garagem) %><div class="invalid-feedback d-block">Informe a quantidade de vagas.</div><% end %>
-      </div>
-    </div>
   </div>
+
+  <%= render "admin/captacoes/steps/parking_fields", f: f, captacao: @captacao, field_state: field_state, field_invalid: field_invalid %>
 
   <div class="row g-2">
     <div class="col-md-6">
