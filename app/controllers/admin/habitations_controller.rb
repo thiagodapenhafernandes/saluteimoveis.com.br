@@ -2268,9 +2268,15 @@ class Admin::HabitationsController < Admin::BaseController
     team_ids = manager_team_user_ids
     return scope.none if team_ids.blank?
 
-    scope.left_outer_joins(:broker_assignments)
-         .where("habitations.admin_user_id IN (:ids) OR habitation_broker_assignments.admin_user_id IN (:ids)", ids: team_ids)
-         .distinct
+    # Usa EXISTS (sem JOIN + DISTINCT). O DISTINCT entrava em conflito com o
+    # ORDER BY por expressão (CASE/COALESCE) usado na ordenação da listagem,
+    # gerando PG::InvalidColumnReference no filtro "Pendente de revisão" do gerente.
+    scope.where(
+      "habitations.admin_user_id IN (:ids) OR EXISTS (" \
+      "SELECT 1 FROM habitation_broker_assignments hba " \
+      "WHERE hba.habitation_id = habitations.id AND hba.admin_user_id IN (:ids))",
+      ids: team_ids
+    )
   end
 
   def assign_proprietor_from_legacy_fields(habitation)
