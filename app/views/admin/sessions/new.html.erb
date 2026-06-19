@@ -11,13 +11,22 @@
     </div>
   </div>
 
-  <div class="form-group">
+  <div class="form-group" data-controller="password-visibility">
     <%= f.label :password, "Senha", class: "form-label" %>
     <div class="input-group">
       <span class="input-group-text">
         <i class="bi bi-key"></i>
       </span>
-      <%= f.password_field :password, autocomplete: "current-password", class: "form-control", placeholder: "Digite sua senha" %>
+      <%= f.password_field :password, autocomplete: "current-password", class: "form-control", placeholder: "Digite sua senha", data: { password_visibility_target: "input" } %>
+      <button type="button"
+              class="input-group-text"
+              style="cursor: pointer;"
+              data-action="password-visibility#toggle"
+              data-password-visibility-target="button"
+              aria-label="Mostrar senha"
+              title="Mostrar senha">
+        <i class="bi bi-eye" data-password-visibility-target="icon"></i>
+      </button>
     </div>
   </div>
 
