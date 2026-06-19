@@ -221,6 +221,17 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include("Não colocar no site")
   end
 
+  it "não exibe o captador responsável pelo cadastro na seção de responsáveis do formulário" do
+    sign_in admin
+    habitation = create(:habitation, admin_user: admin, codigo: "RESP-#{SecureRandom.hex(6)}")
+
+    get edit_admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Responsáveis & Agenciamento")
+    expect(response.body).not_to include("Captador responsável pelo cadastro do imóvel")
+  end
+
   it "organiza os filtros do catálogo em accordions com Valor no topo e chips ajustados" do
     sign_in admin
     get admin_habitations_path
