@@ -1,0 +1,28 @@
+<%# Grupo de vaga (Tipo Vaga, Vagas, Box). Tipo e Vagas são obrigatórios apenas
+    para unidades tipo apartamento; para casa, galpão e sala comercial os campos
+    aparecem mas são opcionais. Box é sempre opcional. %>
+<% requires_parking = captacao.requires_parking_info? %>
+<div class="row g-2">
+  <div class="col-4">
+    <div class="wizard-field-group">
+      <%= f.label :tipo_vaga, "Tipo Vaga", class: "form-label" %>
+      <% if requires_parking %><span class="required-star">*</span><% end %>
+      <%= f.select :tipo_vaga, Habitation::VAGA_TYPES, { include_blank: "—" }, class: field_state.call(:tipo_vaga, "form-select") %>
+      <% if field_invalid.call(:tipo_vaga) %><div class="invalid-feedback d-block">Informe o tipo de vaga.</div><% end %>
+    </div>
+  </div>
+  <div class="col-4">
+    <div class="wizard-field-group">
+      <%= f.label :vagas_garagem, "Vagas", class: "form-label" %>
+      <% if requires_parking %><span class="required-star">*</span><% end %>
+      <%= f.number_field :vagas_garagem, min: 0, inputmode: "numeric", class: field_state.call(:vagas_garagem) %>
+      <% if field_invalid.call(:vagas_garagem) %><div class="invalid-feedback d-block">Informe a quantidade de vagas.</div><% end %>
+    </div>
+  </div>
+  <div class="col-4">
+    <div class="wizard-field-group">
+      <%= f.label :numero_box, "Box", class: "form-label" %>
+      <%= f.text_field :numero_box, class: "form-control" %>
+    </div>
+  </div>
+</div>

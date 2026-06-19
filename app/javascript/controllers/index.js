@@ -121,6 +121,9 @@ application.register("navbar", NavbarController)
 import NestedFormController from "controllers/nested_form_controller"
 application.register("nested-form", NestedFormController)
 
+import PasswordVisibilityController from "controllers/password_visibility_controller"
+application.register("password-visibility", PasswordVisibilityController)
+
 import PhotoCarouselController from "controllers/photo_carousel_controller"
 application.register("photo-carousel", PhotoCarouselController)
 

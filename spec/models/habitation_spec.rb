@@ -367,6 +367,35 @@ RSpec.describe Habitation, type: :model do
     end
   end
 
+  describe "exigência de vaga na ficha de cadastro" do
+    it "exige tipo de vaga e vagas para apartamento" do
+      habitation = build(:habitation, categoria: "Apartamento", tipo_vaga: nil, vagas_qtd: nil)
+
+      expect(habitation.requires_parking_info?).to be(true)
+      missing = habitation.intake_missing_requirements
+      expect(missing).to include("Tipo de vaga")
+      expect(missing).to include("Vaga de garagem")
+    end
+
+    it "também exige para cobertura, loft e studio" do
+      %w[Cobertura Loft Studio].each do |categoria|
+        habitation = build(:habitation, categoria: categoria)
+        expect(habitation.requires_parking_info?).to be(true), "esperava obrigatório para #{categoria}"
+      end
+    end
+
+    it "não exige vaga para casa, galpão, terreno e sala comercial" do
+      ["Casa", "Galpão", "Terreno", "Sala Comercial"].each do |categoria|
+        habitation = build(:habitation, categoria: categoria, tipo_vaga: nil, vagas_qtd: nil)
+
+        expect(habitation.requires_parking_info?).to be(false), "esperava opcional para #{categoria}"
+        missing = habitation.intake_missing_requirements
+        expect(missing).not_to include("Tipo de vaga"), "#{categoria} não deveria exigir tipo de vaga"
+        expect(missing).not_to include("Vaga de garagem"), "#{categoria} não deveria exigir vaga"
+      end
+    end
+  end
+
   describe "#display_neighborhood" do
     def build_with_address(bairro:, bairro_comercial:)
       habitation = create(:habitation)

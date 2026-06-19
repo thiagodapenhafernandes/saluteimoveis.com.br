@@ -410,6 +410,13 @@ class Habitation < ApplicationRecord
     categoria.to_s.match?(/apartamento|cobertura|loft|studio/i)
   end
 
+  # Informações de vaga (tipo de vaga e quantidade) só são obrigatórias para
+  # unidades tipo apartamento. Para casa, galpão, terreno e sala comercial os
+  # campos existem na ficha, mas são opcionais.
+  def requires_parking_info?
+    property_kind_apartment_unit?
+  end
+
   def condominium_house?
     categoria.to_s.match?(/casa.*condom[ií]nio|condom[ií]nio.*casa/i)
   end
@@ -909,7 +916,10 @@ class Habitation < ApplicationRecord
     elsif property_kind_residencial? && dormitorios_qtd.to_i <= 0 && suites_qtd.to_i <= 0 && vagas_qtd.to_i <= 0
       missing << "Dimensões e estrutura física"
     end
-    missing << "Vaga de garagem" if vagas_qtd.nil? && !property_kind_terreno?
+    if requires_parking_info?
+      missing << "Tipo de vaga" if tipo_vaga.blank?
+      missing << "Vaga de garagem" if vagas_qtd.nil?
+    end
     missing << "Financeiro e valores" if requires_intake_expense_amount? && valor_condominio_cents.blank? && valor_iptu_cents.blank?
     missing << "Situação" if situacao.blank? && !property_kind_terreno?
     missing << "Ocupação" if ocupacao_status.blank? && !property_kind_terreno?

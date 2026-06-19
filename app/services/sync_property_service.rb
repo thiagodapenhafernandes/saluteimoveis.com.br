@@ -224,7 +224,15 @@ class SyncPropertyService
 
   def development_name_from_vista(categoria, codigo_empreendimento, raw_name)
     return nil if raw_name.blank?
-    return raw_name if codigo_empreendimento.present?
+    if codigo_empreendimento.present?
+      # Prefere o nome canônico do empreendimento pai (pelo código), evitando que
+      # o sync reintroduza variantes de grafia da fonte externa
+      # (ex.: "Edifício X" vs "X Tower"). Sem pai canônico, mantém o nome recebido.
+      canonical = Habitation.empreendimentos
+                            .where(codigo: codigo_empreendimento.to_s.strip)
+                            .pick(:nome_empreendimento)
+      return canonical.presence || raw_name
+    end
     return nil if Habitation.standalone_category_without_development_name?(categoria)
 
     raw_name

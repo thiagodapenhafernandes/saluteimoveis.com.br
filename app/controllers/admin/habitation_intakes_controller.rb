@@ -547,7 +547,10 @@ module Admin
         if @habitation.property_kind_residencial? && @habitation.banheiros_qtd.to_i <= 0
           missing << "Informe a quantidade de banheiros."
         end
-        missing << "Informe a quantidade de vagas de garagem." if @habitation.vagas_qtd.nil? && !@habitation.property_kind_terreno?
+        if @habitation.requires_parking_info?
+          missing << "Informe o tipo de vaga." if @habitation.tipo_vaga.blank?
+          missing << "Informe a quantidade de vagas de garagem." if @habitation.vagas_qtd.nil?
+        end
         missing << "Informe a ocupação do imóvel." if @habitation.ocupacao_status.blank? && !@habitation.property_kind_terreno?
         missing << "Informe a situação do imóvel." if @habitation.situacao.blank? && !@habitation.property_kind_terreno?
         missing << "Marque ao menos uma característica do imóvel." if @habitation.caracteristicas.blank?
@@ -615,7 +618,10 @@ module Admin
         end
         fields[:dormitorios] = true if @habitation.property_kind_residencial? && @habitation.dormitorios_qtd.to_i <= 0
         fields[:banheiros] = true if @habitation.property_kind_residencial? && @habitation.banheiros_qtd.to_i <= 0
-        fields[:vagas_garagem] = true if @habitation.vagas_qtd.nil? && !@habitation.property_kind_terreno?
+        if @habitation.requires_parking_info?
+          fields[:tipo_vaga] = true if @habitation.tipo_vaga.blank?
+          fields[:vagas_garagem] = true if @habitation.vagas_qtd.nil?
+        end
         fields[:ocupacao] = true if @habitation.ocupacao_status.blank? && !@habitation.property_kind_terreno?
         fields[:situacao_imovel] = true if @habitation.situacao.blank? && !@habitation.property_kind_terreno?
         fields[:caracteristicas_imovel] = true if @habitation.caracteristicas.blank?
