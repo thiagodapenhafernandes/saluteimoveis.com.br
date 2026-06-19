@@ -1974,17 +1974,20 @@ class Admin::HabitationsController < Admin::BaseController
       .where("NULLIF(TRIM(nome_empreendimento), '') IS NOT NULL AND nome_empreendimento != '.'")
       .pluck(:nome_empreendimento, :codigo)
 
-    names_with_development = development_options.map { |name, _code| normalized_filter_text(name) }
+    keys_with_development = development_options.map { |name, _code| Empreendimentos::NameNormalizer.key(name) }.to_set
     standalone_options = Habitation
       .where("NULLIF(TRIM(nome_empreendimento), '') IS NOT NULL AND nome_empreendimento != '.'")
       .where.not(tipo: "Empreendimento")
       .distinct
       .pluck(:nome_empreendimento)
-      .reject { |name| names_with_development.include?(normalized_filter_text(name)) }
+      .reject { |name| keys_with_development.include?(Empreendimentos::NameNormalizer.key(name)) }
       .map { |name| [name, name] }
 
+    # Agrupa variantes do mesmo empreendimento (ex.: com/sem "Edifício", "Tower")
+    # numa única opção. As opções canônicas (registros tipo=Empreendimento, com
+    # código) vêm primeiro, então prevalecem sobre as variantes em texto livre.
     (development_options + standalone_options)
-      .uniq { |name, value| [normalized_filter_text(name), value.to_s] }
+      .uniq { |name, _value| Empreendimentos::NameNormalizer.key(name) }
       .sort_by { |name, _value| normalized_filter_text(name) }
   end
 
