@@ -10,9 +10,14 @@ port ENV.fetch("PORT", 3000)
 environment ENV.fetch("RAILS_ENV", "development")
 
 if ENV.fetch("RAILS_ENV", "development") == "production"
+  # Deploy por symlink: aponta o diretório para o "current" para que o restart
+  # quente (SIGUSR2) siga o symlink e carregue a nova release (deploy sem downtime).
+  app_dir = ENV.fetch("PUMA_DIRECTORY", "/home/salute/deploy/current")
+  directory app_dir if Dir.exist?(app_dir)
+
   workers ENV.fetch("WEB_CONCURRENCY", 3)
   preload_app!
-  
+
   bind "tcp://127.0.0.1:9292"
   
   # pidfile "tmp/pids/puma.pid"
