@@ -396,6 +396,26 @@ RSpec.describe Habitation, type: :model do
     end
   end
 
+  describe "#display_title com bairro comercial" do
+    it "preserva o bairro do título salvo usando o bairro comercial, sem trocar pelo bairro interno" do
+      habitation = create(:habitation, categoria: "Apartamento", titulo_anuncio: "Apartamento diferenciado aluguel anual 4 suítes na Barra Sul")
+      Address.create!(
+        addressable: habitation,
+        tipo_endereco: "Rua",
+        logradouro: "Rua X",
+        numero: "1",
+        bairro: "Centro",
+        bairro_comercial: "Barra Sul",
+        cidade: "Balneário Camboriú",
+        uf: "SC"
+      )
+      habitation.reload
+
+      expect(habitation.display_title).to eq("Apartamento diferenciado aluguel anual 4 suítes na Barra Sul")
+      expect(habitation.display_title).not_to include("em Centro")
+    end
+  end
+
   describe "#uses_building_infrastructure?" do
     it "vale para apartamento e casa em condomínio, mas não para casa de rua/terreno" do
       expect(build(:habitation, categoria: "Apartamento").uses_building_infrastructure?).to be(true)
