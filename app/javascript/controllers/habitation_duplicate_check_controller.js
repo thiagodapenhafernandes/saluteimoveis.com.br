@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["street", "number", "building", "unit", "complement", "category", "commercialStatus", "comparison", "status", "submit"]
+  static targets = ["street", "number", "building", "unit", "complement", "category", "commercialStatus", "comparison", "status", "submit", "title", "contentSubmit"]
   static values = {
     url: String,
     ignoredId: String
@@ -22,7 +22,7 @@ export default class extends Controller {
     if (!this.identityComplete()) {
       this.hasDuplicate = false
       this.clearStatus()
-      this.toggleSubmit(false)
+      this.updateButtons()
       return
     }
 
@@ -50,11 +50,12 @@ export default class extends Controller {
       } else {
         this.showAvailable()
       }
-      this.toggleSubmit(this.hasDuplicate)
+      this.updateButtons()
     } catch (error) {
       console.error("[habitation-duplicate-check] erro:", error)
+      this.hasDuplicate = false
       this.clearStatus()
-      this.toggleSubmit(false)
+      this.updateButtons()
     }
   }
 
@@ -94,7 +95,7 @@ export default class extends Controller {
   }
 
   condominiumHouseSelected() {
-    return this.targetValue("category").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes("casa em condominio")
+    return this.targetValue("category").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().includes("casa em condominio")
   }
 
   showDuplicate(matches) {
@@ -124,11 +125,44 @@ export default class extends Controller {
     this.statusTarget.textContent = ""
   }
 
-  toggleSubmit(disabled) {
+  // Atualiza o estado dos botões. Todos os botões de envio são bloqueados quando
+  // há endereço duplicado. Os botões de conclusão administrativa ("Salvar Interno"
+  // e "Devolver/Enviar para corretor") também ficam bloqueados enquanto faltar
+  // título ou descrição (internet).
+  updateButtons() {
+    const contentMissing = this.contentMissing()
+
     this.submitTargets.forEach((button) => {
+      const requiresContent = this.contentSubmitTargets.includes(button)
+      const disabled = this.hasDuplicate || (requiresContent && contentMissing)
       button.disabled = disabled
       button.classList.toggle("disabled", disabled)
+      if (requiresContent) {
+        button.title = (contentMissing && !this.hasDuplicate)
+          ? "Preencha o título e a descrição do imóvel para concluir."
+          : ""
+      }
     })
+  }
+
+  contentMissing() {
+    return this.titleBlank() || this.descriptionBlank()
+  }
+
+  titleBlank() {
+    if (!this.hasTitleTarget) return false
+    return this.titleTarget.value.trim().length === 0
+  }
+
+  descriptionBlank() {
+    const input = this.element.querySelector('input[name="habitation[descricao_web]"]')
+    if (!input) return false
+    const text = (input.value || "").replace(/<[^>]*>/g, "").replace(/&nbsp;/gi, " ").trim()
+    return text.length === 0
+  }
+
+  refreshContent() {
+    this.updateButtons()
   }
 
   escapeHtml(value) {
