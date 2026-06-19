@@ -1,7 +1,5 @@
 module Admin
-  class LayoutSettingsController < ApplicationController
-    layout 'admin'
-    before_action :authenticate_admin_user!
+  class LayoutSettingsController < Admin::BaseController
     before_action :set_layout_setting
 
     def show
