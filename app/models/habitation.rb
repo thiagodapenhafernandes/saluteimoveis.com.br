@@ -430,7 +430,9 @@ class Habitation < ApplicationRecord
   end
 
   def uses_building_infrastructure?
-    property_kind_apartment_unit?
+    # Apartamentos e casas em condomínio têm estrutura/áreas de lazer do
+    # empreendimento; casas de rua, terrenos e comerciais não.
+    property_kind_apartment_unit? || condominium_house?
   end
 
   def requires_intake_development_name?

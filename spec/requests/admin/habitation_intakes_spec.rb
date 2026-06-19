@@ -131,6 +131,26 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(response.body).not_to include("Publicar Site")
   end
 
+  it "mostra as características de edifício e lazer na captação de casa em condomínio, incluindo Quadra de padel" do
+    intake = create(:habitation, :broker_intake, admin_user: admin, categoria: "Casa em Condomínio", intake_step: "infraestrutura")
+
+    get edit_admin_captacao_path(intake, step: "infraestrutura")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).not_to include("não precisa de dados de edifício")
+    expect(response.body).to include("Piscina")
+    expect(response.body).to include("Quadra de padel")
+  end
+
+  it "mantém casa de rua sem etapa de edifício na captação" do
+    intake = create(:habitation, :broker_intake, admin_user: admin, categoria: "Casa", intake_step: "infraestrutura")
+
+    get edit_admin_captacao_path(intake, step: "infraestrutura")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("não precisa de dados de edifício")
+  end
+
   it "exporta planilha de captações para perfil administrativo" do
     administrative_profile = Profile.find_or_initialize_by(name: "Administrativo")
     administrative_profile.permissions = Profile.default_permissions_for("Administrativo")

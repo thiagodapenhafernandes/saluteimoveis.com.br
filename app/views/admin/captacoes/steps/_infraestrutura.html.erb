@@ -1,11 +1,11 @@
 <%
   kind = @captacao.property_kind.to_s
-  fallback_features_predio = case kind
-                             when "residencial"
-                               ["Elevador", "Salão de festas", "Academia", "Playground", "Piscina", "Churrasqueira",
-                                "Portaria 24h", "Quadra poliesportiva", "Sauna", "Bicicletário", "Pet place", "Coworking"]
-                             when "sala_comercial"
+  fallback_features_predio = if @captacao.property_kind_sala_comercial?
                                ["Elevador", "Gerador", "Estacionamento rotativo", "Portaria 24h", "Câmeras de segurança", "Heliponto"]
+                             elsif @captacao.uses_building_infrastructure?
+                               # Apartamentos e casas em condomínio: áreas de lazer do empreendimento
+                               ["Elevador", "Salão de festas", "Academia", "Playground", "Piscina", "Churrasqueira",
+                                "Portaria 24h", "Quadra poliesportiva", "Quadra de padel", "Sauna", "Bicicletário", "Pet place", "Coworking"]
                              else
                                []
                              end
