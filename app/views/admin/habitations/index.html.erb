@@ -235,6 +235,47 @@
     grid-template-columns: repeat(2, minmax(90px, 1fr));
     gap: 0.3rem;
   }
+  .filter-price-master label { margin-bottom: 0.2rem; }
+  /* Accordions ("sanduíche") da área de filtros */
+  .filter-accordion {
+    border: 1px solid #d2d6dd;
+    border-radius: 6px;
+    background: #fff;
+    margin-bottom: 0.45rem;
+  }
+  .filter-accordion__summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 0.5rem 0.7rem;
+    font-size: 0.74rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #334155;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .filter-accordion__summary::-webkit-details-marker { display: none; }
+  .filter-accordion__summary::after {
+    content: "\F282";
+    font-family: "bootstrap-icons";
+    margin-left: auto;
+    font-size: 0.7rem;
+    color: #94a3b8;
+    transition: transform .15s ease;
+  }
+  .filter-accordion[open] > .filter-accordion__summary::after { transform: rotate(180deg); }
+  .filter-accordion[open] > .filter-accordion__summary { border-bottom: 1px solid #e6e9ef; }
+  .filter-accordion__body { padding: 0.7rem; }
+  .filter-subgroup-title {
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+    margin: 0.75rem 0 0.4rem;
+  }
   .filter-date-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -940,6 +981,19 @@
                            } %>
             </div>
           </div>
+          <div class="filter-price-master mt-2">
+            <label class="form-label small fw-bold text-muted text-uppercase">Valor</label>
+            <div class="filter-price-pair">
+              <div class="input-group">
+                <span class="input-group-text bg-white">R$</span>
+                <%= f.text_field :min_price, value: params[:min_price], class: "form-control money-mask", placeholder: "Mín." %>
+              </div>
+              <div class="input-group">
+                <span class="input-group-text bg-white">R$</span>
+                <%= f.text_field :max_price, value: params[:max_price], class: "form-control money-mask", placeholder: "Máx." %>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="filter-compact-hint">
@@ -961,9 +1015,17 @@
         <%= link_to "Limpar extras", admin_habitations_path(clear_extras_params), class: "btn btn-link text-decoration-none text-muted fw-semibold small p-0" %>
       </div>
 
-        <div class="filter-detail-grid">
-          <section class="filter-detail-section">
-            <div class="filter-detail-section__title">Localização</div>
+        <%
+          loc_open = %w[logradouro numero cep cidade bairro bairro_comercial].any? { |k| params[k].present? }
+          neg_open = %w[situacao promotion_status accepts_exchange key_location salute_rental_management permuta_vehicle permuta_property permuta_others permuta_min_value permuta_location permuta_min_dorms permuta_min_suites permuta_min_garagens captacao_inicio captacao_fim atualizacao_inicio atualizacao_fim].any? { |k| params[k].present? }
+          apt_open = (%w[face ocupacao_status estado_conservacao area_total_min area_total_max area_privativa_min area_privativa_max].any? { |k| params[k].present? }) || %w[banheiros dorms suites vagas].any? { |k| Array(params[k]).reject(&:blank?).any? }
+          emp_open = Array(params[:amenities]).reject(&:blank?).any?
+          adm_open = (%w[proprietor_id regiao_foco destaque_web festival_salute exibir_no_site somente_com_imagens somente_sem_imagens tem_placa exclusivo somente_dwv].any? { |k| params[k].present? }) || Array(params[:foto_classificacao]).reject(&:blank?).any? || %w[publicar_imovelweb_2 publicar_lais_ai publicar_chaves_na_mao publicar_casa_mineira publicar_imovelweb publicar_viva_real_vrsync].any? { |k| params[k].present? }
+        %>
+
+        <details class="filter-accordion"<%= " open".html_safe if loc_open %>>
+          <summary class="filter-accordion__summary"><i class="bi bi-geo-alt me-2"></i>Localização</summary>
+          <div class="filter-accordion__body">
             <div class="filter-location-grid">
               <div class="wide">
                 <label class="form-label small fw-bold text-muted text-uppercase">Rua</label>
@@ -1000,10 +1062,12 @@
                              } %>
               </div>
             </div>
-          </section>
+          </div>
+        </details>
 
-          <section class="filter-detail-section">
-            <div class="filter-detail-section__title">Negócio</div>
+        <details class="filter-accordion"<%= " open".html_safe if neg_open %>>
+          <summary class="filter-accordion__summary"><i class="bi bi-cash-coin me-2"></i>Negociação</summary>
+          <div class="filter-accordion__body">
             <div class="filter-business-grid">
               <div>
                 <label class="form-label small fw-bold text-muted text-uppercase">Situação</label>
@@ -1034,24 +1098,54 @@
                              { include_blank: "Todos", selected: params[:salute_rental_management] },
                              class: "form-select" %>
               </div>
-              <div class="wide">
-                <label class="form-label small fw-bold text-muted text-uppercase">Preço</label>
-                <div class="filter-price-pair">
-                  <div class="input-group">
-                    <span class="input-group-text bg-white">R$</span>
-                    <%= f.text_field :min_price, value: params[:min_price], class: "form-control money-mask", placeholder: "Mín." %>
-                  </div>
-                  <div class="input-group">
-                    <span class="input-group-text bg-white">R$</span>
-                    <%= f.text_field :max_price, value: params[:max_price], class: "form-control money-mask", placeholder: "Máx." %>
-                  </div>
+            </div>
+
+            <div class="filter-subgroup-title">Permuta</div>
+            <div class="row g-3">
+              <div class="col-md-4">
+                <div class="form-check">
+                  <%= check_box_tag :permuta_vehicle, "1", params[:permuta_vehicle] == "1", class: "form-check-input", id: "permuta_vehicle_filter" %>
+                  <%= label_tag :permuta_vehicle_filter, "Aceita permuta veículo", class: "form-check-label" %>
                 </div>
               </div>
+              <div class="col-md-4">
+                <div class="form-check">
+                  <%= check_box_tag :permuta_property, "1", params[:permuta_property] == "1", class: "form-check-input", id: "permuta_property_filter" %>
+                  <%= label_tag :permuta_property_filter, "Aceita permuta imóvel", class: "form-check-label" %>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="form-check">
+                  <%= check_box_tag :permuta_others, "1", params[:permuta_others] == "1", class: "form-check-input", id: "permuta_others_filter" %>
+                  <%= label_tag :permuta_others_filter, "Aceita permuta outros", class: "form-check-label" %>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-bold text-muted text-uppercase">Valor mín. permuta</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white">R$</span>
+                  <%= f.text_field :permuta_min_value, value: params[:permuta_min_value], class: "form-control money-mask", placeholder: "0,00" %>
+                </div>
+              </div>
+              <div class="col-md-8">
+                <label class="form-label small fw-bold text-muted text-uppercase">Localização permuta</label>
+                <%= f.text_field :permuta_location, value: params[:permuta_location], class: "form-control", placeholder: "Cidade, bairro ou região" %>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-bold text-muted text-uppercase">Dormit. mín.</label>
+                <%= f.number_field :permuta_min_dorms, value: params[:permuta_min_dorms], class: "form-control", min: 0 %>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-bold text-muted text-uppercase">Suítes mín.</label>
+                <%= f.number_field :permuta_min_suites, value: params[:permuta_min_suites], class: "form-control", min: 0 %>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-bold text-muted text-uppercase">Garagens mín.</label>
+                <%= f.number_field :permuta_min_garagens, value: params[:permuta_min_garagens], class: "form-control", min: 0 %>
+              </div>
             </div>
-          </section>
 
-          <section class="filter-detail-section filter-detail-section-dates">
-            <div class="filter-detail-section__title">Datas</div>
+            <div class="filter-subgroup-title">Datas</div>
             <div class="filter-date-grid">
               <div>
                 <label class="form-label small fw-bold text-muted text-uppercase">Cadastro de</label>
@@ -1070,314 +1164,256 @@
                 <%= f.date_field :atualizacao_fim, value: params[:atualizacao_fim], class: "form-control" %>
               </div>
             </div>
-          </section>
-        </div>
-
-        <details class="mt-4 border rounded-3 bg-light-subtle" <%= "open" if vista_advanced_open %>>
-          <summary class="px-3 py-2 fw-bold text-primary" style="cursor: pointer;">
-            <i class="bi bi-grid-3x3-gap me-2"></i>Filtro avançado
-          </summary>
-          <div class="p-3 border-top rounded-bottom-3 filter-advanced-body">
-            <% if can_filter_by_proprietor? %>
-              <div class="border rounded-3 p-3 mb-3">
-                <h6 class="fw-bold text-secondary mb-3">Vínculos</h6>
-                <div class="row g-3">
-                  <div class="col-md-3">
-                    <label class="form-label small fw-bold text-muted text-uppercase">Proprietário</label>
-                    <%= f.select :proprietor_id,
-                                 @filter_proprietors,
-                                 { include_blank: "Todas", selected: params[:proprietor_id] },
-                                 {
-                                   class: "form-select",
-                                   data: {
-                                     controller: "tom-select",
-                                     tom_select_create_value: false,
-                                     tom_select_options_value: { placeholder: "Selecione proprietário" }
-                                   }
-                                 } %>
-                  </div>
-                </div>
-              </div>
-            <% end %>
-
-            <div class="border rounded-3 p-3 mb-3">
-              <h6 class="fw-bold text-secondary mb-3">Características</h6>
-              <div class="row g-3">
-                <div class="col-md-3">
-                  <label class="form-label small fw-bold text-muted text-uppercase">Face</label>
-                  <%= f.select :face, @filter_faces, { include_blank: "Todas", selected: params[:face] }, class: "form-select" %>
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-bold text-muted text-uppercase">Ocupação</label>
-                  <%= f.select :ocupacao_status, @filter_ocupacao_statuses, { include_blank: "Todas", selected: params[:ocupacao_status] }, class: "form-select" %>
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-bold text-muted text-uppercase">Conservação</label>
-                  <%= f.select :estado_conservacao, @filter_estado_conservacoes, { include_blank: "Todas", selected: params[:estado_conservacao] }, class: "form-select" %>
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-bold text-muted text-uppercase">Região foco?</label>
-                  <%= f.select :regiao_foco, @filter_regioes_foco, { include_blank: "Todas", selected: params[:regiao_foco] }, class: "form-select" %>
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-bold text-muted text-uppercase">Banheiros (exato)</label>
-                  <%= f.select :banheiros,
-                               options_for_select((1..8).map { |n| [n.to_s, n] }, @banheiros),
-                               {},
-                               {
-                                 multiple: true,
-                                 class: "form-select filter-multi-compact",
-                                 data: {
-                                   controller: "tom-select",
-                                   tom_select_create_value: false,
-                                   tom_select_options_value: { placeholder: "Selecione banheiros" }
-                                 }
-                               } %>
-                </div>
-
-                <div class="col-md-3">
-                  <label class="form-label small fw-bold text-muted text-uppercase">Dormitórios (exato)</label>
-                  <%= f.select :dorms,
-                               options_for_select((1..8).map { |n| [n.to_s, n] }, @dorms),
-                               {},
-                               {
-                                 multiple: true,
-                                 class: "form-select filter-multi-compact",
-                                 data: {
-                                   controller: "tom-select",
-                                   tom_select_create_value: false,
-                                   tom_select_options_value: { placeholder: "Selecione dormitórios" }
-                                 }
-                               } %>
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-bold text-muted text-uppercase">Suítes (exato)</label>
-                  <%= f.select :suites,
-                               options_for_select((1..8).map { |n| [n.to_s, n] }, @suites),
-                               {},
-                               {
-                                 multiple: true,
-                                 class: "form-select filter-multi-compact",
-                                 data: {
-                                   controller: "tom-select",
-                                   tom_select_create_value: false,
-                                   tom_select_options_value: { placeholder: "Selecione suítes" }
-                                 }
-                               } %>
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-bold text-muted text-uppercase">Vagas (exato)</label>
-                  <%= f.select :vagas,
-                               options_for_select((1..8).map { |n| [n.to_s, n] }, @vagas),
-                               {},
-                               {
-                                 multiple: true,
-                                 class: "form-select filter-multi-compact",
-                                 data: {
-                                   controller: "tom-select",
-                                   tom_select_create_value: false,
-                                   tom_select_options_value: { placeholder: "Selecione vagas" }
-                                 }
-                               } %>
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-bold text-muted text-uppercase">Área Total mín. (m²)</label>
-                  <%= f.number_field :area_total_min, value: params[:area_total_min], class: "form-control", step: "0.01", min: "0" %>
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-bold text-muted text-uppercase">Área Total máx. (m²)</label>
-                  <%= f.number_field :area_total_max, value: params[:area_total_max], class: "form-control", step: "0.01", min: "0" %>
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-bold text-muted text-uppercase">Área Privativa mín. (m²)</label>
-                  <%= f.number_field :area_privativa_min, value: params[:area_privativa_min], class: "form-control", step: "0.01", min: "0" %>
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-bold text-muted text-uppercase">Área Privativa máx. (m²)</label>
-                  <%= f.number_field :area_privativa_max, value: params[:area_privativa_max], class: "form-control", step: "0.01", min: "0" %>
-                </div>
-              </div>
-            </div>
-
-            <div class="border rounded-3 p-3 mb-3">
-              <h6 class="fw-bold text-secondary mb-3">Destaques</h6>
-              <div class="row g-3">
-                <div class="col-md-3">
-                  <label class="form-label small fw-bold text-muted text-uppercase">Destaque Web</label>
-                  <%= f.select :destaque_web,
-                               [["Sim", "1"], ["Não", "0"]],
-                               { include_blank: "Todos", selected: params[:destaque_web] },
-                               class: "form-select" %>
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-bold text-muted text-uppercase">Super Destaque</label>
-                  <%= f.select :festival_salute,
-                               [["Sim", "1"], ["Não", "0"]],
-                               { include_blank: "Todos", selected: params[:festival_salute] },
-                               class: "form-select" %>
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-bold text-muted text-uppercase">Exibir no site</label>
-                  <%= f.select :exibir_no_site,
-                               [["Sim", "1"], ["Não", "0"]],
-                               { include_blank: "Todos", selected: params[:exibir_no_site].presence || params[:exibir_no_site_salute] },
-                               class: "form-select" %>
-                </div>
-              </div>
-            </div>
-
-            <div class="border rounded-3 p-3 mb-3">
-              <h6 class="fw-bold text-secondary mb-3">Outros critérios</h6>
-              <div class="row g-3">
-                <div class="col-md-3">
-                  <div class="form-check">
-                    <%= check_box_tag :somente_com_imagens, "1", params[:somente_com_imagens] == "1", class: "form-check-input", id: "somente_com_imagens_filter" %>
-                    <%= label_tag :somente_com_imagens_filter, "Somente com imagens", class: "form-check-label" %>
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <div class="form-check">
-                    <%= check_box_tag :somente_sem_imagens, "1", params[:somente_sem_imagens] == "1", class: "form-check-input", id: "somente_sem_imagens_filter" %>
-                    <%= label_tag :somente_sem_imagens_filter, "Somente sem imagens", class: "form-check-label" %>
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <div class="form-check">
-                    <%= check_box_tag :tem_placa, "1", params[:tem_placa] == "1", class: "form-check-input", id: "tem_placa_filter_outros" %>
-                    <%= label_tag :tem_placa_filter_outros, "Tem Placa", class: "form-check-label" %>
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <div class="form-check">
-                    <%= check_box_tag :exclusivo, "1", params[:exclusivo] == "1", class: "form-check-input", id: "exclusivo_filter_outros" %>
-                    <%= label_tag :exclusivo_filter_outros, "Exclusivo", class: "form-check-label" %>
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <div class="form-check">
-                    <%= check_box_tag :somente_dwv, "1", params[:somente_dwv] == "1", class: "form-check-input", id: "somente_dwv_filter" %>
-                    <%= label_tag :somente_dwv_filter, "Somente imóveis do DWV", class: "form-check-label" %>
-                  </div>
-                </div>
-              </div>
-              <div class="row g-3 mt-1">
-                <div class="col-12">
-                  <label class="form-label small fw-bold text-muted text-uppercase mb-2">Publicado com fotos</label>
-                  <% selected_foto_classificacoes = Array(params[:foto_classificacao]).map(&:to_s) %>
-                  <div class="d-flex flex-wrap gap-3">
-                    <% ["Profissionais", "Boas", "Aceitáveis", "Não tem fotos"].each do |opcao| %>
-                      <div class="form-check">
-                        <%= check_box_tag "foto_classificacao[]", opcao, selected_foto_classificacoes.include?(opcao), class: "form-check-input", id: "foto_classificacao_#{opcao.parameterize}" %>
-                        <%= label_tag "foto_classificacao_#{opcao.parameterize}", opcao, class: "form-check-label" %>
-                      </div>
-                    <% end %>
-                  </div>
-                </div>
-              </div>
-              <div class="row g-3 mt-1">
-                <div class="col-12">
-                  <label class="form-label small fw-bold text-muted text-uppercase mb-2">Características e infraestrutura</label>
-                  <% amenity_options = Admin::HabitationsController::AMENITY_FILTER_OPTIONS %>
-                  <% selected_amenities = Array(params[:amenities]).map(&:to_s) %>
-                  <div class="row g-2">
-                    <% amenity_options.each_with_index do |opcao, idx| %>
-                      <div class="col-md-4">
-                        <div class="form-check">
-                          <%= check_box_tag "amenities[]", opcao, selected_amenities.include?(opcao), class: "form-check-input", id: "amenity_filter_#{idx}" %>
-                          <%= label_tag "amenity_filter_#{idx}", opcao, class: "form-check-label" %>
-                        </div>
-                      </div>
-                    <% end %>
-                  </div>
-                </div>
-              </div>
-              <div class="row g-3 mt-1">
-                <div class="col-12">
-                  <label class="form-label small fw-bold text-muted text-uppercase mb-2">Publicação em portais</label>
-                  <div class="row g-2">
-                    <div class="col-md-6">
-                      <div class="form-check">
-                        <%= check_box_tag :publicar_imovelweb_2, "1", params[:publicar_imovelweb_2] == "1", class: "form-check-input", id: "publicar_imovelweb_2_filter" %>
-                        <%= label_tag :publicar_imovelweb_2_filter, "Publicar Imovelweb 2", class: "form-check-label" %>
-                      </div>
-                      <div class="form-check">
-                        <%= check_box_tag :publicar_lais_ai, "1", params[:publicar_lais_ai] == "1", class: "form-check-input", id: "publicar_lais_ai_filter" %>
-                        <%= label_tag :publicar_lais_ai_filter, "Publicar Lais Ai", class: "form-check-label" %>
-                      </div>
-                    </div>
-                    <div class="col-md-6">
-                      <div class="form-check">
-                        <%= check_box_tag :publicar_chaves_na_mao, "1", params[:publicar_chaves_na_mao] == "1", class: "form-check-input", id: "publicar_chaves_na_mao_filter" %>
-                        <%= label_tag :publicar_chaves_na_mao_filter, "Publicar Chaves Na Mao", class: "form-check-label" %>
-                      </div>
-                      <div class="form-check">
-                        <%= check_box_tag :publicar_casa_mineira, "1", params[:publicar_casa_mineira] == "1", class: "form-check-input", id: "publicar_casa_mineira_filter" %>
-                        <%= label_tag :publicar_casa_mineira_filter, "Publicar Casa Mineira", class: "form-check-label" %>
-                      </div>
-                      <div class="form-check">
-                        <%= check_box_tag :publicar_imovelweb, "1", params[:publicar_imovelweb] == "1", class: "form-check-input", id: "publicar_imovelweb_filter" %>
-                        <%= label_tag :publicar_imovelweb_filter, "Publicar Imovelweb", class: "form-check-label" %>
-                      </div>
-                      <div class="form-check">
-                        <%= check_box_tag :publicar_viva_real_vrsync, "1", params[:publicar_viva_real_vrsync] == "1", class: "form-check-input", id: "publicar_viva_real_vrsync_filter" %>
-                        <%= label_tag :publicar_viva_real_vrsync_filter, "Publicar Viva Real VRSync", class: "form-check-label" %>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="border rounded-3 p-3 mb-3">
-              <h6 class="fw-bold text-secondary mb-3">Permuta</h6>
-              <div class="row g-3">
-                <div class="col-md-3">
-                  <div class="form-check mt-4">
-                    <%= check_box_tag :permuta_vehicle, "1", params[:permuta_vehicle] == "1", class: "form-check-input", id: "permuta_vehicle_filter" %>
-                    <%= label_tag :permuta_vehicle_filter, "Aceita permuta veículo", class: "form-check-label" %>
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <div class="form-check mt-4">
-                    <%= check_box_tag :permuta_property, "1", params[:permuta_property] == "1", class: "form-check-input", id: "permuta_property_filter" %>
-                    <%= label_tag :permuta_property_filter, "Aceita permuta imóvel", class: "form-check-label" %>
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <div class="form-check mt-4">
-                    <%= check_box_tag :permuta_others, "1", params[:permuta_others] == "1", class: "form-check-input", id: "permuta_others_filter" %>
-                    <%= label_tag :permuta_others_filter, "Aceita permuta outros", class: "form-check-label" %>
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-bold text-muted text-uppercase">Valor mín. permuta</label>
-                  <div class="input-group">
-                    <span class="input-group-text bg-white">R$</span>
-                    <%= f.text_field :permuta_min_value, value: params[:permuta_min_value], class: "form-control money-mask", placeholder: "0,00" %>
-                  </div>
-                </div>
-
-                <div class="col-md-6">
-                  <label class="form-label small fw-bold text-muted text-uppercase">Localização permuta</label>
-                  <%= f.text_field :permuta_location, value: params[:permuta_location], class: "form-control", placeholder: "Cidade, bairro ou região" %>
-                </div>
-                <div class="col-md-2">
-                  <label class="form-label small fw-bold text-muted text-uppercase">Dormit. mín.</label>
-                  <%= f.number_field :permuta_min_dorms, value: params[:permuta_min_dorms], class: "form-control", min: 0 %>
-                </div>
-                <div class="col-md-2">
-                  <label class="form-label small fw-bold text-muted text-uppercase">Suítes mín.</label>
-                  <%= f.number_field :permuta_min_suites, value: params[:permuta_min_suites], class: "form-control", min: 0 %>
-                </div>
-                <div class="col-md-2">
-                  <label class="form-label small fw-bold text-muted text-uppercase">Garagens mín.</label>
-                  <%= f.number_field :permuta_min_garagens, value: params[:permuta_min_garagens], class: "form-control", min: 0 %>
-                </div>
-              </div>
-            </div>
-
           </div>
         </details>
+
+        <details class="filter-accordion"<%= " open".html_safe if apt_open %>>
+          <summary class="filter-accordion__summary"><i class="bi bi-house-door me-2"></i>Características apartamento</summary>
+          <div class="filter-accordion__body">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label small fw-bold text-muted text-uppercase">Face</label>
+                <%= f.select :face, @filter_faces, { include_blank: "Todas", selected: params[:face] }, class: "form-select" %>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-bold text-muted text-uppercase">Ocupação</label>
+                <%= f.select :ocupacao_status, @filter_ocupacao_statuses, { include_blank: "Todas", selected: params[:ocupacao_status] }, class: "form-select" %>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-bold text-muted text-uppercase">Conservação</label>
+                <%= f.select :estado_conservacao, @filter_estado_conservacoes, { include_blank: "Todas", selected: params[:estado_conservacao] }, class: "form-select" %>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small fw-bold text-muted text-uppercase">Banheiros (exato)</label>
+                <%= f.select :banheiros,
+                             options_for_select((1..8).map { |n| [n.to_s, n] }, @banheiros),
+                             {},
+                             {
+                               multiple: true,
+                               class: "form-select filter-multi-compact",
+                               data: {
+                                 controller: "tom-select",
+                                 tom_select_create_value: false,
+                                 tom_select_options_value: { placeholder: "Selecione banheiros" }
+                               }
+                             } %>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small fw-bold text-muted text-uppercase">Dormitórios (exato)</label>
+                <%= f.select :dorms,
+                             options_for_select((1..8).map { |n| [n.to_s, n] }, @dorms),
+                             {},
+                             {
+                               multiple: true,
+                               class: "form-select filter-multi-compact",
+                               data: {
+                                 controller: "tom-select",
+                                 tom_select_create_value: false,
+                                 tom_select_options_value: { placeholder: "Selecione dormitórios" }
+                               }
+                             } %>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small fw-bold text-muted text-uppercase">Suítes (exato)</label>
+                <%= f.select :suites,
+                             options_for_select((1..8).map { |n| [n.to_s, n] }, @suites),
+                             {},
+                             {
+                               multiple: true,
+                               class: "form-select filter-multi-compact",
+                               data: {
+                                 controller: "tom-select",
+                                 tom_select_create_value: false,
+                                 tom_select_options_value: { placeholder: "Selecione suítes" }
+                               }
+                             } %>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small fw-bold text-muted text-uppercase">Vagas (exato)</label>
+                <%= f.select :vagas,
+                             options_for_select((1..8).map { |n| [n.to_s, n] }, @vagas),
+                             {},
+                             {
+                               multiple: true,
+                               class: "form-select filter-multi-compact",
+                               data: {
+                                 controller: "tom-select",
+                                 tom_select_create_value: false,
+                                 tom_select_options_value: { placeholder: "Selecione vagas" }
+                               }
+                             } %>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small fw-bold text-muted text-uppercase">Área Total mín. (m²)</label>
+                <%= f.number_field :area_total_min, value: params[:area_total_min], class: "form-control", step: "0.01", min: "0" %>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small fw-bold text-muted text-uppercase">Área Total máx. (m²)</label>
+                <%= f.number_field :area_total_max, value: params[:area_total_max], class: "form-control", step: "0.01", min: "0" %>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small fw-bold text-muted text-uppercase">Área Privativa mín. (m²)</label>
+                <%= f.number_field :area_privativa_min, value: params[:area_privativa_min], class: "form-control", step: "0.01", min: "0" %>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small fw-bold text-muted text-uppercase">Área Privativa máx. (m²)</label>
+                <%= f.number_field :area_privativa_max, value: params[:area_privativa_max], class: "form-control", step: "0.01", min: "0" %>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details class="filter-accordion"<%= " open".html_safe if emp_open %>>
+          <summary class="filter-accordion__summary"><i class="bi bi-building me-2"></i>Características empreendimento</summary>
+          <div class="filter-accordion__body">
+            <label class="form-label small fw-bold text-muted text-uppercase mb-2">Características e infraestrutura</label>
+            <% amenity_options = Admin::HabitationsController::AMENITY_FILTER_OPTIONS %>
+            <% selected_amenities = Array(params[:amenities]).map(&:to_s) %>
+            <div class="row g-2">
+              <% amenity_options.each_with_index do |opcao, idx| %>
+                <div class="col-md-4">
+                  <div class="form-check">
+                    <%= check_box_tag "amenities[]", opcao, selected_amenities.include?(opcao), class: "form-check-input", id: "amenity_filter_#{idx}" %>
+                    <%= label_tag "amenity_filter_#{idx}", opcao, class: "form-check-label" %>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </details>
+
+        <% if can_filter_by_proprietor? %>
+        <details class="filter-accordion"<%= " open".html_safe if adm_open %>>
+          <summary class="filter-accordion__summary"><i class="bi bi-shield-lock me-2"></i>Administrativo</summary>
+          <div class="filter-accordion__body">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label small fw-bold text-muted text-uppercase">Proprietário</label>
+                <%= f.select :proprietor_id,
+                             @filter_proprietors,
+                             { include_blank: "Todas", selected: params[:proprietor_id] },
+                             {
+                               class: "form-select",
+                               data: {
+                                 controller: "tom-select",
+                                 tom_select_create_value: false,
+                                 tom_select_options_value: { placeholder: "Selecione proprietário" }
+                               }
+                             } %>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-bold text-muted text-uppercase">Região foco?</label>
+                <%= f.select :regiao_foco, @filter_regioes_foco, { include_blank: "Todas", selected: params[:regiao_foco] }, class: "form-select" %>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-bold text-muted text-uppercase">Destaque Web</label>
+                <%= f.select :destaque_web,
+                             [["Sim", "1"], ["Não", "0"]],
+                             { include_blank: "Todos", selected: params[:destaque_web] },
+                             class: "form-select" %>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-bold text-muted text-uppercase">Super Destaque</label>
+                <%= f.select :festival_salute,
+                             [["Sim", "1"], ["Não", "0"]],
+                             { include_blank: "Todos", selected: params[:festival_salute] },
+                             class: "form-select" %>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-bold text-muted text-uppercase">Exibir no site</label>
+                <%= f.select :exibir_no_site,
+                             [["Sim", "1"], ["Não", "0"]],
+                             { include_blank: "Todos", selected: params[:exibir_no_site].presence || params[:exibir_no_site_salute] },
+                             class: "form-select" %>
+              </div>
+            </div>
+
+            <div class="row g-3 mt-1">
+              <div class="col-md-4">
+                <div class="form-check">
+                  <%= check_box_tag :somente_com_imagens, "1", params[:somente_com_imagens] == "1", class: "form-check-input", id: "somente_com_imagens_filter" %>
+                  <%= label_tag :somente_com_imagens_filter, "Somente com imagens", class: "form-check-label" %>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="form-check">
+                  <%= check_box_tag :somente_sem_imagens, "1", params[:somente_sem_imagens] == "1", class: "form-check-input", id: "somente_sem_imagens_filter" %>
+                  <%= label_tag :somente_sem_imagens_filter, "Somente sem imagens", class: "form-check-label" %>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="form-check">
+                  <%= check_box_tag :tem_placa, "1", params[:tem_placa] == "1", class: "form-check-input", id: "tem_placa_filter_outros" %>
+                  <%= label_tag :tem_placa_filter_outros, "Tem Placa", class: "form-check-label" %>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="form-check">
+                  <%= check_box_tag :exclusivo, "1", params[:exclusivo] == "1", class: "form-check-input", id: "exclusivo_filter_outros" %>
+                  <%= label_tag :exclusivo_filter_outros, "Exclusivo", class: "form-check-label" %>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="form-check">
+                  <%= check_box_tag :somente_dwv, "1", params[:somente_dwv] == "1", class: "form-check-input", id: "somente_dwv_filter" %>
+                  <%= label_tag :somente_dwv_filter, "Somente imóveis do DWV", class: "form-check-label" %>
+                </div>
+              </div>
+            </div>
+
+            <div class="row g-3 mt-1">
+              <div class="col-12">
+                <label class="form-label small fw-bold text-muted text-uppercase mb-2">Publicado com fotos</label>
+                <% selected_foto_classificacoes = Array(params[:foto_classificacao]).map(&:to_s) %>
+                <div class="d-flex flex-wrap gap-3">
+                  <% ["Profissionais", "Boas", "Aceitáveis", "Não tem fotos"].each do |opcao| %>
+                    <div class="form-check">
+                      <%= check_box_tag "foto_classificacao[]", opcao, selected_foto_classificacoes.include?(opcao), class: "form-check-input", id: "foto_classificacao_#{opcao.parameterize}" %>
+                      <%= label_tag "foto_classificacao_#{opcao.parameterize}", opcao, class: "form-check-label" %>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+
+            <div class="row g-3 mt-1">
+              <div class="col-12">
+                <label class="form-label small fw-bold text-muted text-uppercase mb-2">Publicação em portais</label>
+                <div class="row g-2">
+                  <div class="col-md-6">
+                    <div class="form-check">
+                      <%= check_box_tag :publicar_imovelweb_2, "1", params[:publicar_imovelweb_2] == "1", class: "form-check-input", id: "publicar_imovelweb_2_filter" %>
+                      <%= label_tag :publicar_imovelweb_2_filter, "Publicar Imovelweb 2", class: "form-check-label" %>
+                    </div>
+                    <div class="form-check">
+                      <%= check_box_tag :publicar_lais_ai, "1", params[:publicar_lais_ai] == "1", class: "form-check-input", id: "publicar_lais_ai_filter" %>
+                      <%= label_tag :publicar_lais_ai_filter, "Publicar Lais Ai", class: "form-check-label" %>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-check">
+                      <%= check_box_tag :publicar_chaves_na_mao, "1", params[:publicar_chaves_na_mao] == "1", class: "form-check-input", id: "publicar_chaves_na_mao_filter" %>
+                      <%= label_tag :publicar_chaves_na_mao_filter, "Publicar Chaves Na Mao", class: "form-check-label" %>
+                    </div>
+                    <div class="form-check">
+                      <%= check_box_tag :publicar_casa_mineira, "1", params[:publicar_casa_mineira] == "1", class: "form-check-input", id: "publicar_casa_mineira_filter" %>
+                      <%= label_tag :publicar_casa_mineira_filter, "Publicar Casa Mineira", class: "form-check-label" %>
+                    </div>
+                    <div class="form-check">
+                      <%= check_box_tag :publicar_imovelweb, "1", params[:publicar_imovelweb] == "1", class: "form-check-input", id: "publicar_imovelweb_filter" %>
+                      <%= label_tag :publicar_imovelweb_filter, "Publicar Imovelweb", class: "form-check-label" %>
+                    </div>
+                    <div class="form-check">
+                      <%= check_box_tag :publicar_viva_real_vrsync, "1", params[:publicar_viva_real_vrsync] == "1", class: "form-check-input", id: "publicar_viva_real_vrsync_filter" %>
+                      <%= label_tag :publicar_viva_real_vrsync_filter, "Publicar Viva Real VRSync", class: "form-check-label" %>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </details>
+        <% end %>
 
     </div>
   </div>
@@ -1416,20 +1452,14 @@
 <div class="habitations-scopes d-flex flex-wrap gap-2 mb-4">
   <% 
     scopes = [
-      { key: 'destaque_web', label: 'Destaque Web', icon: 'star-fill' },
-      { key: 'super_destaque', label: 'Super Destaque', icon: 'stars' },
       { key: 'oportunidade', label: 'Oportunidade', icon: 'lightning-fill' },
       { key: 'frente_mar', label: 'Frente Mar', icon: 'building' },
+      { key: 'quadra_mar', label: 'Quadra Mar', icon: 'water' },
+      { key: 'vista_mar', label: 'Vista Mar', icon: 'binoculars' },
       { key: 'lancamento', label: 'Lançamento', icon: 'rocket-takeoff' },
       { key: 'na_planta', label: 'Na Planta', icon: 'rulers' },
       { key: 'mobiliado', label: 'Mobiliado', icon: 'sofa' },
-      { key: 'sacada', label: 'Sacada', icon: 'layout-sidebar' },
-      { key: 'dependencia_empregada', label: 'Dependência', icon: 'door-closed' },
-      { key: 'cozinha_gourmet_churrasqueira', label: 'Cozinha gourmet', icon: 'fire' },
-      { key: 'sol_manha', label: 'Sol manhã', icon: 'sunrise' },
-      { key: 'sol_tarde', label: 'Sol tarde', icon: 'sunset' },
-      { key: 'sol_dia_todo', label: 'Sol dia todo', icon: 'sun' },
-      { key: 'decorado', label: 'Decorado', icon: 'palette' }
+      { key: 'sol_dia_todo', label: 'Sol dia todo', icon: 'sun' }
     ]
   %>
   <% scopes.each do |scope| %>

@@ -1544,6 +1544,10 @@ class Admin::HabitationsController < Admin::BaseController
       scope.opportunity
     when "frente_mar"
       apply_front_sea_filter(scope)
+    when "quadra_mar"
+      scope.where(quadra_mar_flag: true)
+    when "vista_mar"
+      scope.where("vista_frente_mar_flag = true OR unaccent(lower(COALESCE(descricao_web, ''))) ILIKE unaccent(?)", "%vista%mar%")
     when "lancamento"
       scope.where(lancamento_flag: true)
     when "na_planta"

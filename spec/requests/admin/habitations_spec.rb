@@ -221,6 +221,25 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include("Não colocar no site")
   end
 
+  it "organiza os filtros do catálogo em accordions com Valor no topo e chips ajustados" do
+    sign_in admin
+    get admin_habitations_path
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("filter-accordion")
+    expect(response.body).to include("Localização")
+    expect(response.body).to include("Negociação")
+    expect(response.body).to include("Características apartamento")
+    expect(response.body).to include("Características empreendimento")
+    expect(response.body).to include("Administrativo")
+    # chips novos
+    expect(response.body).to include("Quadra Mar")
+    expect(response.body).to include("Vista Mar")
+    # Valor (min/max) no topo
+    expect(response.body).to include('name="min_price"')
+    expect(response.body).to include('name="max_price"')
+  end
+
   it "mantém compartilhamento disponível ao editar o cadastro do imóvel" do
     habitation = create(:habitation, codigo: "SHARE-EDIT-#{SecureRandom.hex(6)}")
 
@@ -1231,6 +1250,7 @@ RSpec.describe "Admin::Habitations", type: :request do
       categoria: "Apartamento",
       nome_empreendimento: "Edifício Garantia",
       bloco: "702",
+      tipo_vaga: "Privativa",
       status: "Aluguel",
       intake_modalidade: "locacao_anual",
       valor_venda_cents: 0,
