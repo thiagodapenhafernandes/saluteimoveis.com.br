@@ -197,6 +197,30 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include("broker-share--toolbar")
   end
 
+  it "mostra as observações internas na visualização para admin e para corretor" do
+    broker_profile = Profile.create!(
+      name: "Corretor obs #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Corretor")
+    )
+    corretor = create(:admin_user, profile: broker_profile, name: "Corretor Observações")
+    habitation = create(
+      :habitation,
+      admin_user: corretor,
+      codigo: "OBS-SHOW-#{SecureRandom.hex(6)}",
+      observacoes: "Não colocar no site. Proprietária: Claudia -41 99223.3802"
+    )
+
+    sign_in admin
+    get admin_habitation_path(habitation)
+    expect(response.body).to include("Observações internas")
+    expect(response.body).to include("Não colocar no site")
+    expect(response.body).to include("não aparece no site")
+
+    sign_in corretor
+    get admin_habitation_path(habitation)
+    expect(response.body).to include("Não colocar no site")
+  end
+
   it "mantém compartilhamento disponível ao editar o cadastro do imóvel" do
     habitation = create(:habitation, codigo: "SHARE-EDIT-#{SecureRandom.hex(6)}")
 

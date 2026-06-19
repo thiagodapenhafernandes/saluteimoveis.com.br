@@ -375,6 +375,21 @@ RSpec.describe "Habitation details", type: :request do
       expect(page_text).to include("R$ 6.000,00")
       expect(page_text).to include("R$ 5.000,00")
     end
+
+    it "não expõe as observações internas e restritas na página pública" do
+      habitation = create(
+        :habitation,
+        codigo: "OBS-INTERNA",
+        slug: "imovel-com-observacoes-internas",
+        observacoes: "Não colocar no site. Proprietária: Claudia -41 99223.3802"
+      )
+
+      get habitation_path(habitation)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("Não colocar no site")
+      expect(response.body).not_to include("Proprietária: Claudia")
+    end
   end
 
   describe "POST /imoveis/:id/share_link" do
