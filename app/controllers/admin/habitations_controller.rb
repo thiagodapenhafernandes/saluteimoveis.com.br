@@ -364,8 +364,8 @@ class Admin::HabitationsController < Admin::BaseController
         return
       end
 
-      unless @habitation.intake_ready_for_admin_review?
-        @habitation.intake_missing_requirements.each { |message| @habitation.errors.add(:base, message) }
+      unless @habitation.admin_intake_completion_ready?
+        @habitation.admin_intake_completion_missing_requirements.each { |message| @habitation.errors.add(:base, message) }
         load_autocomplete_data
         render :new, status: :unprocessable_entity
         return
@@ -440,8 +440,8 @@ class Admin::HabitationsController < Admin::BaseController
         return
       end
 
-      unless @habitation.intake_ready_for_admin_review?
-        @habitation.intake_missing_requirements.each { |message| @habitation.errors.add(:base, message) }
+      unless @habitation.admin_intake_completion_ready?
+        @habitation.admin_intake_completion_missing_requirements.each { |message| @habitation.errors.add(:base, message) }
         load_ai_suggestion
         load_habitation_audit_logs
         render :edit, status: :unprocessable_entity
@@ -1727,7 +1727,11 @@ class Admin::HabitationsController < Admin::BaseController
     strip_blank_photo_uploads!(permitted)
 
     unless can_manage_habitation_signal_flags?
+      # Corretor pode editar apenas "imediações" dentro do endereço; o restante
+      # do endereço (logradouro, número, bairro, cidade, CEP...) permanece travado.
+      broker_address_attrs = broker_safe_address_attributes(permitted)
       permitted = permitted.except(*broker_protected_habitation_param_keys)
+      permitted[:address_attributes] = broker_address_attrs if broker_address_attrs.present?
     end
 
     unless can_view_proprietor_data?(@habitation)
@@ -2172,6 +2176,18 @@ class Admin::HabitationsController < Admin::BaseController
       salute_rental_management_answer
       foto_classificacao
     ]
+  end
+
+  # Mantém apenas os campos de endereço que o corretor pode editar (imediações),
+  # preservando o id para atualizar o endereço existente em vez de criar outro.
+  def broker_safe_address_attributes(permitted)
+    address_attrs = permitted[:address_attributes]
+    return nil if address_attrs.blank?
+
+    safe = address_attrs.permit(:id, imediacoes: [])
+    return nil if safe[:imediacoes].nil? && safe[:id].blank?
+
+    safe
   end
 
   def property_belongs_to_current_user?(habitation)

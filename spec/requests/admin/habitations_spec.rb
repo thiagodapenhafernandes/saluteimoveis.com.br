@@ -546,6 +546,44 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(other_property.valor_venda_cents).not_to eq(123_000_00)
   end
 
+  it "permite ao corretor editar apenas as imediações do próprio imóvel, mantendo o resto do endereço travado" do
+    broker_profile = Profile.create!(
+      name: "Corretor imediacoes #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Corretor")
+    )
+    luciana = create(:admin_user, profile: broker_profile, name: "Luciana Imediações")
+    own_property = create(:habitation, admin_user: luciana, codigo: "IMED-#{SecureRandom.hex(6)}")
+    Address.create!(
+      addressable: own_property,
+      tipo_endereco: "Rua",
+      logradouro: "2000",
+      numero: "120",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC",
+      cep: "88330-590",
+      imediacoes: []
+    )
+    own_property.reload
+
+    sign_in luciana
+    patch admin_habitation_path(own_property), params: {
+      habitation: {
+        address_attributes: {
+          id: own_property.address.id,
+          imediacoes: ["Próximo à praia", "Perto de shopping"],
+          bairro: "Bairro Alterado",
+          logradouro: "Rua Hackeada"
+        }
+      }
+    }
+
+    own_property.reload
+    expect(own_property.address.imediacoes).to contain_exactly("Próximo à praia", "Perto de shopping")
+    expect(own_property.address.bairro).to eq("Centro")
+    expect(own_property.address.logradouro).to eq("2000")
+  end
+
   it "abre imóvel próprio na aba Todos em visualização interna, não em edição" do
     broker_profile = Profile.create!(
       name: "Corretor todos proprio #{SecureRandom.hex(6)}",
@@ -1015,6 +1053,75 @@ RSpec.describe "Admin::Habitations", type: :request do
       admin_reviewed_by_id: admin.id
     )
     expect(intake.admin_reviewed_at).to be_present
+  end
+
+  it "bloqueia Salvar Interno e Devolver para captador sem título e sem descrição" do
+    intake = create(
+      :habitation,
+      :broker_intake,
+      admin_user: admin,
+      codigo: "INT-BLOCK-#{SecureRandom.hex(6)}",
+      intake_status: "submitted_for_admin_review",
+      titulo_anuncio: nil,
+      descricao_web: nil
+    )
+    intake.create_address!(
+      cep: "88330-000",
+      logradouro: "Rua Central",
+      numero: "100",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+    intake.autorizacoes_venda.attach(
+      io: StringIO.new("autorizacao"),
+      filename: "autorizacao.txt",
+      content_type: "text/plain"
+    )
+
+    patch admin_habitation_path(intake), params: {
+      save_internal_after_save: "1",
+      habitation: { titulo_anuncio: "", descricao_web: "" }
+    }
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include("Título do anúncio")
+    expect(response.body).to include("Descrição do imóvel para Internet")
+    expect(intake.reload.intake_status).to eq("submitted_for_admin_review")
+  end
+
+  it "permite Salvar Interno quando título e descrição estão preenchidos" do
+    intake = create(
+      :habitation,
+      :broker_intake,
+      admin_user: admin,
+      codigo: "INT-OK-#{SecureRandom.hex(6)}",
+      intake_status: "submitted_for_admin_review"
+    )
+    intake.create_address!(
+      cep: "88330-000",
+      logradouro: "Rua Central",
+      numero: "100",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+    intake.autorizacoes_venda.attach(
+      io: StringIO.new("autorizacao"),
+      filename: "autorizacao.txt",
+      content_type: "text/plain"
+    )
+
+    patch admin_habitation_path(intake), params: {
+      save_internal_after_save: "1",
+      habitation: {
+        titulo_anuncio: "Casa em Condomínio completa pelo administrativo",
+        descricao_web: "<div>Descrição completa do imóvel para o site.</div>"
+      }
+    }
+
+    expect(response).to redirect_to(admin_habitations_path)
+    expect(intake.reload.intake_status).to eq("internal")
   end
 
   it "libera captação administrativa com proprietário antigo vinculado sem cidade cadastrada" do

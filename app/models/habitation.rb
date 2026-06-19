@@ -944,6 +944,27 @@ class Habitation < ApplicationRecord
     intake_missing_requirements(require_owner_city: require_owner_city).empty?
   end
 
+  # Requisitos extras exigidos quando o ADM conclui o cadastro pelos botões
+  # "Salvar Interno" e "Devolver/Enviar para corretor" no formulário do imóvel:
+  # título e descrição (internet) tornam-se obrigatórios. Não afeta o fluxo de
+  # captação do corretor (que não edita esses campos).
+  def admin_intake_completion_missing_requirements(require_owner_city: false)
+    missing = intake_missing_requirements(require_owner_city: require_owner_city)
+    missing << "Título do anúncio" if titulo_anuncio.blank?
+    missing << "Descrição do imóvel para Internet" if descricao_web_blank?
+    missing
+  end
+
+  def admin_intake_completion_ready?(require_owner_city: false)
+    admin_intake_completion_missing_requirements(require_owner_city: require_owner_city).empty?
+  end
+
+  def descricao_web_blank?
+    rich = rich_text_descricao_web&.body&.to_plain_text.to_s.strip
+    legacy = read_attribute(:descricao_web).to_s.gsub(/<[^>]*>/, "").gsub(/&nbsp;/i, " ").strip
+    rich.blank? && legacy.blank?
+  end
+
   def broker_can_release_to_site?
     broker_release_pending? && intake_ready_for_admin_review?(require_owner_city: true)
   end

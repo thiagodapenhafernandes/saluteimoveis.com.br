@@ -57,7 +57,8 @@
      data-habitation-form-developments-value="<%= json_escape(development_lookup.to_json) %>"
      data-habitation-form-error-fields-value="<%= json_escape(habitation.errors.attribute_names.map(&:to_s).uniq.to_json) %>"
      data-habitation-duplicate-check-url-value="<%= check_admin_habitation_duplicate_path %>"
-     data-habitation-duplicate-check-ignored-id-value="<%= habitation.id %>">
+     data-habitation-duplicate-check-ignored-id-value="<%= habitation.id %>"
+     data-action="trix-change->habitation-duplicate-check#refreshContent">
 <%= form_with(model: [:admin, habitation], local: true, class: "needs-validation habitation-form-shell", html: { id: "admin_habitation_form", novalidate: true }, data: { controller: "save-state", action: "submit->save-state#submitting", turbo: false, habitation_save_options_form: true }) do |f| %>
   <%= hidden_field_tag :save_navigation, (habitation.broker_intake? && admin_paper_intake_form? ? "stay" : "exit"), data: { save_state_target: "choice", habitation_save_options_choice: true } %>
   <%= hidden_field_tag :return_to, @return_to_path if @return_to_path.present? %>
@@ -791,27 +792,30 @@
                 <% imediacoes_options = (@imediacoes_options.to_a + selected_imediacoes).uniq %>
                 <div class="d-flex align-items-stretch gap-1">
                   <div class="flex-grow-1">
+                    <%# Corretor pode SELECIONAR imediações já criadas (campo liberado),
+                        mas não pode criar novas: sem tags livres e sem a engrenagem. %>
                     <%= address_form.select :imediacoes, options_for_select(imediacoes_options, selected_imediacoes), {}, {
                         id: "address-imediacoes-tags",
                         multiple: true,
-                        disabled: !can_edit_protected_habitation_fields,
                         class: "form-select form-select-sm",
-                        data: { controller: "tom-select", tom_select_tags_value: true }
+                        data: { controller: "tom-select", tom_select_tags_value: can_edit_protected_habitation_fields }
                     } %>
                   </div>
-                  <button type="button"
-                          class="btn btn-outline-primary btn-sm px-2"
-                          title="Gerenciar Imediações"
-                          aria-label="Gerenciar Imediações"
-                          data-attribute-manager-context-value="habitation"
-                          data-attribute-manager-category-value="imediacoes"
-                          data-attribute-manager-field-name-value="habitation[address_attributes][imediacoes][]"
-                          data-attribute-manager-modal-id-value="attributeManagerModal"
-                          data-action="click->attribute-manager#open"
-                          data-title="Gerenciar Imediações"
-                          data-select-id="address-imediacoes-tags">
-                    <i class="bi bi-gear"></i>
-                  </button>
+                  <% if can_edit_protected_habitation_fields %>
+                    <button type="button"
+                            class="btn btn-outline-primary btn-sm px-2"
+                            title="Gerenciar Imediações"
+                            aria-label="Gerenciar Imediações"
+                            data-attribute-manager-context-value="habitation"
+                            data-attribute-manager-category-value="imediacoes"
+                            data-attribute-manager-field-name-value="habitation[address_attributes][imediacoes][]"
+                            data-attribute-manager-modal-id-value="attributeManagerModal"
+                            data-action="click->attribute-manager#open"
+                            data-title="Gerenciar Imediações"
+                            data-select-id="address-imediacoes-tags">
+                      <i class="bi bi-gear"></i>
+                    </button>
+                  <% end %>
                 </div>
             </div>
             <div data-habitation-duplicate-check-target="status"></div>
@@ -1117,7 +1121,8 @@
                 <%= f.label :titulo_anuncio, "Título do anúncio (sites e portais):", class: "form-label small fw-bold mb-1" %>
                 <%= f.text_field :titulo_anuncio,
                     class: "form-control form-control-sm",
-                    readonly: !can_edit_protected_habitation_fields %>
+                    readonly: !can_edit_protected_habitation_fields,
+                    data: { habitation_duplicate_check_target: "title", action: "input->habitation-duplicate-check#refreshContent" } %>
               </div>
               <div class="border rounded p-3 mb-3">
                 <%= f.label :descricao_web, "Descrição do imóvel para Internet:", class: "form-label small fw-bold mb-1" %>
@@ -2381,7 +2386,7 @@
                         value: "1",
                         form: "admin_habitation_form",
                         class: "btn btn-success px-4 px-md-4 fw-bold",
-                        data: { habitation_duplicate_check_target: "submit" } do %>
+                        data: { habitation_duplicate_check_target: "submit contentSubmit" } do %>
              <%= habitation.new_record? ? "Enviar para corretor" : "Devolver para captador" %>
            <% end %>
            <%= f.button type: "submit",
@@ -2389,7 +2394,7 @@
                         value: "1",
                         form: "admin_habitation_form",
                         class: "btn btn-outline-primary px-4 px-md-4 fw-bold",
-                        data: { habitation_duplicate_check_target: "submit" } do %>
+                        data: { habitation_duplicate_check_target: "submit contentSubmit" } do %>
              Salvar Interno
            <% end %>
          <% end %>
