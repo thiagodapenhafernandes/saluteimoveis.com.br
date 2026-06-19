@@ -77,6 +77,21 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).not_to include(approved.titulo_anuncio)
   end
 
+  it "lista pendente de revisão para o gerente sem erro de SQL (DISTINCT + ORDER BY)" do
+    gerente_profile = Profile.find_or_create_by!(name: "Gerente") do |p|
+      p.permissions = Profile.default_permissions_for("Gerente")
+    end
+    gerente = create(:admin_user, profile: gerente_profile, name: "Marcela Gerente", acting_type: "both")
+    membro = create(:admin_user, manager_id: gerente.id, name: "Corretor do time", acting_type: "both")
+    intake = create(:habitation, :broker_intake, admin_user: membro, intake_status: "submitted_for_admin_review", codigo: "PEND-#{SecureRandom.hex(6)}", titulo_anuncio: "Ficha do time aguardando revisão")
+
+    sign_in gerente
+    get admin_habitations_path(intake_review: "pending", ownership: "all", referencia: "")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(intake.titulo_anuncio)
+  end
+
   it "exibe ações de ficha de papel no novo cadastro administrativo" do
     get new_admin_habitation_path
 
