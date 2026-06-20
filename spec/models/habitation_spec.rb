@@ -64,6 +64,47 @@ RSpec.describe Habitation, type: :model do
     end
   end
 
+  describe "#admin_card_title" do
+    it "ignores unlinked standalone development names on admin cards" do
+      habitation = described_class.new(
+        categoria: "Casa",
+        titulo_anuncio: "Casa para locação no Centro",
+        nome_empreendimento: "Torre de Mallorca",
+        codigo_empreendimento: "1027"
+      )
+
+      expect(habitation.display_development_name).to be_nil
+      expect(habitation.admin_card_title).to eq("Casa para locação no Centro")
+    end
+
+    it "keeps development names for apartment units" do
+      habitation = described_class.new(
+        categoria: "Apartamento",
+        titulo_anuncio: "Apartamento no Centro",
+        nome_empreendimento: "Torre de Mallorca"
+      )
+
+      expect(habitation.display_development_name).to eq("Torre de Mallorca")
+      expect(habitation.admin_card_title).to eq("Torre de Mallorca")
+    end
+  end
+
+  describe "#address_complement_label" do
+    it "uses apartment label only for apartment-like units" do
+      expect(described_class.new(categoria: "Apartamento").address_complement_label).to eq("Apto.")
+      expect(described_class.new(categoria: "Casa").address_complement_label).to eq("Compl.")
+      expect(described_class.new(categoria: "Galpão").address_complement_label).to eq("Compl.")
+    end
+  end
+
+  describe "standalone development cleanup" do
+    it "clears unlinked development names from standalone warehouses" do
+      habitation = create(:habitation, categoria: "Galpão", nome_empreendimento: "Torre Indevida", codigo_empreendimento: nil)
+
+      expect(habitation.reload.nome_empreendimento).to be_nil
+    end
+  end
+
   describe "third-party commercial values" do
     it "stores formatted third-party values in cents" do
       habitation = described_class.new(

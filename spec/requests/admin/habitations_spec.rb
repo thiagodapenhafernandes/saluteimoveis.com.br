@@ -520,6 +520,38 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(card.to_html).not_to include("Código DWV")
   end
 
+  it "não exibe empreendimento contaminado nem rótulo Apto para casa standalone" do
+    house = create(
+      :habitation,
+      codigo: "CASA-#{SecureRandom.hex(6)}",
+      categoria: "Casa",
+      status: "Aluguel",
+      titulo_anuncio: "Casa pontual para locação no Centro",
+      codigo_empreendimento: nil,
+      valor_locacao_cents: 1_200_000
+    )
+    house.update_columns(codigo_empreendimento: "1027", nome_empreendimento: "Torre Indevida")
+    Address.create!(
+      addressable: house,
+      logradouro: "Rua 2850",
+      numero: "581",
+      complemento: "1302",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+
+    get admin_habitations_path(ownership: "all", q: house.codigo)
+
+    expect(response).to have_http_status(:ok)
+    card = Nokogiri::HTML(response.body).css(".property-card-horizontal").find { |node| node.text.include?(house.codigo) }
+
+    expect(card.text).to include("Casa pontual para locação no Centro")
+    expect(card.text).to include("Compl. 1302")
+    expect(card.text).not_to include("Torre Indevida")
+    expect(card.text).not_to include("Apto. 1302")
+  end
+
   it "não inclui imóveis apenas vinculados como corretor secundário em Meus imóveis" do
     broker_profile = Profile.create!(
       name: "Corretor ownership #{SecureRandom.hex(6)}",

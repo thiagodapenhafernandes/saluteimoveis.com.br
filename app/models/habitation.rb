@@ -63,7 +63,7 @@ class Habitation < ApplicationRecord
   PUBLIC_STATUSES = ['Venda', 'Aluguel', 'Locação', 'Locacao'].freeze
   NUMERIC_CODIGO_SQL = "codigo ~ '^[0-9]+$'".freeze
   VISTA_REFERENCE_CODIGO_SQL = "#{NUMERIC_CODIGO_SQL} AND COALESCE(imovel_dwv, '') <> 'Sim'".freeze
-  STANDALONE_CATEGORIES_WITHOUT_DEVELOPMENT_NAME = %w[casa sobrado rural chacara sitio].freeze
+  STANDALONE_CATEGORIES_WITHOUT_DEVELOPMENT_NAME = %w[casa sobrado rural chacara sitio galpao].freeze
 
   def self.normalize_status(value)
     return nil if value.blank?
@@ -368,6 +368,20 @@ class Habitation < ApplicationRecord
 
   def primary_captador_name
     primary_captador&.name.presence || corretor_nome.presence
+  end
+
+  def display_development_name
+    return nil if standalone_category_without_development_name?
+
+    nome_empreendimento.presence
+  end
+
+  def admin_card_title
+    display_development_name.presence || titulo_anuncio.presence || display_title
+  end
+
+  def address_complement_label
+    property_kind_apartment_unit? ? "Apto." : "Compl."
   end
 
   def property_kind
