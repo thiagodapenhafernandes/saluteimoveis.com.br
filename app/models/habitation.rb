@@ -760,7 +760,8 @@ class Habitation < ApplicationRecord
     valor_comissao: :valor_comissao_formatted,
     valor_livre_proprietario: :valor_livre_proprietario_formatted,
     valor_alugado_terceiros: :valor_alugado_terceiros_formatted,
-    valor_vendido_terceiros: :valor_vendido_terceiros_formatted
+    valor_vendido_terceiros: :valor_vendido_terceiros_formatted,
+    valor_aceito_permuta: :valor_aceito_permuta_formatted
   }.each do |method_name, formatted_attribute|
     define_method("#{method_name}=") { |value| public_send("#{formatted_attribute}=", value) }
   end
@@ -1178,6 +1179,11 @@ class Habitation < ApplicationRecord
 
   def sync_intake_answers
     self.aceita_permuta_flag = aceita_permuta_answer == "sim" if aceita_permuta_answer.present?
+    # Os 3 flags específicos (veículo/imóvel/outros) são a fonte de verdade da
+    # permuta: se qualquer um estiver marcado, o imóvel aceita permuta.
+    if aceita_permuta_veiculo_flag? || aceita_permuta_imovel_flag? || aceita_permuta_outros_flag?
+      self.aceita_permuta_flag = true
+    end
     self.salute_rental_management_flag = salute_rental_management_answer == "sim" if salute_rental_management_answer.present?
     self.photo_session_url = self.class.photography_schedule_url if photo_flow_choice == "schedule" && photo_session_url.blank?
   end

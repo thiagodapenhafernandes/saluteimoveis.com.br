@@ -131,6 +131,43 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(response.body).not_to include("Publicar Site")
   end
 
+  it "mostra os 3 campos de permuta, valor/% e IPTU mensal no passo de negociação" do
+    intake = create(:habitation, :broker_intake, admin_user: admin, intake_step: "negociacao", intake_status: "draft", intake_modalidade: "venda")
+
+    get edit_admin_captacao_path(intake, step: "negociacao")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Aceita permuta de")
+    expect(response.body).to include("Veículo").and include("Imóvel").and include("Outros")
+    expect(response.body).to include("Valor da permuta (R$)")
+    expect(response.body).to include("% do valor do imóvel")
+    expect(response.body).to include("Ano do carro")
+    expect(response.body).to include("IPTU mensal (R$)")
+    expect(response.body).not_to include("IPTU anual")
+  end
+
+  it "persiste os campos de permuta enviados no passo de negociação" do
+    intake = create(:habitation, :broker_intake, admin_user: admin, intake_step: "negociacao", intake_status: "draft", intake_modalidade: "venda")
+
+    patch admin_captacao_path(intake), params: {
+      current_step: "negociacao",
+      commit: "save",
+      habitation: {
+        aceita_permuta_veiculo_flag: "1",
+        valor_aceito_permuta: "R$ 50.000,00",
+        permuta_valor_percentual: "20",
+        ano_minimo_veiculo_aceito_permuta: "2018"
+      }
+    }
+
+    intake.reload
+    expect(intake.aceita_permuta_veiculo_flag).to be(true)
+    expect(intake.aceita_permuta_flag).to be(true)
+    expect(intake.valor_aceito_permuta_cents).to eq(5_000_000)
+    expect(intake.permuta_valor_percentual).to eq(20)
+    expect(intake.ano_minimo_veiculo_aceito_permuta).to eq(2018)
+  end
+
   it "mostra as características de edifício e lazer na captação de casa em condomínio, incluindo Quadra de padel" do
     intake = create(:habitation, :broker_intake, admin_user: admin, categoria: "Casa em Condomínio", intake_step: "infraestrutura")
 

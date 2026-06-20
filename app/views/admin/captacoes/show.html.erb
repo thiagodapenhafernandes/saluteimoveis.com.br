@@ -135,7 +135,7 @@
           <% end %>
           <% if @captacao.valor_iptu.present? %>
             <dt class="col-sm-3">IPTU</dt>
-            <dd class="col-sm-9"><%= number_to_currency(@captacao.valor_iptu, unit: "R$ ") %>/ano</dd>
+            <dd class="col-sm-9"><%= number_to_currency(@captacao.valor_iptu, unit: "R$ ") %>/mês</dd>
           <% end %>
         </dl>
       </div>

@@ -2130,6 +2130,7 @@ class Admin::HabitationsController < Admin::BaseController
       :construtora, :tipo_fachada, :andares_qtd, :perfil_construcao, :face,
       :tipo_veiculo_aceito_permuta, :ano_minimo_veiculo_aceito_permuta,
       :permuta_localizacao, :permuta_dormitorios_qtd, :permuta_suites_qtd, :permuta_garagens_qtd,
+      :permuta_valor_percentual,
       :agenciador, :captador_commission_percentage, :broker_commission_percentage,
       :salute_rental_management_answer, :dias_visitas,
       :salute_rental_management_flag, :home_corporate_flag, :home_corporate_position,
