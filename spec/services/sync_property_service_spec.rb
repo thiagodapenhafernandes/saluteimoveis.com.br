@@ -49,6 +49,21 @@ RSpec.describe SyncPropertyService do
       expect(attrs[:nome_empreendimento]).to be_nil
     end
 
+    it "ignores Vista development names for standalone warehouses without a development code" do
+      attrs, = described_class.new("9206").send(
+        :map_vista_payload,
+        vista_payload(
+          "Codigo" => "9206",
+          "Categoria" => "Galpão",
+          "Empreendimento" => "Torre Indevida",
+          "CodigoEmpreendimento" => ""
+        )
+      )
+
+      expect(attrs[:codigo_empreendimento]).to be_nil
+      expect(attrs[:nome_empreendimento]).to be_nil
+    end
+
     it "keeps Vista development names for apartments even when the development code is not linked yet" do
       attrs, = described_class.new("9204").send(
         :map_vista_payload,
