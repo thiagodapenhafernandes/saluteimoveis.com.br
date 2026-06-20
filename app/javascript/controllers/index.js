@@ -201,3 +201,6 @@ application.register("tom-select", TomSelectController)
 
 import TransactionToggleController from "controllers/transaction_toggle_controller"
 application.register("transaction-toggle", TransactionToggleController)
+
+import TransactionValueToggleController from "controllers/transaction_value_toggle_controller"
+application.register("transaction-value-toggle", TransactionValueToggleController)

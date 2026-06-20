@@ -741,6 +741,7 @@ module Admin
         :salute_rental_management_answer, :aceita_permuta_answer,
         :aceita_parcelamento_flag, :numero_prestacoes, :aceita_financiamento_flag,
         :aceita_permuta_veiculo_flag, :aceita_permuta_imovel_flag, :aceita_permuta_outros_flag,
+        :valor_aceito_permuta, :valor_aceito_permuta_formatted, :ano_minimo_veiculo_aceito_permuta, :permuta_valor_percentual,
         :mobiliado_flag, :exclusivo_flag, :ocupacao_status, :estado_conservacao,
         :andar, :ano_construcao, :demi_suites_qtd, :numero_box, :tipo_vaga,
         :dimensoes_terreno, :topografia, :key_location, :key_location_notes,
@@ -792,6 +793,7 @@ module Admin
       attrs["valor_condominio_formatted"] = attrs.delete("valor_condominio") if attrs["valor_condominio"].present?
       attrs["valor_iptu_formatted"] = attrs.delete("valor_iptu") if attrs["valor_iptu"].present?
       attrs["saldo_devedor_formatted"] = attrs.delete("saldo_devedor") if attrs["saldo_devedor"].present?
+      attrs["valor_aceito_permuta_formatted"] = attrs.delete("valor_aceito_permuta") if attrs["valor_aceito_permuta"].present?
       attrs["nome_empreendimento"] = attrs.delete("edificio_nome") if attrs["edificio_nome"].present?
       attrs["bloco"] = attrs.delete("unidade_numero") if attrs["unidade_numero"].present?
       normalize_street_house_category!(attrs)

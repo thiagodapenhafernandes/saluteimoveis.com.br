@@ -416,6 +416,41 @@ RSpec.describe Habitation, type: :model do
     end
   end
 
+  describe "campos de valor formatados (limpar)" do
+    it "limpa o valor quando recebe em branco (apagar e salvar persiste)" do
+      habitation = create(:habitation, valor_venda_cents: 500_000_00)
+
+      habitation.update!(valor_venda_formatted: "")
+
+      expect(habitation.reload.valor_venda_cents).to be_nil
+    end
+
+    it "continua convertendo um valor preenchido" do
+      habitation = create(:habitation, valor_venda_cents: 0)
+
+      habitation.update!(valor_venda_formatted: "R$ 1.234,56")
+
+      expect(habitation.reload.valor_venda_cents).to eq(123_456)
+    end
+  end
+
+  describe "permuta (captação)" do
+    it "marca aceita_permuta_flag quando algum flag específico está marcado" do
+      habitation = create(:habitation, aceita_permuta_veiculo_flag: true)
+
+      expect(habitation.reload.aceita_permuta_flag).to be(true)
+    end
+
+    it "aceita valor da permuta formatado e porcentagem" do
+      habitation = create(:habitation)
+
+      habitation.update!(valor_aceito_permuta: "R$ 50.000,00", permuta_valor_percentual: 20)
+
+      expect(habitation.reload.valor_aceito_permuta_cents).to eq(5_000_000)
+      expect(habitation.permuta_valor_percentual).to eq(20)
+    end
+  end
+
   describe "#uses_building_infrastructure?" do
     it "vale para apartamento e casa em condomínio, mas não para casa de rua/terreno" do
       expect(build(:habitation, categoria: "Apartamento").uses_building_infrastructure?).to be(true)
