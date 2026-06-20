@@ -87,6 +87,19 @@ RSpec.describe Habitation, type: :model do
       expect(habitation.display_development_name).to eq("Torre de Mallorca")
       expect(habitation.admin_card_title).to eq("Torre de Mallorca")
     end
+
+    it "falls back when a standalone property title conflicts with its category" do
+      habitation = described_class.new(
+        categoria: "Casa",
+        titulo_anuncio: "Sala comercial aluguel anual no Centro",
+        dormitorios_qtd: 5,
+        bairro: "Condomínio Caledônia",
+        cidade: "Camboriú"
+      )
+
+      expect(habitation).to be_title_category_inconsistent
+      expect(habitation.admin_card_title).to eq("Casa 5 dormitórios em Condomínio Caledônia")
+    end
   end
 
   describe "#address_complement_label" do

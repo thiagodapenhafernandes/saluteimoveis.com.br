@@ -377,7 +377,7 @@ class Habitation < ApplicationRecord
   end
 
   def admin_card_title
-    display_development_name.presence || titulo_anuncio.presence || display_title
+    display_development_name.presence || intake_display_title
   end
 
   def address_complement_label
