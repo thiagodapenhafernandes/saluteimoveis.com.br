@@ -1943,6 +1943,9 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include("Cancelar")
     expect(response.body).to include("data-habitation-save-options-form")
     expect(response.body).to include("data-habitation-save-options-action")
+    expect(response.body).to include('name="save_navigation_button"')
+    expect(response.body).to include('value="stay"')
+    expect(response.body).to include('value="exit"')
   end
 
   it "permanece na ficha de cadastro quando solicitado no salvamento" do
@@ -1966,6 +1969,28 @@ RSpec.describe "Admin::Habitations", type: :request do
     follow_redirect!
     expect(response.body).to include("Imóvel atualizado com sucesso. Você permaneceu na ficha de cadastro.")
     expect(habitation.reload.titulo_anuncio).to eq("Título salvo na ficha")
+  end
+
+  it "prioriza o botão Salvar para permanecer na ficha mesmo com hidden divergente" do
+    habitation = create(:habitation, codigo: "SAVE-BUTTON-#{SecureRandom.hex(6)}", titulo_anuncio: "Título antigo")
+    habitation.create_address!(
+      logradouro: "Rua Botão Salvar",
+      numero: "123",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+
+    patch admin_habitation_path(habitation), params: {
+      save_navigation: "exit",
+      save_navigation_button: "stay",
+      habitation: {
+        titulo_anuncio: "Título salvo pelo botão Salvar"
+      }
+    }
+
+    expect(response).to redirect_to(edit_admin_habitation_path(habitation))
+    expect(habitation.reload.titulo_anuncio).to eq("Título salvo pelo botão Salvar")
   end
 
   it "atualiza o seletor Exibir no site no cadastro do imóvel" do

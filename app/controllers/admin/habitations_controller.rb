@@ -1321,9 +1321,10 @@ class Admin::HabitationsController < Admin::BaseController
 
   def redirect_after_habitation_save(habitation, notice:, save_navigation:)
     anchor = params[:save_anchor].to_s.presence_in(%w[documents media])
+    requested_navigation = params[:save_navigation_button].presence || save_navigation
     save_navigation = normalize_admin_paper_intake_save_navigation(
       habitation: habitation,
-      requested_navigation: save_navigation,
+      requested_navigation: requested_navigation,
       releasing_to_broker: release_intake_to_broker_requested?,
       saving_internal_intake: save_internal_intake_requested?
     )

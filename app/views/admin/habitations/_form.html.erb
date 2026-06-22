@@ -37,7 +37,7 @@
      data-habitation-duplicate-check-ignored-id-value="<%= habitation.id %>"
      data-action="trix-change->habitation-duplicate-check#refreshContent">
 <%= form_with(model: [:admin, habitation], local: true, class: "needs-validation habitation-form-shell", html: { id: "admin_habitation_form", novalidate: true }, data: { controller: "save-state", action: "submit->save-state#submitting", turbo: false, habitation_save_options_form: true }) do |f| %>
-  <%= hidden_field_tag :save_navigation, (habitation.broker_intake? && admin_paper_intake_form? ? "stay" : "exit"), data: { save_state_target: "choice", habitation_save_options_choice: true } %>
+  <%= hidden_field_tag :save_navigation, "stay", data: { save_state_target: "choice", habitation_save_options_choice: true } %>
   <%= hidden_field_tag :return_to, @return_to_path if @return_to_path.present? %>
   <%
     tab_titles = {
@@ -2398,7 +2398,7 @@
            <% end %>
          <% end %>
          <%= f.button type: "submit",
-                      name: "save_navigation",
+                      name: "save_navigation_button",
                       value: "stay",
                       form: "admin_habitation_form",
                       class: "btn btn-primary px-4 px-md-5 fw-bold",
@@ -2407,7 +2407,7 @@
            <span data-save-state-target="label">Salvar</span>
          <% end %>
          <%= f.button type: "submit",
-                      name: "save_navigation",
+                      name: "save_navigation_button",
                       value: "exit",
                       form: "admin_habitation_form",
                       class: "btn btn-outline-primary px-4 px-md-4 fw-bold",
