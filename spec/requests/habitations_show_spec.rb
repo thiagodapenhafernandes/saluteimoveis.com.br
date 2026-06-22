@@ -84,6 +84,35 @@ RSpec.describe "Habitation details", type: :request do
       )
     end
 
+    it "prefixes the social title with the property code only for broker share links" do
+      broker = create(:admin_user)
+      code = "8234#{SecureRandom.random_number(100_000)}"
+      habitation = create(
+        :habitation,
+        codigo: code,
+        slug: "apartamento-barra-sul-#{code}",
+        categoria: "Apartamento",
+        titulo_anuncio: "Apartamento - Barra Sul - 3 dormitório(s)"
+      )
+      share_link = HabitationShareLink.create!(habitation: habitation, admin_user: broker)
+
+      get habitation_path(habitation)
+
+      expect(response).to have_http_status(:ok)
+      document = Nokogiri::HTML(response.body)
+      normal_title = "Apartamento - Barra Sul - 3 dormitório(s) | Salute Imóveis"
+      expect(document.at_css("title").text).to eq(normal_title)
+      expect(document.at_css("meta[property='og:title']")["content"]).to eq(normal_title)
+
+      get habitation_path(habitation, share_token: share_link.token)
+
+      expect(response).to have_http_status(:ok)
+      document = Nokogiri::HTML(response.body)
+      expect(document.at_css("title").text).to eq(normal_title)
+      expect(document.at_css("meta[property='og:title']")["content"]).to eq("#{code} - #{normal_title}")
+      expect(document.at_css("meta[name='twitter:title']")["content"]).to eq("#{code} - #{normal_title}")
+    end
+
     it "uses the first valid property image as sharing image" do
       habitation = create(
         :habitation,

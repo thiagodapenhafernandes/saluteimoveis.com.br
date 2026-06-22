@@ -170,6 +170,7 @@ class HabitationsController < ApplicationController
     # Meta tags dinâmicas
     property_metadata = Seo::PropertyMetadataBuilder.new(@habitation).attributes
     @page_title = property_metadata[:meta_title]
+    @social_page_title = shared_property_title(@habitation, @page_title) if @share_link.present?
     @page_description = property_metadata[:meta_description].presence || default_property_description(@habitation)
     @page_keywords = property_metadata[:meta_keywords]
     @page_name = property_metadata[:page_name]
@@ -625,6 +626,15 @@ class HabitationsController < ApplicationController
     ].compact.join(" • ")
     description = habitation.display_description.to_s.gsub(/<[^>]*>/, " ").squish
     [base, description].reject(&:blank?).join(" - ").truncate(220)
+  end
+
+  def shared_property_title(habitation, fallback_title)
+    code = habitation.codigo.to_s.strip
+    title = fallback_title.to_s.strip
+    return title if code.blank? || title.blank?
+    return title if title.match?(/\A#{Regexp.escape(code)}\b/)
+
+    "#{code} - #{title}"
   end
 
   def share_image_url_for(habitation)
