@@ -816,7 +816,13 @@ class Admin::HabitationsController < Admin::BaseController
                                                                                  .pluck(:estado_conservacao)).uniq.sort
     @filter_regioes_foco = Habitation::REGIAO_FOCO_OPTIONS
     internal_features = (AttributeOption.where(context: 'habitation', category: 'feature').order(name: :asc).pluck(:name) + CUSTOM_FEATURE_OPTIONS).uniq.sort
+    external_features = AttributeOption.where(context: 'habitation', category: 'infrastructure').order(name: :asc).pluck(:name)
     @apartment_feature_filter_options = Habitation.feature_options_for_kind("residencial", internal_features)
+    @enterprise_amenity_filter_options = (
+      AMENITY_FILTER_OPTIONS +
+      Habitation.feature_options_for_kind("empreendimento", internal_features) +
+      Habitation.infrastructure_options_for_kind("empreendimento", external_features)
+    ).uniq.sort
   end
 
   def extract_multi_select_integers(param_key)
