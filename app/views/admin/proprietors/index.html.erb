@@ -1,3 +1,5 @@
+<% can_manage_proprietors = can?(:manage, :proprietarios) %>
+
 <div class="d-flex justify-content-between align-items-center mb-4">
   <div>
     <h1 class="h3 mb-1 text-gray-800" style="color: #bfa15f !important; font-family: 'Outfit', sans-serif; font-weight: 700;">Proprietários</h1>
@@ -7,8 +9,10 @@
     <%= link_to admin_root_path, class: "btn btn-white border d-flex align-items-center shadow-sm" do %>
       <i class="bi bi-arrow-left me-2"></i> Voltar
     <% end %>
-    <%= link_to new_admin_proprietor_path, class: "btn btn-primary d-flex align-items-center fw-bold px-4 shadow-sm" do %>
-      <i class="bi bi-plus-lg me-2"></i> Novo Proprietário
+    <% if can_manage_proprietors %>
+      <%= link_to new_admin_proprietor_path, class: "btn btn-primary d-flex align-items-center fw-bold px-4 shadow-sm" do %>
+        <i class="bi bi-plus-lg me-2"></i> Novo Proprietário
+      <% end %>
     <% end %>
   </div>
 </div>
@@ -191,55 +195,57 @@
     <div class="card border-0 shadow-sm">
       <div class="card-header bg-white d-flex align-items-center justify-content-between py-3">
         <div class="d-flex align-items-center gap-2">
-          <div class="btn-group btn-group-sm">
-            <button type="button" class="btn btn-light border" data-action="click->proprietor-table#toggleAll">
-              <i class="bi bi-check2-square"></i>
-            </button>
-            <button type="button" class="btn btn-light border dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-              <span class="visually-hidden">Selecionar</span>
-            </button>
-            <ul class="dropdown-menu">
-              <li><button class="dropdown-item" type="button" data-action="click->proprietor-table#selectAll">Selecionar todos da página</button></li>
-              <li><button class="dropdown-item" type="button" data-action="click->proprietor-table#clearAll">Limpar seleção</button></li>
-            </ul>
-          </div>
+          <% if can_manage_proprietors %>
+            <div class="btn-group btn-group-sm">
+              <button type="button" class="btn btn-light border" data-action="click->proprietor-table#toggleAll">
+                <i class="bi bi-check2-square"></i>
+              </button>
+              <button type="button" class="btn btn-light border dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                <span class="visually-hidden">Selecionar</span>
+              </button>
+              <ul class="dropdown-menu">
+                <li><button class="dropdown-item" type="button" data-action="click->proprietor-table#selectAll">Selecionar todos da página</button></li>
+                <li><button class="dropdown-item" type="button" data-action="click->proprietor-table#clearAll">Limpar seleção</button></li>
+              </ul>
+            </div>
 
-          <div class="btn-group btn-group-sm">
-            <button type="button" class="btn btn-light border" data-bs-toggle="dropdown" aria-expanded="false">
-              <i class="bi bi-printer"></i>
-            </button>
-            <button type="button" class="btn btn-light border dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-              <span class="visually-hidden">Imprimir</span>
-            </button>
-            <ul class="dropdown-menu">
-              <li>
-                <%= form_with url: print_admin_proprietors_path, method: :get, local: true, html: { target: "_blank", class: "m-0" } do %>
-                  <%= hidden_field_tag :report_type, "proprietors" %>
-                  <%= hidden_field_tag :selected_ids, "", data: { proprietor_table_target: "selectedIdsInput" } %>
-                  <% @filters.each do |key, value| %>
-                    <% next if value.blank? %>
-                    <%= hidden_field_tag "filters[#{key}]", value %>
+            <div class="btn-group btn-group-sm">
+              <button type="button" class="btn btn-light border" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-printer"></i>
+              </button>
+              <button type="button" class="btn btn-light border dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                <span class="visually-hidden">Imprimir</span>
+              </button>
+              <ul class="dropdown-menu">
+                <li>
+                  <%= form_with url: print_admin_proprietors_path, method: :get, local: true, html: { target: "_blank", class: "m-0" } do %>
+                    <%= hidden_field_tag :report_type, "proprietors" %>
+                    <%= hidden_field_tag :selected_ids, "", data: { proprietor_table_target: "selectedIdsInput" } %>
+                    <% @filters.each do |key, value| %>
+                      <% next if value.blank? %>
+                      <%= hidden_field_tag "filters[#{key}]", value %>
+                    <% end %>
+                    <button type="submit" class="dropdown-item"><%= @report_types["proprietors"] %></button>
                   <% end %>
-                  <button type="submit" class="dropdown-item"><%= @report_types["proprietors"] %></button>
-                <% end %>
-              </li>
-              <li>
-                <%= form_with url: print_admin_proprietors_path, method: :get, local: true, html: { target: "_blank", class: "m-0" } do %>
-                  <%= hidden_field_tag :report_type, "proprietors_with_habitations" %>
-                  <%= hidden_field_tag :selected_ids, "", data: { proprietor_table_target: "selectedIdsInput" } %>
-                  <% @filters.each do |key, value| %>
-                    <% next if value.blank? %>
-                    <%= hidden_field_tag "filters[#{key}]", value %>
+                </li>
+                <li>
+                  <%= form_with url: print_admin_proprietors_path, method: :get, local: true, html: { target: "_blank", class: "m-0" } do %>
+                    <%= hidden_field_tag :report_type, "proprietors_with_habitations" %>
+                    <%= hidden_field_tag :selected_ids, "", data: { proprietor_table_target: "selectedIdsInput" } %>
+                    <% @filters.each do |key, value| %>
+                      <% next if value.blank? %>
+                      <%= hidden_field_tag "filters[#{key}]", value %>
+                    <% end %>
+                    <button type="submit" class="dropdown-item"><%= @report_types["proprietors_with_habitations"] %></button>
                   <% end %>
-                  <button type="submit" class="dropdown-item"><%= @report_types["proprietors_with_habitations"] %></button>
-                <% end %>
-              </li>
-            </ul>
-          </div>
+                </li>
+              </ul>
+            </div>
 
-          <button class="btn btn-light border btn-sm" type="button" data-bs-toggle="modal" data-bs-target="#proprietorsExportModal">
-            <i class="bi bi-download"></i>
-          </button>
+            <button class="btn btn-light border btn-sm" type="button" data-bs-toggle="modal" data-bs-target="#proprietorsExportModal">
+              <i class="bi bi-download"></i>
+            </button>
+          <% end %>
         </div>
         <span class="small text-muted"><%= @proprietors.total_entries %> encontrados</span>
       </div>
@@ -248,13 +254,13 @@
         <table class="table table-hover align-middle mb-0">
           <thead class="table-light">
             <tr>
-              <th style="width: 42px;"></th>
+              <% if can_manage_proprietors %><th style="width: 42px;"></th><% end %>
               <th>Nome/Denominação</th>
               <th>Fone principal</th>
               <th>CPF/CNPJ</th>
               <th>Cidade</th>
               <th>Imóveis</th>
-              <th class="text-end" style="width: 130px;">Ações</th>
+              <% if can_manage_proprietors %><th class="text-end" style="width: 130px;">Ações</th><% end %>
             </tr>
           </thead>
           <tbody>
@@ -262,14 +268,16 @@
               <% @proprietors.each do |proprietor| %>
                 <% principal_phone = proprietor.phone_primary.presence || proprietor.mobile_phone.presence || proprietor.business_phone.presence || proprietor.residential_phone.presence || "-" %>
                 <tr>
-                  <td>
-                    <input type="checkbox"
-                           class="form-check-input"
-                           value="<%= proprietor.id %>"
-                           data-proprietor-table-target="rowCheckbox"
-                           data-action="change->proprietor-table#syncSelection"
-                           aria-label="Selecionar <%= proprietor.name %>">
-                  </td>
+                  <% if can_manage_proprietors %>
+                    <td>
+                      <input type="checkbox"
+                             class="form-check-input"
+                             value="<%= proprietor.id %>"
+                             data-proprietor-table-target="rowCheckbox"
+                             data-action="change->proprietor-table#syncSelection"
+                             aria-label="Selecionar <%= proprietor.name %>">
+                    </td>
+                  <% end %>
                   <td>
                     <div class="fw-semibold text-truncate" style="max-width: 220px;" title="<%= proprietor.name %>"><%= proprietor.name %></div>
                     <div class="small text-muted"><%= proprietor.display_role %> · Código <%= proprietor.vista_code.presence || "-" %></div>
@@ -278,21 +286,23 @@
                   <td><%= proprietor.cpf_cnpj.presence || "-" %></td>
                   <td><%= proprietor.city.presence || "-" %></td>
                   <td><span class="badge bg-light text-dark border"><%= @habitations_count_by_proprietor[proprietor.id].to_i %></span></td>
-                  <td class="text-end">
-                    <div class="btn-group btn-group-sm">
-                      <%= link_to edit_admin_proprietor_path(proprietor), class: "btn btn-outline-primary" do %>
-                        <i class="bi bi-pencil"></i>
-                      <% end %>
-                      <%= button_to admin_proprietor_path(proprietor), method: :delete, class: "btn btn-outline-danger", form: { class: "d-inline", data: { turbo_confirm: "Tem certeza?" } } do %>
-                        <i class="bi bi-trash"></i>
-                      <% end %>
-                    </div>
-                  </td>
+                  <% if can_manage_proprietors %>
+                    <td class="text-end">
+                      <div class="btn-group btn-group-sm">
+                        <%= link_to edit_admin_proprietor_path(proprietor), class: "btn btn-outline-primary" do %>
+                          <i class="bi bi-pencil"></i>
+                        <% end %>
+                        <%= button_to admin_proprietor_path(proprietor), method: :delete, class: "btn btn-outline-danger", form: { class: "d-inline", data: { turbo_confirm: "Tem certeza?" } } do %>
+                          <i class="bi bi-trash"></i>
+                        <% end %>
+                      </div>
+                    </td>
+                  <% end %>
                 </tr>
               <% end %>
             <% else %>
               <tr>
-                <td colspan="7" class="text-center text-muted py-4">Nenhum proprietário encontrado com os filtros aplicados.</td>
+                <td colspan="<%= can_manage_proprietors ? 7 : 5 %>" class="text-center text-muted py-4">Nenhum proprietário encontrado com os filtros aplicados.</td>
               </tr>
             <% end %>
           </tbody>
@@ -311,6 +321,7 @@
   </div>
 </div>
 
+<% if can_manage_proprietors %>
 <div class="modal fade" id="proprietorsExportModal" tabindex="-1" aria-labelledby="proprietorsExportModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
     <div class="modal-content">
@@ -371,3 +382,4 @@
     </div>
   </div>
 </div>
+<% end %>

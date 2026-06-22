@@ -202,6 +202,7 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
       :broker_intake,
       admin_user: administrative,
       codigo: "8571",
+      intake_status: "submitted_for_admin_review",
       nome_empreendimento: "Calls",
       unidade_numero: "101",
       proprietario: "Tarrassa",
@@ -356,6 +357,7 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
       cep: "88330-001",
       logradouro: "Avenida Brasil",
       numero: "577",
+      complemento: "Sala 1",
       bairro: "Centro",
       cidade: "Balneário Camboriú",
       uf: "SC"
@@ -554,7 +556,7 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
   end
 
   it "salva tipo de endereço sem duplicar rua ou avenida no logradouro" do
-    intake = create(:habitation, :broker_intake, admin_user: admin, intake_step: "endereco")
+    intake = create(:habitation, :broker_intake, admin_user: admin, categoria: "Casa", intake_step: "endereco")
 
     patch admin_captacao_path(intake), params: {
       current_step: "endereco",
@@ -997,11 +999,8 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
 
     sign_out admin
     sign_in broker
-    get edit_admin_captacao_path(intake, step: "fotos")
-    csrf_token = Nokogiri::HTML(response.body).at_css('meta[name="csrf-token"]')["content"]
 
     patch admin_captacao_path(intake), params: {
-      authenticity_token: csrf_token,
       current_step: "fotos",
       direction: "forward",
       habitation: {
@@ -1048,11 +1047,12 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     existing.create_address!(
       logradouro: "Rua 3000",
       numero: "50",
+      complemento: "Apto 301",
       bairro: "Centro",
       cidade: "Balneário Camboriú",
       uf: "SC"
     )
-    intake = create(:habitation, :broker_intake, admin_user: admin, intake_step: "endereco")
+    intake = create(:habitation, :broker_intake, admin_user: admin, categoria: "Apartamento", intake_step: "endereco")
 
     patch admin_captacao_path(intake), params: {
       current_step: "endereco",
@@ -1127,8 +1127,8 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
       }
     }
 
-    expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "caracteristicas"))
     intake.reload
+    expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "caracteristicas"))
     expect(intake.categoria).to eq("Casa")
     expect(intake).not_to be_requires_unit_number
   end
@@ -1165,7 +1165,7 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     end
   end
 
-  it "exige empreendimento para casa em condomínio sem exigir unidade" do
+  it "exige empreendimento e complemento para casa em condomínio sem exigir unidade" do
     intake = create(:habitation, :broker_intake, admin_user: admin, categoria: "Casa em Condomínio", nome_empreendimento: nil, bloco: nil, intake_step: "endereco")
 
     patch admin_captacao_path(intake), params: {
@@ -1179,13 +1179,62 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
         city: "Balneário Camboriú",
         state: "SC",
         edificio_nome: "",
-        unidade_numero: ""
+        unidade_numero: "",
+        complemento: ""
       }
     }
 
     expect(response).to have_http_status(:unprocessable_entity)
     expect(response.body).to include("Informe o empreendimento/condomínio.")
+    expect(response.body).to include("Informe o complemento.")
     expect(response.body).not_to include("Informe o número da unidade.")
+  end
+
+  it "salva complemento da casa em condomínio no endereço" do
+    intake = create(:habitation, :broker_intake, admin_user: admin, categoria: "Casa em Condomínio", nome_empreendimento: nil, bloco: nil, intake_step: "endereco")
+
+    patch admin_captacao_path(intake), params: {
+      current_step: "endereco",
+      direction: "forward",
+      habitation: {
+        zip_code: "88330-000",
+        street: "Rua 3000",
+        street_number: "50",
+        neighborhood: "Centro",
+        city: "Balneário Camboriú",
+        state: "SC",
+        edificio_nome: "Residencial Atlântico",
+        complemento: "Casa 12"
+      }
+    }
+
+    expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "caracteristicas"))
+    intake.reload
+    expect(intake.bloco).to be_blank
+    expect(intake.complemento).to eq("Casa 12")
+  end
+
+  it "exige complemento para sala comercial, galpão e terreno no endereço" do
+    ["Sala Comercial", "Galpão", "Terreno"].each do |categoria|
+      intake = create(:habitation, :broker_intake, admin_user: admin, categoria: categoria, intake_step: "endereco")
+
+      patch admin_captacao_path(intake), params: {
+        current_step: "endereco",
+        direction: "forward",
+        habitation: {
+          zip_code: "88330-000",
+          street: "Rua 3000",
+          street_number: "50",
+          neighborhood: "Centro",
+          city: "Balneário Camboriú",
+          state: "SC",
+          complemento: ""
+        }
+      }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include("Informe o complemento.")
+    end
   end
 
   it "exige ocupação, situação, chaves e dias de visita na captação" do
@@ -1338,6 +1387,7 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
       cep: "88330-000",
       logradouro: "Rua Central",
       numero: "100",
+      complemento: "Casa 1",
       bairro: "Centro",
       cidade: "Balneário Camboriú",
       uf: "SC"
@@ -1350,8 +1400,9 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
 
     sign_in broker
     post submit_for_review_admin_captacao_path(intake)
+    intake.reload
     expect(response).to redirect_to(admin_captacao_path(intake))
-    expect(intake.reload.intake_status).to eq("submitted_for_admin_review")
+    expect(intake.intake_status).to eq("submitted_for_admin_review")
 
     sign_in admin
     post approve_admin_captacao_path(intake), params: { admin_review_notes: "Ok" }
@@ -1498,6 +1549,9 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
       :broker_intake,
       admin_user: admin,
       intake_status: "submitted_for_admin_review",
+      proprietario: nil,
+      proprietario_celular: nil,
+      proprietario_email: nil,
       observacoes_visitas: ""
     )
 
@@ -1534,6 +1588,7 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
       cep: "88330-000",
       logradouro: "Rua Original",
       numero: "100",
+      complemento: "Casa 1",
       bairro: "Centro",
       cidade: "Balneário Camboriú",
       uf: "SC"
@@ -1553,6 +1608,7 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
         zip_code: "88331-000",
         street: "Rua Alterada",
         street_number: "200",
+        complemento: "Casa 2",
         neighborhood: "Barra Sul",
         city: "Itajaí",
         state: "SC",
@@ -1596,6 +1652,7 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
       cep: "88330-000",
       logradouro: "Rua Original",
       numero: "100",
+      complemento: "Casa 1",
       bairro: "Centro",
       cidade: "Balneário Camboriú",
       uf: "SC"
@@ -1608,6 +1665,7 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
         zip_code: "88331-000",
         street: "Rua Alterada",
         street_number: "200",
+        complemento: "Casa 2",
         neighborhood: "Barra Sul",
         city: "Itajaí",
         state: "SC"
@@ -1641,6 +1699,7 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
       cep: "88330-100",
       logradouro: "Rua Dupla",
       numero: "200",
+      complemento: "Casa 1",
       bairro: "Centro",
       cidade: "Balneário Camboriú",
       uf: "SC"
@@ -1655,8 +1714,9 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
       post submit_for_review_admin_captacao_path(intake)
     }.to change { Habitation.broker_intakes.count }.by(1)
 
+    intake.reload
     expect(response).to redirect_to(admin_captacao_path(intake))
-    sale = intake.reload
+    sale = intake
     rental = Habitation.where(intake_group_uuid: sale.intake_group_uuid).where.not(id: sale.id).sole
     expect(sale).to have_attributes(
       intake_status: "submitted_for_admin_review",

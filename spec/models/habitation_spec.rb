@@ -121,6 +121,18 @@ RSpec.describe Habitation, type: :model do
     end
   end
 
+  describe "#requires_intake_address_complement?" do
+    it "requires complement for apartment units, condominium houses, commercial rooms, warehouses and land" do
+      ["Apartamento", "Casa em Condomínio", "Sala Comercial", "Galpão", "Terreno"].each do |categoria|
+        expect(described_class.new(categoria: categoria)).to be_requires_intake_address_complement
+      end
+    end
+
+    it "does not require complement for street houses" do
+      expect(described_class.new(categoria: "Casa")).not_to be_requires_intake_address_complement
+    end
+  end
+
   describe "standalone development cleanup" do
     it "clears unlinked development names from standalone warehouses" do
       habitation = create(:habitation, categoria: "Galpão", nome_empreendimento: "Torre Indevida", codigo_empreendimento: nil)
@@ -212,11 +224,11 @@ RSpec.describe Habitation, type: :model do
       expect(habitation.intake_missing_requirements).not_to include("Dados do proprietário")
     end
 
-    it "keeps proprietor city required for broker intake submission" do
+    it "does not require proprietor city for broker intake submission when contact data exists" do
       proprietor = build(:proprietor, city: nil, phone_primary: "(47) 99601-2553", email: nil)
       habitation = build(:habitation, proprietor: proprietor, proprietario: nil, proprietario_celular: nil, proprietario_email: nil)
 
-      expect(habitation.intake_missing_requirements(require_owner_city: true)).to include("Dados do proprietário")
+      expect(habitation.intake_missing_requirements(require_owner_city: true)).not_to include("Dados do proprietário")
     end
 
     it "accepts manual visit notes without treating technical note lines as visit availability" do

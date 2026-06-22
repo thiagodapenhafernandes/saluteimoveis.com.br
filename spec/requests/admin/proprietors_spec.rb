@@ -5,6 +5,66 @@ RSpec.describe "Admin::Proprietors", type: :request do
 
   before { host! "localhost" }
 
+  it "permite gerente com visualização acessar proprietários sem ações de gestão" do
+    profile = Profile.create!(
+      name: "Gerente proprietários #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Gerente").merge(
+        "proprietarios" => { "view" => true, "manage" => false }
+      )
+    )
+    manager = create(:admin_user, profile: profile)
+    proprietor = create(:proprietor, name: "Proprietário Visível")
+
+    sign_in manager
+
+    get admin_proprietors_path
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Proprietário Visível")
+    expect(response.body).not_to include("Novo Proprietário")
+    expect(response.body).not_to include(new_admin_proprietor_path)
+    expect(response.body).not_to include(edit_admin_proprietor_path(proprietor))
+    expect(response.body).not_to include("proprietorsExportModal")
+  end
+
+  it "bloqueia ações de gestão quando o perfil só tem visualização de proprietários" do
+    profile = Profile.create!(
+      name: "Gerente proprietários bloqueio #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Gerente").merge(
+        "proprietarios" => { "view" => true, "manage" => false }
+      )
+    )
+    manager = create(:admin_user, profile: profile)
+    proprietor = create(:proprietor)
+
+    sign_in manager
+
+    get new_admin_proprietor_path
+    expect(response).to redirect_to(admin_root_path)
+
+    get edit_admin_proprietor_path(proprietor)
+    expect(response).to redirect_to(admin_root_path)
+
+    get export_admin_proprietors_path, params: { fields: %w[name], data_format: "csv" }
+    expect(response).to redirect_to(admin_root_path)
+  end
+
+  it "bloqueia listagem quando o perfil não tem visualização de proprietários" do
+    profile = Profile.create!(
+      name: "Sem proprietários #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Gerente").merge(
+        "proprietarios" => { "view" => false, "manage" => false }
+      )
+    )
+    manager = create(:admin_user, profile: profile)
+
+    sign_in manager
+
+    get admin_proprietors_path
+
+    expect(response).to redirect_to(admin_root_path)
+  end
+
   it "cria proprietário rápido e retorna payload para selecionar no cadastro do imóvel" do
     admin = create(:admin_user, :admin)
     sign_in admin

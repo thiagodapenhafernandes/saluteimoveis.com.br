@@ -401,6 +401,24 @@ class Habitation < ApplicationRecord
     property_kind_apartment_unit? ? "Apto." : "Compl."
   end
 
+  def intake_address_complement_label
+    return "Unidade / Apto" if requires_unit_number?
+    return "Complemento / Casa" if condominium_house?
+    return "Complemento / Sala" if property_kind_sala_comercial?
+
+    "Complemento"
+  end
+
+  def intake_address_complement_placeholder
+    return "1203" if requires_unit_number?
+    return "Ex.: Casa 12, Quadra B" if condominium_house?
+    return "Ex.: Sala 402" if property_kind_sala_comercial?
+    return "Ex.: Galpão B, fundos" if property_kind_galpao?
+    return "Ex.: Lote 12, Quadra B" if property_kind_terreno?
+
+    "Ex.: fundos, sala, lote..."
+  end
+
   def property_kind_residencial?
     property_kind.in?(%w[residencial casa_rua])
   end
@@ -438,6 +456,10 @@ class Habitation < ApplicationRecord
 
   def requires_unit_number?
     property_kind_apartment_unit?
+  end
+
+  def requires_intake_address_complement?
+    requires_unit_number? || condominium_house? || property_kind_sala_comercial? || property_kind_galpao? || property_kind_terreno?
   end
 
   def intake_unit_number_present?
@@ -942,6 +964,7 @@ class Habitation < ApplicationRecord
     missing << "Endereço e localização" if address.blank? || cep.blank? || logradouro.blank? || bairro.blank? || cidade.blank? || uf.blank?
     missing << "Empreendimento" if requires_intake_development_name? && nome_empreendimento.blank?
     missing << "Número da unidade" if requires_unit_number? && !intake_unit_number_present?
+    missing << "Complemento" if requires_intake_address_complement? && !requires_unit_number? && complemento.blank?
     if property_kind_terreno?
       missing << "Dimensões e estrutura física" if area_total_m2.to_f <= 0
     elsif !has_required_intake_area?

@@ -28,6 +28,7 @@ FactoryBot.define do
       titulo_anuncio { "Casa em Condomínio 2 dormitórios em Centro" }
       descricao_web { "Descrição do imóvel revisada para publicação no site." }
       nome_empreendimento { "Residencial Teste" }
+      complemento { "Casa 1" }
       proprietario { "Proprietário Teste" }
       proprietario_celular { "(47) 99999-0000" }
       valor_venda_cents { 1_000_000_00 }
