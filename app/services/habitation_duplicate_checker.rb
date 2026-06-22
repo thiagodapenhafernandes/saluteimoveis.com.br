@@ -66,9 +66,8 @@ class HabitationDuplicateChecker
   end
 
   def active_duplicate_candidate?(habitation)
-    # Captações de corretor (rascunho em diante) reservam o imóvel mesmo sem
-    # estarem publicadas, protegendo quem subiu a ficha primeiro. Fichas
-    # descartadas são apagadas, então não travam ninguém.
+    # Rascunhos ainda não reservam referência nem bloqueiam duplicidade; a trava
+    # começa depois que a ficha é finalizada/enviada para revisão.
     return true if active_broker_intake?(habitation)
 
     !habitation.unavailable_for_duplicate_check?
@@ -76,6 +75,7 @@ class HabitationDuplicateChecker
 
   def active_broker_intake?(habitation)
     habitation.intake_origin == Habitation::INTAKE_ORIGIN_BROKER &&
+      !habitation.intake_draft? &&
       !habitation.exibir_no_site_flag?
   end
 

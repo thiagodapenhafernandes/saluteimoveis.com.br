@@ -19,4 +19,10 @@ RSpec.describe "Habitation feature normalization" do
     expect(habitation.property_features_for_display).to eq(["Adega", "Área de serviço", "Banheiro social"])
     expect(habitation.leisure_features_for_display).to eq(["Portaria 24h", "Poço artesiano"])
   end
+
+  it "normalizes CamelCase field names returned by Vista" do
+    expect(AttributeOptions::HabitationFeatureNormalizer.label("AreaServico")).to eq("Área de serviço")
+    expect(AttributeOptions::HabitationFeatureNormalizer.label("CanaletasNoRodape")).to eq("Canaletas no rodapé")
+    expect(AttributeOptions::HabitationFeatureNormalizer.label("Portaria24Hrs", category: "infrastructure")).to eq("Portaria 24h")
+  end
 end

@@ -21,7 +21,11 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(response.body).to include("Iniciar captação")
     expect(response.body).to include("Tipo de cadastro")
     expect(response.body).to include("Comerciais e industriais")
+    expect(response.body).to include("Empreendimento")
     expect(response.body).to include("Categoria relacionada")
+    expect(response.body).to include("Box")
+    expect(response.body).to include("Salas/Conjuntos")
+    expect(response.body).to include("Terreno Comercial")
   end
 
   it "exibe exportador de planilha somente para administrador ou administrativo" do
@@ -285,6 +289,26 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
       status: "Aluguel",
       intake_modalidade: "locacao_anual"
     )
+    expect(intake.codigo).to start_with(Habitation::DRAFT_REFERENCE_PREFIX)
+    expect(intake.visible_reference_codigo).to be_nil
+  end
+
+  it "mostra referência apenas depois de finalizar a captação" do
+    post admin_captacoes_path, params: {
+      habitation: {
+        cadastro_type: "imoveis_residenciais",
+        categoria: "Apartamento",
+        modalidade: "venda"
+      }
+    }
+
+    intake = Habitation.broker_intakes.order(:created_at).last
+
+    get admin_captacoes_path(status: "draft")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Após finalizar")
+    expect(response.body).not_to include(intake.codigo)
   end
 
   it "mantém compatibilidade com property_kind antigo ao iniciar captação" do
@@ -319,6 +343,7 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
       :habitation,
       :broker_intake,
       admin_user: admin,
+      codigo: "#{Habitation::DRAFT_REFERENCE_PREFIX}#{SecureRandom.hex(10).upcase}",
       categoria: "Sala Comercial",
       titulo_anuncio: "Sala Comercial em Centro Balneário Camboriú",
       descricao_web: "Descrição pública da sala comercial para publicação.",
@@ -347,8 +372,10 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
       }
     }
 
+    intake.reload
     expect(response).to redirect_to(admin_captacao_path(intake))
-    expect(intake.reload).to have_attributes(
+    expect(intake.visible_reference_codigo).to match(/\A\d+\z/)
+    expect(intake).to have_attributes(
       intake_status: "submitted_for_admin_review",
       salas_qtd: 1
     )
@@ -514,6 +541,16 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(response.body).to include("Avenida")
     expect(response.body).to include("Rua")
     expect(response.body).not_to include("Rua / Avenida")
+  end
+
+  it "não executa validação assíncrona de duplicidade enquanto a captação está em rascunho" do
+    intake = create(:habitation, :broker_intake, admin_user: admin, intake_step: "endereco")
+
+    get edit_admin_captacao_path(intake, step: "endereco")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).not_to include('data-controller="habitation-duplicate-check"')
+    expect(response.body).not_to include("data-habitation-duplicate-check-url-value")
   end
 
   it "salva tipo de endereço sem duplicar rua ou avenida no logradouro" do
@@ -753,6 +790,27 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(response.body).to include("Espaço gourmet")
   end
 
+  it "filtra características da captação pelo tipo de imóvel" do
+    AttributeOption.create!(context: "habitation", category: "feature", name: "Sacada")
+    AttributeOption.create!(context: "habitation", category: "feature", name: "Piso elevado")
+    AttributeOption.create!(context: "habitation", category: "feature", name: "Murado")
+
+    terrain = create(:habitation, :broker_intake, admin_user: admin, categoria: "Terreno", intake_step: "caracteristicas")
+    get edit_admin_captacao_path(terrain, step: "caracteristicas")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Murado")
+    expect(response.body).not_to include("Sacada")
+    expect(response.body).not_to include("Piso elevado")
+
+    warehouse = create(:habitation, :broker_intake, admin_user: admin, categoria: "Galpão", intake_step: "caracteristicas")
+    get edit_admin_captacao_path(warehouse, step: "caracteristicas")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Piso elevado")
+    expect(response.body).not_to include("Sacada")
+  end
+
   it "separa características do imóvel e do edifício em etapas diferentes" do
     intake = create(:habitation, :broker_intake, admin_user: admin, intake_step: "caracteristicas")
 
@@ -929,7 +987,7 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(intake.reload.intake_step).to eq("negociacao")
   end
 
-  it "bloqueia avanço da captação quando endereço completo já existe" do
+  it "valida duplicidade de endereço apenas na finalização da captação" do
     existing = create(:habitation, nome_empreendimento: "Residencial Atlântico", bloco: "301")
     existing.create_address!(
       logradouro: "Rua 3000",
@@ -955,9 +1013,14 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
       }
     }
 
+    expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "caracteristicas"))
+    expect(intake.reload.intake_step).to eq("caracteristicas")
+
+    post submit_for_review_admin_captacao_path(intake)
+
     expect(response).to have_http_status(:unprocessable_entity)
     expect(response.body).to include("Já existe imóvel cadastrado")
-    expect(intake.reload.intake_step).to eq("endereco")
+    expect(intake.reload.intake_status).to eq("draft")
   end
 
   it "não bloqueia apartamento com unidade quando existe cadastro do empreendimento no mesmo endereço" do
@@ -1560,7 +1623,7 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
 
   describe "lista de captações (organização da área de trabalho)" do
     it "esconde por padrão fichas publicadas no site e liberadas internamente" do
-      create(:habitation, :broker_intake, admin_user: admin, codigo: "LIST-DRAFT", intake_status: "draft", categoria: "Apartamento")
+      create(:habitation, :broker_intake, admin_user: admin, codigo: "LIST-DRAFT", intake_status: "draft", categoria: "Apartamento", nome_empreendimento: "Rascunho sem referência")
       create(:habitation, :broker_intake, admin_user: admin, codigo: "LIST-REVIEW", intake_status: "submitted_for_admin_review", categoria: "Apartamento")
       create(:habitation, :broker_intake, admin_user: admin, codigo: "LIST-PUBLISHED", intake_status: "published", exibir_no_site_flag: true, categoria: "Apartamento")
       create(:habitation, :broker_intake, admin_user: admin, codigo: "LIST-INTERNAL", intake_status: "internal", categoria: "Apartamento")
@@ -1568,7 +1631,9 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
       get admin_captacoes_path
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include("LIST-DRAFT")
+      expect(response.body).to include("Rascunho sem referência")
+      expect(response.body).to include("Após finalizar")
+      expect(response.body).not_to include("LIST-DRAFT")
       expect(response.body).to include("LIST-REVIEW")
       expect(response.body).not_to include("LIST-PUBLISHED")
       expect(response.body).not_to include("LIST-INTERNAL")

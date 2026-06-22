@@ -15,7 +15,13 @@ export default class extends Controller {
     "constructorName",
     "constructorWebsite",
     "constructorSubmit",
-    "constructorFeedback"
+    "constructorFeedback",
+    "permutaVehicleInput",
+    "permutaVehicleFields",
+    "permutaPropertyInput",
+    "permutaPropertyFields",
+    "parcelamentoInput",
+    "parcelamentoFields"
   ]
 
   static values = {
@@ -31,6 +37,7 @@ export default class extends Controller {
     this.activateTabFromHash()
     this.applyCadastroType()
     this.syncFromDevelopmentSelection()
+    this.applyNegotiationToggles()
     this.applyServerValidationErrors()
   }
 
@@ -337,6 +344,24 @@ export default class extends Controller {
     if (!this.hasMissingConstructorAlertTarget) return
     this.missingConstructorAlertTarget.classList.toggle("d-none", !visible)
     if (!visible) this.syncDevelopmentEditLink(null)
+  }
+
+  permutaChanged() {
+    this.applyNegotiationToggles()
+  }
+
+  parcelamentoChanged() {
+    this.applyNegotiationToggles()
+  }
+
+  applyNegotiationToggles() {
+    this.toggleTargets(this.permutaVehicleFieldsTargets, this.hasPermutaVehicleInputTarget && this.permutaVehicleInputTarget.checked)
+    this.toggleTargets(this.permutaPropertyFieldsTargets, this.hasPermutaPropertyInputTarget && this.permutaPropertyInputTarget.checked)
+    this.toggleTargets(this.parcelamentoFieldsTargets, this.hasParcelamentoInputTarget && this.parcelamentoInputTarget.checked)
+  }
+
+  toggleTargets(targets, visible) {
+    targets.forEach((target) => target.classList.toggle("d-none", !visible))
   }
 
   async createConstructor(event) {

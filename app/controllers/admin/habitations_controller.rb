@@ -1296,7 +1296,7 @@ class Admin::HabitationsController < Admin::BaseController
     return true unless result.complete && result.duplicate?
 
     duplicated = result.matches.first
-    code = duplicated&.codigo.present? ? " ##{duplicated.codigo}" : ""
+    code = duplicated&.visible_reference_codigo.present? ? " ##{duplicated.visible_reference_codigo}" : ""
     message = if habitation.duplicate_identity_scope == :unit
                 "Já existe imóvel cadastrado com esta rua, número, unidade e status comercial#{code}."
               elsif habitation.duplicate_identity_scope == :condominium_unit
@@ -1747,6 +1747,7 @@ class Admin::HabitationsController < Admin::BaseController
     end
 
     permitted.delete(:intake_status) unless @habitation&.broker_intake? && can_manage_intake_status?(@habitation)
+    sync_general_exchange_flag!(permitted)
 
     permitted
   end
@@ -1764,6 +1765,21 @@ class Admin::HabitationsController < Admin::BaseController
     strip_blank_photo_uploads!(permitted)
     permitted.delete(:foto_classificacao) unless can_manage_habitation_signal_flags?
     permitted
+  end
+
+  def sync_general_exchange_flag!(permitted)
+    specific_exchange_keys = %i[
+      aceita_permuta_veiculo_flag
+      aceita_permuta_imovel_flag
+      aceita_permuta_outros_flag
+    ]
+    return unless specific_exchange_keys.any? { |key| permitted.key?(key) }
+
+    boolean = ActiveModel::Type::Boolean.new
+    accepts_exchange = specific_exchange_keys.any? { |key| boolean.cast(permitted[key]) }
+
+    permitted[:aceita_permuta_flag] = accepts_exchange
+    permitted[:aceita_permuta_answer] = accepts_exchange ? "sim" : "nao"
   end
 
   def strip_blank_photo_uploads!(permitted)
@@ -2101,7 +2117,7 @@ class Admin::HabitationsController < Admin::BaseController
       :exibir_no_site_flag, :destaque_web_flag, :lancamento_flag, :aceita_permuta_flag, 
       :aceita_doacao_flag,
       :aceita_permuta_veiculo_flag, :aceita_permuta_imovel_flag, :aceita_permuta_outros_flag,
-      :aceita_financiamento_flag, :mobiliado_flag, :data_entrega, :status_vista, 
+      :aceita_parcelamento_flag, :aceita_financiamento_flag, :mobiliado_flag, :data_entrega, :status_vista, 
       :meta_title, :meta_description, :meta_keywords, 
       :piscina_flag, :lavabo_flag, :varanda_gourmet_flag, :bloco, :lote,
       :banheiro_social_qtd, :decorado_flag, :aptos_andar, :aptos_edificio,

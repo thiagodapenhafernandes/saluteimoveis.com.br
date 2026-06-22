@@ -103,6 +103,95 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include("Salvar e sair")
   end
 
+  it "renderiza permuta por tipo e parcelamento sem checkbox geral duplicado" do
+    get new_admin_habitation_path
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Aceita permuta imóvel")
+    expect(response.body).to include("Características do imóvel aceito na permuta")
+    expect(response.body).to include("Aceita permuta veículo")
+    expect(response.body).to include("Dados do veículo aceito na permuta")
+    expect(response.body).to include("Aceita Parcelamento")
+    expect(response.body).to include("Em quantas vezes?")
+    expect(response.body).not_to include('name="habitation[aceita_permuta_flag]"')
+  end
+
+  it "persiste permuta pelos seletores específicos e parcelamento no formulário completo" do
+    habitation = create(
+      :habitation,
+      codigo: "PERM-#{SecureRandom.hex(6)}",
+      titulo_anuncio: "Casa com permuta controlada",
+      descricao_web: "Descrição completa do imóvel para validação do formulário.",
+      aceita_permuta_flag: false
+    )
+    habitation.create_address!(
+      logradouro: "Rua Permuta #{SecureRandom.hex(4)}",
+      numero: "101",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC",
+      cep: "88330-000"
+    )
+
+    patch admin_habitation_path(habitation), params: {
+      habitation: {
+        titulo_anuncio: habitation.titulo_anuncio,
+        descricao_web: habitation.descricao_web,
+        aceita_permuta_imovel_flag: "1",
+        aceita_permuta_veiculo_flag: "0",
+        aceita_permuta_outros_flag: "0",
+        permuta_localizacao: "Balneário Camboriú",
+        aceita_parcelamento_flag: "1",
+        numero_prestacoes: "24"
+      }
+    }
+
+    expect(response).to redirect_to(admin_habitations_path)
+    habitation.reload
+    expect(habitation.aceita_permuta_flag).to be(true)
+    expect(habitation.aceita_permuta_answer).to eq("sim")
+    expect(habitation.aceita_permuta_imovel_flag).to be(true)
+    expect(habitation.aceita_permuta_veiculo_flag).to be(false)
+    expect(habitation.aceita_parcelamento_flag).to be(true)
+    expect(habitation.numero_prestacoes).to eq(24)
+  end
+
+  it "desliga o flag geral de permuta quando todos os tipos são desmarcados" do
+    habitation = create(
+      :habitation,
+      codigo: "PERM-OFF-#{SecureRandom.hex(6)}",
+      titulo_anuncio: "Casa com permuta para desligar",
+      descricao_web: "Descrição completa do imóvel para validação do formulário.",
+      aceita_permuta_flag: true,
+      aceita_permuta_answer: "sim",
+      aceita_permuta_imovel_flag: true,
+      aceita_permuta_veiculo_flag: true
+    )
+    habitation.create_address!(
+      logradouro: "Rua Permuta Off #{SecureRandom.hex(4)}",
+      numero: "202",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC",
+      cep: "88330-000"
+    )
+
+    patch admin_habitation_path(habitation), params: {
+      habitation: {
+        titulo_anuncio: habitation.titulo_anuncio,
+        descricao_web: habitation.descricao_web,
+        aceita_permuta_imovel_flag: "0",
+        aceita_permuta_veiculo_flag: "0",
+        aceita_permuta_outros_flag: "0"
+      }
+    }
+
+    expect(response).to redirect_to(admin_habitations_path)
+    habitation.reload
+    expect(habitation.aceita_permuta_flag).to be(false)
+    expect(habitation.aceita_permuta_answer).to eq("nao")
+  end
+
   it "mantém cadastro administrativo vinculado a corretor em revisão ao salvar sem concluir" do
     broker = create(:admin_user, name: "Adriana Stark")
 

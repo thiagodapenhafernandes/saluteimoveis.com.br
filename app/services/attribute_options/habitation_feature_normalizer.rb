@@ -6,6 +6,8 @@ module AttributeOptions
       "adega" => "Adega",
       "agua quente" => "Água quente",
       "alarme" => "Alarme",
+      "antena parabolica" => "Antena parabólica",
+      "aquecimento eletrico" => "Aquecimento elétrico",
       "aquecimento a gas" => "Aquecimento a gás",
       "aquecimento gas" => "Aquecimento a gás",
       "ar central" => "Ar central",
@@ -24,16 +26,21 @@ module AttributeOptions
       "bar" => "Bar",
       "bicicletario" => "Bicicletário",
       "canaletas no rodape" => "Canaletas no rodapé",
+      "cerca eletrica" => "Cerca elétrica",
       "churrasqueira" => "Churrasqueira",
       "churrasqueira a carvao" => "Churrasqueira a carvão",
       "churrasqueira a gas" => "Churrasqueira a gás",
       "churrasqueira coletiva" => "Churrasqueira coletiva",
       "condominio fechado" => "Condomínio fechado",
+      "construcao alvenaria" => "Construção alvenaria",
       "copa" => "Copa",
       "copa cozinha" => "Copa/cozinha",
       "cozinha" => "Cozinha",
       "cozinha americana" => "Cozinha americana",
+      "cozinha com tanque" => "Cozinha com tanque",
       "cozinha gourmet com churrasqueira" => "Cozinha gourmet com churrasqueira",
+      "cozinha industrial" => "Cozinha industrial",
+      "cozinha montada" => "Cozinha montada",
       "cozinha planejada" => "Cozinha planejada",
       "deck" => "Deck",
       "dependencia de empregada" => "Dependência de empregada",
@@ -67,10 +74,12 @@ module AttributeOptions
       "mobiliado" => "Mobiliado",
       "mobiliado decorado" => "Mobiliado decorado",
       "monitoramento" => "Monitoramento",
+      "patio" => "Pátio",
       "pet place" => "Pet place",
       "piscina" => "Piscina",
       "piscina coletiva" => "Piscina coletiva",
       "piso elevado" => "Piso elevado",
+      "porao" => "Porão",
       "quadra mar" => "Quadra mar",
       "quadra poliesportiva" => "Quadra poliesportiva",
       "quintal" => "Quintal",
@@ -98,8 +107,11 @@ module AttributeOptions
       "sol o dia todo" => "Sol o dia todo",
       "split" => "Split",
       "suite master" => "Suíte master",
+      "sotao" => "Sótão",
       "terraco" => "Terraço",
       "triplex" => "Triplex",
+      "tv cabo" => "TV a cabo",
+      "tvcabo" => "TV a cabo",
       "vigia externo" => "Vigia externo",
       "vigia interno" => "Vigia interno",
       "vista mar" => "Vista mar",
@@ -115,6 +127,8 @@ module AttributeOptions
       "aquecimento central" => "Aquecimento central",
       "box de praia" => "Box de praia",
       "brinquedoteca" => "Brinquedoteca",
+      "cabine de forca" => "Cabine de força",
+      "capacidade piso" => "Capacidade piso",
       "churrasqueira condominio" => "Churrasqueira condomínio",
       "circuito fechado t v" => "Circuito fechado TV",
       "circuito fechado tv" => "Circuito fechado TV",
@@ -130,22 +144,30 @@ module AttributeOptions
       "espaco gourmet" => "Espaço gourmet",
       "estacionamento" => "Estacionamento",
       "estacionamento visitantes" => "Estacionamento visitantes",
+      "garagem coberta" => "Garagem coberta",
       "gerador energia" => "Gerador de energia",
+      "gradil" => "Gradil",
       "guarita" => "Guarita",
       "heliponto" => "Heliponto",
       "interfone" => "Interfone",
       "jardim" => "Jardim",
       "lavanderia" => "Lavanderia",
+      "onibus proximo" => "Ônibus próximo",
       "pavimentacao" => "Pavimentação",
       "pilotis" => "Pilotis",
       "piscina aquecida" => "Piscina aquecida",
       "piscina infantil" => "Piscina infantil",
+      "pista caminhada" => "Pista caminhada",
       "playground" => "Playground",
       "poco artesiano" => "Poço artesiano",
       "portaria" => "Portaria",
+      "portaria 24 h" => "Portaria 24h",
       "portaria 24h" => "Portaria 24h",
+      "portaria 24 hrs" => "Portaria 24h",
       "portaria 24hs" => "Portaria 24h",
       "portaria24 hrs" => "Portaria 24h",
+      "portaria blindada" => "Portaria blindada",
+      "portoes com eclusa" => "Portões com eclusa",
       "porteiro eletronico" => "Porteiro eletrônico",
       "possui viabilidade" => "Possui viabilidade",
       "quadra esportes" => "Quadra de esportes",
@@ -173,18 +195,29 @@ module AttributeOptions
     module_function
 
     def label(value, category: "feature")
-      raw = value.to_s.strip
+      raw = humanized_raw(value)
       return if raw.blank?
 
       labels = category.to_s == "infrastructure" ? INFRASTRUCTURE_LABELS : FEATURE_LABELS
-      labels[key(raw)] || raw.tr("_", " ").downcase.squish.capitalize
+      labels[key(raw)] || raw.downcase.squish.capitalize
     end
 
     def key(value)
-      I18n.transliterate(value.to_s.tr("_", " "))
+      I18n.transliterate(humanized_raw(value))
           .downcase
           .gsub(/[^a-z0-9]+/, " ")
           .squish
+    end
+
+    def humanized_raw(value)
+      value.to_s
+           .strip
+           .tr("_", " ")
+           .gsub(/([A-Z]+)([A-Z][a-z])/, '\\1 \\2')
+           .gsub(/([a-z\d])([A-Z])/, '\\1 \\2')
+           .gsub(/([A-Za-z])(\d)/, '\\1 \\2')
+           .gsub(/(\d)([A-Za-z])/, '\\1 \\2')
+           .squish
     end
 
     def normalize_list(values, category: "feature")
