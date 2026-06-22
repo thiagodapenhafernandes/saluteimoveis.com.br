@@ -111,6 +111,7 @@ class Habitation < ApplicationRecord
   SITE_RELEASABLE_INTAKE_STATUSES = %w[admin_approved returned_to_broker internal].freeze
   CATALOG_VISIBLE_INTAKE_STATUSES = %w[internal published].freeze
   PENDING_REVIEW_INTAKE_STATUSES = %w[submitted_for_admin_review admin_approved].freeze
+  PHOTO_UPLOAD_REVIEWABLE_INTAKE_STATUSES = %w[admin_approved returned_to_broker internal published].freeze
   PHOTO_FLOW_CHOICES = {
     "upload" => "Enviar fotos",
     "schedule" => "Agendar fotógrafo"
@@ -889,6 +890,23 @@ class Habitation < ApplicationRecord
     has_any_photo? && !exibir_no_site_flag?
   end
 
+  def photo_upload_requires_admin_review?(had_no_photos:, uploaded_photos:, reviewer:)
+    broker_intake? &&
+      had_no_photos &&
+      uploaded_photos &&
+      !reviewer &&
+      PHOTO_UPLOAD_REVIEWABLE_INTAKE_STATUSES.include?(intake_status)
+  end
+
+  def submit_photo_upload_for_admin_review!
+    self.intake_status = "submitted_for_admin_review"
+    self.submitted_for_review_at = Time.current
+    self.admin_reviewed_by = nil
+    self.admin_reviewed_at = nil
+    self.broker_released_at = nil
+    self.exibir_no_site_flag = false
+  end
+
   def rental_intake?
     modalidade = intake_modalidade.presence
     return true if modalidade.in?(%w[locacao_anual locacao_diaria ambos])
@@ -1051,7 +1069,7 @@ class Habitation < ApplicationRecord
 
   def public_image_sources
     own_sources = own_public_image_sources
-    return own_sources if empreendimento? || codigo_empreendimento.blank?
+    return own_sources unless use_development_photos?
 
     (own_sources + linked_development_public_image_sources).uniq do |source|
       public_image_source_key(source)
@@ -1410,7 +1428,12 @@ class Habitation < ApplicationRecord
     return title if location_terms.blank?
 
     location_pattern = Regexp.union(location_terms.sort_by { |term| -term.length })
-    title.gsub(/\b(?:na|no|em)\s+(#{location_pattern})\b/i, "em #{title_neighborhood}")
+    normalized_city = [cidade, read_attribute(:cidade) { nil }].map { |value| value.to_s.strip }.find(&:present?).to_s.parameterize
+
+    title.gsub(/\b(na|no|em)\s+(#{location_pattern})\b/i) do |matched_location|
+      matched_term = Regexp.last_match(2)
+      matched_term.to_s.parameterize == normalized_city ? matched_location : "em #{title_neighborhood}"
+    end
   end
 
   def title_category_terms_in_title

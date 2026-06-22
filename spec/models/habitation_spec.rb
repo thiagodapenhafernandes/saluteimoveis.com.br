@@ -62,6 +62,17 @@ RSpec.describe Habitation, type: :model do
 
       expect(habitation.display_title).to eq("Apartamento para venda na Barra Sul")
     end
+
+    it "does not replace the property city with the neighborhood in imported titles" do
+      habitation = described_class.new(
+        titulo_anuncio: "Galpão para aluguel anual Tabuleiro em Camboriú",
+        bairro: "Tabuleiro",
+        cidade: "Camboriú",
+        categoria: "Galpão"
+      )
+
+      expect(habitation.display_title).to eq("Galpão para aluguel anual Tabuleiro em Camboriú")
+    end
   end
 
   describe "#admin_card_title" do

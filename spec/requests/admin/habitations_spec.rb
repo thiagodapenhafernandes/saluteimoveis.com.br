@@ -2242,6 +2242,87 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(habitation.reload.fichas_cadastro.attachments.count).to eq(1)
   end
 
+  it "envia para revisão administrativa quando corretor anexa fotos em captação sem fotos" do
+    broker_profile = Profile.create!(
+      name: "Corretor fotos #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Corretor")
+    )
+    broker = create(:admin_user, profile: broker_profile)
+    habitation = create(
+      :habitation,
+      :broker_intake,
+      admin_user: broker,
+      codigo: "PHOTO-REV-#{SecureRandom.hex(6)}",
+      intake_status: "internal",
+      pictures: [],
+      exibir_no_site_flag: true,
+      admin_reviewed_by: admin,
+      admin_reviewed_at: 1.day.ago
+    )
+    file = Tempfile.new(["foto-revisao", ".jpg"])
+    file.write("foto nova")
+    file.rewind
+
+    sign_out admin
+    sign_in broker
+    get edit_admin_habitation_path(habitation)
+    csrf_token = Nokogiri::HTML(response.body).at_css('meta[name="csrf-token"]')["content"]
+
+    patch update_photos_admin_habitation_path(habitation), params: {
+      authenticity_token: csrf_token,
+      habitation: {
+        photos: [Rack::Test::UploadedFile.new(file.path, "image/jpeg")]
+      }
+    }
+
+    expect(response).to redirect_to(admin_captacao_path(habitation))
+    expect(habitation.reload).to have_attributes(
+      intake_status: "submitted_for_admin_review",
+      exibir_no_site_flag: false,
+      admin_reviewed_by_id: nil,
+      admin_reviewed_at: nil,
+      broker_released_at: nil
+    )
+    expect(habitation.submitted_for_review_at).to be_present
+    expect(habitation.photos).to be_attached
+  ensure
+    file&.close
+    file&.unlink
+  end
+
+  it "não envia para revisão quando o campo de fotos vem vazio" do
+    broker_profile = Profile.create!(
+      name: "Corretor foto vazia #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Corretor")
+    )
+    broker = create(:admin_user, profile: broker_profile)
+    habitation = create(
+      :habitation,
+      :broker_intake,
+      admin_user: broker,
+      codigo: "PHOTO-BLANK-#{SecureRandom.hex(6)}",
+      intake_status: "internal",
+      pictures: [],
+      exibir_no_site_flag: false
+    )
+
+    sign_out admin
+    sign_in broker
+    get edit_admin_habitation_path(habitation)
+    csrf_token = Nokogiri::HTML(response.body).at_css('meta[name="csrf-token"]')["content"]
+
+    patch update_photos_admin_habitation_path(habitation), params: {
+      authenticity_token: csrf_token,
+      habitation: {
+        photos: [""]
+      }
+    }
+
+    expect(response).to redirect_to(edit_admin_habitation_path(habitation, anchor: "media"))
+    expect(habitation.reload).to have_attributes(intake_status: "internal")
+    expect(habitation.photos).not_to be_attached
+  end
+
   it "mostra resumo e fotos no detalhe sem expor cadastro interno para corretor não captador" do
     broker_profile = Profile.create!(
       name: "Corretor show restrito #{SecureRandom.hex(6)}",

@@ -1254,6 +1254,16 @@ module Vista
       Habitation.empreendimentos.exists?(codigo: code) ? code : nil
     end
 
+    def clearable_development_code(api)
+      return :__not_available__ if habitation_type(api) == "Empreendimento"
+
+      code_fields = %w[CodigoEmpreendimento CodigoEmp].select { |field| api.key?(field) }
+      return :__not_available__ if code_fields.blank?
+      return :__not_available__ unless code_fields.all? { |field| value(api[field]).blank? }
+
+      nil
+    end
+
     def location_highlights(api)
       {
         "3Avenida" => "3ª Avenida",
@@ -1363,6 +1373,7 @@ module Vista
       {
         pais: clearable_value(api, "Pais"),
         complemento: clearable_value(api, "Complemento"),
+        codigo_empreendimento: clearable_development_code(api),
         nome_empreendimento: clearable_value(api, "Empreendimento"),
         agenciador: clearable_value(api, "AdministradoraCondominio"),
         data_entrega: clearable_datetime(api, "DataEntrega"),

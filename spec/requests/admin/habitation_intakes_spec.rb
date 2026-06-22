@@ -966,6 +966,62 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(intake.autorizacoes_venda).to be_attached
   end
 
+  it "envia para revisão administrativa quando corretor sobe fotos em captação sem fotos pelo wizard" do
+    broker_profile = Profile.create!(
+      name: "Corretor fotos wizard #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Corretor")
+    )
+    broker = create(:admin_user, profile: broker_profile)
+    intake = create(
+      :habitation,
+      :broker_intake,
+      admin_user: broker,
+      codigo: "PHOTO-WIZ-#{SecureRandom.hex(6)}",
+      intake_step: "fotos",
+      intake_status: "returned_to_broker",
+      photo_flow_choice: "upload",
+      pictures: [],
+      admin_reviewed_by: admin,
+      admin_reviewed_at: 1.day.ago
+    )
+    photo = Rack::Test::UploadedFile.new(
+      StringIO.new("foto nova"),
+      "image/jpeg",
+      original_filename: "foto-nova.jpg"
+    )
+    authorization = Rack::Test::UploadedFile.new(
+      StringIO.new("autorizacao"),
+      "image/png",
+      original_filename: "autorizacao.png"
+    )
+
+    sign_out admin
+    sign_in broker
+    get edit_admin_captacao_path(intake, step: "fotos")
+    csrf_token = Nokogiri::HTML(response.body).at_css('meta[name="csrf-token"]')["content"]
+
+    patch admin_captacao_path(intake), params: {
+      authenticity_token: csrf_token,
+      current_step: "fotos",
+      direction: "forward",
+      habitation: {
+        photos: [photo],
+        autorizacoes_venda: [authorization]
+      }
+    }
+
+    expect(response).to redirect_to(admin_captacao_path(intake))
+    expect(intake.reload).to have_attributes(
+      intake_status: "submitted_for_admin_review",
+      exibir_no_site_flag: false,
+      admin_reviewed_by_id: nil,
+      admin_reviewed_at: nil
+    )
+    expect(intake.submitted_for_review_at).to be_present
+    expect(intake.photos).to be_attached
+    expect(intake.autorizacoes_venda).to be_attached
+  end
+
   it "bloqueia valor simbólico na negociação" do
     intake = create(:habitation, :broker_intake, admin_user: admin, intake_step: "negociacao")
 

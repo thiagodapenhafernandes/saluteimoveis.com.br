@@ -420,6 +420,7 @@ class Admin::HabitationsController < Admin::BaseController
     permitted_attributes = habitation_params
     new_photo_uploads = extract_photo_uploads!(permitted_attributes)
     normalize_document_uploads!(permitted_attributes)
+    had_no_photos_before_update = !@habitation.has_any_photo?
     @habitation.assign_attributes(permitted_attributes)
     touch_manual_habitation_update!(@habitation, force: new_photo_uploads.present?)
     apply_picture_removals_to_memory(@habitation)
@@ -458,17 +459,28 @@ class Admin::HabitationsController < Admin::BaseController
     assign_proprietor_from_legacy_fields(@habitation) if current_admin_user&.admin?
     apply_intake_status_transition_metadata(@habitation)
     if @habitation.save
-      attach_new_photos(@habitation, new_photo_uploads, apply_watermark: apply_photo_watermark_requested?)
+      new_photo_attachment_ids = attach_new_photos(@habitation, new_photo_uploads, apply_watermark: apply_photo_watermark_requested?)
+      photo_upload_submitted_for_review = submit_photo_upload_for_admin_review_if_needed!(
+        @habitation,
+        had_no_photos: had_no_photos_before_update,
+        uploaded_photos: new_photo_attachment_ids.present?
+      )
       record_habitation_updated(@habitation, before_snapshot: audit_snapshot_before)
       apply_saved_photo_removals(@habitation)
       notice = if releasing_to_broker
                  "Imóvel salvo e enviado ao captador para publicar no site."
                elsif saving_internal_intake
                  "Imóvel salvo internamente e disponibilizado no catálogo."
+               elsif photo_upload_submitted_for_review
+                 "Fotos enviadas para revisão administrativa."
                else
                  "Imóvel atualizado com sucesso."
                end
-      redirect_after_habitation_save(@habitation, notice: notice, save_navigation: params[:save_navigation])
+      if photo_upload_submitted_for_review
+        redirect_to admin_captacao_path(@habitation), notice: notice
+      else
+        redirect_after_habitation_save(@habitation, notice: notice, save_navigation: params[:save_navigation])
+      end
     else
       load_ai_suggestion
       load_habitation_audit_logs
@@ -481,6 +493,7 @@ class Admin::HabitationsController < Admin::BaseController
     @habitation.skip_auto_audit = true
     permitted_attributes = habitation_photo_params
     new_photo_uploads = extract_photo_uploads!(permitted_attributes)
+    had_no_photos_before_update = !@habitation.has_any_photo?
 
     @return_to_path = safe_admin_habitations_return_path(params[:return_to])
     @habitation.assign_attributes(permitted_attributes)
@@ -494,10 +507,20 @@ class Admin::HabitationsController < Admin::BaseController
     )
 
     if @habitation.save(validate: false)
-      attach_new_photos(@habitation, new_photo_uploads, apply_watermark: apply_photo_watermark_requested?)
+      new_photo_attachment_ids = attach_new_photos(@habitation, new_photo_uploads, apply_watermark: apply_photo_watermark_requested?)
+      photo_upload_submitted_for_review = submit_photo_upload_for_admin_review_if_needed!(
+        @habitation,
+        had_no_photos: had_no_photos_before_update,
+        uploaded_photos: new_photo_attachment_ids.present?
+      )
       record_habitation_updated(@habitation, before_snapshot: audit_snapshot_before)
       apply_saved_photo_removals(@habitation)
-      redirect_to edit_habitation_path_with_return(@habitation, anchor: "media"), notice: "Fotos salvas com sucesso."
+      notice = photo_upload_submitted_for_review ? "Fotos enviadas para revisão administrativa." : "Fotos salvas com sucesso."
+      if photo_upload_submitted_for_review
+        redirect_to admin_captacao_path(@habitation), notice: notice
+      else
+        redirect_to edit_habitation_path_with_return(@habitation, anchor: "media"), notice: notice
+      end
     else
       load_ai_suggestion
       load_habitation_audit_logs
@@ -1404,6 +1427,18 @@ class Admin::HabitationsController < Admin::BaseController
     @habitation.exibir_no_site_flag = false
   end
 
+  def submit_photo_upload_for_admin_review_if_needed!(habitation, had_no_photos:, uploaded_photos:)
+    return false unless habitation.photo_upload_requires_admin_review?(
+      had_no_photos: had_no_photos,
+      uploaded_photos: uploaded_photos,
+      reviewer: can_review_intakes?
+    )
+
+    habitation.submit_photo_upload_for_admin_review!
+    habitation.save!(validate: false)
+    true
+  end
+
   def admin_paper_intake_form?
     current_admin_user&.admin? || administrative_profile? || can?(:review, :captacoes)
   end
@@ -1829,12 +1864,12 @@ class Admin::HabitationsController < Admin::BaseController
     habitation.photos.attach(valid_uploads)
     habitation.reload
 
-    return unless apply_watermark && @property_setting&.watermark_configured?
-
     new_attachment_ids = habitation.photos.attachments.ids - existing_attachment_ids
-    return if new_attachment_ids.blank?
+    return new_attachment_ids if new_attachment_ids.blank?
+    return new_attachment_ids unless apply_watermark && @property_setting&.watermark_configured?
 
     HabitationPhotoWatermarkJob.perform_later(habitation.id, new_attachment_ids, @property_setting.id)
+    new_attachment_ids
   end
 
   def apply_picture_removals_to_memory(habitation)

@@ -172,11 +172,12 @@ RSpec.describe Vista::PropertyReconciliationService do
   describe "clearable Vista fields" do
     let(:service) { described_class.new(codigos: ["6659"], dry_run: false) }
 
-    it "clears stale development name and complement when Vista sends those fields blank" do
+    it "clears stale development data and complement when Vista sends those fields blank" do
       property_attrs = service.send(
         :clearable_property_attrs,
         {
           "Empreendimento" => "",
+          "CodigoEmpreendimento" => "",
           "Complemento" => ""
         }
       )
@@ -189,6 +190,39 @@ RSpec.describe Vista::PropertyReconciliationService do
 
       expect(property_attrs).to include(nome_empreendimento: nil, complemento: nil)
       expect(address_attrs).to include(complemento: nil)
+    end
+
+    it "clears stale development code when Vista sends the development code blank" do
+      property_code = "PROP-#{SecureRandom.hex(6)}"
+      development = create(:habitation, codigo: "DEV-#{SecureRandom.hex(6)}", tipo: "Empreendimento", nome_empreendimento: "Art Noblesse")
+      habitation = create(
+        :habitation,
+        codigo: property_code,
+        codigo_empreendimento: development.codigo,
+        nome_empreendimento: "Art Noblesse",
+        use_development_photos_flag: true
+      )
+
+      service.send(
+        :update_property!,
+        habitation,
+        {
+          "Codigo" => property_code,
+          "Categoria" => "Galpão",
+          "CodigoEmpreendimento" => "",
+          "Empreendimento" => "",
+          "TituloSite" => "Galpão para aluguel anual Tabuleiro em Camboriú"
+        },
+        nil,
+        nil,
+        [],
+        []
+      )
+
+      habitation.reload
+      expect(habitation.codigo_empreendimento).to be_nil
+      expect(habitation.nome_empreendimento).to be_nil
+      expect(habitation.use_development_photos_flag).to be(false)
     end
   end
 
