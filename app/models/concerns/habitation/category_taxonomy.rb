@@ -114,7 +114,7 @@ module Habitation::CategoryTaxonomy
     ],
     "empreendimento" => [
       "Água", "Aquecimento central", "Bicicletário", "Brinquedoteca",
-      "Churrasqueira condomínio", "Circuito fechado TV", "Condomínio fechado",
+      "Churrasqueira condomínio", "Cinema", "Circuito fechado TV", "Condomínio fechado",
       "Elevador", "Elevador de serviço", "Espaço gourmet", "Estacionamento visitantes",
       "Gás central", "Gerador de energia", "Guarita", "Heliponto", "Interfone",
       "Jardim", "Lavanderia", "Piscina aquecida", "Piscina coletiva", "Piscina infantil",

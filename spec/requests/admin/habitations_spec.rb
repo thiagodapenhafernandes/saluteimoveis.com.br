@@ -906,6 +906,18 @@ RSpec.describe "Admin::Habitations", type: :request do
     )
   end
 
+  it "exibe infraestrutura dinâmica de empreendimento nos filtros do catálogo" do
+    AttributeOption.create!(context: "habitation", category: "infrastructure", name: "Cinema")
+
+    get admin_habitations_path
+
+    expect(response).to have_http_status(:ok)
+    html = Nokogiri::HTML(response.body)
+    enterprise_feature_values = html.css('input[id^="amenity_filter_"][name="amenities[]"]').map { |input| input["value"] }
+
+    expect(enterprise_feature_values).to include("Cinema")
+  end
+
   it "filtra por característica residencial selecionada no bloco de apartamento" do
     matching = create(
       :habitation,

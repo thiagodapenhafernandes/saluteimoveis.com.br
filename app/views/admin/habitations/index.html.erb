@@ -1290,7 +1290,7 @@
           <summary class="filter-accordion__summary"><i class="bi bi-building me-2"></i>Características empreendimento</summary>
           <div class="filter-accordion__body">
             <label class="form-label small fw-bold text-muted text-uppercase mb-2">Características e infraestrutura</label>
-            <% amenity_options = Admin::HabitationsController::AMENITY_FILTER_OPTIONS %>
+            <% amenity_options = @enterprise_amenity_filter_options.presence || Admin::HabitationsController::AMENITY_FILTER_OPTIONS %>
             <% selected_amenities = Array(params[:amenities]).map(&:to_s) %>
             <div class="row g-2">
               <% amenity_options.each_with_index do |opcao, idx| %>

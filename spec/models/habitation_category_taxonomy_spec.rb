@@ -45,4 +45,10 @@ RSpec.describe "Habitation category taxonomy" do
 
     expect(residential_options).to include("Churrasqueira a carvão", "Churrasqueira a gás")
   end
+
+  it "keeps Cinema available for development infrastructure" do
+    development_options = Habitation.infrastructure_options_for_kind("empreendimento", ["Cinema"])
+
+    expect(development_options).to include("Cinema")
+  end
 end
