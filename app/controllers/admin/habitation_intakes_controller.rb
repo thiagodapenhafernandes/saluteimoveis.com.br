@@ -75,11 +75,15 @@ module Admin
         return
       end
 
-      if published_restricted_update?
-        @habitation.assign_attributes(published_restricted_params)
-      else
-        @habitation.assign_attributes(captacao_style_params)
-      end
+      intake_attributes = if published_restricted_update?
+                            published_restricted_params
+                          else
+                            captacao_style_params
+                          end
+      had_no_photos_before_update = !@habitation.has_any_photo?
+      uploaded_photos_requested = photo_upload_values_present?(intake_attributes["photos"])
+
+      @habitation.assign_attributes(intake_attributes)
       link_proprietor_from_intake_fields
       touch_manual_habitation_update!(@habitation)
 
@@ -99,6 +103,12 @@ module Admin
           return
         end
 
+        photo_upload_submitted_for_review = submit_photo_upload_for_admin_review_if_needed!(
+          @habitation,
+          had_no_photos: had_no_photos_before_update,
+          uploaded_photos: uploaded_photos_requested
+        )
+
         if current_step == "review"
           unless @habitation.intake_ready_for_admin_review?(require_owner_city: true)
             @habitation.intake_missing_requirements(require_owner_city: true).each { |message| @habitation.errors.add(:base, message) }
@@ -109,6 +119,8 @@ module Admin
 
           submitted_records = HabitationIntakeSplitter.new(@habitation).call!
           redirect_to admin_captacao_path(@habitation), notice: submission_notice(submitted_records)
+        elsif photo_upload_submitted_for_review
+          redirect_to admin_captacao_path(@habitation), notice: "Fotos enviadas para revisão administrativa."
         else
           next_step = @habitation.next_step
           next_step = @habitation.next_step if next_step == "visitas" && @habitation.skip_visitas?
@@ -945,6 +957,30 @@ module Admin
           attrs.delete(key)
         end
       end
+    end
+
+    def photo_upload_values_present?(values)
+      Array(values).any? do |value|
+        next false if value.respond_to?(:blank?) ? value.blank? : value.nil?
+
+        !value.respond_to?(:size) || value.size.to_i.positive?
+      end
+    end
+
+    def submit_photo_upload_for_admin_review_if_needed!(habitation, had_no_photos:, uploaded_photos:)
+      return false unless habitation.photo_upload_requires_admin_review?(
+        had_no_photos: had_no_photos,
+        uploaded_photos: uploaded_photos,
+        reviewer: photo_upload_reviewer?
+      )
+
+      habitation.submit_photo_upload_for_admin_review!
+      habitation.save!(validate: false)
+      true
+    end
+
+    def photo_upload_reviewer?
+      current_admin_user&.admin? || administrative_profile? || can?(:review, :captacoes)
     end
 
     def submission_notice(submitted_records)

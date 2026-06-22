@@ -47,15 +47,21 @@ RSpec.describe Habitation, type: :model do
       expect(first_source["url"]).to eq(vista_picture["url"])
     end
 
-    it "combina fotos próprias com fotos do empreendimento vinculado" do
-      development = create(:habitation, codigo: "DEV-1150", tipo: "Empreendimento", pictures: [], skip_auto_audit: true)
+    it "não combina fotos do empreendimento sem a flag de uso explícito" do
+      development = create(:habitation, codigo: "DEV-#{SecureRandom.hex(6)}", tipo: "Empreendimento", pictures: [], skip_auto_audit: true)
       development.photos.attach(
         io: StringIO.new("foto empreendimento"),
         filename: "empreendimento.jpg",
         content_type: "image/jpeg"
       )
 
-      habitation = create(:habitation, codigo_empreendimento: development.codigo, pictures: [], skip_auto_audit: true)
+      habitation = create(
+        :habitation,
+        codigo: "UNIT-#{SecureRandom.hex(6)}",
+        codigo_empreendimento: development.codigo,
+        pictures: [],
+        skip_auto_audit: true
+      )
       habitation.photos.attach(
         io: StringIO.new("foto unidade"),
         filename: "unidade.jpg",
@@ -64,14 +70,11 @@ RSpec.describe Habitation, type: :model do
 
       public_attachments = habitation.reload.public_image_sources.filter_map { |source| source["attachment"] }
 
-      expect(public_attachments).to eq([
-        habitation.photos.attachments.first,
-        development.photos.attachments.first
-      ])
+      expect(public_attachments).to contain_exactly(habitation.photos.attachments.first)
     end
 
-    it "usa fotos do empreendimento vinculado mesmo sem flag manual quando o imóvel não tem foto própria" do
-      development = create(:habitation, codigo: "DEV-4120", tipo: "Empreendimento", pictures: [], skip_auto_audit: true)
+    it "usa fotos do empreendimento vinculado quando a flag manual está ligada" do
+      development = create(:habitation, codigo: "DEV-#{SecureRandom.hex(6)}", tipo: "Empreendimento", pictures: [], skip_auto_audit: true)
       development.photos.attach(
         io: StringIO.new("foto empreendimento"),
         filename: "empreendimento.jpg",
@@ -79,15 +82,35 @@ RSpec.describe Habitation, type: :model do
       )
       habitation = create(
         :habitation,
+        codigo: "UNIT-#{SecureRandom.hex(6)}",
         codigo_empreendimento: development.codigo,
         pictures: [],
-        use_development_photos_flag: false,
+        use_development_photos_flag: true,
         skip_auto_audit: true
       )
 
       public_attachments = habitation.reload.public_image_sources.filter_map { |source| source["attachment"] }
 
       expect(public_attachments).to contain_exactly(development.photos.attachments.first)
+    end
+
+    it "não usa fotos do empreendimento vinculado quando a flag manual está desligada" do
+      development = create(:habitation, codigo: "DEV-#{SecureRandom.hex(6)}", tipo: "Empreendimento", pictures: [], skip_auto_audit: true)
+      development.photos.attach(
+        io: StringIO.new("foto empreendimento"),
+        filename: "empreendimento.jpg",
+        content_type: "image/jpeg"
+      )
+      habitation = create(
+        :habitation,
+        codigo: "UNIT-#{SecureRandom.hex(6)}",
+        codigo_empreendimento: development.codigo,
+        pictures: [],
+        use_development_photos_flag: false,
+        skip_auto_audit: true
+      )
+
+      expect(habitation.reload.public_image_sources).to be_empty
     end
 
     it "não inclui fotos anexadas marcadas como internas no conjunto público" do

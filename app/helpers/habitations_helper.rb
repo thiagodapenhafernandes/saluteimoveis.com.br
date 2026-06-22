@@ -127,7 +127,8 @@ module HabitationsHelper
     description = content.to_s
       .gsub(/\r\n?/, "\n")
       .gsub(/[ \t]+/, " ")
-      .gsub(/([.!?])(?=[^\s<])/, "\\1 ")
+      .gsub(/([!?])(?=[^\s<])/, "\\1 ")
+      .gsub(/\.(?=[^\d\s<])/, ". ")
       .gsub(/\n{3,}/, "\n\n")
       .strip
     return tag.p("Sem descrição disponível.") if description.blank?
@@ -173,9 +174,13 @@ module HabitationsHelper
   end
 
   def description_sentences(text)
+    decimal_placeholder = "__DECIMAL_POINT__"
+
     text
+      .gsub(/(\d)\.(\d)/, "\\1#{decimal_placeholder}\\2")
       .scan(/[^.!?]+[.!?]+(?:["”’])?|[^.!?]+$/)
       .map(&:strip)
+      .map { |sentence| sentence.gsub(decimal_placeholder, ".") }
       .reject(&:blank?)
   end
   
