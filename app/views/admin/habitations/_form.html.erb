@@ -1,31 +1,8 @@
 <%
-  cadastro_categories = {
-    "apartamentos" => ["Apartamento", "Cobertura", "Loft", "Studio"],
-    "comerciais_industriais" => ["Sala Comercial", "Loja", "Prédio Comercial", "Galpão", "Galpão Industrial", "Área", "Casa comercial", "Condomínio Industrial", "Ponto Comercial", "Salas/Conjuntos"],
-    "empreendimento" => ["Empreendimento"],
-    "imoveis_residenciais" => ["Casa", "Casa em Condomínio", "Sobrado", "Rural", "Condomínio", "Chácara", "Sítio"],
-    "terrenos" => ["Terreno", "Terreno em Condomínio", "Área", "Terreno Comercial", "Terreno Industrial"]
-  }
-  cadastro_tipo_by_type = {
-    "empreendimento" => "Empreendimento",
-    "apartamentos" => "Unitário",
-    "comerciais_industriais" => "Unitário",
-    "imoveis_residenciais" => "Unitário",
-    "terrenos" => "Unitário"
-  }
-  cadastro_type_labels = {
-    "apartamentos" => "Apartamentos",
-    "comerciais_industriais" => "Comerciais e Industriais",
-    "empreendimento" => "Empreendimento",
-    "imoveis_residenciais" => "Imóveis Residenciais",
-    "terrenos" => "Terrenos"
-  }
-  inferred_cadastro_type =
-    if habitation.tipo == "Empreendimento"
-      "empreendimento"
-    else
-      cadastro_categories.find { |_key, values| values.include?(habitation.categoria) }&.first || "imoveis_residenciais"
-    end
+  cadastro_categories = Habitation::CategoryTaxonomy::INTAKE_CATEGORY_GROUPS
+  cadastro_tipo_by_type = Habitation::CategoryTaxonomy::INTAKE_CATEGORY_TYPE_BY_GROUP
+  cadastro_type_labels = Habitation::CategoryTaxonomy::INTAKE_CATEGORY_LABELS.transform_values(&:titleize)
+  inferred_cadastro_type = habitation.cadastro_type
   show_development_context = habitation.codigo_empreendimento.present? || habitation.proprietor_id.present? || habitation.tipo == "Empreendimento"
   cadastro_reference_at = habitation.data_cadastro_crm
   updated_reference_at = [habitation.data_atualizacao_crm, habitation.updated_at].compact.max
@@ -106,7 +83,7 @@
           valor_comissao_formatted valor_livre_proprietario_formatted
           broker_commission_percentage salute_rental_management_flag home_corporate_flag home_corporate_position
           observacoes responsavel_reserva key_location key_location_notes observacoes_visitas zelador_nome
-          zelador_telefone regiao_foco saldo_devedor_formatted numero_prestacoes aceita_permuta_flag valor_aceito_permuta_formatted
+          zelador_telefone regiao_foco saldo_devedor_formatted aceita_parcelamento_flag numero_prestacoes valor_aceito_permuta_formatted
           tipo_veiculo_aceito_permuta ano_minimo_veiculo_aceito_permuta aceita_permuta_veiculo_flag
           aceita_permuta_imovel_flag aceita_permuta_outros_flag permuta_valor_formatted permuta_localizacao
           permuta_dormitorios_qtd permuta_suites_qtd permuta_garagens_qtd
@@ -1156,8 +1133,9 @@
               </button>
             </div>
             <% current_chars = f.object.caracteristicas.is_a?(Hash) ? f.object.caracteristicas.keys : Array(f.object.caracteristicas) %>
+            <% internal_feature_options = f.object.feature_catalog_options(@internal_features) %>
             <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-2" id="features-checkbox-list">
-              <% @internal_features.to_a.each do |feature| %>
+              <% internal_feature_options.each do |feature| %>
                 <div class="col">
                   <label class="custom-checkbox-card w-100 h-100">
                     <input type="checkbox" name="habitation[caracteristicas][]" value="<%= feature %>" class="form-check-input mt-0" <%= 'checked' if current_chars.include?(feature) %>>
@@ -1250,8 +1228,9 @@
               </button>
             </div>
             <% current_infra = f.object.infra_estrutura.is_a?(Array) ? f.object.infra_estrutura : [] %>
+            <% external_feature_options = f.object.infrastructure_catalog_options(@external_features) %>
             <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-2" id="infra-checkbox-list">
-              <% @external_features.to_a.each do |feature| %>
+              <% external_feature_options.each do |feature| %>
                 <div class="col">
                   <label class="custom-checkbox-card w-100 h-100">
                     <input type="checkbox" name="habitation[infra_estrutura][]" value="<%= feature %>" class="form-check-input mt-0" <%= 'checked' if current_infra.include?(feature) %>>
@@ -1533,34 +1512,40 @@
                     <%= f.text_field :saldo_devedor_formatted, class: "form-control form-control-sm", data: { controller: "mask", mask_type_value: "currency" } %>
                   </div>
                 </div>
-                <div class="col-md-3">
-                  <%= f.label :numero_prestacoes, "Nº de prestações", class: "form-label small fw-bold mb-1" %>
-                  <%= f.number_field :numero_prestacoes, class: "form-control form-control-sm", min: 0 %>
-                </div>
               </div>
 
               <div class="border rounded p-3 mb-3">
                 <div class="d-flex align-items-center justify-content-between mb-2">
-                  <h6 class="small fw-bold mb-0">Aceita permuta de</h6>
-                  <span class="badge text-bg-light border">Marque o que aceita (não marcado = não)</span>
+                  <h6 class="small fw-bold mb-0">Permuta</h6>
+                  <span class="badge text-bg-light border">Não marcado = não aceita</span>
                 </div>
 
                 <div class="d-flex flex-wrap gap-2 mb-3">
                   <label class="custom-checkbox-card">
-                    <%= f.check_box :aceita_permuta_veiculo_flag, class: "form-check-input mt-0" %>
-                    <span class="small fw-semibold">Veículo</span>
+                    <%= f.check_box :aceita_permuta_imovel_flag,
+                                    class: "form-check-input mt-0",
+                                    data: {
+                                      habitation_form_target: "permutaPropertyInput",
+                                      action: "change->habitation-form#permutaChanged"
+                                    } %>
+                    <span class="small fw-semibold">Aceita permuta imóvel</span>
                   </label>
                   <label class="custom-checkbox-card">
-                    <%= f.check_box :aceita_permuta_imovel_flag, class: "form-check-input mt-0" %>
-                    <span class="small fw-semibold">Imóvel</span>
+                    <%= f.check_box :aceita_permuta_veiculo_flag,
+                                    class: "form-check-input mt-0",
+                                    data: {
+                                      habitation_form_target: "permutaVehicleInput",
+                                      action: "change->habitation-form#permutaChanged"
+                                    } %>
+                    <span class="small fw-semibold">Aceita permuta veículo</span>
                   </label>
                   <label class="custom-checkbox-card">
                     <%= f.check_box :aceita_permuta_outros_flag, class: "form-check-input mt-0" %>
-                    <span class="small fw-semibold">Outros</span>
+                    <span class="small fw-semibold">Aceita permuta outros</span>
                   </label>
                 </div>
 
-                <div class="small text-muted mb-1 fw-semibold">Detalhes da permuta (opcional)</div>
+                <div class="small text-muted mb-1 fw-semibold">Condições de permuta</div>
                 <div class="row g-2 mb-2">
                   <div class="col-md-4">
                     <%= f.label :valor_aceito_permuta_formatted, "Valor aceito na permuta", class: "form-label extra-small fw-bold mb-1" %>
@@ -1576,40 +1561,72 @@
                       <span class="input-group-text">%</span>
                     </div>
                   </div>
-                  <div class="col-md-3">
-                    <%= f.label :tipo_veiculo_aceito_permuta, "Tipo de veículo aceito", class: "form-label extra-small fw-bold mb-1" %>
-                    <%= f.text_field :tipo_veiculo_aceito_permuta, class: "form-control form-control-sm", placeholder: "Ex: SUV, Sedan..." %>
-                  </div>
-                  <div class="col-md-3">
-                    <%= f.label :ano_minimo_veiculo_aceito_permuta, "Ano mínimo do veículo", class: "form-label extra-small fw-bold mb-1" %>
-                    <%= f.number_field :ano_minimo_veiculo_aceito_permuta, class: "form-control form-control-sm", min: 1900, max: 2100 %>
+                </div>
+
+                <div class="mb-3" data-habitation-form-target="permutaVehicleFields">
+                  <div class="small text-muted mb-1 fw-semibold">Dados do veículo aceito na permuta</div>
+                  <div class="row g-2">
+                    <div class="col-md-3">
+                      <%= f.label :tipo_veiculo_aceito_permuta, "Tipo de veículo aceito", class: "form-label extra-small fw-bold mb-1" %>
+                      <%= f.text_field :tipo_veiculo_aceito_permuta, class: "form-control form-control-sm", placeholder: "Ex: SUV, Sedan..." %>
+                    </div>
+                    <div class="col-md-3">
+                      <%= f.label :ano_minimo_veiculo_aceito_permuta, "Ano mínimo do veículo", class: "form-label extra-small fw-bold mb-1" %>
+                      <%= f.number_field :ano_minimo_veiculo_aceito_permuta, class: "form-control form-control-sm", min: 1900, max: 2100 %>
+                    </div>
                   </div>
                 </div>
 
-                <div class="small text-muted mb-1 fw-semibold">Características do imóvel aceito na permuta</div>
-                <div class="row g-2">
-                  <div class="col-md-4">
-                    <%= f.label :permuta_valor_formatted, "Valor", class: "form-label extra-small fw-bold mb-1" %>
-                    <div class="input-group input-group-sm">
-                      <span class="input-group-text">R$</span>
-                      <%= f.text_field :permuta_valor_formatted, class: "form-control form-control-sm", data: { controller: "mask", mask_type_value: "currency" } %>
+                <div data-habitation-form-target="permutaPropertyFields">
+                  <div class="small text-muted mb-1 fw-semibold">Características do imóvel aceito na permuta</div>
+                  <div class="row g-2">
+                    <div class="col-md-4">
+                      <%= f.label :permuta_valor_formatted, "Valor", class: "form-label extra-small fw-bold mb-1" %>
+                      <div class="input-group input-group-sm">
+                        <span class="input-group-text">R$</span>
+                        <%= f.text_field :permuta_valor_formatted, class: "form-control form-control-sm", data: { controller: "mask", mask_type_value: "currency" } %>
+                      </div>
+                    </div>
+                    <div class="col-md-8">
+                      <%= f.label :permuta_localizacao, "Localização", class: "form-label extra-small fw-bold mb-1" %>
+                      <%= f.text_field :permuta_localizacao, class: "form-control form-control-sm", placeholder: "Cidade, bairro ou região de interesse" %>
+                    </div>
+                    <div class="col-md-4">
+                      <%= f.label :permuta_dormitorios_qtd, "Dormitórios", class: "form-label extra-small fw-bold mb-1" %>
+                      <%= f.number_field :permuta_dormitorios_qtd, class: "form-control form-control-sm", min: 0 %>
+                    </div>
+                    <div class="col-md-4">
+                      <%= f.label :permuta_suites_qtd, "Suítes", class: "form-label extra-small fw-bold mb-1" %>
+                      <%= f.number_field :permuta_suites_qtd, class: "form-control form-control-sm", min: 0 %>
+                    </div>
+                    <div class="col-md-4">
+                      <%= f.label :permuta_garagens_qtd, "Garagens", class: "form-label extra-small fw-bold mb-1" %>
+                      <%= f.number_field :permuta_garagens_qtd, class: "form-control form-control-sm", min: 0 %>
                     </div>
                   </div>
-                  <div class="col-md-8">
-                    <%= f.label :permuta_localizacao, "Localização", class: "form-label extra-small fw-bold mb-1" %>
-                    <%= f.text_field :permuta_localizacao, class: "form-control form-control-sm", placeholder: "Cidade, bairro ou região de interesse" %>
-                  </div>
-                  <div class="col-md-4">
-                    <%= f.label :permuta_dormitorios_qtd, "Dormitórios", class: "form-label extra-small fw-bold mb-1" %>
-                    <%= f.number_field :permuta_dormitorios_qtd, class: "form-control form-control-sm", min: 0 %>
-                  </div>
-                  <div class="col-md-4">
-                    <%= f.label :permuta_suites_qtd, "Suítes", class: "form-label extra-small fw-bold mb-1" %>
-                    <%= f.number_field :permuta_suites_qtd, class: "form-control form-control-sm", min: 0 %>
-                  </div>
-                  <div class="col-md-4">
-                    <%= f.label :permuta_garagens_qtd, "Garagens", class: "form-label extra-small fw-bold mb-1" %>
-                    <%= f.number_field :permuta_garagens_qtd, class: "form-control form-control-sm", min: 0 %>
+                </div>
+              </div>
+
+              <div class="border rounded p-3 mb-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                  <h6 class="small fw-bold mb-0">Parcelamento</h6>
+                  <span class="badge text-bg-light border">Opcional</span>
+                </div>
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                  <label class="custom-checkbox-card">
+                    <%= f.check_box :aceita_parcelamento_flag,
+                                    class: "form-check-input mt-0",
+                                    data: {
+                                      habitation_form_target: "parcelamentoInput",
+                                      action: "change->habitation-form#parcelamentoChanged"
+                                    } %>
+                    <span class="small fw-semibold">Aceita Parcelamento</span>
+                  </label>
+                </div>
+                <div class="row g-2" data-habitation-form-target="parcelamentoFields">
+                  <div class="col-md-3">
+                    <%= f.label :numero_prestacoes, "Em quantas vezes?", class: "form-label small fw-bold mb-1" %>
+                    <%= f.number_field :numero_prestacoes, class: "form-control form-control-sm", min: 1, inputmode: "numeric" %>
                   </div>
                 </div>
               </div>

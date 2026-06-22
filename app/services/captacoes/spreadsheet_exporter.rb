@@ -46,7 +46,7 @@ module Captacoes
         captacao.admin_user&.name,
         captacao.nome_empreendimento,
         captacao.unidade_numero,
-        captacao.codigo,
+        captacao.visible_reference_codigo,
         captacao.proprietario,
         captacao.proprietario_celular,
         captacao.proprietario_email,

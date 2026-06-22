@@ -78,12 +78,7 @@
                 multipart: true,
                 local: true,
                 html: {
-                  id: "wizard-form",
-                  data: {
-                    controller: "habitation-duplicate-check",
-                    habitation_duplicate_check_url_value: check_admin_habitation_duplicate_path,
-                    habitation_duplicate_check_ignored_id_value: @captacao.id
-                  }
+                  id: "wizard-form"
                 } do |f| %>
     <%= hidden_field_tag :current_step, @step %>
     <%= hidden_field_tag :duplicate_check_status,

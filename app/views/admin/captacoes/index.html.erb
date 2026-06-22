@@ -167,10 +167,10 @@
           <div>
             <span>Código</span>
             <strong>
-              <% if c.codigo.present? %>
-                <%= link_to c.codigo, admin_habitations_path(referencia: c.codigo), class: "text-decoration-none" %>
+              <% if c.visible_reference_codigo.present? %>
+                <%= link_to c.visible_reference_codigo, admin_habitations_path(referencia: c.visible_reference_codigo), class: "text-decoration-none" %>
               <% else %>
-                —
+                Após finalizar
               <% end %>
             </strong>
           </div>
@@ -259,10 +259,10 @@
                 </div>
               </td>
               <td class="small">
-                <% if c.codigo.present? %>
-                  <%= link_to c.codigo, admin_habitations_path(referencia: c.codigo), class: "badge bg-light text-dark border text-decoration-none" %>
+                <% if c.visible_reference_codigo.present? %>
+                  <%= link_to c.visible_reference_codigo, admin_habitations_path(referencia: c.visible_reference_codigo), class: "badge bg-light text-dark border text-decoration-none" %>
                 <% else %>
-                  —
+                  <span class="badge bg-warning-subtle text-warning border">Após finalizar</span>
                 <% end %>
               </td>
               <td><span class="badge bg-light text-dark border"><%= c.property_kind.humanize %></span></td>

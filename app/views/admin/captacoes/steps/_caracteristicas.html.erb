@@ -1,20 +1,8 @@
 <%
   kind = @captacao.property_kind.to_s
-  fallback_features_imovel = case kind
-                             when "residencial"
-                               ["Armários nos quartos", "Cozinha planejada", "Ar-condicionado", "Aquecimento a gás",
-                                "Fechadura digital", "Lavabo", "Piscina", "Churrasqueira", "Área de serviço"]
-                             when "sala_comercial"
-                               ["Ar-condicionado", "Recepção", "Sanitários", "Copa/cozinha", "Piso elevado", "Sprinklers",
-                                "Sistema de segurança", "Divisórias prontas"]
-                             when "galpao"
-                               ["Pé-direito alto", "Docas", "Pátio de manobra", "Escritório", "Vestiário", "Copa",
-                                "Sistema de segurança", "Entrada para caminhão"]
-                             else  # terreno
-                               ["Murado", "Cercado", "Aterrado", "Com edificação", "Esquina", "Frente para mar"]
-                             end
-
-  features_imovel = captacao_feature_options(@internal_features, fallback_features_imovel, @captacao.caracteristicas_imovel)
+  features_imovel = captacao_feature_options(
+    @captacao.class.feature_options_for_kind(@captacao.feature_catalog_kind, @internal_features)
+  )
 %>
 
 <h1 class="wizard-section-title"><i class="bi bi-rulers text-primary me-2"></i>Características do imóvel</h1>
@@ -153,7 +141,7 @@
     </div>
   </div>
 
-<% else  # terreno %>
+<% elsif @captacao.property_kind_terreno? %>
   <div class="row g-2">
     <div class="col-md-6">
       <div class="wizard-field-group">
@@ -180,6 +168,27 @@
   <div class="wizard-field-group">
     <%= f.label "extras[face]", "Face predominante", class: "form-label" %>
     <%= select_tag "captacao[extras][face]", options_for_select(%w[Norte Sul Leste Oeste Nordeste Noroeste Sudeste Sudoeste], @captacao.extras["face"]), include_blank: "—", class: "form-select" %>
+  </div>
+<% elsif @captacao.property_kind_empreendimento? %>
+  <div class="row g-2">
+    <div class="col-md-4">
+      <div class="wizard-field-group">
+        <%= f.label :andares_total, "Total andares", class: "form-label" %>
+        <%= f.number_field :andares_total, min: 0, inputmode: "numeric", class: "form-control" %>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="wizard-field-group">
+        <%= f.label :aptos_por_andar, "Unidades/andar", class: "form-label" %>
+        <%= f.number_field :aptos_por_andar, min: 0, inputmode: "numeric", class: "form-control" %>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="wizard-field-group">
+        <%= f.label :situacao_imovel, "Situação", class: "form-label" %>
+        <%= f.select :situacao_imovel, [["Pré Lançamento", "Pré Lançamento"], ["Lançamento", "Lançamento"], ["Construção", "Construção"], ["Pronto para Morar", "Pronto para Morar"]], { include_blank: "—" }, class: "form-select" %>
+      </div>
+    </div>
   </div>
 <% end %>
 

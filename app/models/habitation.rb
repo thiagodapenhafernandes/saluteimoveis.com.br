@@ -10,13 +10,10 @@ class Habitation < ApplicationRecord
   include Habitation::SearchScopes
   include Habitation::CacheableMethods
   include Habitation::SeoHelpers
+  include Habitation::CategoryTaxonomy
   
   # Constantes Padronizadas para Enums e Atributos
-  CATEGORIES = [
-    'Apartamento', 'Casa', 'Casa em Condomínio', 'Cobertura', 'Sobrado',
-    'Terreno', 'Terreno em Condomínio', 'Loft', 'Studio', 'Sala Comercial',
-    'Loja', 'Prédio Comercial', 'Galpão', 'Área', 'Rural'
-  ].freeze
+  CATEGORIES = CategoryTaxonomy::INTAKE_CATEGORY_GROUPS.values.flatten.uniq.freeze
 
   PUBLIC_FILTER_EXTRA_CATEGORIES = [
     'Diferenciado', 'Garden'
@@ -63,7 +60,10 @@ class Habitation < ApplicationRecord
   PUBLIC_STATUSES = ['Venda', 'Aluguel', 'Locação', 'Locacao'].freeze
   NUMERIC_CODIGO_SQL = "codigo ~ '^[0-9]+$'".freeze
   VISTA_REFERENCE_CODIGO_SQL = "#{NUMERIC_CODIGO_SQL} AND COALESCE(imovel_dwv, '') <> 'Sim'".freeze
-  STANDALONE_CATEGORIES_WITHOUT_DEVELOPMENT_NAME = %w[casa sobrado rural chacara sitio galpao].freeze
+  STANDALONE_CATEGORIES_WITHOUT_DEVELOPMENT_NAME = %w[
+    casa sobrado rural chacara sitio chácara sítio galpao galpão deposito depósito
+    pavilhao pavilhão casa-comercial loja ponto-comercial predio-comercial prédio-comercial
+  ].freeze
 
   def self.normalize_status(value)
     return nil if value.blank?
@@ -95,6 +95,7 @@ class Habitation < ApplicationRecord
   ].freeze
 
   INTAKE_ORIGIN_BROKER = "broker_intake".freeze
+  DRAFT_REFERENCE_PREFIX = "RASCUNHO-".freeze
   INTAKE_MODALITIES = %w[venda locacao_anual ambos locacao_diaria].freeze
   INTAKE_STATUSES = {
     "draft" => "Rascunho",
@@ -325,6 +326,21 @@ class Habitation < ApplicationRecord
     intake_status.in?(%w[submitted_for_admin_review admin_approved internal published])
   end
 
+  def draft_reference_codigo?
+    codigo.to_s.start_with?(DRAFT_REFERENCE_PREFIX)
+  end
+
+  def visible_reference_codigo
+    broker_intake? && intake_draft? ? nil : codigo
+  end
+
+  def ensure_final_reference_codigo!
+    return unless draft_reference_codigo? || codigo.blank? || (broker_intake? && intake_draft?)
+
+    self.codigo = self.class.next_automatic_codigo
+    self.slug = nil
+  end
+
   def published_on_site?
     exibir_no_site_flag?
   end
@@ -384,22 +400,6 @@ class Habitation < ApplicationRecord
     property_kind_apartment_unit? ? "Apto." : "Compl."
   end
 
-  def property_kind
-    return "casa_rua" if street_house?
-    return "terreno" if categoria.to_s.match?(/terreno/i)
-    return "sala_comercial" if categoria.to_s.match?(/sala|loja|comercial|ponto|conjunto/i)
-    return "galpao" if categoria.to_s.match?(/galp/i)
-    "residencial"
-  end
-
-  def property_kind=(value)
-    self.categoria = case value
-                     when "sala_comercial" then "Sala Comercial"
-                     when "terreno" then "Terreno"
-                     else "Apartamento"
-                     end
-  end
-
   def property_kind_residencial?
     property_kind.in?(%w[residencial casa_rua])
   end
@@ -421,7 +421,7 @@ class Habitation < ApplicationRecord
   end
 
   def property_kind_apartment_unit?
-    categoria.to_s.match?(/apartamento|cobertura|loft|studio/i)
+    categoria.to_s.match?(/apartamento|cobertura|kitnet|loft|studio/i)
   end
 
   # Informações de vaga (tipo de vaga e quantidade) só são obrigatórias para
@@ -1604,7 +1604,11 @@ class Habitation < ApplicationRecord
   def assign_codigo_automaticamente
     return if codigo.present?
 
-    self.codigo = self.class.next_automatic_codigo
+    self.codigo = if broker_intake? && intake_draft?
+                    "#{DRAFT_REFERENCE_PREFIX}#{SecureRandom.hex(10).upcase}"
+                  else
+                    self.class.next_automatic_codigo
+                  end
   end
 
   def slug_candidates

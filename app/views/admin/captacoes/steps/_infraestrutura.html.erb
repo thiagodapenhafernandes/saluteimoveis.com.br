@@ -1,16 +1,9 @@
 <%
   kind = @captacao.property_kind.to_s
-  fallback_features_predio = if @captacao.property_kind_sala_comercial?
-                               ["Elevador", "Gerador", "Estacionamento rotativo", "Portaria 24h", "Câmeras de segurança", "Heliponto"]
-                             elsif @captacao.uses_building_infrastructure?
-                               # Apartamentos e casas em condomínio: áreas de lazer do empreendimento
-                               ["Elevador", "Salão de festas", "Academia", "Playground", "Piscina", "Churrasqueira",
-                                "Portaria 24h", "Quadra poliesportiva", "Quadra de padel", "Sauna", "Bicicletário", "Pet place", "Coworking"]
-                             else
-                               []
-                             end
-
-  features_predio = captacao_feature_options(@external_features, fallback_features_predio, @captacao.caracteristicas_predio)
+  features_predio = captacao_feature_options(
+    @captacao.class.infrastructure_options_for_kind(@captacao.feature_catalog_kind, @external_features)
+  )
+  show_infrastructure_checklist = (@captacao.uses_building_infrastructure? || @captacao.property_kind_empreendimento?) && features_predio.any?
 %>
 
 <h1 class="wizard-section-title"><i class="bi bi-building text-primary me-2"></i>Edifício e lazer</h1>
@@ -21,7 +14,7 @@
     Terrenos não precisam de características de edifício. Avance para continuar a ficha.
   </div>
 <% else %>
-  <% if @captacao.uses_building_infrastructure? %>
+  <% if @captacao.uses_building_infrastructure? || @captacao.property_kind_empreendimento? %>
     <div class="row g-2">
       <div class="col-6 col-md-4">
         <div class="wizard-field-group">
@@ -43,13 +36,13 @@
     <%= f.number_field :distancia_praia, min: 0, inputmode: "decimal", class: "form-control" %>
   </div>
 
-  <% unless @captacao.uses_building_infrastructure? %>
+  <% unless @captacao.uses_building_infrastructure? || show_infrastructure_checklist %>
     <div class="alert alert-light border">
       Este tipo de imóvel não precisa de dados de edifício. Avance para continuar a ficha.
     </div>
   <% end %>
 
-  <% if @captacao.uses_building_infrastructure? && features_predio.any? %>
+  <% if show_infrastructure_checklist %>
     <hr class="my-3">
     <div class="wizard-field-group">
       <label class="form-label">Características do edifício, lazer e condomínio</label>

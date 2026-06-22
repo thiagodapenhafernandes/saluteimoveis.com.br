@@ -256,11 +256,12 @@ module Admin
     end
 
     def initial_intake_params
-      attrs = params.require(:habitation).permit(:cadastro_type, :property_kind, :categoria, :modalidade).compact_blank.to_h
+      attrs = params.require(:habitation).permit(:cadastro_type, :property_kind, :categoria, :tipo, :modalidade).compact_blank.to_h
       cadastro_type = attrs.delete("cadastro_type")
       property_kind = attrs.delete("property_kind")
       default_category = default_category_for_cadastro_type(cadastro_type.presence || property_kind)
       attrs["categoria"] = default_category if attrs["categoria"].blank? && default_category.present?
+      attrs["tipo"] = Habitation::CategoryTaxonomy::INTAKE_CATEGORY_TYPE_BY_GROUP.fetch(cadastro_type, attrs["tipo"]) if cadastro_type.present?
       attrs
     end
 
@@ -650,7 +651,7 @@ module Admin
     end
 
     def duplicate_address_blocks_intake?(step)
-      return false unless step.in?(%w[endereco review])
+      return false unless step == "review"
 
       duplicate_address_result.complete && duplicate_address_result.duplicate?
     end
@@ -669,7 +670,7 @@ module Admin
 
     def assign_duplicate_address_errors
       duplicated = duplicate_address_result.matches.first
-      code = duplicated&.codigo.present? ? " ##{duplicated.codigo}" : ""
+      code = duplicated&.visible_reference_codigo.present? ? " ##{duplicated.visible_reference_codigo}" : ""
       message = if @habitation.duplicate_identity_scope == :unit
                   "Já existe imóvel cadastrado com esta rua, número, unidade e status comercial#{code}."
                 else
@@ -915,9 +916,11 @@ module Admin
     def default_category_for_cadastro_type(value)
       case value
       when "apartamentos" then "Apartamento"
-      when "residencial", "imoveis_residenciais" then "Casa"
-      when "comerciais_industriais", "sala_comercial" then "Sala Comercial"
-      when "terrenos", "terreno" then "Terreno"
+      when "residencial" then "Casa"
+      when "sala_comercial" then "Sala Comercial"
+      when "galpao" then "Galpão"
+      when "terreno" then "Terreno"
+      else Habitation.default_category_for_group(value)
       end
     end
 

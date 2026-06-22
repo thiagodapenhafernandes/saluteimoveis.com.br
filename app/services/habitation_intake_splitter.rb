@@ -15,6 +15,7 @@ class HabitationIntakeSplitter
   private
 
   def submit_single!
+    @habitation.ensure_final_reference_codigo!
     @habitation.update!(
       intake_status: "submitted_for_admin_review",
       submitted_for_review_at: @submitted_at,
@@ -30,6 +31,7 @@ class HabitationIntakeSplitter
     rental = nil
 
     Habitation.transaction do
+      @habitation.ensure_final_reference_codigo!
       @habitation.update!(
         intake_group_uuid: group_uuid,
         intake_modalidade: "venda",

@@ -4,31 +4,21 @@
 </p>
 
 <%
-  cadastro_categories = {
-    "apartamentos" => ["Apartamento", "Cobertura", "Loft", "Studio"],
-    "comerciais_industriais" => ["Sala Comercial", "Loja", "Prédio Comercial", "Galpão", "Galpão Industrial", "Área", "Casa comercial", "Condomínio Industrial", "Ponto Comercial", "Salas/Conjuntos"],
-    "imoveis_residenciais" => ["Casa", "Casa em Condomínio", "Sobrado", "Rural", "Condomínio", "Chácara", "Sítio"],
-    "terrenos" => ["Terreno", "Terreno em Condomínio", "Área", "Terreno Comercial", "Terreno Industrial"]
-  }
-  cadastro_type_labels = {
-    "apartamentos" => "Apartamentos",
-    "comerciais_industriais" => "Comerciais e industriais",
-    "imoveis_residenciais" => "Imóveis residenciais",
-    "terrenos" => "Terrenos"
-  }
+  cadastro_categories = Habitation::CategoryTaxonomy::INTAKE_CATEGORY_GROUPS
+  cadastro_type_labels = Habitation::CategoryTaxonomy::INTAKE_CATEGORY_LABELS
   cadastro_type_icons = {
-    "apartamentos" => "bi-building-fill",
     "comerciais_industriais" => "bi-shop",
+    "empreendimento" => "bi-buildings-fill",
     "imoveis_residenciais" => "bi-house-door-fill",
     "terrenos" => "bi-tree-fill"
   }
-  inferred_cadastro_type = cadastro_categories.find { |_key, values| values.include?(@captacao.categoria) }&.first || "apartamentos"
+  inferred_cadastro_type = @captacao.cadastro_type
 %>
 
 <div class="wizard-start-grid"
      data-controller="habitation-form"
      data-habitation-form-categories-by-type-value="<%= json_escape(cadastro_categories.to_json) %>"
-     data-habitation-form-tipo-by-type-value="<%= json_escape({ apartamentos: "Unitário", comerciais_industriais: "Unitário", imoveis_residenciais: "Unitário", terrenos: "Unitário" }.to_json) %>">
+     data-habitation-form-tipo-by-type-value="<%= json_escape(Habitation::CategoryTaxonomy::INTAKE_CATEGORY_TYPE_BY_GROUP.to_json) %>">
   <div class="wizard-field-group">
     <label class="form-label">Tipo de cadastro <span class="required-star">*</span></label>
     <div class="row g-2" data-controller="option-picker">
@@ -48,7 +38,7 @@
         </div>
       <% end %>
     </div>
-    <%= f.hidden_field :tipo, value: "Unitário", data: { habitation_form_target: "tipo" } %>
+    <%= f.hidden_field :tipo, data: { habitation_form_target: "tipo" } %>
   </div>
 
   <div class="wizard-field-group">
