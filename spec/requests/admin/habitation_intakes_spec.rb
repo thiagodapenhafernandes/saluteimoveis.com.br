@@ -24,7 +24,8 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(response.body).to include("Empreendimento")
     expect(response.body).to include("Categoria relacionada")
     expect(response.body).to include("Box")
-    expect(response.body).to include("Salas/Conjuntos")
+    expect(response.body).to include("Sala Comercial")
+    expect(response.body).not_to include("Salas/Conjuntos")
     expect(response.body).to include("Terreno Comercial")
   end
 
@@ -870,6 +871,29 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(intake.valor_condominio_cents).to eq(100_000)
     expect(intake.valor_iptu_cents).to eq(50_000)
     expect(intake.saldo_devedor_cents).to eq(12_000_000)
+  end
+
+  it "não exige quantidade de parcelas quando aceita parcelamento" do
+    intake = create(:habitation, :broker_intake, admin_user: admin, intake_step: "negociacao")
+
+    patch admin_captacao_path(intake), params: {
+      current_step: "negociacao",
+      direction: "forward",
+      habitation: {
+        valor_venda: "1.234.567,89",
+        valor_condominio: "1.000,00",
+        valor_iptu: "500,00",
+        aceita_permuta_answer: "nao",
+        aceita_parcelamento_flag: "true",
+        numero_prestacoes: ""
+      }
+    }
+
+    expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "visitas"))
+    expect(intake.reload).to have_attributes(
+      aceita_parcelamento_flag: true,
+      numero_prestacoes: nil
+    )
   end
 
   it "não exige condomínio ou IPTU para sala comercial, galpão e terreno" do

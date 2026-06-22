@@ -92,8 +92,7 @@
 
   <div class="wizard-field-group">
     <%= f.label :numero_prestacoes, "Se aceita parcelamento, em quantas vezes?", class: "form-label" %>
-    <%= f.number_field :numero_prestacoes, min: 1, inputmode: "numeric", class: field_state.call(:numero_prestacoes) %>
-    <% if field_invalid.call(:numero_prestacoes) %><div class="invalid-feedback d-block">Informe a quantidade de parcelas.</div><% end %>
+    <%= f.number_field :numero_prestacoes, min: 1, inputmode: "numeric", class: "form-control" %>
   </div>
 <% end %>
 

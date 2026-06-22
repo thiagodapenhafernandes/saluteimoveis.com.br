@@ -296,6 +296,7 @@ class Habitation < ApplicationRecord
   validate :key_location_notes_required_for_other
   
   # Callbacks
+  before_validation :normalize_categoria, prepend: true
   before_validation :assign_codigo_automaticamente, on: :create
   before_validation :clear_category_mismatched_slug, prepend: true
   before_validation :set_data_cadastro_crm, on: :create
@@ -987,7 +988,6 @@ class Habitation < ApplicationRecord
     missing << "Meio de garantia locatícia" if rental_intake? && rental_guarantee_method.blank?
     # Aceita permuta não é mais obrigatório: campo não marcado é tratado como "não"
     # automaticamente (veículo/imóvel/outros são flags com default falso).
-    missing << "Quantidade de parcelas" if aceita_parcelamento_flag? && numero_prestacoes.blank?
     missing << "Chaves" if requires_intake_key_location? && key_location.blank?
     missing << "Dias de visita" if !skip_visitas? && !intake_visit_days_present?
     missing << "Fotos ou agenda com fotógrafo" if photo_flow_choice == "upload" && !has_any_photo?
@@ -1655,6 +1655,10 @@ class Habitation < ApplicationRecord
                   else
                     self.class.next_automatic_codigo
                   end
+  end
+
+  def normalize_categoria
+    self.categoria = self.class.normalize_category(categoria) if categoria.present?
   end
 
   def slug_candidates

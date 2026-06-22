@@ -702,7 +702,9 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include(other_broker.name)
     card = Nokogiri::HTML(response.body).css(".property-card-horizontal").find { |node| node.text.include?(other_property.codigo) }
     expect(card["style"]).not_to include("height: 240px")
-    expect(response.body).to include(CGI.escapeHTML(admin_habitation_path(other_property, return_to: request.fullpath)))
+    anchored_return_path = "#{request.fullpath}#admin_habitation_#{other_property.id}"
+    expect(response.body).to include(%(id="admin_habitation_#{other_property.id}"))
+    expect(response.body).to include(CGI.escapeHTML(admin_habitation_path(other_property, return_to: anchored_return_path)))
     expect(response.body).not_to include(%(data-clickable-card-url-value="#{CGI.escapeHTML(habitation_path(other_property))}"))
 
     get admin_habitation_path(other_property, return_to: admin_habitations_path(ownership: "all", q: other_property.codigo))
@@ -791,8 +793,9 @@ RSpec.describe "Admin::Habitations", type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include(own_property.titulo_anuncio)
-    expect(response.body).to include(CGI.escapeHTML(admin_habitation_path(own_property, return_to: request.fullpath)))
-    expect(response.body).to include(CGI.escapeHTML(edit_admin_habitation_path(own_property, return_to: request.fullpath)))
+    anchored_return_path = "#{request.fullpath}#admin_habitation_#{own_property.id}"
+    expect(response.body).to include(CGI.escapeHTML(admin_habitation_path(own_property, return_to: anchored_return_path)))
+    expect(response.body).to include(CGI.escapeHTML(edit_admin_habitation_path(own_property, return_to: anchored_return_path)))
   end
 
   it "permite que corretor filtre imóveis por outro corretor na aba Todos" do
@@ -884,6 +887,46 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).not_to include(wrong_category.titulo_anuncio)
     expect(response.body).not_to include(wrong_status.titulo_anuncio)
     expect(response.body).not_to include(vista_only.titulo_anuncio)
+  end
+
+  it "exibe as características residenciais do cadastro nos filtros de apartamento" do
+    get admin_habitations_path
+
+    expect(response).to have_http_status(:ok)
+    html = Nokogiri::HTML(response.body)
+    apartment_feature_values = html.css('input[id^="apartment_amenity_filter_"][name="amenities[]"]').map { |input| input["value"] }
+
+    expect(apartment_feature_values).to include(
+      "Água quente",
+      "Ar-condicionado",
+      "Área de serviço",
+      "Lavabo",
+      "Sacada com churrasqueira",
+      "Split"
+    )
+  end
+
+  it "filtra por característica residencial selecionada no bloco de apartamento" do
+    matching = create(
+      :habitation,
+      codigo: "APT-LAVABO-#{SecureRandom.hex(6)}",
+      titulo_anuncio: "Apartamento com lavabo no filtro",
+      categoria: "Apartamento",
+      caracteristicas: ["Lavabo"]
+    )
+    other = create(
+      :habitation,
+      codigo: "APT-SEM-LAVABO-#{SecureRandom.hex(6)}",
+      titulo_anuncio: "Apartamento sem lavabo no filtro",
+      categoria: "Apartamento",
+      caracteristicas: ["Sacada"]
+    )
+
+    get admin_habitations_path(ownership: "all", amenities: ["Lavabo"])
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(matching.titulo_anuncio)
+    expect(response.body).not_to include(other.titulo_anuncio)
   end
 
   it "permite filtrar por múltiplas categorias" do
@@ -1090,19 +1133,20 @@ RSpec.describe "Admin::Habitations", type: :request do
       uf: "SC"
     )
     return_path = admin_habitations_path(q: habitation.codigo, status: habitation.status)
+    anchored_return_path = "#{return_path}#admin_habitation_#{habitation.id}"
 
     get return_path
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include(CGI.escape(return_path))
 
-    get edit_admin_habitation_path(habitation, return_to: return_path)
+    get edit_admin_habitation_path(habitation, return_to: anchored_return_path)
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include(ERB::Util.html_escape(return_path))
+    expect(response.body).to include(ERB::Util.html_escape(anchored_return_path))
 
     patch admin_habitation_path(habitation), params: {
-      return_to: return_path,
+      return_to: anchored_return_path,
       save_navigation: "exit",
       habitation: {
         titulo_anuncio: "Imóvel com retorno atualizado",
@@ -1117,7 +1161,7 @@ RSpec.describe "Admin::Habitations", type: :request do
       }
     }
 
-    expect(response).to redirect_to(return_path)
+    expect(response).to redirect_to(anchored_return_path)
   end
 
   it "remove filtros vazios do retorno para manter a URL do cadastro enxuta" do
@@ -1128,7 +1172,8 @@ RSpec.describe "Admin::Habitations", type: :request do
     get noisy_return_path
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include(CGI.escapeHTML(edit_admin_habitation_path(habitation, return_to: clean_return_path)))
+    anchored_clean_return_path = "#{clean_return_path}#admin_habitation_#{habitation.id}"
+    expect(response.body).to include(CGI.escapeHTML(edit_admin_habitation_path(habitation, return_to: anchored_clean_return_path)))
     expect(response.body).not_to include(CGI.escapeHTML(edit_admin_habitation_path(habitation, return_to: noisy_return_path)))
 
     get edit_admin_habitation_path(habitation, return_to: noisy_return_path)

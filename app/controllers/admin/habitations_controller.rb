@@ -815,6 +815,8 @@ class Admin::HabitationsController < Admin::BaseController
                                                                                  .distinct
                                                                                  .pluck(:estado_conservacao)).uniq.sort
     @filter_regioes_foco = Habitation::REGIAO_FOCO_OPTIONS
+    internal_features = (AttributeOption.where(context: 'habitation', category: 'feature').order(name: :asc).pluck(:name) + CUSTOM_FEATURE_OPTIONS).uniq.sort
+    @apartment_feature_filter_options = Habitation.feature_options_for_kind("residencial", internal_features)
   end
 
   def extract_multi_select_integers(param_key)
@@ -1387,9 +1389,18 @@ class Admin::HabitationsController < Admin::BaseController
     return nil unless uri.path == admin_habitations_path
 
     query = compact_return_query(uri.query)
-    [uri.path, query].compact.join("?")
+    path_with_query = [uri.path, query].compact.join("?")
+    fragment = safe_admin_habitations_return_fragment(uri.fragment)
+    fragment.present? ? "#{path_with_query}##{fragment}" : path_with_query
   rescue URI::InvalidURIError
     nil
+  end
+
+  def safe_admin_habitations_return_fragment(value)
+    fragment = value.to_s.strip
+    return nil if fragment.blank?
+
+    fragment.match?(/\Aadmin_habitation_\d+\z/) ? fragment : nil
   end
 
   def compact_return_query(query)
