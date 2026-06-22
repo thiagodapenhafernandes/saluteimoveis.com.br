@@ -587,7 +587,6 @@ module Admin
           missing << "Informe se a administração da locação será feita pela Salute."
         end
         missing << "Informe o meio de garantia locatícia." if @habitation.rental_intake? && @habitation.rental_guarantee_method.blank?
-        missing << "Informe em quantas vezes aceita parcelamento." if @habitation.aceita_parcelamento_flag? && @habitation.numero_prestacoes.blank?
         missing
       when "fotos"
         missing = []
@@ -649,7 +648,6 @@ module Admin
         end
         fields[:salute_rental_management_answer] = true if @habitation.rental_intake? && @habitation.salute_rental_management_answer.blank?
         fields[:rental_guarantee_method] = true if @habitation.rental_intake? && @habitation.rental_guarantee_method.blank?
-        fields[:numero_prestacoes] = true if @habitation.aceita_parcelamento_flag? && @habitation.numero_prestacoes.blank?
       when "fotos"
         fields[:photo_flow_choice] = true if @habitation.photo_flow_choice.blank?
         fields[:photos] = true if @habitation.photo_flow_choice == "upload" && !@habitation.has_any_photo?

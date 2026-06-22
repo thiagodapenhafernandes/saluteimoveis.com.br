@@ -231,6 +231,12 @@ RSpec.describe Habitation, type: :model do
       expect(habitation.intake_missing_requirements(require_owner_city: true)).not_to include("Dados do proprietário")
     end
 
+    it "does not require installment quantity when payment installments are accepted" do
+      habitation = build(:habitation, :broker_intake, aceita_parcelamento_flag: true, numero_prestacoes: nil)
+
+      expect(habitation.intake_missing_requirements).not_to include("Quantidade de parcelas")
+    end
+
     it "accepts manual visit notes without treating technical note lines as visit availability" do
       technical_notes = described_class.new(observacoes_visitas: "Cidade do proprietário: Itajaí")
       manual_notes = described_class.new(observacoes_visitas: "Proprietário libera acesso com a portaria")

@@ -3,12 +3,16 @@ require "set"
 module Habitation::CategoryTaxonomy
   extend ActiveSupport::Concern
 
+  CATEGORY_ALIASES = {
+    "Salas/Conjuntos" => "Sala Comercial"
+  }.freeze
+
   INTAKE_CATEGORY_GROUPS = {
     "comerciais_industriais" => [
       "Box", "Built to Suit", "Casa comercial", "Condomínio Industrial", "Coworking",
       "Depósito", "Galpão", "Galpão Industrial", "Galpão para condomínio", "Loja",
       "Loteamento Industrial", "Pavilhão", "Ponto Comercial", "Prédio Comercial",
-      "Sala Comercial", "Salas/Conjuntos"
+      "Sala Comercial"
     ],
     "empreendimento" => ["Condomínio", "Empreendimento"],
     "imoveis_residenciais" => [
@@ -37,8 +41,9 @@ module Habitation::CategoryTaxonomy
       "Adega", "Água quente", "Alarme", "Aquecimento elétrico", "Aquecimento a gás",
       "Ar central", "Ar-condicionado", "Área de serviço", "Armário embutido",
       "Armários nos quartos", "Banheiro auxiliar", "Banheiro social", "Bar", "Calefação",
-      "Churrasqueira", "Copa", "Copa/cozinha", "Cozinha", "Cozinha americana",
-      "Cozinha com tanque", "Cozinha montada", "Cozinha planejada", "Deck",
+      "Churrasqueira", "Churrasqueira a carvão", "Churrasqueira a gás", "Copa",
+      "Copa/cozinha", "Cozinha", "Cozinha americana", "Cozinha com tanque",
+      "Cozinha montada", "Cozinha planejada", "Deck",
       "Dependência de empregada", "Despensa", "Dormitório com armário", "Edícula",
       "Escritório", "Estar íntimo", "Fechadura digital", "Hidromassagem",
       "Home theater", "Jardim de inverno", "Lareira", "Lavabo", "Living", "Living hall",
@@ -123,10 +128,15 @@ module Habitation::CategoryTaxonomy
 
   class_methods do
     def category_group_for(category)
-      normalized = category.to_s.strip
+      normalized = normalize_category(category)
       return "empreendimento" if normalized.casecmp("Empreendimento").zero?
 
       INTAKE_CATEGORY_GROUPS.find { |_group, categories| categories.include?(normalized) }&.first
+    end
+
+    def normalize_category(category)
+      normalized = category.to_s.strip
+      CATEGORY_ALIASES.fetch(normalized, normalized)
     end
 
     def default_category_for_group(group)

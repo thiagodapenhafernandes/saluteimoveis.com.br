@@ -268,6 +268,13 @@
   .filter-accordion[open] > .filter-accordion__summary::after { transform: rotate(180deg); }
   .filter-accordion[open] > .filter-accordion__summary { border-bottom: 1px solid #e6e9ef; }
   .filter-accordion__body { padding: 0.7rem; }
+  .admin-habitation-card-anchor {
+    scroll-margin-top: calc(var(--admin-navbar-height, 72px) + 1rem);
+  }
+  .admin-habitation-card-anchor:target .property-card-horizontal {
+    outline: 2px solid rgba(13, 110, 253, 0.35);
+    outline-offset: 2px;
+  }
   .filter-subgroup-title {
     font-size: 0.62rem;
     font-weight: 700;
@@ -1018,7 +1025,7 @@
         <%
           loc_open = %w[logradouro numero cep cidade bairro bairro_comercial].any? { |k| params[k].present? }
           neg_open = %w[situacao promotion_status accepts_exchange key_location salute_rental_management permuta_vehicle permuta_property permuta_others permuta_min_value permuta_location permuta_min_dorms permuta_min_suites permuta_min_garagens captacao_inicio captacao_fim atualizacao_inicio atualizacao_fim].any? { |k| params[k].present? }
-          apt_open = (%w[face ocupacao_status estado_conservacao area_total_min area_total_max area_privativa_min area_privativa_max].any? { |k| params[k].present? }) || %w[banheiros dorms suites vagas].any? { |k| Array(params[k]).reject(&:blank?).any? }
+          apt_open = (%w[face ocupacao_status estado_conservacao area_total_min area_total_max area_privativa_min area_privativa_max].any? { |k| params[k].present? }) || %w[banheiros dorms suites vagas amenities].any? { |k| Array(params[k]).reject(&:blank?).any? }
           emp_open = Array(params[:amenities]).reject(&:blank?).any?
           adm_open = (%w[proprietor_id regiao_foco destaque_web festival_salute exibir_no_site somente_com_imagens somente_sem_imagens tem_placa exclusivo somente_dwv].any? { |k| params[k].present? }) || Array(params[:foto_classificacao]).reject(&:blank?).any? || %w[publicar_imovelweb_2 publicar_lais_ai publicar_chaves_na_mao publicar_casa_mineira publicar_imovelweb publicar_viva_real_vrsync].any? { |k| params[k].present? }
         %>
@@ -1259,6 +1266,22 @@
                 <label class="form-label small fw-bold text-muted text-uppercase">Área Privativa máx. (m²)</label>
                 <%= f.number_field :area_privativa_max, value: params[:area_privativa_max], class: "form-control", step: "0.01", min: "0" %>
               </div>
+              <% if @apartment_feature_filter_options.present? %>
+                <div class="col-12">
+                  <div class="filter-subgroup-title">Mais características</div>
+                  <% selected_apartment_features = Array(params[:amenities]).map(&:to_s) %>
+                  <div class="row g-2">
+                    <% @apartment_feature_filter_options.each_with_index do |opcao, idx| %>
+                      <div class="col-md-6">
+                        <div class="form-check">
+                          <%= check_box_tag "amenities[]", opcao, selected_apartment_features.include?(opcao), class: "form-check-input", id: "apartment_amenity_filter_#{idx}" %>
+                          <%= label_tag "apartment_amenity_filter_#{idx}", opcao, class: "form-check-label" %>
+                        </div>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
             </div>
           </div>
         </details>
@@ -1716,10 +1739,12 @@
 <div class="row g-3">
   <% if @habitations.any? %>
     <% @habitations.each do |imovel| %>
-      <% details_path = admin_habitation_path(imovel, return_to: @return_to_path) %>
-      <% edit_path = edit_admin_habitation_path(imovel, return_to: @return_to_path) if admin_can_edit_habitation?(imovel) %>
-      <% catalog_card_path = admin_habitation_catalog_card_path(imovel, ownership_scope: @ownership_scope, intake_review: @intake_review, return_to: @return_to_path) %>
-      <div class="col-12">
+      <% card_anchor_id = "admin_habitation_#{imovel.id}" %>
+      <% card_return_to_path = @return_to_path.present? ? "#{@return_to_path}##{card_anchor_id}" : nil %>
+      <% details_path = admin_habitation_path(imovel, return_to: card_return_to_path) %>
+      <% edit_path = edit_admin_habitation_path(imovel, return_to: card_return_to_path) if admin_can_edit_habitation?(imovel) %>
+      <% catalog_card_path = admin_habitation_catalog_card_path(imovel, ownership_scope: @ownership_scope, intake_review: @intake_review, return_to: card_return_to_path) %>
+      <div class="col-12 admin-habitation-card-anchor" id="<%= card_anchor_id %>">
         <div class="card shadow-sm border-0 overflow-hidden property-card-horizontal <%= 'property-card--inactive' if imovel.inactive_for_admin_card? %>"
              style="cursor: pointer;"
              data-controller="clickable-card"
