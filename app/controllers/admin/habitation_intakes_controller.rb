@@ -293,8 +293,6 @@ module Admin
 
     def can_broker_release_to_site?(habitation)
       return false unless habitation&.broker_release_pending?
-      # Administrativo/admin também pode publicar no site.
-      return true if current_admin_user&.admin? || administrative_profile? || can?(:review, :captacoes)
 
       # Corretor responsável (dono ou atribuído via broker_assignments).
       habitation.broker_responsible_for?(current_admin_user)
@@ -546,6 +544,7 @@ module Admin
         missing << "Informe a UF." if @habitation.uf.blank?
         missing << "Informe o empreendimento/condomínio." if @habitation.requires_intake_development_name? && @habitation.nome_empreendimento.blank?
         missing << "Informe o número da unidade." if @habitation.requires_unit_number? && @habitation.bloco.blank?
+        missing << "Informe o complemento." if @habitation.requires_intake_address_complement? && !@habitation.requires_unit_number? && @habitation.complemento.blank?
         missing
       when "caracteristicas"
         missing = []
@@ -623,6 +622,7 @@ module Admin
         fields[:state] = true if @habitation.uf.blank?
         fields[:edificio_nome] = true if @habitation.requires_intake_development_name? && @habitation.nome_empreendimento.blank?
         fields[:unidade_numero] = true if @habitation.requires_unit_number? && @habitation.bloco.blank?
+        fields[:complemento] = true if @habitation.requires_intake_address_complement? && !@habitation.requires_unit_number? && @habitation.complemento.blank?
       when "caracteristicas"
         if @habitation.property_kind_terreno? && !@habitation.has_required_intake_area?
           fields[:area_total] = true
@@ -759,7 +759,7 @@ module Admin
         :andar, :ano_construcao, :demi_suites_qtd, :numero_box, :tipo_vaga,
         :dimensoes_terreno, :topografia, :key_location, :key_location_notes,
         :corretor_nome, :corretor_telefone, :corretor_email, :ordered_photo_ids,
-        :zip_code, :street_type, :street, :street_number, :neighborhood, :city, :state, :edificio_nome, :unidade_numero,
+        :zip_code, :street_type, :street, :street_number, :neighborhood, :city, :state, :edificio_nome, :unidade_numero, :complemento,
         :chaves_com, :senha_imovel, :senha_portaria,
         { rental_guarantee_method: [],
           caracteristicas: [], infra_estrutura: [], caracteristica_unica: [],
@@ -825,7 +825,7 @@ module Admin
       attrs["photos"] = attrs.delete("fotos") if attrs["fotos"].present?
       attrs["autorizacoes_venda"] = Array(attrs.delete("autorizacao_pdf")) if attrs["autorizacao_pdf"].present?
       normalize_intake_land_extra_fields!(attrs)
-      address_keys = %w[zip_code street_type street street_number neighborhood city state]
+      address_keys = %w[zip_code street_type street street_number neighborhood city state complemento]
       if address_keys.any? { |key| attrs.key?(key) }
         street_type = attrs.delete("street_type")
         street = attrs.delete("street")
@@ -836,6 +836,7 @@ module Admin
           tipo_endereco: street_type,
           logradouro: street,
           numero: attrs.delete("street_number"),
+          complemento: attrs.delete("complemento"),
           bairro: attrs.delete("neighborhood"),
           cidade: attrs.delete("city"),
           uf: attrs.delete("state")

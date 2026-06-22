@@ -1,7 +1,8 @@
 module Admin
   class ProprietorsController < BaseController
     require "csv"
-    before_action :require_admin!, except: [:quick_create]
+    before_action :require_proprietors_view!, only: [:index]
+    before_action :require_proprietors_manage!, only: [:print, :export, :new, :edit, :create, :update, :destroy]
     before_action :require_admin_or_administrative!, only: [:quick_create]
 
     EXPORT_FIELDS = {
@@ -209,6 +210,14 @@ module Admin
       end
 
       redirect_to admin_proprietors_path, alert: "Proprietário não encontrado."
+    end
+
+    def require_proprietors_view!
+      check_permission!(:view, :proprietarios)
+    end
+
+    def require_proprietors_manage!
+      check_permission!(:manage, :proprietarios)
     end
 
     def require_admin_or_administrative!

@@ -1,4 +1,4 @@
-\restrict DgtV12qbAWYKTDsEOVAOZ5ImhZg7R1MwVvtfu5efe7VqcLGStapX2LBok7UPvLf
+\restrict CpRBJg9Mn2Ovx2rvr6KfDQIPaqV55s5eTJBFbjHHkdwzzNBrKRXCdn1Ixty4MtY
 
 -- Dumped from database version 17.9 (Homebrew)
 -- Dumped by pg_dump version 17.9 (Homebrew)
@@ -8451,7 +8451,7 @@ ALTER TABLE ONLY public.push_subscriptions
 -- PostgreSQL database dump complete
 --
 
-\unrestrict DgtV12qbAWYKTDsEOVAOZ5ImhZg7R1MwVvtfu5efe7VqcLGStapX2LBok7UPvLf
+\unrestrict CpRBJg9Mn2Ovx2rvr6KfDQIPaqV55s5eTJBFbjHHkdwzzNBrKRXCdn1Ixty4MtY
 
 SET search_path TO "$user", public;
 
