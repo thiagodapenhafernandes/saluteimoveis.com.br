@@ -1735,7 +1735,7 @@
   active_filter_chips << "Garagens permuta ≥ #{params[:permuta_min_garagens]}" if params[:permuta_min_garagens].present?
   active_filter_chips << "Empreendimento: #{params[:empreendimento_codigo]}" if params[:empreendimento_codigo].present?
   active_filter_chips << "Corretor: #{params[:corretor_id]}" if params[:corretor_id].present?
-  active_filter_chips << "Proprietário: #{params[:proprietor_id]}" if (current_admin_user&.admin? || current_admin_user&.profile&.name == "Administrativo") && params[:proprietor_id].present?
+  active_filter_chips << "Proprietário: #{params[:proprietor_id]}" if can_filter_by_proprietor? && params[:proprietor_id].present?
   active_filter_chips << "Região foco?: #{params[:regiao_foco]}" if params[:regiao_foco].present?
   active_filter_chips << "Meus imóveis" if @ownership_scope == "mine"
   active_filter_chips << "Pendente de revisão" if @intake_review == "pending"

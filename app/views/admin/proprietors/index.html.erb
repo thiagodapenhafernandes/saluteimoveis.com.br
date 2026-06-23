@@ -256,7 +256,7 @@
             <tr>
               <% if can_manage_proprietors %><th style="width: 42px;"></th><% end %>
               <th>Nome/Denominação</th>
-              <th>Fone principal</th>
+              <th>Contatos</th>
               <th>CPF/CNPJ</th>
               <th>Cidade</th>
               <th>Imóveis</th>
@@ -266,7 +266,13 @@
           <tbody>
             <% if @proprietors.any? %>
               <% @proprietors.each do |proprietor| %>
-                <% principal_phone = proprietor.phone_primary.presence || proprietor.mobile_phone.presence || proprietor.business_phone.presence || proprietor.residential_phone.presence || "-" %>
+                <% contact_lines = [
+                  proprietor.email.presence,
+                  proprietor.phone_primary.presence,
+                  proprietor.mobile_phone.presence,
+                  proprietor.business_phone.presence,
+                  proprietor.residential_phone.presence
+                ].compact_blank.uniq %>
                 <tr>
                   <% if can_manage_proprietors %>
                     <td>
@@ -282,7 +288,17 @@
                     <div class="fw-semibold text-truncate" style="max-width: 220px;" title="<%= proprietor.name %>"><%= proprietor.name %></div>
                     <div class="small text-muted"><%= proprietor.display_role %> · Código <%= proprietor.vista_code.presence || "-" %></div>
                   </td>
-                  <td><%= principal_phone %></td>
+                  <td>
+                    <% if contact_lines.any? %>
+                      <div class="d-flex flex-column gap-1 small">
+                        <% contact_lines.each do |contact| %>
+                          <span><%= contact %></span>
+                        <% end %>
+                      </div>
+                    <% else %>
+                      <span class="text-muted">-</span>
+                    <% end %>
+                  </td>
                   <td><%= proprietor.cpf_cnpj.presence || "-" %></td>
                   <td><%= proprietor.city.presence || "-" %></td>
                   <td><span class="badge bg-light text-dark border"><%= @habitations_count_by_proprietor[proprietor.id].to_i %></span></td>

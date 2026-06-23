@@ -1255,6 +1255,7 @@ class Admin::HabitationsController < Admin::BaseController
 
   def can_view_proprietor_data?(habitation)
     return true if current_admin_user&.admin? || administrative_profile?
+    return true if can_view_proprietors?
     return manager_can_view_proprietor_data?(habitation) if manager_profile?
 
     property_belongs_to_current_user?(habitation)
@@ -1269,6 +1270,7 @@ class Admin::HabitationsController < Admin::BaseController
 
   def can_view_habitation_show_sensitive_data?(habitation)
     return true if current_admin_user&.admin? || administrative_profile?
+    return true if can_view_proprietors?
     return manager_can_view_proprietor_data?(habitation) if manager_profile?
 
     property_captured_by_current_user?(habitation)
@@ -2299,7 +2301,7 @@ class Admin::HabitationsController < Admin::BaseController
   end
 
   def can_filter_by_proprietor?
-    current_admin_user&.admin? || administrative_profile?
+    current_admin_user&.admin? || administrative_profile? || can_view_proprietors?
   end
 
   def can_filter_by_broker?
@@ -2307,7 +2309,11 @@ class Admin::HabitationsController < Admin::BaseController
   end
 
   def can_export_proprietor_data?
-    current_admin_user&.admin? || administrative_profile?
+    current_admin_user&.admin? || administrative_profile? || can_view_proprietors?
+  end
+
+  def can_view_proprietors?
+    can?(:view, :proprietarios)
   end
 
   def manager_team_user_ids

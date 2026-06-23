@@ -13,7 +13,15 @@ RSpec.describe "Admin::Proprietors", type: :request do
       )
     )
     manager = create(:admin_user, profile: profile)
-    proprietor = create(:proprietor, name: "Proprietário Visível")
+    proprietor = create(
+      :proprietor,
+      name: "Proprietário Visível",
+      email: "visivel@example.com",
+      phone_primary: "(47) 3333-0000",
+      mobile_phone: "(47) 99999-0000",
+      business_phone: "(47) 3222-0000",
+      residential_phone: "(47) 3111-0000"
+    )
 
     sign_in manager
 
@@ -21,6 +29,11 @@ RSpec.describe "Admin::Proprietors", type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("Proprietário Visível")
+    expect(response.body).to include("visivel@example.com")
+    expect(response.body).to include("(47) 3333-0000")
+    expect(response.body).to include("(47) 99999-0000")
+    expect(response.body).to include("(47) 3222-0000")
+    expect(response.body).to include("(47) 3111-0000")
     expect(response.body).not_to include("Novo Proprietário")
     expect(response.body).not_to include(new_admin_proprietor_path)
     expect(response.body).not_to include(edit_admin_proprietor_path(proprietor))
