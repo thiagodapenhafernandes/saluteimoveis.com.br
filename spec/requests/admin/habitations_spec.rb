@@ -755,6 +755,46 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(other_property.valor_venda_cents).not_to eq(123_000_00)
   end
 
+  it "exibe contatos do proprietário no cadastro do imóvel para perfil com visualização de proprietários" do
+    profile = Profile.create!(
+      name: "Gestor proprietários #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Gerente").merge(
+        "proprietarios" => { "view" => true, "manage" => false }
+      )
+    )
+    gestor = create(:admin_user, profile: profile, name: "Gestor com Proprietários")
+    captador = create(:admin_user, name: "Captador do Imóvel")
+    habitation = create(
+      :habitation,
+      admin_user: captador,
+      codigo: "OWNER-VIEW-#{SecureRandom.hex(6)}",
+      proprietario: "Proprietário Liberado",
+      proprietario_email: "liberado@example.com",
+      proprietario_celular: "(47) 99999-1234",
+      proprietario_telefone_comercial: "(47) 3333-1234",
+      proprietario_telefone_residencial: "(47) 3222-1234"
+    )
+    habitation.create_address!(
+      logradouro: "Rua Proprietário",
+      numero: "10",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+
+    sign_in gestor
+
+    get edit_admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Proprietário e contatos")
+    expect(response.body).to include("Proprietário Liberado")
+    expect(response.body).to include("liberado@example.com")
+    expect(response.body).to include("(47) 99999-1234")
+    expect(response.body).to include("(47) 3333-1234")
+    expect(response.body).to include("(47) 3222-1234")
+  end
+
   it "permite ao corretor editar apenas as imediações do próprio imóvel, mantendo o resto do endereço travado" do
     broker_profile = Profile.create!(
       name: "Corretor imediacoes #{SecureRandom.hex(6)}",
