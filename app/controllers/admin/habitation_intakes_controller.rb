@@ -329,16 +329,18 @@ module Admin
 
       case params[:status].presence
       when "draft"
-        scope = scope.where(intake_status: [nil, "draft", "returned_to_broker"])
+        scope = scope.where(intake_status: [nil, "draft"])
+      when "returned_to_broker"
+        scope = scope.where(intake_status: "returned_to_broker")
       when "completed"
         scope = scope.where(intake_status: %w[submitted_for_admin_review admin_approved])
       when "published"
-        scope = scope.where(intake_status: "published")
+        scope = scope.where("habitations.intake_status = :published OR habitations.exibir_no_site_flag IS TRUE", published: "published")
       when nil, ""
         # Lista de trabalho: fichas já publicadas no site ou liberadas
         # internamente saem da visão padrão para deixar só o que falta agir.
         scope = scope.where(
-          "habitations.intake_status IS NULL OR habitations.intake_status NOT IN (:hidden)",
+          "(habitations.intake_status IS NULL OR habitations.intake_status NOT IN (:hidden)) AND habitations.exibir_no_site_flag IS NOT TRUE",
           hidden: %w[published internal]
         )
       else
@@ -379,7 +381,7 @@ module Admin
         returned_to_broker: status_counts["returned_to_broker"].to_i,
         submitted_for_admin_review: status_counts["submitted_for_admin_review"].to_i,
         admin_approved: status_counts["admin_approved"].to_i,
-        published: status_counts["published"].to_i,
+        published: scope.where("habitations.intake_status = :published OR habitations.exibir_no_site_flag IS TRUE", published: "published").count,
         last_7_days: scope.where(created_at: 7.days.ago.beginning_of_day..Time.current).count,
         missing_photos: missing_photos_count(scope),
         property_kinds: {
