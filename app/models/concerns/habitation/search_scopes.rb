@@ -6,7 +6,12 @@ module Habitation::SearchScopes
                               "THEN COALESCE(habitations.caracteristica_unica::text[], ARRAY[]::text[]) " \
                               "ELSE string_to_array(COALESCE(habitations.caracteristica_unica::text, ''), ',') " \
                               "END".freeze
-  
+
+  # Normalização de localização: casa acento, caixa e espaços (incl. duplicados/sobrando).
+  # "Balneário Camboriú ", "balneário  camboriú" e "BALNEARIO CAMBORIU" passam a ser equivalentes.
+  # Aplicada nos DOIS lados (coluna e valor selecionado) para não deixar de buscar por má escrita.
+  LOCATION_NORM = ->(expr) { "lower(unaccent(btrim(regexp_replace(#{expr}, '\\s+', ' ', 'g'))))" }
+
   included do
     # Scopes básicos de visibilidade
     # IMPORTANTE: Apenas imóveis com status válido para exibição pública
@@ -158,30 +163,30 @@ module Habitation::SearchScopes
     scope :comerciais, -> { where("unaccent(categoria) ILIKE unaccent(?)", "%comercial%") }
     
     # Scopes por localização (com unaccent e busca flexível)
-    scope :by_city, ->(city) { 
+    scope :by_city, ->(city) {
       if city.is_a?(Array)
         clean = city.reject(&:blank?)
         if clean.any?
-          left_outer_joins(:address).where("unaccent(COALESCE(addresses.cidade, habitations.cidade)) IN (SELECT unaccent(n) FROM unnest(ARRAY[?]) AS n)", clean)
+          left_outer_joins(:address).where("#{LOCATION_NORM.call('COALESCE(addresses.cidade, habitations.cidade)')} IN (SELECT #{LOCATION_NORM.call('n')} FROM unnest(ARRAY[?]) AS n)", clean)
         else
           all
         end
       elsif city.present?
-        left_outer_joins(:address).where("unaccent(COALESCE(addresses.cidade, habitations.cidade)) ILIKE unaccent(?)", "%#{city}%")
+        left_outer_joins(:address).where("#{LOCATION_NORM.call('COALESCE(addresses.cidade, habitations.cidade)')} ILIKE #{LOCATION_NORM.call('?')}", "%#{city}%")
       else
         all
       end
     }
-    scope :by_neighborhood, ->(neighborhood) { 
+    scope :by_neighborhood, ->(neighborhood) {
       if neighborhood.is_a?(Array)
         neighborhood_clean = neighborhood.reject(&:blank?)
         if neighborhood_clean.any?
-          left_outer_joins(:address).where("unaccent(COALESCE(addresses.bairro, habitations.bairro)) IN (SELECT unaccent(n) FROM unnest(ARRAY[?]) AS n)", neighborhood_clean)
+          left_outer_joins(:address).where("#{LOCATION_NORM.call('COALESCE(addresses.bairro, habitations.bairro)')} IN (SELECT #{LOCATION_NORM.call('n')} FROM unnest(ARRAY[?]) AS n)", neighborhood_clean)
         else
           all
         end
       elsif neighborhood.present?
-        left_outer_joins(:address).where("unaccent(COALESCE(addresses.bairro, habitations.bairro)) ILIKE unaccent(?)", "%#{neighborhood}%")
+        left_outer_joins(:address).where("#{LOCATION_NORM.call('COALESCE(addresses.bairro, habitations.bairro)')} ILIKE #{LOCATION_NORM.call('?')}", "%#{neighborhood}%")
       else
         all
       end
@@ -563,6 +568,51 @@ module Habitation::SearchScopes
   end
   
   class_methods do
+    # Opções de localização (cidade e bairro/cidade) para o multiselect público.
+    # Agrupa variantes da mesma localização (acento/caixa/espaço) num único rótulo canônico
+    # — assim "Balneário Camboriú" aparece UMA vez, e a busca (normalizada dos dois lados)
+    # encontra os imóveis de qualquer grafia.
+    def public_location_options
+      city_values = active.left_outer_joins(:address)
+        .where("COALESCE(addresses.cidade, habitations.cidade) IS NOT NULL")
+        .pluck(Arel.sql("COALESCE(addresses.cidade, habitations.cidade)"))
+      cities = canonical_location_labels(city_values)
+        .map { |label| { type: "city", label: label, value: label } }
+
+      neighborhood_values = active.left_outer_joins(:address)
+        .where("COALESCE(addresses.bairro, habitations.bairro) IS NOT NULL")
+        .where("COALESCE(addresses.cidade, habitations.cidade) IS NOT NULL")
+        .pluck(
+          Arel.sql("COALESCE(addresses.bairro, habitations.bairro)"),
+          Arel.sql("COALESCE(addresses.cidade, habitations.cidade)")
+        )
+        .map { |bairro, cidade| "#{bairro.to_s.strip} - #{cidade.to_s.strip}" }
+      neighborhoods = canonical_location_labels(neighborhood_values)
+        .map { |label| { type: "neighborhood", label: label, value: label } }
+
+      cities + neighborhoods
+    end
+
+    # Agrupa strings equivalentes (após normalizar) e devolve a grafia mais frequente de cada grupo.
+    def canonical_location_labels(values)
+      values
+        .map(&:to_s)
+        .reject { |v| v.strip.empty? }
+        .group_by { |v| location_normalize_key(v) }
+        .map { |_key, variants| most_common_location_label(variants) }
+        .sort_by { |label| location_normalize_key(label) }
+    end
+
+    # Mesma intenção do LOCATION_NORM (SQL), porém em Ruby: sem acento, minúsculo, espaços colapsados.
+    def location_normalize_key(value)
+      I18n.transliterate(value.to_s).downcase.gsub(/\s+/, " ").strip
+    end
+
+    def most_common_location_label(variants)
+      counts = variants.each_with_object(Hash.new(0)) { |v, h| h[v.strip] += 1 }
+      counts.max_by { |label, count| [count, label] }.first
+    end
+
     # Busca avançada SUPER DINÂMICA combinando múltiplos filtros
     def advanced_search(params = {})
       params = params.to_h.with_indifferent_access
@@ -581,18 +631,18 @@ module Habitation::SearchScopes
           locations = params[:city].reject(&:blank?).map(&:strip)
           if locations.any?
             query = query.left_outer_joins(:address).where(
-              "unaccent(COALESCE(addresses.cidade, habitations.cidade)) IN (SELECT unaccent(n) FROM unnest(ARRAY[?]) AS n) OR " \
-              "unaccent(COALESCE(addresses.bairro, habitations.bairro)) IN (SELECT unaccent(n) FROM unnest(ARRAY[?]) AS n) OR " \
-              "unaccent((COALESCE(addresses.bairro, habitations.bairro) || ' - ' || COALESCE(addresses.cidade, habitations.cidade))) IN (SELECT unaccent(n) FROM unnest(ARRAY[?]) AS n)",
+              "#{LOCATION_NORM.call('COALESCE(addresses.cidade, habitations.cidade)')} IN (SELECT #{LOCATION_NORM.call('n')} FROM unnest(ARRAY[?]) AS n) OR " \
+              "#{LOCATION_NORM.call('COALESCE(addresses.bairro, habitations.bairro)')} IN (SELECT #{LOCATION_NORM.call('n')} FROM unnest(ARRAY[?]) AS n) OR " \
+              "#{LOCATION_NORM.call("COALESCE(addresses.bairro, habitations.bairro) || ' - ' || COALESCE(addresses.cidade, habitations.cidade)")} IN (SELECT #{LOCATION_NORM.call('n')} FROM unnest(ARRAY[?]) AS n)",
               locations, locations, locations
             )
           end
         else
           city_term = params[:city].to_s.strip
           query = query.left_outer_joins(:address).where(
-            "unaccent(COALESCE(addresses.cidade, habitations.cidade)) ILIKE unaccent(:term) OR " \
-            "unaccent(COALESCE(addresses.bairro, habitations.bairro)) ILIKE unaccent(:term) OR " \
-            "unaccent((COALESCE(addresses.bairro, habitations.bairro) || ' - ' || COALESCE(addresses.cidade, habitations.cidade))) ILIKE unaccent(:term) OR " \
+            "#{LOCATION_NORM.call('COALESCE(addresses.cidade, habitations.cidade)')} ILIKE #{LOCATION_NORM.call(':term')} OR " \
+            "#{LOCATION_NORM.call('COALESCE(addresses.bairro, habitations.bairro)')} ILIKE #{LOCATION_NORM.call(':term')} OR " \
+            "#{LOCATION_NORM.call("COALESCE(addresses.bairro, habitations.bairro) || ' - ' || COALESCE(addresses.cidade, habitations.cidade)")} ILIKE #{LOCATION_NORM.call(':term')} OR " \
             "unaccent(nome_empreendimento) ILIKE unaccent(:term)",
             term: "%#{city_term}%"
           )
