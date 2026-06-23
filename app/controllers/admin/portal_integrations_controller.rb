@@ -22,6 +22,9 @@ class Admin::PortalIntegrationsController < Admin::BaseController
     sample = Portal::EligibilityScope.new(@integration).eligible_scope.limit(3)
 
     case @integration.feed_strategy
+    when "open_navent_xml"
+      serializer = Portal::OpenNaventXmlSerializer.new(habitations: sample, integration: @integration)
+      render xml: serializer.to_xml
     when "olx_xml"
       serializer = Portal::OlxXmlSerializer.new(habitations: sample, integration: @integration)
       render xml: serializer.to_xml

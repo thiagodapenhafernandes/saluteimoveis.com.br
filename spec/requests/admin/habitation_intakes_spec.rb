@@ -1103,6 +1103,48 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(intake.reload.intake_status).to eq("draft")
   end
 
+  it "não bloqueia terreno em condomínio com complemento diferente na finalização da captação" do
+    existing = create(:habitation, categoria: "Terreno", status: "Venda", bloco: nil)
+    existing.create_address!(
+      logradouro: "Ivo José Rebello",
+      numero: "110",
+      complemento: "802",
+      bairro: "Condomínio Caledônia",
+      cidade: "Camboriú",
+      uf: "SC"
+    )
+    intake = create(
+      :habitation,
+      :broker_intake,
+      admin_user: admin,
+      categoria: "Terreno",
+      status: "Venda",
+      area_total_m2: 450,
+      nome_empreendimento: "Caledônia Private Village",
+      titulo_anuncio: "Terreno em Condomínio Caledônia",
+      intake_step: "review"
+    )
+    intake.create_address!(
+      cep: "88340-000",
+      logradouro: "Ivo José Rebello",
+      numero: "110",
+      complemento: "303",
+      bairro: "Condomínio Caledônia",
+      cidade: "Camboriú",
+      uf: "SC"
+    )
+    intake.autorizacoes_venda.attach(
+      io: StringIO.new("autorizacao"),
+      filename: "autorizacao.txt",
+      content_type: "text/plain"
+    )
+
+    post submit_for_review_admin_captacao_path(intake)
+
+    expect(response).to redirect_to(admin_captacao_path(intake.reload))
+    expect(intake.intake_status).to eq("submitted_for_admin_review")
+  end
+
   it "não bloqueia apartamento com unidade quando existe cadastro do empreendimento no mesmo endereço" do
     development = create(:habitation, categoria: "Apartamento", nome_empreendimento: "Residencial Atlântico", bloco: nil, complemento: nil)
     development.create_address!(

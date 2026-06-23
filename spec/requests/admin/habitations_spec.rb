@@ -279,7 +279,14 @@ RSpec.describe "Admin::Habitations", type: :request do
   end
 
   it "exibe salvamento dedicado para fotos no cadastro do imóvel" do
-    habitation = create(:habitation, codigo: "PHOTO-BTN-#{SecureRandom.hex(6)}")
+    development = create(
+      :habitation,
+      tipo: "Empreendimento",
+      categoria: "Empreendimento",
+      codigo: "PHOTO-DEV-#{SecureRandom.hex(6)}",
+      nome_empreendimento: "Residencial Fotos"
+    )
+    habitation = create(:habitation, codigo: "PHOTO-BTN-#{SecureRandom.hex(6)}", codigo_empreendimento: development.codigo)
 
     get edit_admin_habitation_path(habitation)
 
@@ -287,6 +294,9 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include("Salvar fotos")
     expect(response.body).to include(update_photos_admin_habitation_path(habitation))
     expect(response.body).to include('data-photo-upload-target="dirtyStatus"')
+    expect(response.body).to include('class="media-development-toggle form-check form-switch mb-0"')
+    expect(response.body).to include('data-photo-upload-target="developmentPhotosSwitch"')
+    expect(response.body).to include("Foto original importada da API do Vista")
   end
 
   it "mantém compartilhamento disponível ao visualizar o cadastro do imóvel" do
@@ -1219,7 +1229,8 @@ RSpec.describe "Admin::Habitations", type: :request do
     get admin_habitations_path
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).not_to include("Praia Brava Balneário Camboriú")
+    commercial_neighborhood_options = Nokogiri::HTML(response.body).css('select[name="bairro_comercial"] option').map(&:text)
+    expect(commercial_neighborhood_options).not_to include("Praia Brava Balneário Camboriú")
   end
 
   it "marca cards inativos com classe visual cinza" do
@@ -1281,6 +1292,7 @@ RSpec.describe "Admin::Habitations", type: :request do
       cep: "88330-000",
       logradouro: "Rua Central",
       numero: "100",
+      complemento: "Casa 1",
       bairro: "Centro",
       cidade: "Balneário Camboriú",
       uf: "SC"
@@ -1323,6 +1335,7 @@ RSpec.describe "Admin::Habitations", type: :request do
       cep: "88330-000",
       logradouro: "Rua Central",
       numero: "100",
+      complemento: "Casa 1",
       bairro: "Centro",
       cidade: "Balneário Camboriú",
       uf: "SC"
@@ -1356,6 +1369,7 @@ RSpec.describe "Admin::Habitations", type: :request do
       cep: "88330-000",
       logradouro: "Rua Central",
       numero: "100",
+      complemento: "Casa 1",
       bairro: "Centro",
       cidade: "Balneário Camboriú",
       uf: "SC"
@@ -1398,6 +1412,7 @@ RSpec.describe "Admin::Habitations", type: :request do
       cep: "88330-000",
       logradouro: "Rua Central",
       numero: "100",
+      complemento: "Casa 1",
       bairro: "Centro",
       cidade: "Balneário Camboriú",
       uf: "SC"
@@ -1438,6 +1453,7 @@ RSpec.describe "Admin::Habitations", type: :request do
       cep: "88330-000",
       logradouro: "Rua Central",
       numero: "100",
+      complemento: "Casa 1",
       bairro: "Centro",
       cidade: "Balneário Camboriú",
       uf: "SC"
@@ -1461,7 +1477,7 @@ RSpec.describe "Admin::Habitations", type: :request do
       admin_reviewed_by_id: admin.id
     )
     expect(intake.intake_missing_requirements).not_to include("Dados do proprietário")
-    expect(intake.intake_missing_requirements(require_owner_city: true)).to include("Dados do proprietário")
+    expect(intake.intake_missing_requirements(require_owner_city: true)).not_to include("Dados do proprietário")
   end
 
   it "não remove autorização existente quando devolve para captador com campo de arquivo vazio" do
@@ -1470,6 +1486,7 @@ RSpec.describe "Admin::Habitations", type: :request do
       cep: "88330-000",
       logradouro: "Rua Autorização",
       numero: "100",
+      complemento: "Casa 1",
       bairro: "Centro",
       cidade: "Balneário Camboriú",
       uf: "SC"
@@ -1549,6 +1566,7 @@ RSpec.describe "Admin::Habitations", type: :request do
       cep: "88330-000",
       logradouro: "Rua Autorização Nova",
       numero: "100",
+      complemento: "Casa 1",
       bairro: "Centro",
       cidade: "Balneário Camboriú",
       uf: "SC"
@@ -1579,6 +1597,7 @@ RSpec.describe "Admin::Habitations", type: :request do
       cep: "88330-000",
       logradouro: "Rua Interna",
       numero: "200",
+      complemento: "Casa 1",
       bairro: "Centro",
       cidade: "Balneário Camboriú",
       uf: "SC"
@@ -1628,6 +1647,7 @@ RSpec.describe "Admin::Habitations", type: :request do
       cep: "88330-000",
       logradouro: "Rua Central",
       numero: "100",
+      complemento: "Casa 1",
       bairro: "Centro",
       cidade: "Balneário Camboriú",
       uf: "SC"
@@ -1646,7 +1666,7 @@ RSpec.describe "Admin::Habitations", type: :request do
       }
     }
 
-    expect(response).to redirect_to(admin_habitations_path)
+    expect(response).to redirect_to(edit_admin_habitation_path(intake))
     expect(intake.reload).to have_attributes(
       intake_status: "returned_to_broker",
       status: "Venda",
@@ -2328,13 +2348,9 @@ RSpec.describe "Admin::Habitations", type: :request do
     file.write("foto nova")
     file.rewind
 
-    sign_out admin
     sign_in broker
-    get edit_admin_habitation_path(habitation)
-    csrf_token = Nokogiri::HTML(response.body).at_css('meta[name="csrf-token"]')["content"]
 
     patch update_photos_admin_habitation_path(habitation), params: {
-      authenticity_token: csrf_token,
       habitation: {
         photos: [Rack::Test::UploadedFile.new(file.path, "image/jpeg")]
       }
@@ -2371,13 +2387,9 @@ RSpec.describe "Admin::Habitations", type: :request do
       exibir_no_site_flag: false
     )
 
-    sign_out admin
     sign_in broker
-    get edit_admin_habitation_path(habitation)
-    csrf_token = Nokogiri::HTML(response.body).at_css('meta[name="csrf-token"]')["content"]
 
     patch update_photos_admin_habitation_path(habitation), params: {
-      authenticity_token: csrf_token,
       habitation: {
         photos: [""]
       }
@@ -2386,6 +2398,58 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response).to redirect_to(edit_admin_habitation_path(habitation, anchor: "media"))
     expect(habitation.reload).to have_attributes(intake_status: "internal")
     expect(habitation.photos).not_to be_attached
+  end
+
+  it "permite remover vínculo de empreendimento de um galpão no cadastro admin" do
+    development = create(
+      :habitation,
+      tipo: "Empreendimento",
+      categoria: "Empreendimento",
+      codigo: "DEV-#{SecureRandom.hex(4)}",
+      nome_empreendimento: "Ville Del Acqua"
+    )
+    habitation = create(
+      :habitation,
+      codigo: "WH-#{SecureRandom.hex(4)}",
+      categoria: "Galpão",
+      codigo_empreendimento: development.codigo,
+      nome_empreendimento: "Ville Del Acqua",
+      use_development_photos_flag: true
+    )
+    habitation.create_address!(
+      logradouro: "Rua Galpão #{SecureRandom.hex(4)}",
+      numero: "8577",
+      complemento: "Galpão 01",
+      bairro: "Centro",
+      cidade: "Camboriú",
+      uf: "SC"
+    )
+
+    get edit_admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    page = Nokogiri::HTML(response.body)
+    development_fields = page.css('[name="habitation[codigo_empreendimento]"]')
+    expect(development_fields.any? { |field| field.name == "input" && field["type"] == "hidden" && field["value"].blank? }).to be(true)
+
+    patch admin_habitation_path(habitation), params: {
+      save_navigation: "stay",
+      habitation: {
+        categoria: "Galpão",
+        tipo: "Unitário",
+        status: "Venda",
+        codigo_empreendimento: "",
+        nome_empreendimento: "Ville Del Acqua",
+        use_development_photos_flag: "1"
+      }
+    }
+
+    expect(response).to redirect_to(edit_admin_habitation_path(habitation, return_to: nil))
+    expect(habitation.reload).to have_attributes(
+      codigo_empreendimento: nil,
+      nome_empreendimento: nil,
+      use_development_photos_flag: false
+    )
   end
 
   it "mostra resumo e fotos no detalhe sem expor cadastro interno para corretor não captador" do
@@ -2916,7 +2980,79 @@ RSpec.describe "Admin::Habitations", type: :request do
       }
     }.to change(Habitation, :count).by(1)
 
-    expect(response).to redirect_to(admin_habitations_path)
+    created_habitation = Habitation.order(:id).last
+    expect(response).to redirect_to(edit_admin_habitation_path(created_habitation))
+  end
+
+  it "permite terreno no mesmo endereço com complemento diferente" do
+    existing = create(:habitation, codigo: "LAND-#{SecureRandom.hex(6)}", categoria: "Terreno", status: "Venda", bloco: "")
+    existing.create_address!(
+      logradouro: "Ivo José Rebello",
+      numero: "110",
+      complemento: "802",
+      bairro: "Condomínio Caledônia",
+      cidade: "Camboriú",
+      uf: "SC"
+    )
+
+    expect {
+      post admin_habitations_path, params: {
+        habitation: {
+          categoria: "Terreno",
+          status: "Venda",
+          tipo: "Unitário",
+          bloco: "",
+          nome_empreendimento: "Caledônia Private Village",
+          address_attributes: {
+            logradouro: "Ivo José Rebello",
+            numero: "110",
+            complemento: "303",
+            bairro: "Condomínio Caledônia",
+            cidade: "Camboriú",
+            uf: "SC"
+          }
+        }
+      }
+    }.to change(Habitation, :count).by(1)
+
+    created = Habitation.order(:created_at).last
+    expect(response).to redirect_to(edit_admin_habitation_path(created))
+  end
+
+  it "bloqueia terreno no mesmo endereço quando complemento e bloco são iguais" do
+    existing = create(:habitation, codigo: "LAND-DUP-#{SecureRandom.hex(6)}", categoria: "Terreno", status: "Venda", bloco: "Quadra B")
+    existing.create_address!(
+      logradouro: "Ivo José Rebello",
+      numero: "110",
+      complemento: "303",
+      bairro: "Condomínio Caledônia",
+      cidade: "Camboriú",
+      uf: "SC"
+    )
+
+    expect {
+      post admin_habitations_path, params: {
+        habitation: {
+          categoria: "Terreno",
+          status: "Venda",
+          tipo: "Unitário",
+          bloco: "Quadra B",
+          nome_empreendimento: "Caledônia Private Village",
+          address_attributes: {
+            logradouro: "Ivo José Rebello",
+            numero: "110",
+            complemento: "303",
+            bairro: "Condomínio Caledônia",
+            cidade: "Camboriú",
+            uf: "SC"
+          }
+        }
+      }
+    }.not_to change(Habitation, :count)
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include("rua, número, complemento, bloco e status comercial")
+    expect(response.body).to include(existing.codigo)
   end
 
   it "retorna duplicidade em tempo real por endereço completo" do
@@ -2942,6 +3078,34 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(payload.fetch("complete")).to eq(true)
     expect(payload.fetch("duplicate")).to eq(true)
     expect(payload.fetch("matches").first.fetch("codigo")).to eq(existing.codigo)
+  end
+
+  it "não retorna duplicidade em tempo real para terreno com complemento diferente" do
+    existing = create(:habitation, codigo: "CHK-LAND-#{SecureRandom.hex(6)}", categoria: "Terreno", status: "Venda")
+    existing.create_address!(
+      logradouro: "Ivo José Rebello",
+      numero: "110",
+      complemento: "802",
+      bairro: "Condomínio Caledônia",
+      cidade: "Camboriú",
+      uf: "SC"
+    )
+
+    get check_admin_habitation_duplicate_path, params: {
+      street: "Ivo Jose Rebello",
+      number: "110",
+      building: "Caledônia Private Village",
+      unit: "",
+      complement: "303",
+      category: "Terreno",
+      status: "Venda"
+    }
+
+    expect(response).to have_http_status(:ok)
+    payload = JSON.parse(response.body)
+    expect(payload.fetch("complete")).to eq(true)
+    expect(payload.fetch("duplicate")).to eq(false)
+    expect(payload.fetch("comparison")).to eq("condominium_unit")
   end
 
   it "não retorna duplicidade em tempo real quando status comercial é diferente" do

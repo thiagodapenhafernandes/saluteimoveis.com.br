@@ -1331,7 +1331,7 @@ class Admin::HabitationsController < Admin::BaseController
     message = if habitation.duplicate_identity_scope == :unit
                 "Já existe imóvel cadastrado com esta rua, número, unidade e status comercial#{code}."
               elsif habitation.duplicate_identity_scope == :condominium_unit
-                "Já existe casa em condomínio cadastrada com esta rua, número, complemento, bloco e status comercial#{code}."
+                "Já existe imóvel cadastrado com esta rua, número, complemento, bloco e status comercial#{code}."
               else
                 "Já existe imóvel cadastrado com esta rua, número e status comercial#{code}."
               end
@@ -1339,6 +1339,7 @@ class Admin::HabitationsController < Admin::BaseController
     habitation.errors.add(:"address.logradouro", message)
     habitation.errors.add(:"address.numero", message)
     habitation.errors.add(:bloco, message) if habitation.duplicate_identity_scope.in?(%i[unit condominium_unit])
+    habitation.errors.add(:"address.complemento", message) if habitation.duplicate_identity_scope == :condominium_unit
     false
   end
 

@@ -180,6 +180,58 @@ RSpec.describe HabitationDuplicateChecker do
     expect(result.matches).to include(existing)
   end
 
+  it "libera terreno no mesmo condomínio quando complemento é diferente" do
+    existing = create(:habitation, categoria: "Terreno", status: "Venda", bloco: nil)
+    existing.create_address!(
+      logradouro: "Ivo José Rebello",
+      numero: "110",
+      complemento: "802",
+      bairro: "Condomínio Caledônia",
+      cidade: "Camboriú",
+      uf: "SC"
+    )
+
+    result = described_class.new(
+      street: "Ivo Jose Rebello",
+      number: "110",
+      building: "Caledônia Private Village",
+      unit: "",
+      complement: "303",
+      category: "Terreno",
+      status: "Venda"
+    ).call
+
+    expect(result.complete).to be(true)
+    expect(result.comparison).to eq(:condominium_unit)
+    expect(result.matches).to be_empty
+  end
+
+  it "bloqueia terreno no mesmo condomínio quando complemento e bloco são iguais" do
+    existing = create(:habitation, categoria: "Terreno em Condomínio", status: "Venda", bloco: "Quadra B")
+    existing.create_address!(
+      logradouro: "Ivo José Rebello",
+      numero: "110",
+      complemento: "303",
+      bairro: "Condomínio Caledônia",
+      cidade: "Camboriú",
+      uf: "SC"
+    )
+
+    result = described_class.new(
+      street: "Ivo Jose Rebello",
+      number: "110",
+      building: "Caledônia Private Village",
+      unit: "Quadra B",
+      complement: "303",
+      category: "Terreno em Condomínio",
+      status: "Venda"
+    ).call
+
+    expect(result.complete).to be(true)
+    expect(result.comparison).to eq(:condominium_unit)
+    expect(result.matches).to include(existing)
+  end
+
   it "não compara imóvel sem unidade com unidade do mesmo endereço" do
     apartment = create(:habitation, status: "Venda", nome_empreendimento: "Edifício Solar", bloco: "501")
     apartment.create_address!(logradouro: "Rua 3000", numero: "50", bairro: "Centro", cidade: "Balneário Camboriú", uf: "SC")

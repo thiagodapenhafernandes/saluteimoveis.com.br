@@ -87,15 +87,16 @@ export default class extends Controller {
   }
 
   comparisonValue() {
-    if (this.condominiumHouseSelected() && (this.targetValue("unit").trim().length > 0 || this.targetValue("complement").trim().length > 0)) {
+    if (this.complementBlockCategorySelected() && (this.targetValue("unit").trim().length > 0 || this.targetValue("complement").trim().length > 0)) {
       return "condominium_unit"
     }
 
     return this.hasComparisonTarget ? this.comparisonTarget.value : ""
   }
 
-  condominiumHouseSelected() {
-    return this.targetValue("category").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().includes("casa em condominio")
+  complementBlockCategorySelected() {
+    const category = this.targetValue("category").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase()
+    return category.includes("casa em condominio") || category.includes("terreno")
   }
 
   showDuplicate(matches) {

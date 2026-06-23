@@ -295,7 +295,15 @@ export default class extends Controller {
     this.toggleDevelopmentNameReadonly(Boolean(developmentCode))
     this.toggleMissingConstructorAlert(false)
 
-    if (!developmentCode || !developmentData) return
+    if (!developmentCode) {
+      this.clearDevelopmentSelection(fromUser)
+      return
+    }
+
+    if (!developmentData) {
+      this.syncDevelopmentEditLink(null)
+      return
+    }
 
     if (this.hasDevelopmentNameTarget && developmentData.nome_empreendimento) {
       this.developmentNameTarget.value = developmentData.nome_empreendimento
@@ -310,6 +318,45 @@ export default class extends Controller {
     } else if (fromUser) {
       // Não limpa uma seleção manual existente quando o empreendimento não tiver construtora.
     }
+  }
+
+  clearDevelopmentSelection(fromUser = false) {
+    this.syncDevelopmentEditLink(null)
+
+    if (fromUser && this.hasDevelopmentNameTarget && this.currentCategoryClearsUnlinkedDevelopmentName()) {
+      this.developmentNameTarget.value = ""
+      this.developmentNameTarget.dispatchEvent(new Event("input", { bubbles: true }))
+    }
+  }
+
+  currentCategoryClearsUnlinkedDevelopmentName() {
+    if (!this.hasCategoryTarget) return false
+
+    const normalizedCategory = this.parameterize(this.categoryTarget.value)
+    return [
+      "casa",
+      "sobrado",
+      "rural",
+      "chacara",
+      "sitio",
+      "galpao",
+      "deposito",
+      "pavilhao",
+      "casa-comercial",
+      "loja",
+      "ponto-comercial",
+      "predio-comercial"
+    ].includes(normalizedCategory)
+  }
+
+  parameterize(value) {
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
   }
 
   toggleDevelopmentNameReadonly(shouldBeReadonly) {

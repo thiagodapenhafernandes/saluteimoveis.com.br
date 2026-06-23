@@ -278,6 +278,31 @@
     .habitation-form-ui .media-photo-tile {
       overflow: hidden;
     }
+    .habitation-form-ui .media-development-toggle {
+      align-items: center;
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 0.5rem;
+      display: inline-flex;
+      gap: 0.55rem;
+      max-width: min(100%, 360px);
+      padding: 0.38rem 0.65rem;
+    }
+    .habitation-form-ui .media-development-toggle .form-check-input {
+      flex: 0 0 auto;
+      margin: 0;
+    }
+    .habitation-form-ui .media-development-toggle-text {
+      line-height: 1.15;
+      min-width: 0;
+    }
+    .habitation-form-ui .media-upload-dropzone {
+      padding: 1rem;
+    }
+    .habitation-form-ui .media-upload-icon {
+      font-size: 1.85rem;
+      line-height: 1;
+    }
     .habitation-form-ui .media-gallery-scroll {
       max-height: min(72vh, 760px);
       overflow-y: auto;
@@ -561,6 +586,9 @@
                   <div class="col-md-5" data-habitation-form-target="unitOnly">
                     <%= f.label :codigo_empreendimento, "Pertence ao empreendimento:", class: "form-label small fw-bold mb-1" %>
                     <div class="input-group input-group-sm">
+                      <% if can_edit_protected_habitation_fields %>
+                        <%= f.hidden_field :codigo_empreendimento, value: "" %>
+                      <% end %>
                       <%= f.collection_select :codigo_empreendimento, @developments, :codigo, :nome_empreendimento, { include_blank: true },
                           { class: "form-select form-select-sm",
                             disabled: !can_edit_protected_habitation_fields,
@@ -1905,6 +1933,7 @@
          <div class="card-body p-3 p-md-4" data-controller="photo-upload fancybox-gallery">
             <% linked_development = habitation.empreendimento if habitation.codigo_empreendimento.present? %>
             <% attached_media_photos = habitation.photos.attached? ? habitation.ordered_photos.select { |photo| photo.persisted? && photo.blob&.persisted? } : [] %>
+            <% attached_media_photo_filenames = attached_media_photos.filter_map { |photo| photo.blob&.filename&.to_s&.downcase } %>
             <% api_media_pictures = habitation.pictures.is_a?(Array) ? habitation.pictures.each_with_index.filter_map { |pic, index|
                  pic_url = pic.is_a?(String) ? pic : (pic.try(:[], "url") || pic.try(:[], "src") || pic.try(:[], "link"))
                  [pic, index, pic_url] if pic_url.present?
@@ -1916,6 +1945,23 @@
             <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap mb-3">
               <h6 class="small fw-semibold text-uppercase text-muted mb-0">Fotos</h6>
               <div class="d-flex align-items-center gap-2 flex-wrap">
+                <% if linked_development.present? %>
+                  <label class="media-development-toggle form-check form-switch mb-0" title="Se o imóvel não tiver fotos próprias, usa as fotos do empreendimento vinculado.">
+                    <%= f.check_box :use_development_photos_flag,
+                                    class: "form-check-input",
+                                    role: "switch",
+                                    data: {
+                                      photo_upload_target: "developmentPhotosSwitch",
+                                      action: "change->photo-upload#markDirty"
+                                    } %>
+                    <span class="media-development-toggle-text">
+                      <span class="d-block small fw-semibold">Fotos do empreendimento</span>
+                      <span class="d-block extra-small text-muted text-truncate">
+                        <%= linked_development.nome_empreendimento.presence || linked_development.codigo %>
+                      </span>
+                    </span>
+                  </label>
+                <% end %>
                 <span class="badge rounded-pill media-photo-dirty-status d-none" data-photo-upload-target="dirtyStatus">
                   Alterações em fotos pendentes
                 </span>
@@ -1945,28 +1991,10 @@
                 <% end %>
               </div>
             </div>
-            <% if linked_development.present? %>
-              <div class="alert alert-light border d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4">
-                <div>
-                  <div class="fw-semibold small mb-1">
-                    <i class="bi bi-building me-1 text-primary"></i>
-                    Fotos do empreendimento vinculado
-                  </div>
-                  <div class="text-muted small">
-                    Este imóvel está vinculado a <strong><%= linked_development.nome_empreendimento.presence || linked_development.codigo %></strong>.
-                    Se não houver fotos próprias, ele pode usar as fotos desse empreendimento.
-                  </div>
-                </div>
-                <div class="form-check form-switch m-0">
-                  <%= f.check_box :use_development_photos_flag, class: "form-check-input", role: "switch" %>
-                  <%= f.label :use_development_photos_flag, "Usar fotos do empreendimento", class: "form-check-label small fw-semibold" %>
-                </div>
-              </div>
-            <% end %>
-            <div class="mb-4 text-center p-5 border border-dashed rounded bg-light">
+            <div class="media-upload-dropzone mb-3 text-center border border-dashed rounded bg-light">
                <% if can?(:manage, :imoveis) %>
-                 <div class="row justify-content-center mb-3">
-                   <div class="col-md-4">
+                 <div class="row justify-content-center mb-2">
+                   <div class="col-md-4 col-lg-3">
                      <%= f.label :foto_classificacao, "Classificação das Fotos:", class: "form-label small fw-bold mb-1" %>
                      <%= f.select :foto_classificacao,
                                   Habitation::FOTO_CLASSIFICACAO,
@@ -1976,13 +2004,13 @@
                    </div>
                  </div>
                <% end %>
-               <div class="mb-3">
-                 <i class="bi bi-images display-4 text-muted"></i>
+               <div class="mb-2">
+                 <i class="bi bi-images media-upload-icon text-muted"></i>
                </div>
-               <h5>Arraste fotos ou clique para selecionar</h5>
-               <p class="text-muted small">Fotos adicionadas aqui serão mantidas junto das fotos atuais. Para remover, use a lixeira sobre a imagem.</p>
+               <h6 class="fw-semibold mb-1">Arraste fotos ou selecione arquivos</h6>
+               <p class="text-muted small mb-2">Novas fotos entram junto das atuais. Para remover, use a lixeira sobre a imagem.</p>
                <% watermark_available = @property_setting&.watermark_configured? %>
-               <div class="d-inline-flex flex-column align-items-center gap-1 mb-3">
+               <div class="d-inline-flex flex-column align-items-center gap-1 mb-2">
                  <label class="form-check d-inline-flex align-items-center gap-2 border rounded px-3 py-2 bg-white shadow-sm mb-0">
                    <%= hidden_field_tag "habitation[apply_photo_watermark]", "0" %>
                    <%= check_box_tag "habitation[apply_photo_watermark]", "1", watermark_available, class: "form-check-input m-0", disabled: !watermark_available %>
@@ -1997,8 +2025,9 @@
                    </span>
                  <% end %>
                </div>
-               <br>
-               <%= f.label :photos, "Selecionar Arquivos", class: "btn btn-primary" %>
+               <div>
+                 <%= f.label :photos, "Selecionar Arquivos", class: "btn btn-primary btn-sm fw-semibold" %>
+               </div>
                <%= f.file_field :photos, multiple: true, direct_upload: true, class: "d-none",
                    id: "habitation_photos",
                    data: { action: "change->photo-upload#preview", photo_upload_target: "input" } %>
@@ -2078,22 +2107,33 @@
 		                  <% end %>
 		                <% end %>
 
-		                <% if api_media_pictures.any? %>
-		                  <% api_media_pictures.each_with_index do |(pic, original_index, pic_url), index| %>
-		                    <% display_index = attached_media_photos.size + index %>
-		                    <% picture_hidden_from_site = habitation.picture_hidden_from_site?(pic) %>
-		                    <div class="col-6 col-md-3 col-lg-2 draggable-item api-picture-item" data-api-index="<%= original_index %>">
-		                      <div class="position-relative ratio ratio-1x1 group-hover media-photo-tile <%= 'is-site-hidden' if picture_hidden_from_site %>" data-site-hidden="<%= picture_hidden_from_site %>">
-		                        <%= link_to pic_url,
-		                            class: "d-block w-100 h-100",
+			                <% if api_media_pictures.any? %>
+			                  <% api_media_pictures.each_with_index do |(pic, original_index, pic_url), index| %>
+			                    <% display_index = attached_media_photos.size + index %>
+			                    <% picture_hidden_from_site = habitation.picture_hidden_from_site?(pic) %>
+                          <% api_picture_filename = begin
+                               File.basename(URI.parse(pic_url.to_s).path.to_s).downcase
+                             rescue URI::InvalidURIError
+                               File.basename(pic_url.to_s.split("?").first.to_s).downcase
+                             end %>
+                          <% api_picture_maybe_duplicate = api_picture_filename.present? && attached_media_photo_filenames.include?(api_picture_filename) %>
+			                    <div class="col-6 col-md-3 col-lg-2 draggable-item api-picture-item" data-api-index="<%= original_index %>">
+			                      <div class="position-relative ratio ratio-1x1 group-hover media-photo-tile <%= 'is-site-hidden' if picture_hidden_from_site %>" data-site-hidden="<%= picture_hidden_from_site %>">
+			                        <%= link_to pic_url,
+			                            class: "d-block w-100 h-100",
 		                            data: { fancybox: "habitation-media-gallery", caption: "Foto API/Vista #{display_index + 1}" } do %>
 		                          <%= image_tag pic_url, class: "rounded border w-100 h-100 object-fit-cover opacity-75", loading: "lazy", decoding: "async" %>
 		                        <% end %>
-		                        <div class="media-photo-overlay position-absolute d-flex flex-column justify-content-between p-1">
-		                          <div class="d-flex justify-content-between align-items-start gap-1">
-		                            <span class="badge bg-dark bg-opacity-75 border shadow-sm" data-photo-position-badge>#<%= display_index + 1 %></span>
-		                            <span class="badge bg-secondary border shadow-sm" title="Vindo da Integração API">API/Vista</span>
-		                          </div>
+			                        <div class="media-photo-overlay position-absolute d-flex flex-column justify-content-between p-1">
+			                          <div class="d-flex justify-content-between align-items-start gap-1">
+			                            <span class="badge bg-dark bg-opacity-75 border shadow-sm" data-photo-position-badge>#<%= display_index + 1 %></span>
+			                            <span class="d-flex flex-column align-items-end gap-1">
+                                    <span class="badge bg-secondary border shadow-sm" title="Foto original importada da API do Vista. Se já existir uma foto ativa igual, remova esta pela lixeira.">API/Vista</span>
+                                    <% if api_picture_maybe_duplicate %>
+                                      <span class="badge bg-warning text-dark border shadow-sm" title="Possível duplicidade com uma foto ativa pelo nome do arquivo">Possível duplicada</span>
+                                    <% end %>
+                                  </span>
+			                          </div>
 		                          <div class="d-flex justify-content-end">
 		                            <button type="button"
 		                                    class="media-photo-site-toggle btn btn-sm <%= picture_hidden_from_site ? 'btn-secondary' : 'btn-success' %> border fw-semibold"

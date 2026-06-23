@@ -301,7 +301,7 @@ class Habitation < ApplicationRecord
   before_validation :clear_category_mismatched_slug, prepend: true
   before_validation :set_data_cadastro_crm, on: :create
   before_validation :normalize_codigo_empreendimento
-  before_validation :clear_unlinked_standalone_development_name
+  before_validation :clear_unlinked_development_state
   before_validation :sync_hierarchy_data
   before_validation :sync_construtora_from_constructor
   before_validation :sanitize_fields
@@ -500,9 +500,13 @@ class Habitation < ApplicationRecord
   end
 
   def duplicate_identity_scope
-    return :condominium_unit if condominium_house? && (complemento.present? || bloco.present?)
+    return :condominium_unit if duplicate_identity_uses_complement_and_block? && (complemento.present? || bloco.present?)
 
     requires_unit_number? || bloco.present? ? :unit : :street
+  end
+
+  def duplicate_identity_uses_complement_and_block?
+    condominium_house? || property_kind_terreno?
   end
 
   def modalidade
@@ -1575,12 +1579,12 @@ class Habitation < ApplicationRecord
     self.codigo_empreendimento = codigo_empreendimento.to_s.strip.presence
   end
 
-  def clear_unlinked_standalone_development_name
+  def clear_unlinked_development_state
     return if empreendimento?
     return if codigo_empreendimento.present?
-    return unless standalone_category_without_development_name?
 
-    self.nome_empreendimento = nil
+    self.use_development_photos_flag = false
+    self.nome_empreendimento = nil if standalone_category_without_development_name?
   end
 
   def sync_hierarchy_data
