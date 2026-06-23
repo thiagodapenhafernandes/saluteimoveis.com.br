@@ -352,6 +352,14 @@ RSpec.describe "Admin::Habitations", type: :request do
     # Valor (min/max) no topo
     expect(response.body).to include('name="min_price"')
     expect(response.body).to include('name="max_price"')
+    html = Nokogiri::HTML(response.body)
+    min_price_input = html.at_css('input[name="min_price"]')
+    max_price_input = html.at_css('input[name="max_price"]')
+
+    expect(min_price_input["data-controller"]).to eq("currency-mask")
+    expect(max_price_input["data-controller"]).to eq("currency-mask")
+    expect(min_price_input["autocomplete"]).to eq("off")
+    expect(max_price_input["autocomplete"]).to eq("off")
   end
 
   it "mantém compartilhamento disponível ao editar o cadastro do imóvel" do

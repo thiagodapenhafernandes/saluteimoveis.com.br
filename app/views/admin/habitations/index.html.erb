@@ -993,11 +993,23 @@
             <div class="filter-price-pair">
               <div class="input-group">
                 <span class="input-group-text bg-white">R$</span>
-                <%= f.text_field :min_price, value: params[:min_price], class: "form-control money-mask", placeholder: "Mín." %>
+                <%= f.text_field :min_price,
+                                 value: params[:min_price],
+                                 class: "form-control money-mask",
+                                 placeholder: "Mín.",
+                                 autocomplete: "off",
+                                 inputmode: "numeric",
+                                 data: { controller: "currency-mask", action: "input->currency-mask#format" } %>
               </div>
               <div class="input-group">
                 <span class="input-group-text bg-white">R$</span>
-                <%= f.text_field :max_price, value: params[:max_price], class: "form-control money-mask", placeholder: "Máx." %>
+                <%= f.text_field :max_price,
+                                 value: params[:max_price],
+                                 class: "form-control money-mask",
+                                 placeholder: "Máx.",
+                                 autocomplete: "off",
+                                 inputmode: "numeric",
+                                 data: { controller: "currency-mask", action: "input->currency-mask#format" } %>
               </div>
             </div>
           </div>
@@ -1131,7 +1143,13 @@
                 <label class="form-label small fw-bold text-muted text-uppercase">Valor mín. permuta</label>
                 <div class="input-group">
                   <span class="input-group-text bg-white">R$</span>
-                  <%= f.text_field :permuta_min_value, value: params[:permuta_min_value], class: "form-control money-mask", placeholder: "0,00" %>
+                  <%= f.text_field :permuta_min_value,
+                                   value: params[:permuta_min_value],
+                                   class: "form-control money-mask",
+                                   placeholder: "0",
+                                   autocomplete: "off",
+                                   inputmode: "numeric",
+                                   data: { controller: "currency-mask", action: "input->currency-mask#format" } %>
                 </div>
               </div>
               <div class="col-md-8">
@@ -2224,9 +2242,6 @@
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05) !important;
     transform: translateY(-2px);
     transition: all 0.3s ease;
-  }
-  .money-mask {
-    /* Add javascript mask library later if needed */
   }
   .dropdown-toggle.no-caret::after {
     display: none !important;
