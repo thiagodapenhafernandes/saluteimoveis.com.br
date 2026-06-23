@@ -111,7 +111,7 @@ class HabitationDuplicateChecker
   end
 
   def comparison
-    @comparison ||= if condominium_house_category? && (normalize_unit(@unit).present? || normalize(@complement).present?)
+    @comparison ||= if complement_block_category? && (normalize_unit(@unit).present? || normalize(@complement).present?)
                       :condominium_unit
                     elsif normalize_unit(@unit).present?
                       :unit
@@ -147,9 +147,9 @@ class HabitationDuplicateChecker
     normalize(value).sub(/\A(apartamento|apto|unidade|unid|un|bloco|bl|ap)/, "")
   end
 
-  def condominium_house_category?
+  def complement_block_category?
     normalized_category = I18n.transliterate(@category.to_s.downcase)
-    normalized_category.include?("casa em condominio")
+    normalized_category.include?("casa em condominio") || normalized_category.include?("terreno")
   end
 
   def normalized_sql(expression)

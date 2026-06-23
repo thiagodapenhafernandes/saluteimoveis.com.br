@@ -133,11 +133,45 @@ RSpec.describe Habitation, type: :model do
     end
   end
 
+  describe "#duplicate_identity_scope" do
+    it "uses complement and block identity for land with complement" do
+      habitation = described_class.new(categoria: "Terreno", bloco: "")
+      habitation.build_address(complemento: "303")
+
+      expect(habitation.duplicate_identity_scope).to eq(:condominium_unit)
+    end
+  end
+
   describe "standalone development cleanup" do
     it "clears unlinked development names from standalone warehouses" do
       habitation = create(:habitation, categoria: "Galpão", nome_empreendimento: "Torre Indevida", codigo_empreendimento: nil)
 
       expect(habitation.reload.nome_empreendimento).to be_nil
+    end
+
+    it "clears inherited development state when a standalone property is unlinked" do
+      development = create(
+        :habitation,
+        tipo: "Empreendimento",
+        categoria: "Empreendimento",
+        codigo: "DEV-#{SecureRandom.hex(4)}",
+        nome_empreendimento: "Ville Del Acqua"
+      )
+      habitation = create(
+        :habitation,
+        categoria: "Galpão",
+        codigo_empreendimento: development.codigo,
+        nome_empreendimento: "Ville Del Acqua",
+        use_development_photos_flag: true
+      )
+
+      habitation.update!(codigo_empreendimento: "")
+
+      expect(habitation.reload).to have_attributes(
+        codigo_empreendimento: nil,
+        nome_empreendimento: nil,
+        use_development_photos_flag: false
+      )
     end
   end
 

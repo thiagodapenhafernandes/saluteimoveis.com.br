@@ -673,6 +673,8 @@ module Admin
         building: @habitation.nome_empreendimento,
         unit: @habitation.bloco,
         status: @habitation.status,
+        complement: @habitation.complemento,
+        category: @habitation.categoria,
         comparison: @habitation.duplicate_identity_scope,
         ignored_id: @habitation.id
       ).call
@@ -683,6 +685,8 @@ module Admin
       code = duplicated&.visible_reference_codigo.present? ? " ##{duplicated.visible_reference_codigo}" : ""
       message = if @habitation.duplicate_identity_scope == :unit
                   "Já existe imóvel cadastrado com esta rua, número, unidade e status comercial#{code}."
+                elsif @habitation.duplicate_identity_scope == :condominium_unit
+                  "Já existe imóvel cadastrado com esta rua, número, complemento, bloco e status comercial#{code}."
                 else
                   "Já existe imóvel cadastrado com esta rua, número e status comercial#{code}."
                 end
@@ -690,6 +694,7 @@ module Admin
       @invalid_fields[:street] = true
       @invalid_fields[:street_number] = true
       @invalid_fields[:unidade_numero] = true if @habitation.duplicate_identity_scope == :unit
+      @invalid_fields[:complemento] = true if @habitation.duplicate_identity_scope == :condominium_unit
       @step_errors ||= []
       @step_errors << message
       @missing_requirements ||= []

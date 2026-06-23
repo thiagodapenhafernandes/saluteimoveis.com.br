@@ -16,7 +16,8 @@ export default class extends Controller {
     "scrollContainer",
     "dirtyStatus",
     "saveButton",
-    "saveButtonLabel"
+    "saveButtonLabel",
+    "developmentPhotosSwitch"
   ]
 
   static maxUploadBytes = 250 * 1024 * 1024
@@ -543,6 +544,7 @@ export default class extends Controller {
       this.hasHiddenPictureUrlsInputTarget ? this.hiddenPictureUrlsInputTarget.value : "",
       this.hasRemovePhotoIdsInputTarget ? this.removePhotoIdsInputTarget.value : "",
       this.hasRemovePictureIndicesInputTarget ? this.removePictureIndicesInputTarget.value : "",
+      this.hasDevelopmentPhotosSwitchTarget ? String(this.developmentPhotosSwitchTarget.checked) : "",
       this.selectedNewFiles.map(entry => this.fileKey(entry.file)).join("|")
     ].join("::")
   }

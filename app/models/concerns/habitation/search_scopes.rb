@@ -644,26 +644,40 @@ module Habitation::SearchScopes
 
       # Preço (baseado no tipo de transação)
       if params[:min_price].present? || params[:max_price].present?
-        min_cents = params[:min_price].present? ? params[:min_price].to_s.gsub(/[^\d]/, '').to_i * 100 : 0
-        max_cents = params[:max_price].present? ? params[:max_price].to_s.gsub(/[^\d]/, '').to_i * 100 : Float::INFINITY
+        min_cents = params[:min_price].present? ? params[:min_price].to_s.gsub(/[^\d]/, '').to_i * 100 : nil
+        max_cents = params[:max_price].present? ? params[:max_price].to_s.gsub(/[^\d]/, '').to_i * 100 : nil
+        min_cents = nil unless min_cents.to_i.positive?
+        max_cents = nil unless max_cents.to_i.positive?
         
         # Se tem tipo de transação específico, filtra apenas esse
         if params[:transaction_type] == 'venda'
-          query = query.where("valor_venda_cents BETWEEN ? AND ?", min_cents, max_cents) if min_cents > 0 || max_cents < Float::INFINITY
+          if min_cents && max_cents
+            query = query.where("valor_venda_cents BETWEEN ? AND ?", min_cents, max_cents)
+          elsif min_cents
+            query = query.where("valor_venda_cents >= ?", min_cents)
+          elsif max_cents
+            query = query.where("valor_venda_cents <= ?", max_cents)
+          end
         elsif params[:transaction_type] == 'aluguel'
           # No site, o filtro de locação considera apenas o aluguel base.
           # Taxas como condomínio, IPTU e valor_total_aluguel_cents não entram nesta faixa.
-          query = query.where("valor_locacao_cents BETWEEN ? AND ?", min_cents, max_cents) if min_cents > 0 || max_cents < Float::INFINITY
+          if min_cents && max_cents
+            query = query.where("valor_locacao_cents BETWEEN ? AND ?", min_cents, max_cents)
+          elsif min_cents
+            query = query.where("valor_locacao_cents >= ?", min_cents)
+          elsif max_cents
+            query = query.where("valor_locacao_cents <= ?", max_cents)
+          end
         else
           # Se não especificou tipo, busca em ambos (venda OU locação dentro do range)
-          if min_cents > 0 && max_cents < Float::INFINITY
+          if min_cents && max_cents
             query = query.where(
               "(valor_venda_cents BETWEEN ? AND ?) OR (valor_locacao_cents BETWEEN ? AND ?)",
               min_cents, max_cents, min_cents, max_cents
             )
-          elsif min_cents > 0
+          elsif min_cents
             query = query.where("valor_venda_cents >= ? OR valor_locacao_cents >= ?", min_cents, min_cents)
-          elsif max_cents < Float::INFINITY
+          elsif max_cents
             query = query.where("valor_venda_cents <= ? OR valor_locacao_cents <= ?", max_cents, max_cents)
           end
         end

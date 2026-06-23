@@ -667,5 +667,29 @@ RSpec.describe "Habitation details", type: :request do
       expect(codes).not_to include("9402")
       expect(codes).not_to include("9403")
     end
+
+    it "filters rent by open-ended minimum price ranges" do
+      matching = create(:habitation, codigo: "9501", status: "Aluguel", valor_venda_cents: 0, valor_locacao_cents: 30_000_00)
+      create(:habitation, codigo: "9502", status: "Aluguel", valor_venda_cents: 0, valor_locacao_cents: 20_000_00)
+
+      get habitations_path(price_range: "25000-", transaction_type: "aluguel", format: :json)
+
+      expect(response).to have_http_status(:ok)
+      codes = JSON.parse(response.body).map { |item| item.fetch("codigo") }
+      expect(codes).to include(matching.codigo)
+      expect(codes).not_to include("9502")
+    end
+
+    it "filters sale by open-ended minimum price ranges" do
+      matching = create(:habitation, codigo: "9601", valor_venda_cents: 12_000_000_00)
+      create(:habitation, codigo: "9602", valor_venda_cents: 8_000_000_00)
+
+      get habitations_path(price_range: "10000000-", transaction_type: "venda", format: :json)
+
+      expect(response).to have_http_status(:ok)
+      codes = JSON.parse(response.body).map { |item| item.fetch("codigo") }
+      expect(codes).to include(matching.codigo)
+      expect(codes).not_to include("9602")
+    end
   end
 end
