@@ -107,6 +107,37 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(response.body).to include(submitted.titulo_anuncio)
   end
 
+  it "separa captações devolvidas do filtro de rascunhos" do
+    draft = create(
+      :habitation,
+      :broker_intake,
+      admin_user: admin,
+      intake_status: "draft",
+      titulo_anuncio: "Rascunho ainda em preenchimento"
+    )
+    returned = create(
+      :habitation,
+      :broker_intake,
+      admin_user: admin,
+      intake_status: "returned_to_broker",
+      titulo_anuncio: "Cadastro devolvido para correção"
+    )
+
+    get admin_captacoes_path(status: "draft")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(draft.titulo_anuncio)
+    expect(response.body).not_to include(returned.titulo_anuncio)
+
+    get admin_captacoes_path(status: "returned_to_broker")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(returned.titulo_anuncio)
+    expect(response.body).to include("Devolvida")
+    expect(response.body).to include("Corrigir")
+    expect(response.body).not_to include(draft.titulo_anuncio)
+  end
+
   it "usa rótulos claros para enviar análise e publicar no site pelo captador" do
     broker_profile = Profile.create!(
       name: "Corretor publicação #{SecureRandom.hex(6)}",
@@ -1807,7 +1838,9 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     it "esconde por padrão fichas publicadas no site e liberadas internamente" do
       create(:habitation, :broker_intake, admin_user: admin, codigo: "LIST-DRAFT", intake_status: "draft", categoria: "Apartamento", nome_empreendimento: "Rascunho sem referência")
       create(:habitation, :broker_intake, admin_user: admin, codigo: "LIST-REVIEW", intake_status: "submitted_for_admin_review", categoria: "Apartamento")
+      create(:habitation, :broker_intake, admin_user: admin, codigo: "LIST-APPROVED", intake_status: "admin_approved", categoria: "Apartamento")
       create(:habitation, :broker_intake, admin_user: admin, codigo: "LIST-PUBLISHED", intake_status: "published", exibir_no_site_flag: true, categoria: "Apartamento")
+      create(:habitation, :broker_intake, admin_user: admin, codigo: "LIST-PUBLISHED-FLAG", intake_status: "admin_approved", exibir_no_site_flag: true, categoria: "Apartamento")
       create(:habitation, :broker_intake, admin_user: admin, codigo: "LIST-INTERNAL", intake_status: "internal", categoria: "Apartamento")
 
       get admin_captacoes_path
@@ -1817,8 +1850,27 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
       expect(response.body).to include("Após finalizar")
       expect(response.body).not_to include("LIST-DRAFT")
       expect(response.body).to include("LIST-REVIEW")
+      expect(response.body).to include("Pendente de revisão")
+      expect(response.body).to include("LIST-APPROVED")
+      expect(response.body).to include("Liberar para site")
+      expect(response.body).not_to include("Finalizada")
       expect(response.body).not_to include("LIST-PUBLISHED")
+      expect(response.body).not_to include("LIST-PUBLISHED-FLAG")
       expect(response.body).not_to include("LIST-INTERNAL")
+    end
+
+    it "mostra publicados somente no filtro de publicadas" do
+      create(:habitation, :broker_intake, admin_user: admin, codigo: "LIST-PUBLISHED", intake_status: "published", exibir_no_site_flag: true, categoria: "Apartamento")
+      create(:habitation, :broker_intake, admin_user: admin, codigo: "LIST-PUBLISHED-FLAG", intake_status: "admin_approved", exibir_no_site_flag: true, categoria: "Apartamento")
+      create(:habitation, :broker_intake, admin_user: admin, codigo: "LIST-APPROVED", intake_status: "admin_approved", exibir_no_site_flag: false, categoria: "Apartamento")
+
+      get admin_captacoes_path(status: "published")
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("LIST-PUBLISHED")
+      expect(response.body).to include("LIST-PUBLISHED-FLAG")
+      expect(response.body).to include("Publicada")
+      expect(response.body).not_to include("LIST-APPROVED")
     end
 
     it "filtra captações por corretor" do

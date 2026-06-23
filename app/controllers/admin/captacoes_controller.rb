@@ -69,7 +69,8 @@ module Admin
       intake_scope = intake_scope.where(admin_user_id: current_admin_user.id) unless owns_all_resource?(:pre_cadastros) || can?(:review, :pre_cadastros)
 
       @pre_cadastro_total = intake_scope.count
-      @pre_cadastro_draft = intake_scope.where(intake_status: [nil, "draft", "returned_to_broker"]).count
+      @pre_cadastro_draft = intake_scope.where(intake_status: [nil, "draft"]).count
+      @pre_cadastro_returned = intake_scope.where(intake_status: "returned_to_broker").count
       @pre_cadastro_review = intake_scope.where(intake_status: "submitted_for_admin_review").count
       @pre_cadastro_admin_approved = intake_scope.where(intake_status: "admin_approved").count
       @pre_cadastro_published = intake_scope.where(intake_status: "published").count
