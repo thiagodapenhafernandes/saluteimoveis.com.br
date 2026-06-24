@@ -2751,6 +2751,44 @@ RSpec.describe "Admin::Habitations", type: :request do
     file&.unlink
   end
 
+  it "mostra ações de IA de título e descrição apenas para administrador" do
+    habitation = create(:habitation, codigo: "AI-ADMIN-#{SecureRandom.hex(6)}")
+
+    get edit_admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("IA para título e descrição")
+    expect(response.body).to include("Gerar prévia")
+  end
+
+  it "oculta e bloqueia ações de IA de título e descrição para corretor" do
+    broker_profile = Profile.create!(
+      name: "Corretor IA #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Corretor")
+    )
+    broker = create(:admin_user, profile: broker_profile)
+    habitation = create(:habitation, admin_user: broker, codigo: "AI-BLOCK-#{SecureRandom.hex(6)}")
+
+    sign_in broker
+
+    get edit_admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).not_to include("IA para título e descrição")
+    expect(response.body).not_to include("Gerar prévia")
+    expect(response.body).not_to include(generate_ai_preview_admin_habitation_path(habitation))
+
+    post generate_ai_preview_admin_habitation_path(habitation)
+    expect(response).to redirect_to(edit_admin_habitation_path(habitation, anchor: "features"))
+    expect(flash[:alert]).to eq("Apenas administradores podem gerar, formatar ou aplicar sugestões de IA.")
+
+    patch format_ai_suggestion_admin_habitation_path(habitation, suggestion_id: 999)
+    expect(response).to redirect_to(edit_admin_habitation_path(habitation, anchor: "features"))
+
+    patch apply_ai_suggestion_admin_habitation_path(habitation, suggestion_id: 999)
+    expect(response).to redirect_to(edit_admin_habitation_path(habitation, anchor: "features"))
+  end
+
   it "registra auditoria de alteração do imóvel e exibe o botão de timeline" do
     habitation = create(:habitation, codigo: "AUD-#{SecureRandom.hex(6)}", titulo_anuncio: "Título antigo", exibir_no_site_flag: false)
     habitation.create_address!(

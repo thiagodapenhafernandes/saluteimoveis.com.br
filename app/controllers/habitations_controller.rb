@@ -27,10 +27,13 @@ class HabitationsController < ApplicationController
       end
     end
 
+    listing_search_params = search_params
+    @listing_navigation_params = public_listing_navigation_params(listing_search_params)
+
     @habitations = Habitation
       .active
       .without_developments
-      .advanced_search(search_params)
+      .advanced_search(listing_search_params)
       .with_attached_photos
       .includes(:constructor, empreendimento: :constructor)
       .paginate(page: params[:page], per_page: 12)
@@ -383,6 +386,21 @@ class HabitationsController < ApplicationController
       [stripped]
     else
       Array(value).reject(&:blank?)
+    end
+  end
+
+  def public_listing_navigation_params(permitted_params)
+    permitted_params.to_h.each_with_object({}) do |(key, value), hash|
+      cleaned_value =
+        if value.is_a?(Array)
+          value.reject(&:blank?)
+        else
+          value
+        end
+
+      next if cleaned_value.blank?
+
+      hash[key] = cleaned_value
     end
   end
 

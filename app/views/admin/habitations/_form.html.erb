@@ -1122,7 +1122,7 @@
               </div>
             </div>
             <div class="col-md-9">
-              <% if f.object.persisted? %>
+              <% if f.object.persisted? && can_manage_ai_content? %>
                 <%= render "ai_content_preview",
                     habitation: f.object,
                     suggestion: @ai_property_suggestion,

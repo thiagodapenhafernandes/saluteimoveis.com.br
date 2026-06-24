@@ -523,8 +523,8 @@ module Habitation::SearchScopes
     # Scopes de ordenação
     scope :newest_first, -> { order(data_atualizacao_crm: :desc, created_at: :desc) }
     scope :oldest_first, -> { order(data_atualizacao_crm: :asc, created_at: :asc) }
-    scope :price_asc, -> { order(Arel.sql("COALESCE(valor_venda_cents, valor_locacao_cents) ASC")) }
-    scope :price_desc, -> { order(Arel.sql("COALESCE(valor_venda_cents, valor_locacao_cents) DESC")) }
+    scope :price_asc, ->(transaction_type = nil) { order(Arel.sql("#{public_price_sort_sql(transaction_type)} ASC NULLS LAST")) }
+    scope :price_desc, ->(transaction_type = nil) { order(Arel.sql("#{public_price_sort_sql(transaction_type)} DESC NULLS LAST")) }
     scope :area_asc, -> { order(area_total_m2: :asc) }
     scope :area_desc, -> { order(area_total_m2: :desc) }
     
@@ -813,18 +813,18 @@ module Habitation::SearchScopes
       end
       
       # Ordenação
-      query = apply_sorting(query, params[:sort])
+      query = apply_sorting(query, params[:sort], params[:transaction_type])
       
       query
     end
     
     # Aplica ordenação baseada em parâmetro
-    def apply_sorting(query, sort_param)
+    def apply_sorting(query, sort_param, transaction_type = nil)
       case sort_param.to_s
       when 'price_asc'
-        query.price_asc
+        query.price_asc(transaction_type)
       when 'price_desc'
-        query.price_desc
+        query.price_desc(transaction_type)
       when 'area_asc'
         query.area_asc
       when 'area_desc'
@@ -833,6 +833,17 @@ module Habitation::SearchScopes
         query.oldest_first
       else
         query.newest_first
+      end
+    end
+
+    def public_price_sort_sql(transaction_type = nil)
+      case transaction_type.to_s
+      when "venda"
+        "NULLIF(valor_venda_cents, 0)"
+      when "aluguel", "locacao", "locação"
+        "NULLIF(valor_locacao_cents, 0)"
+      else
+        "COALESCE(NULLIF(valor_venda_cents, 0), NULLIF(valor_locacao_cents, 0))"
       end
     end
   end
