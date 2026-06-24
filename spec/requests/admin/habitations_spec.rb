@@ -278,6 +278,26 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body.scan('form="admin_habitation_form"').size).to be >= 4
   end
 
+  it "sincroniza o aluguel editável entre Visão geral e Comercial" do
+    habitation = create(
+      :habitation,
+      codigo: "RENT-SYNC-#{SecureRandom.hex(6)}",
+      status: "Aluguel",
+      valor_locacao_cents: 440_000
+    )
+
+    get edit_admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+
+    document = Nokogiri::HTML(response.body)
+    rent_inputs = document.css('input[name="habitation[valor_locacao_formatted]"]')
+
+    expect(rent_inputs.size).to eq(2)
+    expect(rent_inputs.map { |input| input["data-habitation-form-sync-field"] }).to all(eq("valor_locacao_formatted"))
+    expect(rent_inputs.map { |input| input["data-action"].to_s }).to all(include("input->habitation-form#syncMirroredField"))
+  end
+
   it "exibe salvamento dedicado para fotos no cadastro do imóvel" do
     development = create(
       :habitation,

@@ -1,6 +1,40 @@
 require "rails_helper"
 
 RSpec.describe ApplicationHelper, type: :helper do
+  describe "#whatsapp_conversion_tracking" do
+    it "maps sale and rent negotiation types to external conversion events" do
+      expect(helper.whatsapp_conversion_tracking("sale")).to include(
+        business_type: "venda",
+        conversion_event: "ctwa_venda",
+        ctwa_id: "id-ctwa.venda"
+      )
+      expect(helper.whatsapp_conversion_tracking("rent")).to include(
+        business_type: "aluguel",
+        conversion_event: "ctwa_aluguel",
+        ctwa_id: "id-ctwa.aluguel"
+      )
+    end
+
+    it "uses the current listing context to split sale_rent properties when possible" do
+      expect(helper.whatsapp_conversion_tracking("sale_rent", transaction_type: "aluguel")).to include(
+        business_type: "aluguel",
+        conversion_event: "ctwa_aluguel"
+      )
+      expect(helper.whatsapp_conversion_tracking("sale_rent", transaction_type: "venda")).to include(
+        business_type: "venda",
+        conversion_event: "ctwa_venda"
+      )
+    end
+
+    it "keeps a distinct event for sale_rent when no context is available" do
+      expect(helper.whatsapp_conversion_tracking("sale_rent")).to include(
+        business_type: "venda_aluguel",
+        conversion_event: "ctwa_venda_aluguel",
+        ctwa_id: "id-ctwa.venda_aluguel"
+      )
+    end
+  end
+
   describe "#public_image_url" do
     it "remove host absoluto e troca redirect por proxy em URLs internas do Active Storage" do
       url = "https://143.110.138.67/rails/active_storage/blobs/redirect/signed/file.jpg"

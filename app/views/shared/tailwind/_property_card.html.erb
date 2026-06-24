@@ -49,6 +49,7 @@
       <div class="swiper-wrapper" style="display: flex !important; width: 100% !important;">
         <% card_images = property.card_image_sources(5) %>
         <% property_title = property.display_title %>
+        <% whatsapp_tracking = whatsapp_conversion_tracking(property, transaction_type: params[:transaction_type]) %>
         <% if card_images.present? %>
           <% card_images.each_with_index do |pic, index| %>
             <div class="swiper-slide w-full aspect-[4/3]" style="width: 100% !important; flex-shrink: 0 !important;">
@@ -154,6 +155,13 @@
                   data-marketing-tracker-label-value="<%= property_title %>"
                   data-marketing-tracker-target-url-value="<%= habitation_path(property) %>"
                   data-marketing-tracker-habitation-id-value="<%= property.id %>"
+                  data-marketing-tracker-conversion-event-value="<%= whatsapp_tracking[:conversion_event] %>"
+                  data-marketing-tracker-business-type-value="<%= whatsapp_tracking[:business_type] %>"
+                  data-marketing-tracker-negotiation-type-value="<%= whatsapp_tracking[:negotiation_type] %>"
+                  data-conversion-event="<%= whatsapp_tracking[:conversion_event] %>"
+                  data-ctwa-id="<%= whatsapp_tracking[:ctwa_id] %>"
+                  data-ctwa-business-type="<%= whatsapp_tracking[:business_type] %>"
+                  data-ctwa-negotiation-type="<%= whatsapp_tracking[:negotiation_type] %>"
                   data-property-id="<%= property.id %>"
                   data-property-code="<%= property.codigo %>"
                   data-property-title="<%= property_title %>"
@@ -178,6 +186,13 @@
                   data-marketing-tracker-label-value="<%= property_title %>"
                   data-marketing-tracker-target-url-value="<%= habitation_path(property) %>"
                   data-marketing-tracker-habitation-id-value="<%= property.id %>"
+                  data-marketing-tracker-conversion-event-value="<%= whatsapp_tracking[:conversion_event] %>"
+                  data-marketing-tracker-business-type-value="<%= whatsapp_tracking[:business_type] %>"
+                  data-marketing-tracker-negotiation-type-value="<%= whatsapp_tracking[:negotiation_type] %>"
+                  data-conversion-event="<%= whatsapp_tracking[:conversion_event] %>"
+                  data-ctwa-id="<%= whatsapp_tracking[:ctwa_id] %>"
+                  data-ctwa-business-type="<%= whatsapp_tracking[:business_type] %>"
+                  data-ctwa-negotiation-type="<%= whatsapp_tracking[:negotiation_type] %>"
                   data-property-id="<%= property.id %>"
                   data-property-code="<%= property.codigo %>"
                   data-property-title="<%= property_title %>"

@@ -946,7 +946,13 @@
               <div class="input-group input-group-sm">
                 <span class="input-group-text">R$</span>
                 <%= f.text_field :valor_locacao_formatted, class: "form-control form-control-sm",
-                    data: { controller: "mask", mask_type_value: "currency", rent_calculator_target: "rent", action: "input->rent-calculator#calculate keyup->rent-calculator#calculate" } %>
+                    data: {
+                      controller: "mask",
+                      mask_type_value: "currency",
+                      rent_calculator_target: "rent",
+                      habitation_form_sync_field: "valor_locacao_formatted",
+                      action: "input->habitation-form#syncMirroredField input->rent-calculator#calculate keyup->rent-calculator#calculate"
+                    } %>
               </div>
             </div>
             <div class="col-md-3">
@@ -1334,7 +1340,13 @@
                     <%= f.label :valor_locacao_formatted, "Aluguel atual", class: "form-label extra-small fw-bold mb-1" %>
                     <div class="input-group input-group-sm">
                       <span class="input-group-text">R$</span>
-                      <%= f.text_field :valor_locacao_formatted, class: "form-control form-control-sm", data: { controller: "mask", mask_type_value: "currency" } %>
+                      <%= f.text_field :valor_locacao_formatted, class: "form-control form-control-sm",
+                          data: {
+                            controller: "mask",
+                            mask_type_value: "currency",
+                            habitation_form_sync_field: "valor_locacao_formatted",
+                            action: "input->habitation-form#syncMirroredField"
+                          } %>
                     </div>
                   </div>
                   <div class="col-md-8">

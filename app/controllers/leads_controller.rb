@@ -23,7 +23,7 @@ class LeadsController < ApplicationController
         request: request,
         lead: @lead,
         habitation: habitation,
-        metadata: { origin: @lead.origin, lead_type: @lead.lead_type }
+        metadata: lead_tracking_metadata(business_type)
       )
 
       # Disparar Webhook
@@ -34,6 +34,9 @@ class LeadsController < ApplicationController
         property_url: habitation ? habitation_url(habitation) : nil,
         business_type: business_type,
         business_type_label: Whatsapp::SiteRouting::NEGOTIATION_TYPES[business_type],
+        conversion_event: params.dig(:lead, :conversion_event).presence,
+        conversion_business_type: params.dig(:lead, :conversion_business_type).presence,
+        ctwa_id: params.dig(:lead, :ctwa_id).presence,
         page_url: source_page_url,
         referrer_url: params.dig(:lead, :referrer_url),
         utm_source: params.dig(:lead, :utm_source),
@@ -73,6 +76,17 @@ class LeadsController < ApplicationController
     return requested_type if Whatsapp::SiteRouting::NEGOTIATION_TYPES.key?(requested_type)
 
     habitation&.whatsapp_negotiation_type || "sale"
+  end
+
+  def lead_tracking_metadata(business_type)
+    {
+      origin: @lead.origin,
+      lead_type: @lead.lead_type,
+      business_type: business_type,
+      conversion_event: params.dig(:lead, :conversion_event).presence,
+      conversion_business_type: params.dig(:lead, :conversion_business_type).presence,
+      ctwa_id: params.dig(:lead, :ctwa_id).presence
+    }.compact
   end
 
   def source_page_url

@@ -84,6 +84,28 @@ RSpec.describe "Habitation details", type: :request do
       )
     end
 
+    it "renders WhatsApp CTA conversion identifiers for external tracking" do
+      habitation = create(
+        :habitation,
+        status: "Aluguel",
+        valor_venda_cents: 0,
+        valor_locacao_cents: 4_500_00,
+        slug: "apartamento-locacao-ctwa"
+      )
+
+      get habitation_path(habitation)
+
+      expect(response).to have_http_status(:ok)
+      document = Nokogiri::HTML(response.body)
+      whatsapp_cta = document.at_css("[data-conversion-event='ctwa_aluguel'][data-ctwa-id='id-ctwa.aluguel']")
+
+      expect(whatsapp_cta).to be_present
+      expect(whatsapp_cta["data-action"]).to include("click->marketing-tracker#track")
+      expect(whatsapp_cta["data-action"]).to include("click->lead-capture#open")
+      expect(whatsapp_cta["data-ctwa-business-type"]).to eq("aluguel")
+      expect(whatsapp_cta["data-ctwa-negotiation-type"]).to eq("rent")
+    end
+
     it "prefixes the social title with the property code only for broker share links" do
       broker = create(:admin_user)
       code = "8234#{SecureRandom.random_number(100_000)}"

@@ -4,6 +4,23 @@ module ApplicationHelper
     "/rails/active_storage/blobs/redirect/" => "/rails/active_storage/blobs/proxy/",
     "/rails/active_storage/representations/redirect/" => "/rails/active_storage/representations/proxy/"
   }.freeze
+  WHATSAPP_CONVERSION_EVENTS = {
+    "venda" => {
+      conversion_event: "ctwa_venda",
+      ctwa_id: "id-ctwa.venda",
+      label: "WhatsApp venda"
+    },
+    "aluguel" => {
+      conversion_event: "ctwa_aluguel",
+      ctwa_id: "id-ctwa.aluguel",
+      label: "WhatsApp aluguel"
+    },
+    "venda_aluguel" => {
+      conversion_event: "ctwa_venda_aluguel",
+      ctwa_id: "id-ctwa.venda_aluguel",
+      label: "WhatsApp venda e aluguel"
+    }
+  }.freeze
 
   def optimized_image_source(source, resize_to_limit: nil, resize_to_fill: nil, saver: { quality: 82 })
     return if source.blank?
@@ -54,6 +71,36 @@ module ApplicationHelper
         ["a partir de R$10.000.000", "10000000-"]
       ]
     end
+  end
+
+  def whatsapp_conversion_tracking(habitation_or_negotiation_type, transaction_type: nil)
+    negotiation_type = if habitation_or_negotiation_type.respond_to?(:whatsapp_negotiation_type)
+                         habitation_or_negotiation_type.whatsapp_negotiation_type
+                       else
+                         habitation_or_negotiation_type
+                       end
+    business_type = whatsapp_conversion_business_type(negotiation_type, transaction_type: transaction_type)
+    WHATSAPP_CONVERSION_EVENTS.fetch(business_type)
+      .merge(business_type: business_type, negotiation_type: negotiation_type.to_s.presence || "sale")
+  end
+
+  def whatsapp_conversion_business_type(negotiation_type, transaction_type: nil)
+    normalized_negotiation = negotiation_type.to_s.downcase.presence || "sale"
+    normalized_context = whatsapp_transaction_context(transaction_type)
+
+    return normalized_context if normalized_negotiation == "sale_rent" && normalized_context.present?
+    return "aluguel" if normalized_negotiation.in?(%w[rent aluguel locacao locação rental])
+    return "venda_aluguel" if normalized_negotiation == "sale_rent"
+
+    "venda"
+  end
+
+  def whatsapp_transaction_context(transaction_type)
+    normalized = transaction_type.to_s.downcase
+    return "aluguel" if normalized.in?(%w[aluguel locacao locação alugar rent rental])
+    return "venda" if normalized.in?(%w[venda comprar compra sale])
+
+    nil
   end
 
   def public_image_url(source, resize_to_limit: nil, resize_to_fill: nil, saver: { quality: 82 })

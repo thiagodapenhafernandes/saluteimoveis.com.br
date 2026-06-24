@@ -1,4 +1,5 @@
 <!-- Página de Empreendimento - Enhanced Layout -->
+<% whatsapp_tracking = whatsapp_conversion_tracking(@habitation, transaction_type: params[:transaction_type]) %>
 <script type="application/ld+json">
   <%= raw({
     "@context" => "https://schema.org",
@@ -57,7 +58,20 @@
           <div class="flex flex-wrap gap-4">
             <button type="button"
                 class="inline-flex items-center gap-2 px-8 py-4 bg-golden-one text-blue-three font-bold rounded-lg hover:bg-golden-two transition-all shadow-lg"
-                data-action="click->lead-capture#open"
+                data-controller="marketing-tracker"
+                data-action="click->marketing-tracker#track click->lead-capture#open"
+                data-marketing-tracker-event-type-value="whatsapp_click"
+                data-marketing-tracker-placement-value="development_hero"
+                data-marketing-tracker-label-value="<%= @habitation.nome_empreendimento %>"
+                data-marketing-tracker-target-url-value="<%= empreendimento_details_path(@habitation) %>"
+                data-marketing-tracker-habitation-id-value="<%= @habitation.id %>"
+                data-marketing-tracker-conversion-event-value="<%= whatsapp_tracking[:conversion_event] %>"
+                data-marketing-tracker-business-type-value="<%= whatsapp_tracking[:business_type] %>"
+                data-marketing-tracker-negotiation-type-value="<%= whatsapp_tracking[:negotiation_type] %>"
+                data-conversion-event="<%= whatsapp_tracking[:conversion_event] %>"
+                data-ctwa-id="<%= whatsapp_tracking[:ctwa_id] %>"
+                data-ctwa-business-type="<%= whatsapp_tracking[:business_type] %>"
+                data-ctwa-negotiation-type="<%= whatsapp_tracking[:negotiation_type] %>"
                 data-property-id="<%= @habitation.id %>"
                 data-property-code="<%= @habitation.codigo %>"
                 data-property-title="<%= @habitation.nome_empreendimento %>"
@@ -360,7 +374,20 @@
             
             <button type="button" 
                 class="w-full bg-white text-blue-three font-bold py-3 px-4 rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-center gap-2 mb-3"
-                data-action="click->lead-capture#open"
+                data-controller="marketing-tracker"
+                data-action="click->marketing-tracker#track click->lead-capture#open"
+                data-marketing-tracker-event-type-value="whatsapp_click"
+                data-marketing-tracker-placement-value="development_contact_card"
+                data-marketing-tracker-label-value="<%= @habitation.nome_empreendimento %>"
+                data-marketing-tracker-target-url-value="<%= empreendimento_details_path(@habitation) %>"
+                data-marketing-tracker-habitation-id-value="<%= @habitation.id %>"
+                data-marketing-tracker-conversion-event-value="<%= whatsapp_tracking[:conversion_event] %>"
+                data-marketing-tracker-business-type-value="<%= whatsapp_tracking[:business_type] %>"
+                data-marketing-tracker-negotiation-type-value="<%= whatsapp_tracking[:negotiation_type] %>"
+                data-conversion-event="<%= whatsapp_tracking[:conversion_event] %>"
+                data-ctwa-id="<%= whatsapp_tracking[:ctwa_id] %>"
+                data-ctwa-business-type="<%= whatsapp_tracking[:business_type] %>"
+                data-ctwa-negotiation-type="<%= whatsapp_tracking[:negotiation_type] %>"
                 data-property-id="<%= @habitation.id %>"
                 data-property-code="<%= @habitation.codigo %>"
                 data-property-title="<%= @habitation.nome_empreendimento %>"
