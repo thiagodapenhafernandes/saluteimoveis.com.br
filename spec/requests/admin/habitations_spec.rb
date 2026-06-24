@@ -1417,6 +1417,48 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(intake.reload.intake_status).to eq("submitted_for_admin_review")
   end
 
+  it "bloqueia devolução administrativa de terreno em condomínio sem condomínio e lote" do
+    intake = create(
+      :habitation,
+      :broker_intake,
+      admin_user: admin,
+      codigo: "LAND-BLOCK-#{SecureRandom.hex(6)}",
+      intake_status: "submitted_for_admin_review",
+      categoria: "Terreno em Condomínio",
+      nome_empreendimento: nil,
+      complemento: nil,
+      area_total_m2: 910,
+      titulo_anuncio: "Terreno em Condomínio Porto Belo",
+      descricao_web: "<div>Descrição completa do terreno em condomínio.</div>"
+    )
+    intake.create_address!(
+      cep: "88210-000",
+      logradouro: "Santos Dumont",
+      numero: "0",
+      complemento: "",
+      bairro: "Porto Belo",
+      cidade: "Porto Belo",
+      uf: "SC"
+    )
+    intake.autorizacoes_venda.attach(
+      io: StringIO.new("autorizacao"),
+      filename: "autorizacao.txt",
+      content_type: "text/plain"
+    )
+
+    patch admin_habitation_path(intake), params: {
+      release_to_broker_after_save: "1",
+      habitation: {
+        titulo_anuncio: "Terreno em Condomínio Porto Belo"
+      }
+    }
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include("Empreendimento")
+    expect(response.body).to include("Complemento")
+    expect(intake.reload.intake_status).to eq("submitted_for_admin_review")
+  end
+
   it "permite Salvar Interno quando título e descrição estão preenchidos" do
     intake = create(
       :habitation,
@@ -2751,9 +2793,22 @@ RSpec.describe "Admin::Habitations", type: :request do
     file&.unlink
   end
 
-  it "mostra ações de IA de título e descrição apenas para administrador" do
+  it "mostra ações de IA de título e descrição para administrador e Administrativo" do
     habitation = create(:habitation, codigo: "AI-ADMIN-#{SecureRandom.hex(6)}")
 
+    get edit_admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("IA para título e descrição")
+    expect(response.body).to include("Gerar prévia")
+
+    administrative_profile = Profile.create!(
+      name: "Administrativo",
+      permissions: Profile.default_permissions_for("Administrativo")
+    )
+    administrativo = create(:admin_user, profile: administrative_profile, role: :editor)
+
+    sign_in administrativo
     get edit_admin_habitation_path(habitation)
 
     expect(response).to have_http_status(:ok)
@@ -2780,7 +2835,7 @@ RSpec.describe "Admin::Habitations", type: :request do
 
     post generate_ai_preview_admin_habitation_path(habitation)
     expect(response).to redirect_to(edit_admin_habitation_path(habitation, anchor: "features"))
-    expect(flash[:alert]).to eq("Apenas administradores podem gerar, formatar ou aplicar sugestões de IA.")
+    expect(flash[:alert]).to eq("Apenas administradores ou usuários do Administrativo podem gerar, formatar ou aplicar sugestões de IA.")
 
     patch format_ai_suggestion_admin_habitation_path(habitation, suggestion_id: 999)
     expect(response).to redirect_to(edit_admin_habitation_path(habitation, anchor: "features"))

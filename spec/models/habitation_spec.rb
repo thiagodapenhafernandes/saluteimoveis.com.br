@@ -577,6 +577,18 @@ RSpec.describe Habitation, type: :model do
     end
   end
 
+  describe "#requires_intake_development_name?" do
+    it "exige condomínio e identifica lote para terreno em condomínio" do
+      habitation = build(:habitation, categoria: "Terreno em Condomínio")
+
+      expect(habitation.property_kind).to eq("terreno")
+      expect(habitation).to be_condominium_land
+      expect(habitation).to be_requires_intake_development_name
+      expect(habitation).to be_requires_intake_address_complement
+      expect(habitation.intake_address_complement_label).to eq("Lote / Quadra")
+    end
+  end
+
   describe "#display_neighborhood" do
     def build_with_address(bairro:, bairro_comercial:)
       habitation = create(:habitation)

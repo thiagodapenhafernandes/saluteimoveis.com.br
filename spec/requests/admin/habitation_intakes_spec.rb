@@ -1176,6 +1176,40 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(intake.intake_status).to eq("submitted_for_admin_review")
   end
 
+  it "bloqueia terreno em condomínio sem condomínio e lote na finalização da captação" do
+    intake = create(
+      :habitation,
+      :broker_intake,
+      admin_user: admin,
+      categoria: "Terreno em Condomínio",
+      nome_empreendimento: nil,
+      complemento: nil,
+      area_total_m2: 910,
+      intake_step: "review"
+    )
+    intake.create_address!(
+      cep: "88210-000",
+      logradouro: "Santos Dumont",
+      numero: "0",
+      complemento: "",
+      bairro: "Porto Belo",
+      cidade: "Porto Belo",
+      uf: "SC"
+    )
+    intake.autorizacoes_venda.attach(
+      io: StringIO.new("autorizacao"),
+      filename: "autorizacao.txt",
+      content_type: "text/plain"
+    )
+
+    post submit_for_review_admin_captacao_path(intake)
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include("Empreendimento")
+    expect(response.body).to include("Complemento")
+    expect(intake.reload.intake_status).to eq("draft")
+  end
+
   it "não bloqueia apartamento com unidade quando existe cadastro do empreendimento no mesmo endereço" do
     development = create(:habitation, categoria: "Apartamento", nome_empreendimento: "Residencial Atlântico", bloco: nil, complemento: nil)
     development.create_address!(
@@ -1311,8 +1345,33 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(intake.complemento).to eq("Casa 12")
   end
 
+  it "exige condomínio e lote para terreno em condomínio no endereço" do
+    intake = create(:habitation, :broker_intake, admin_user: admin, categoria: "Terreno em Condomínio", nome_empreendimento: nil, bloco: nil, intake_step: "endereco")
+
+    patch admin_captacao_path(intake), params: {
+      current_step: "endereco",
+      direction: "forward",
+      habitation: {
+        zip_code: "88210-000",
+        street: "Rua Santos Dumont",
+        street_number: "0",
+        neighborhood: "Porto Belo",
+        city: "Porto Belo",
+        state: "SC",
+        edificio_nome: "",
+        complemento: ""
+      }
+    }
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include("Informe o empreendimento/condomínio.")
+    expect(response.body).to include("Informe o complemento.")
+    expect(response.body).to include("Lote / Quadra")
+    expect(response.body).not_to include("Informe o número da unidade.")
+  end
+
   it "exige complemento para sala comercial, galpão e terreno no endereço" do
-    ["Sala Comercial", "Galpão", "Terreno"].each do |categoria|
+    ["Sala Comercial", "Galpão", "Terreno", "Terreno em Condomínio"].each do |categoria|
       intake = create(:habitation, :broker_intake, admin_user: admin, categoria: categoria, intake_step: "endereco")
 
       patch admin_captacao_path(intake), params: {
