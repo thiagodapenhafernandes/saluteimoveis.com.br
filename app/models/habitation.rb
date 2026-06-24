@@ -406,6 +406,7 @@ class Habitation < ApplicationRecord
     return "Unidade / Apto" if requires_unit_number?
     return "Complemento / Casa" if condominium_house?
     return "Complemento / Sala" if property_kind_sala_comercial?
+    return "Lote / Quadra" if condominium_land?
 
     "Complemento"
   end
@@ -415,6 +416,7 @@ class Habitation < ApplicationRecord
     return "Ex.: Casa 12, Quadra B" if condominium_house?
     return "Ex.: Sala 402" if property_kind_sala_comercial?
     return "Ex.: Galpão B, fundos" if property_kind_galpao?
+    return "Ex.: Lote 12, Quadra B" if condominium_land?
     return "Ex.: Lote 12, Quadra B" if property_kind_terreno?
 
     "Ex.: fundos, sala, lote..."
@@ -455,6 +457,10 @@ class Habitation < ApplicationRecord
     categoria.to_s.match?(/casa.*condom[ií]nio|condom[ií]nio.*casa/i)
   end
 
+  def condominium_land?
+    categoria.to_s.match?(/terreno.*condom[ií]nio|condom[ií]nio.*terreno/i)
+  end
+
   def requires_unit_number?
     property_kind_apartment_unit?
   end
@@ -474,7 +480,7 @@ class Habitation < ApplicationRecord
   end
 
   def requires_intake_development_name?
-    property_kind_apartment_unit? || condominium_house?
+    property_kind_apartment_unit? || condominium_house? || condominium_land?
   end
 
   def street_house?

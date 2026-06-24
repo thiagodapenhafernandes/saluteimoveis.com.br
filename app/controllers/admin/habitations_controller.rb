@@ -668,7 +668,7 @@ class Admin::HabitationsController < Admin::BaseController
   def authorize_ai_content_management!
     return if can_manage_ai_content?
 
-    message = "Apenas administradores podem gerar, formatar ou aplicar sugestões de IA."
+    message = "Apenas administradores ou usuários do Administrativo podem gerar, formatar ou aplicar sugestões de IA."
 
     respond_to do |format|
       format.html { redirect_to edit_admin_habitation_path(@habitation, anchor: "features"), alert: message }
@@ -1328,7 +1328,7 @@ class Admin::HabitationsController < Admin::BaseController
   end
 
   def can_manage_ai_content?
-    current_admin_user&.admin?
+    current_admin_user&.admin? || administrative_profile?
   end
 
   def no_duplicate_address?(habitation)
