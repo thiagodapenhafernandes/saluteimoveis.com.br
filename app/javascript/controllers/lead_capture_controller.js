@@ -37,11 +37,17 @@ export default class extends Controller {
     const leadOrigin = trigger.dataset.leadOrigin || ""
     const shareToken = trigger.dataset.shareToken || this.shareTokenValue || ""
     const negotiationType = trigger.dataset.negotiationType || "sale"
+    const conversionEvent = trigger.dataset.conversionEvent || trigger.dataset.marketingTrackerConversionEventValue || ""
+    const conversionBusinessType = trigger.dataset.ctwaBusinessType || trigger.dataset.marketingTrackerBusinessTypeValue || ""
+    const ctwaId = trigger.dataset.ctwaId || ""
     const forceLeadCapture = trigger.dataset.forceLeadCapture === "true"
 
     // Store message for redirect
     this.whatsappMessage = message
     this.negotiationType = negotiationType
+    this.conversionEvent = conversionEvent
+    this.conversionBusinessType = conversionBusinessType
+    this.ctwaId = ctwaId
 
     if (!forceLeadCapture && !this.requiresLeadForm(negotiationType)) {
       window.open(this.whatsappUrlFor(negotiationType, message), "_blank")
@@ -110,6 +116,9 @@ export default class extends Controller {
       share_token: this.hasShareTokenTarget ? this.shareTokenTarget.value : "",
       whatsapp_message: this.whatsappMessage,
       business_type: this.negotiationType,
+      conversion_event: this.conversionEvent,
+      conversion_business_type: this.conversionBusinessType,
+      ctwa_id: this.ctwaId,
       page_url: window.location.href,
       referrer_url: document.referrer,
       ...this.trackingParams()

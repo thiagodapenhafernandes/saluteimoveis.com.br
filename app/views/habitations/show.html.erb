@@ -8,6 +8,7 @@
 <% has_rent_price = @habitation.valor_locacao_cents.to_i.positive? %>
 <% has_discount = @habitation.sale_discount? %>
 <% has_rent_discount = @habitation.rent_discount? %>
+<% whatsapp_tracking = whatsapp_conversion_tracking(@habitation, transaction_type: params[:transaction_type]) %>
 
 <% content_for :head do %>
   <%= json_ld_tag(real_estate_listing_schema(@habitation)) %>
@@ -277,7 +278,20 @@
 
           <button type="button"
               class="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-three px-4 py-3 font-bold text-white transition hover:bg-blue-one"
-              data-action="click->lead-capture#open"
+              data-controller="marketing-tracker"
+              data-action="click->marketing-tracker#track click->lead-capture#open"
+              data-marketing-tracker-event-type-value="whatsapp_click"
+              data-marketing-tracker-placement-value="property_show"
+              data-marketing-tracker-label-value="<%= title %>"
+              data-marketing-tracker-target-url-value="<%= habitation_path(@habitation) %>"
+              data-marketing-tracker-habitation-id-value="<%= @habitation.id %>"
+              data-marketing-tracker-conversion-event-value="<%= whatsapp_tracking[:conversion_event] %>"
+              data-marketing-tracker-business-type-value="<%= whatsapp_tracking[:business_type] %>"
+              data-marketing-tracker-negotiation-type-value="<%= whatsapp_tracking[:negotiation_type] %>"
+              data-conversion-event="<%= whatsapp_tracking[:conversion_event] %>"
+              data-ctwa-id="<%= whatsapp_tracking[:ctwa_id] %>"
+              data-ctwa-business-type="<%= whatsapp_tracking[:business_type] %>"
+              data-ctwa-negotiation-type="<%= whatsapp_tracking[:negotiation_type] %>"
               data-property-id="<%= @habitation.id %>"
               data-property-code="<%= @habitation.codigo %>"
               data-property-title="<%= title %>"

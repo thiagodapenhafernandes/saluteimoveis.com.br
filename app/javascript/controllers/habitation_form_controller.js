@@ -33,7 +33,9 @@ export default class extends Controller {
 
   connect() {
     this.tabClickHandler = (event) => this.activateClickedTab(event)
+    this.formSubmitHandler = () => this.syncMirroredFieldsBeforeSubmit()
     this.element.addEventListener("click", this.tabClickHandler)
+    this.formElement()?.addEventListener("submit", this.formSubmitHandler)
     this.activateTabFromHash()
     this.applyCadastroType()
     this.syncFromDevelopmentSelection()
@@ -45,6 +47,69 @@ export default class extends Controller {
     if (this.tabClickHandler) {
       this.element.removeEventListener("click", this.tabClickHandler)
     }
+    if (this.formSubmitHandler) {
+      this.formElement()?.removeEventListener("submit", this.formSubmitHandler)
+    }
+  }
+
+  formElement() {
+    return this.element.querySelector("form")
+  }
+
+  syncMirroredField(event) {
+    const field = event.currentTarget
+    const syncField = field.dataset.habitationFormSyncField
+    if (!syncField) return
+
+    requestAnimationFrame(() => this.syncMirroredFieldValue(syncField, field.value, field))
+  }
+
+  syncMirroredFieldValue(syncField, value, sourceField = null) {
+    this.mirroredFields(syncField).forEach((field) => {
+      if (field !== sourceField) field.value = value
+    })
+  }
+
+  syncMirroredFieldsBeforeSubmit() {
+    this.mirroredFieldGroups().forEach((fields) => {
+      const value = this.preferredMirroredFieldValue(fields)
+      fields.forEach((field) => { field.value = value })
+    })
+  }
+
+  mirroredFieldGroups() {
+    const groups = new Map()
+    this.element.querySelectorAll("[data-habitation-form-sync-field]").forEach((field) => {
+      const syncField = field.dataset.habitationFormSyncField
+      if (!syncField) return
+
+      if (!groups.has(syncField)) groups.set(syncField, [])
+      groups.get(syncField).push(field)
+    })
+
+    return Array.from(groups.values()).filter((fields) => fields.length > 1)
+  }
+
+  mirroredFields(syncField) {
+    return Array.from(this.element.querySelectorAll("[data-habitation-form-sync-field]"))
+      .filter((field) => field.dataset.habitationFormSyncField === syncField)
+  }
+
+  preferredMirroredFieldValue(fields) {
+    const activeField = fields.find((field) => field === document.activeElement)
+    if (activeField) return activeField.value
+
+    const visibleFilledField = fields.find((field) => this.fieldIsVisible(field) && String(field.value).trim() !== "")
+    if (visibleFilledField) return visibleFilledField.value
+
+    const filledField = fields.find((field) => String(field.value).trim() !== "")
+    if (filledField) return filledField.value
+
+    return fields[0]?.value || ""
+  }
+
+  fieldIsVisible(field) {
+    return Boolean(field.offsetWidth || field.offsetHeight || field.getClientRects().length)
   }
 
   activateTabFromHash() {

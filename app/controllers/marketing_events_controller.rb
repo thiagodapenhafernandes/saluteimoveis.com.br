@@ -24,7 +24,16 @@ class MarketingEventsController < ApplicationController
   private
 
   def metadata_payload
-    params.permit(:placement, :label, :target_url, :page_url, :component).to_h
+    params.permit(
+      :placement,
+      :label,
+      :target_url,
+      :page_url,
+      :component,
+      :conversion_event,
+      :business_type,
+      :negotiation_type
+    ).to_h.compact_blank
   end
 
   def click_event?(event_type)

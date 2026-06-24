@@ -53,6 +53,9 @@ RSpec.describe "Leads", type: :request do
         hash_including(
           business_type: "sale",
           business_type_label: "Venda",
+          conversion_event: "ctwa_venda",
+          conversion_business_type: "venda",
+          ctwa_id: "id-ctwa.venda",
           property_code: habitation.codigo,
           property_title: habitation.display_title,
           page_url: "https://site.example/imoveis/#{habitation.id}",
@@ -71,6 +74,9 @@ RSpec.describe "Leads", type: :request do
             lead_type: "whatsapp_modal",
             whatsapp_message: "Tenho interesse",
             business_type: "sale",
+            conversion_event: "ctwa_venda",
+            conversion_business_type: "venda",
+            ctwa_id: "id-ctwa.venda",
             page_url: "https://site.example/imoveis/#{habitation.id}",
             utm_source: "google"
           }
@@ -81,6 +87,12 @@ RSpec.describe "Leads", type: :request do
       body = JSON.parse(response.body)
       expect(body["success"]).to be(true)
       expect(body["whatsapp_url"]).to include("wa.me/5547999990001")
+      expect(SeoConversionEvent.last.metadata).to include(
+        "business_type" => "sale",
+        "conversion_event" => "ctwa_venda",
+        "conversion_business_type" => "venda",
+        "ctwa_id" => "id-ctwa.venda"
+      )
     end
 
     it "attributes share-token leads to the responsible broker and sends broker data to the webhook" do

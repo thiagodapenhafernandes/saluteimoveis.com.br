@@ -1,4 +1,5 @@
 <% return unless shared_broker.present? %>
+<% whatsapp_tracking = whatsapp_conversion_tracking(habitation, transaction_type: params[:transaction_type]) %>
 
 <div class="bg-gradient-to-br from-blue-50 to-white border border-blue-100 rounded-xl p-5 shadow-sm">
   <% attendant_label = habitation.rental_intake? ? "atendente" : "corretor" %>
@@ -24,7 +25,20 @@
   <div class="mt-4">
     <button type="button"
             class="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-blue-three px-3 py-2 text-xs font-semibold text-white hover:bg-blue-one"
-            data-action="click->lead-capture#open"
+            data-controller="marketing-tracker"
+            data-action="click->marketing-tracker#track click->lead-capture#open"
+            data-marketing-tracker-event-type-value="whatsapp_click"
+            data-marketing-tracker-placement-value="shared_broker_card"
+            data-marketing-tracker-label-value="<%= habitation.display_title %>"
+            data-marketing-tracker-target-url-value="<%= habitation_path(habitation) %>"
+            data-marketing-tracker-habitation-id-value="<%= habitation.id %>"
+            data-marketing-tracker-conversion-event-value="<%= whatsapp_tracking[:conversion_event] %>"
+            data-marketing-tracker-business-type-value="<%= whatsapp_tracking[:business_type] %>"
+            data-marketing-tracker-negotiation-type-value="<%= whatsapp_tracking[:negotiation_type] %>"
+            data-conversion-event="<%= whatsapp_tracking[:conversion_event] %>"
+            data-ctwa-id="<%= whatsapp_tracking[:ctwa_id] %>"
+            data-ctwa-business-type="<%= whatsapp_tracking[:business_type] %>"
+            data-ctwa-negotiation-type="<%= whatsapp_tracking[:negotiation_type] %>"
             data-property-id="<%= habitation.id %>"
             data-property-code="<%= habitation.codigo %>"
             data-property-title="<%= habitation.display_title %>"
