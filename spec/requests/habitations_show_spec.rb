@@ -622,6 +622,52 @@ RSpec.describe "Habitation details", type: :request do
       expect(codes).not_to include("9102", "9103")
     end
 
+    it "keeps pagination and sort links on the canonical public listing path" do
+      13.times do |index|
+        create(
+          :habitation,
+          codigo: "PAGE-#{index}",
+          categoria: "Apartamento",
+          cidade: "Balneário Camboriú",
+          bairro: "Centro",
+          dormitorios_qtd: 3,
+          valor_venda_cents: (900_000 + index).to_i * 100,
+          valor_locacao_cents: 0
+        )
+      end
+
+      get habitations_path(
+        category: ["Apartamento"],
+        city: ["Balneário Camboriú"],
+        min_bedrooms: 3
+      )
+
+      expect(response).to have_http_status(:ok)
+
+      document = Nokogiri::HTML(response.body)
+      page_two_links = document.css('a[href*="page=2"]').map { |link| link["href"] }.uniq
+      sort_values = document.css("select option").map { |option| option["value"] }.compact
+
+      expect(page_two_links).not_to be_empty
+      expect(page_two_links).to all(start_with("/imoveis?"))
+      expect(page_two_links).to all(include("category%5B%5D=Apartamento"))
+      expect(page_two_links).to all(include("city%5B%5D=Balne%C3%A1rio+Cambori%C3%BA"))
+      expect(page_two_links).not_to include(a_string_starting_with("/venda/"))
+      expect(sort_values.grep(/sort=price_/)).to all(start_with("/imoveis?"))
+      expect(sort_values.grep(/sort=price_/)).to all(include("category%5B%5D=Apartamento"))
+      expect(sort_values.grep(/sort=price_/)).to all(include("city%5B%5D=Balne%C3%A1rio+Cambori%C3%BA"))
+    end
+
+    it "orders public listings by the effective non-zero sale price" do
+      low = create(:habitation, codigo: "PRICE-LOW", valor_venda_cents: 500_000_00, valor_locacao_cents: 0)
+      high = create(:habitation, codigo: "PRICE-HIGH", valor_venda_cents: 900_000_00, valor_locacao_cents: 0)
+
+      get habitations_path(transaction_type: "venda", sort: "price_asc", format: :json)
+
+      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body).map { |item| item.fetch("codigo") }).to start_with(low.codigo, high.codigo)
+    end
+
     it "accepts legacy home search param names" do
       matching = create(
         :habitation,

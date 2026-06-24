@@ -89,12 +89,13 @@ class Admin::HabitationsController < Admin::BaseController
 
   before_action :set_habitation, only: [:show, :edit, :update, :update_photos, :destroy, :generate_ai_preview, :format_ai_suggestion, :apply_ai_suggestion]
   before_action :authorize_habitation_edit!, only: [:edit, :update, :update_photos]
+  before_action :authorize_ai_content_management!, only: [:generate_ai_preview, :format_ai_suggestion, :apply_ai_suggestion]
 
   before_action :load_autocomplete_data, only: [:new, :edit, :create, :update, :update_photos]
   before_action :load_property_setting, only: [:new, :edit, :create, :update, :update_photos]
   helper_method :can_view_proprietor_data?, :can_view_internal_documents?, :can_manage_internal_documents?,
                 :can_view_habitation_show_sensitive_data?, :can_edit_habitation?, :sort_options,
-                :can_manage_habitation_signal_flags?
+                :can_manage_habitation_signal_flags?, :can_manage_ai_content?
   helper_method :can_release_intake_to_broker?, :can_manage_intake_status?, :can_complete_admin_intake_review?
   helper_method :can_filter_by_broker?, :can_filter_by_proprietor?
   helper_method :admin_paper_intake_form?
@@ -662,6 +663,18 @@ class Admin::HabitationsController < Admin::BaseController
     return if manager_profile? && manager_can_view_proprietor_data?(@habitation)
 
     redirect_to admin_habitations_path, alert: "Captações pendentes de revisão só podem ser alteradas pelo Administrativo ou Gerente responsável."
+  end
+
+  def authorize_ai_content_management!
+    return if can_manage_ai_content?
+
+    message = "Apenas administradores podem gerar, formatar ou aplicar sugestões de IA."
+
+    respond_to do |format|
+      format.html { redirect_to edit_admin_habitation_path(@habitation, anchor: "features"), alert: message }
+      format.turbo_stream { render plain: message, status: :forbidden }
+      format.any { head :forbidden }
+    end
   end
 
   def sort_column
@@ -1312,6 +1325,10 @@ class Admin::HabitationsController < Admin::BaseController
 
   def can_manage_habitation_signal_flags?
     current_admin_user&.admin? || owns_all_resource?(:imoveis)
+  end
+
+  def can_manage_ai_content?
+    current_admin_user&.admin?
   end
 
   def no_duplicate_address?(habitation)

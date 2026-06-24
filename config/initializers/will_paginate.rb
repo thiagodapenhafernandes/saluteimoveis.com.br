@@ -3,6 +3,20 @@ require 'will_paginate/view_helpers/action_view'
 module WillPaginate
   module ActionView
     class TailwindLinkRenderer < LinkRenderer
+      protected
+
+      def url(page)
+        path_helper = @options[:path_helper]
+        return super if path_helper.blank?
+
+        url_params = (@options[:params] || {}).deep_dup
+        add_current_page_param(url_params, page)
+
+        @template.public_send(path_helper, url_params)
+      end
+
+      public
+
       def container_attributes
         { class: "flex justify-center items-center gap-3" }
       end

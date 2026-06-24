@@ -123,6 +123,29 @@ module HabitationsHelper
     sort_options.find { |opt| opt[1] == sort }&.first || 'Mais Recentes'
   end
 
+  def public_listing_navigation_params(overrides = {})
+    params_hash = (@listing_navigation_params || {}).deep_dup.with_indifferent_access
+    params_hash.merge!(overrides)
+    params_hash.delete(:page) unless overrides.key?(:page) || overrides.key?("page")
+
+    params_hash.each_with_object({}) do |(key, value), hash|
+      cleaned_value =
+        if value.is_a?(Array)
+          value.reject(&:blank?)
+        else
+          value
+        end
+
+      next if cleaned_value.blank?
+
+      hash[key] = cleaned_value
+    end
+  end
+
+  def public_listing_path(overrides = {})
+    habitations_path(public_listing_navigation_params(overrides))
+  end
+
   def formatted_habitation_description(content)
     description = content.to_s
       .gsub(/\r\n?/, "\n")
