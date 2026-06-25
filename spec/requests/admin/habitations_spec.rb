@@ -2793,6 +2793,53 @@ RSpec.describe "Admin::Habitations", type: :request do
     file&.unlink
   end
 
+  it "bloqueia título e descrição para usuário não administrativo mesmo com acesso amplo a imóveis" do
+    wide_profile = Profile.create!(
+      name: "Corretor amplo #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Corretor").deep_merge(
+        "imoveis" => { "view" => true, "manage" => true, "scope" => "all" }
+      )
+    )
+    broker = create(:admin_user, profile: wide_profile)
+    habitation = create(
+      :habitation,
+      admin_user: broker,
+      codigo: "CONTENT-LOCK-#{SecureRandom.hex(6)}",
+      titulo_anuncio: "Título Original",
+      descricao_web: "Descrição Original",
+      valor_venda_cents: 500_000_00
+    )
+    habitation.create_address!(
+      logradouro: "Rua Conteúdo",
+      numero: "10",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+
+    sign_in broker
+    get edit_admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    page = Nokogiri::HTML(response.body)
+    expect(page.at_css('input[name="habitation[titulo_anuncio]"]')["readonly"]).to eq("readonly")
+
+    patch admin_habitation_path(habitation), params: {
+      habitation: {
+        valor_venda_formatted: "600.000,00",
+        titulo_anuncio: "Título Alterado",
+        descricao_web: "Descrição Alterada"
+      }
+    }
+
+    expect(response).to redirect_to(admin_habitations_path)
+    habitation.reload
+    expect(habitation.valor_venda_cents).to eq(600_000_00)
+    expect(habitation.titulo_anuncio).to eq("Título Original")
+    expect(habitation.display_description).to include("Descrição Original")
+    expect(habitation.display_description).not_to include("Descrição Alterada")
+  end
+
   it "mostra ações de IA de título e descrição para administrador e Administrativo" do
     habitation = create(:habitation, codigo: "AI-ADMIN-#{SecureRandom.hex(6)}")
 

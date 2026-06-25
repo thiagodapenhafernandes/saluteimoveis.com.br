@@ -204,6 +204,47 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(intake.ano_minimo_veiculo_aceito_permuta).to eq(2018)
   end
 
+  it "bloqueia alteração de título e descrição enviada por corretor no wizard" do
+    broker_profile = Profile.create!(
+      name: "Corretor conteúdo #{SecureRandom.hex(6)}",
+      permissions: Profile.default_permissions_for("Corretor")
+    )
+    broker = create(:admin_user, profile: broker_profile)
+    intake = create(
+      :habitation,
+      :broker_intake,
+      admin_user: broker,
+      intake_step: "negociacao",
+      intake_status: "draft",
+      intake_modalidade: "venda",
+      titulo_anuncio: "Título Original",
+      descricao_web: "Descrição Original",
+      valor_venda_cents: 900_000_00
+    )
+
+    sign_out admin
+    sign_in broker
+
+    patch admin_captacao_path(intake), params: {
+      current_step: "negociacao",
+      direction: "forward",
+      habitation: {
+        titulo_anuncio: "Título Alterado",
+        descricao_web: "Descrição Alterada",
+        valor_venda: "1.200.000,00",
+        aceita_permuta_answer: "nao",
+        aceita_parcelamento_flag: "false"
+      }
+    }
+
+    expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "visitas"))
+    intake.reload
+    expect(intake.valor_venda_cents).to eq(1_200_000_00)
+    expect(intake.titulo_anuncio).to eq("Título Original")
+    expect(intake.display_description).to include("Descrição Original")
+    expect(intake.display_description).not_to include("Descrição Alterada")
+  end
+
   it "mostra as características de edifício e lazer na captação de casa em condomínio, incluindo Quadra de padel" do
     intake = create(:habitation, :broker_intake, admin_user: admin, categoria: "Casa em Condomínio", intake_step: "infraestrutura")
 

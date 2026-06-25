@@ -39,7 +39,7 @@ RSpec.describe Dwv::PropertyImportService do
       expect(habitation.dwv_payload).to include("id" => 632439)
 
       address = habitation.address
-      expect(address.logradouro).to eq("Rua 2450")
+      expect(address.logradouro).to eq("2450")
       expect(address.numero).to eq("60")
       expect(address.bairro).to eq("Centro")
       expect(address.cidade).to eq("Balneário Camboriú")
@@ -48,29 +48,75 @@ RSpec.describe Dwv::PropertyImportService do
       expect(address.imediacoes).to eq(["A 30m da Av. Brasil"])
     end
 
-    it "updates rich fields on an existing DWV record" do
+    it "only updates price, availability and sync metadata on an existing DWV record" do
       create(:habitation, codigo: "8628", imovel_dwv: "Nao", last_sync_message: "Importado do dump Vista")
       habitation = create(
         :habitation,
         codigo: "DWV-632439",
         codigo_dwv: "632439",
         imovel_dwv: "Sim",
-        titulo_anuncio: "Título antigo",
-        descricao_web: nil,
-        pictures: [],
-        area_privativa_m2: nil
+        titulo_anuncio: "Título revisado manualmente",
+        descricao_web: "Descrição revisada manualmente.",
+        pictures: [{ "url" => "https://cdn.local/manual.jpg" }],
+        area_privativa_m2: BigDecimal("150.0"),
+        dormitorios_qtd: 2,
+        valor_venda_cents: 390_000_000,
+        status: "Suspenso",
+        exibir_no_site_flag: false
+      )
+      habitation.create_address!(
+        logradouro: "Rua Manual",
+        numero: "10",
+        bairro: "Manual",
+        cidade: "Balneário Camboriú",
+        uf: "SC"
       )
 
       described_class.new(unit_payload).perform
       habitation.reload
 
       expect(habitation.codigo).to eq("8629")
-      expect(habitation.titulo_anuncio).to eq("Apartamento com vista mar")
-      expect(habitation.descricao_web.to_plain_text).to include("Descrição completa do imóvel")
-      expect(habitation.area_privativa_m2).to eq(BigDecimal("186.0"))
-      expect(habitation.pictures.map { |pic| pic["url"] }).to include("https://cdn.dwv.test/unit-cover.jpg")
-      expect(habitation.address.logradouro).to eq("Rua 2450")
-      expect(habitation.last_sync_message).to eq("Sincronizado via DWV (mapeamento completo)")
+      expect(habitation.valor_venda_cents).to eq(439_776_500)
+      expect(habitation.status).to eq("Venda")
+      expect(habitation.exibir_no_site_flag).to eq(true)
+      expect(habitation.titulo_anuncio).to eq("Título revisado manualmente")
+      expect(habitation.descricao_web.to_plain_text).to include("Descrição revisada manualmente")
+      expect(habitation.area_privativa_m2).to eq(BigDecimal("150.0"))
+      expect(habitation.dormitorios_qtd).to eq(2)
+      expect(habitation.pictures).to eq([{ "url" => "https://cdn.local/manual.jpg" }])
+      expect(habitation.address.logradouro).to eq("Rua Manual")
+      expect(habitation.last_sync_message).to eq("Sincronizado via DWV (valor e disponibilidade)")
+      expect(habitation.dwv_payload).to include("id" => 632439)
+    end
+
+    it "destroys an existing DWV record when the property payload is deleted" do
+      habitation = create(
+        :habitation,
+        codigo_dwv: "632439",
+        imovel_dwv: "Sim",
+        titulo_anuncio: "Imóvel removido na DWV"
+      )
+
+      result = described_class.new("data" => { "id" => 632439, "deleted" => true }).perform
+
+      expect(result[:deleted]).to eq(true)
+      expect(result[:habitation]).to eq(habitation)
+      expect(Habitation.exists?(habitation.id)).to eq(false)
+    end
+
+    it "does not destroy a non-DWV record when a deleted DWV payload has the same external code" do
+      habitation = create(
+        :habitation,
+        codigo_dwv: "632439",
+        imovel_dwv: "Não",
+        titulo_anuncio: "Cadastro manual com código externo legado"
+      )
+
+      result = described_class.new("data" => { "id" => 632439, "deleted" => true }).perform
+
+      expect(result[:deleted]).to eq(true)
+      expect(result[:habitation]).to be_nil
+      expect(Habitation.exists?(habitation.id)).to eq(true)
     end
 
     it "links units to a DWV development by the internal DWV code while keeping the local reference" do
@@ -101,7 +147,7 @@ RSpec.describe Dwv::PropertyImportService do
       expect(habitation.area_privativa_m2).to eq(BigDecimal("220.0"))
       expect(habitation.dormitorios_qtd).to eq(3)
       expect(habitation.pictures.map { |pic| pic["url"] }).to include("https://cdn.dwv.test/casa.jpg")
-      expect(habitation.address.logradouro).to eq("Rua 1000")
+      expect(habitation.address.logradouro).to eq("1000")
       expect(habitation.address.numero).to eq("55")
       expect(habitation.address.complemento).to eq("Casa 2")
     end

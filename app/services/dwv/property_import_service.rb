@@ -50,6 +50,15 @@ module Dwv
       habitation = find_existing_habitation(dwv_id: dwv_id, codigo: incoming_codigo) || Habitation.new
       existing_record = habitation.persisted?
 
+      if deleted_payload?
+        if existing_record && habitation.dwv_property?
+          habitation.destroy!
+          return { success: true, habitation: habitation, deleted: true }
+        end
+
+        return { success: true, habitation: nil, deleted: true }
+      end
+
       if !existing_record && insufficient_payload_for_new_record?
         raise "Payload DWV incompleto para novo cadastro (id=#{dwv_id})."
       end
@@ -60,7 +69,7 @@ module Dwv
       Habitation.transaction do
         habitation.save!
 
-        if address_attrs.present?
+        if address_attrs.present? && !existing_record
           address = habitation.address || habitation.build_address
           address.assign_attributes(address_attrs)
           address.save!
@@ -92,6 +101,11 @@ module Dwv
       return data if data.is_a?(Hash)
 
       payload
+    end
+
+    def deleted_payload?
+      deleted = value(["deleted"])
+      deleted == true || deleted.to_s == "true"
     end
 
     def assign_habitation_attributes(habitation, dwv_id:, incoming_codigo:, existing_record:)
@@ -168,11 +182,35 @@ module Dwv
       attrs[:descricao_web] = description if description.present?
       attrs[:dwv_payload] = @payload if habitation.has_attribute?(:dwv_payload)
 
-      attrs.merge!(legacy_address_attrs(address_attrs)) if address_attrs.present?
-      attrs.merge!(derived_feature_flags(features + infrastructure))
+      if existing_record
+        attrs = restrict_existing_record_attrs(attrs)
+      else
+        attrs.merge!(legacy_address_attrs(address_attrs)) if address_attrs.present?
+        attrs.merge!(derived_feature_flags(features + infrastructure))
+      end
       attrs[:codigo] = resolve_codigo_for(habitation, dwv_id:) if assign_local_codigo?(habitation, dwv_id:, existing_record:)
 
       habitation.assign_attributes(attrs)
+    end
+
+    def restrict_existing_record_attrs(attrs)
+      allowed = attrs.slice(
+        :codigo_dwv,
+        :imovel_dwv,
+        :status,
+        :valor_venda_cents,
+        :valor_locacao_cents,
+        :valor_condominio_cents,
+        :valor_iptu_cents,
+        :exibir_no_site_flag,
+        :data_atualizacao_crm,
+        :last_sync_at,
+        :last_sync_status,
+        :last_sync_message,
+        :dwv_payload
+      )
+      allowed[:last_sync_message] = "Sincronizado via DWV (valor e disponibilidade)"
+      allowed
     end
 
     def find_existing_habitation(dwv_id:, codigo:)
@@ -291,8 +329,7 @@ module Dwv
 
     def active_on_site?
       raw_status = value(["status"], ["integration_status"]).to_s.downcase
-      deleted = value(["deleted"])
-      return false if deleted == true || deleted.to_s == "true"
+      return false if deleted_payload?
       return false if raw_status == "inactive" || raw_status == "auto_inactive"
 
       true
