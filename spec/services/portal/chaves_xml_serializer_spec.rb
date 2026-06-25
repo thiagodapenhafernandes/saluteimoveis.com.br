@@ -47,8 +47,8 @@ RSpec.describe Portal::ChavesXmlSerializer do
 
     expect(xml).to start_with('<?xml version="1.0" encoding="UTF-8"?>')
     expect(doc.root.name).to eq("Document")
-    expect(doc.at_xpath("/Document/imoveis/Imovel")).to be_present
-    expect(doc.at_xpath("/Document/imoveis/imovel")).to be_nil
+    expect(doc.at_xpath("/Document/imoveis/imovel")).to be_present
+    expect(doc.at_xpath("/Document/imoveis/Imovel")).to be_nil
 
     official_tags = %w[
       referencia codigo_cliente link_cliente titulo transacao transacao2 finalidade
@@ -60,7 +60,7 @@ RSpec.describe Portal::ChavesXmlSerializer do
       longitude video tour_360 area_comum area_privativa aceita_troca periodo_locacao
     ]
     official_tags.each do |tag|
-      expect(doc.at_xpath("/Document/imoveis/Imovel/#{tag}")).to be_present
+      expect(doc.at_xpath("/Document/imoveis/imovel/#{tag}")).to be_present
     end
 
     expect(node_text.call("//referencia")).to eq(habitation.codigo)
