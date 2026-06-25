@@ -28,7 +28,7 @@ module Portal
       xml.Document do
         xml.imoveis do
           @habitations.each do |habitation|
-            xml.imovel { add_property!(xml, habitation) }
+            xml.Imovel { add_property!(xml, habitation) }
           end
         end
       end
