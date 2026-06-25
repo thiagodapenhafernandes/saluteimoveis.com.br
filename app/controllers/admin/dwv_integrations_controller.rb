@@ -59,8 +59,15 @@ class Admin::DwvIntegrationsController < Admin::BaseController
     payload = dwv_client.property_details(property_id)
     result = Dwv::PropertyImportService.new(payload).perform
 
-    stamp_sync!("Imóvel DWV ##{property_id} sincronizado. Código local: #{result[:habitation].codigo}")
-    redirect_to admin_dwv_integrations_path, notice: "Imóvel sincronizado com sucesso."
+    if result[:deleted]
+      local_code = result[:habitation]&.codigo
+      message = local_code.present? ? "Imóvel DWV ##{property_id} excluído. Código local: #{local_code}" : "Imóvel DWV ##{property_id} já estava removido na DWV."
+      stamp_sync!(message)
+      redirect_to admin_dwv_integrations_path, notice: message
+    else
+      stamp_sync!("Imóvel DWV ##{property_id} sincronizado. Código local: #{result[:habitation].codigo}")
+      redirect_to admin_dwv_integrations_path, notice: "Imóvel sincronizado com sucesso."
+    end
   rescue => e
     stamp_sync!("Erro ao sincronizar imóvel DWV ##{params[:property_id]}: #{e.message}")
     redirect_to admin_dwv_integrations_path, alert: "Falha na sincronização do imóvel: #{e.message}"
@@ -104,17 +111,17 @@ class Admin::DwvIntegrationsController < Admin::BaseController
 
   def deactivate_removed
     ensure_enabled_and_token!
-    mark_processing!("Desativação de removidos DWV iniciada em background.")
+    mark_processing!("Exclusão de removidos DWV iniciada em background.")
 
     DwvSyncJob.perform_later(
       mode: "deactivate_removed",
       triggered_by_id: current_admin_user.id
     )
 
-    redirect_to admin_dwv_integrations_path, notice: "Desativação de removidos iniciada em segundo plano."
+    redirect_to admin_dwv_integrations_path, notice: "Exclusão de removidos iniciada em segundo plano."
   rescue => e
-    stamp_sync!("Erro ao desativar removidos DWV: #{e.message}")
-    redirect_to admin_dwv_integrations_path, alert: "Falha ao desativar removidos: #{e.message}"
+    stamp_sync!("Erro ao excluir removidos DWV: #{e.message}")
+    redirect_to admin_dwv_integrations_path, alert: "Falha ao excluir removidos: #{e.message}"
   end
 
   private

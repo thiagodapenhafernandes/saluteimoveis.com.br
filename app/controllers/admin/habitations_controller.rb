@@ -95,7 +95,8 @@ class Admin::HabitationsController < Admin::BaseController
   before_action :load_property_setting, only: [:new, :edit, :create, :update, :update_photos]
   helper_method :can_view_proprietor_data?, :can_view_internal_documents?, :can_manage_internal_documents?,
                 :can_view_habitation_show_sensitive_data?, :can_edit_habitation?, :sort_options,
-                :can_manage_habitation_signal_flags?, :can_manage_ai_content?
+                :can_manage_habitation_signal_flags?, :can_manage_ai_content?,
+                :can_manage_habitation_public_content?
   helper_method :can_release_intake_to_broker?, :can_manage_intake_status?, :can_complete_admin_intake_review?
   helper_method :can_filter_by_broker?, :can_filter_by_proprietor?
   helper_method :admin_paper_intake_form?
@@ -1331,6 +1332,10 @@ class Admin::HabitationsController < Admin::BaseController
     current_admin_user&.admin? || administrative_profile?
   end
 
+  def can_manage_habitation_public_content?
+    current_admin_user&.admin? || administrative_profile?
+  end
+
   def no_duplicate_address?(habitation)
     result = HabitationDuplicateChecker.new(
       street: habitation.logradouro,
@@ -1811,6 +1816,8 @@ class Admin::HabitationsController < Admin::BaseController
       permitted[:address_attributes] = broker_address_attrs if broker_address_attrs.present?
     end
 
+    protected_public_content_param_keys.each { |field| permitted.delete(field) } unless can_manage_habitation_public_content?
+
     unless can_view_proprietor_data?(@habitation)
       proprietor_locked_fields = %i[
         proprietario proprietario_codigo proprietario_email proprietario_celular
@@ -2273,6 +2280,10 @@ class Admin::HabitationsController < Admin::BaseController
       salute_rental_management_answer
       foto_classificacao
     ]
+  end
+
+  def protected_public_content_param_keys
+    %i[titulo_anuncio descricao_web]
   end
 
   # Mantém apenas os campos de endereço que o corretor pode editar (imediações),

@@ -30,7 +30,6 @@
                          multiple: true,
                          accept: "image/*",
                          class: "visually-hidden #{'is-invalid' if field_invalid.call(:photos)}",
-                         direct_upload: true,
                          data: { captacao_photos_target: "input", action: "change->captacao-photos#filesChanged" } %>
       </label>
       <label class="btn btn-outline-primary captacao-photo-picker-button mb-0">
@@ -135,8 +134,7 @@
     <%= f.file_field (@captacao.is_a?(Habitation) ? :autorizacoes_venda : :autorizacao_pdf),
                      multiple: @captacao.is_a?(Habitation),
                      accept: "image/*,application/pdf",
-                     class: field_state.call(:autorizacoes_venda),
-                     direct_upload: true %>
+                     class: field_state.call(:autorizacoes_venda) %>
     <% if field_invalid.call(:autorizacoes_venda) %><div class="invalid-feedback d-block">Anexe a autorização do proprietário.</div><% end %>
     <small class="text-muted">Anexe o print ou PDF da autorização.</small>
   </div>

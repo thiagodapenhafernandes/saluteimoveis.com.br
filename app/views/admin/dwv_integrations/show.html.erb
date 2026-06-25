@@ -36,7 +36,7 @@
             <i class="bi bi-arrow-clockwise text-success me-2 mt-1"></i>
             <div>
               <strong>Sincronização diária — todo dia às 04:20</strong><br>
-              <span class="text-muted">Importa novos imóveis ativos e desativa imóveis removidos da DWV. Job: <code>DwvSyncJob</code> (modo full).</span>
+              <span class="text-muted">Importa novos imóveis ativos e exclui imóveis removidos da DWV. Job: <code>DwvSyncJob</code> (modo full).</span>
             </div>
           </li>
           <li class="mb-2 d-flex align-items-start">
@@ -85,8 +85,8 @@
         <div class="d-flex align-items-start gap-2">
           <i class="bi bi-x-circle text-danger fs-4"></i>
           <div>
-            <div class="fw-semibold small">Desativa imóveis removidos</div>
-            <small class="text-muted">Quando a DWV marca <code>deleted=true</code> ou <code>status=inactive</code>, o imóvel vira <strong>Suspenso</strong> e some do site.</small>
+            <div class="fw-semibold small">Exclui imóveis removidos</div>
+            <small class="text-muted">Quando a DWV envia o imóvel na lista de removidos, o registro DWV é excluído do CRM.</small>
           </div>
         </div>
       </div>
@@ -119,7 +119,7 @@
       <div class="col-md-4">
         <div class="text-center p-3 bg-white rounded border">
           <div class="display-6 fw-bold text-secondary"><%= Habitation.where(imovel_dwv: "Sim", exibir_no_site_flag: false).count %></div>
-          <small class="text-muted text-uppercase">Desativados</small>
+          <small class="text-muted text-uppercase">Indisponíveis</small>
         </div>
       </div>
     </div>
@@ -217,7 +217,7 @@
         <div class="d-flex flex-wrap gap-2">
           <%= button_to "Sincronizar Tudo Agora (Job)", sync_now_admin_dwv_integrations_path, method: :post, class: "btn btn-info text-white" %>
           <%= button_to "Sincronizar Lote (1 página)", sync_recent_admin_dwv_integrations_path(limit: @dwv_sync_limit), method: :post, class: "btn btn-outline-info" %>
-          <%= button_to "Desativar Removidos DWV", deactivate_removed_admin_dwv_integrations_path, method: :post, class: "btn btn-outline-danger", data: { confirm: "Isso vai desativar no site imóveis marcados como removidos na DWV. Continuar?" } %>
+          <%= button_to "Excluir Removidos DWV", deactivate_removed_admin_dwv_integrations_path, method: :post, class: "btn btn-outline-danger", data: { confirm: "Isso vai excluir do CRM imóveis marcados como removidos na DWV. Continuar?" } %>
         </div>
       </div>
     </div>

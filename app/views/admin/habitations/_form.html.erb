@@ -17,6 +17,7 @@
   signal_flags_locked = !can_manage_habitation_signal_flags?
   can_manage_internal_documents = can_manage_internal_documents?
   can_edit_protected_habitation_fields = current_admin_user&.admin? || owns_all_resource?(:imoveis)
+  can_edit_public_content_fields = can_manage_habitation_public_content?
   vista_document_assets = Array(@habitation_vista_document_assets)
   show_vista_document_assets = vista_document_assets.any? || habitation.vista_integrated?
   vista_document_status_labels = {
@@ -1133,7 +1134,7 @@
                 <%= f.label :titulo_anuncio, "Título do anúncio (sites e portais):", class: "form-label small fw-bold mb-1" %>
                 <%= f.text_field :titulo_anuncio,
                     class: "form-control form-control-sm",
-                    readonly: !can_edit_protected_habitation_fields,
+                    readonly: !can_edit_public_content_fields,
                     data: { habitation_duplicate_check_target: "title", action: "input->habitation-duplicate-check#refreshContent" } %>
               </div>
               <div class="border rounded p-3 mb-3">
@@ -1141,7 +1142,7 @@
                 <%= f.rich_text_area :descricao_web,
                     class: "form-control",
                     style: "min-height: 250px;",
-                    disabled: !can_edit_protected_habitation_fields %>
+                    disabled: !can_edit_public_content_fields %>
               </div>
             </div>
             <div class="col-md-3">

@@ -456,6 +456,10 @@ module Admin
       current_admin_user&.profile&.manager?
     end
 
+    def can_manage_habitation_public_content?
+      current_admin_user&.admin? || administrative_profile?
+    end
+
     def manager_team_user_ids
       return [] unless current_admin_user
 
@@ -782,6 +786,7 @@ module Admin
 
     def normalize_captacao_params(raw)
       attrs = raw.to_h
+      strip_public_content_params!(attrs) unless can_manage_habitation_public_content?
       normalize_attachment_params!(attrs)
       attrs["intake_step"] = attrs.delete("step") if attrs["step"].present?
       cadastro_type = attrs.delete("cadastro_type")
@@ -849,6 +854,11 @@ module Admin
         attrs["address_attributes"]["id"] = @habitation.address.id if @habitation.address.present?
       end
       attrs.except("salas", "sacada", "terraco", "dependencia_empregada", "precisa_reforma", "distancia_praia", "cidade_permuta", "outras_taxas", "dias_visitas", "extras", "proprietario_cidade")
+    end
+
+    def strip_public_content_params!(attrs)
+      attrs.delete("titulo_anuncio")
+      attrs.delete("descricao_web")
     end
 
     def normalize_intake_feature_fields!(attrs)
