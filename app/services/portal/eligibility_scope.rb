@@ -38,7 +38,9 @@ module Portal
       reasons["sem_localizacao"] = base.where("COALESCE(addresses.cidade, habitations.cidade, '') = ''").count
       reasons["sem_fotos"] = base.where.not(id: base.with_photos.select(:id)).count
 
-      eligible_count = eligible_scope.count
+      raw_eligible_count = eligible_scope.count
+      eligible_count = exportable_count(raw_eligible_count)
+      reasons["dados_invalidos_vrsync"] = raw_eligible_count - eligible_count if vrsync_feed? && raw_eligible_count > eligible_count
       top_reasons = reasons.reject { |_, value| value <= 0 }.sort_by { |_, value| -value }.first(5).to_h
 
       {
@@ -69,6 +71,18 @@ module Portal
       return scope if column.blank?
 
       scope.where(column => true)
+    end
+
+    def exportable_count(default_count)
+      return default_count unless vrsync_feed?
+
+      eligible_scope.includes(:address).select do |habitation|
+        Portal::VrsyncXmlSerializer.exportable?(habitation)
+      end.size
+    end
+
+    def vrsync_feed?
+      @integration.feed_strategy == "vrsync_xml"
     end
   end
 end

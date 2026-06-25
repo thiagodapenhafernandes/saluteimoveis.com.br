@@ -4,10 +4,61 @@ module Portal
   class VrsyncXmlSerializer
     SCHEMA_URL = "http://www.vivareal.com/schemas/1.0/VRSync".freeze
     SCHEMA_XSD = "http://xml.vivareal.com/vrsync.xsd".freeze
+    DEFAULT_APP_HOST = "https://saluteimoveis.com.br"
+    SUPPORTED_IMAGE_EXTENSION = /\.(jpe?g)(?:[?#].*)?\z/i
+    PUBLICATION_TYPES = {
+      "padrao" => "STANDARD",
+      "destaque" => "PREMIUM",
+      "super_destaque" => "SUPER_PREMIUM",
+      "destaque_exclusivo" => "PREMIERE_1",
+      "destaque_superior" => "PREMIERE_2",
+      "destaque_triplo" => "TRIPLE"
+    }.freeze
 
     def initialize(habitations:, integration:)
       @habitations = habitations
       @integration = integration
+    end
+
+    def self.exportable?(habitation, image_urls: nil, app_host: DEFAULT_APP_HOST)
+      image_urls ||= image_urls_for(habitation, app_host: app_host)
+
+      image_urls.present? &&
+        habitation.codigo.to_s.strip.present? &&
+        title_for(habitation).length.between?(10, 100) &&
+        sanitize_cep(habitation.cep).present? &&
+        habitation.uf.to_s.strip.present? &&
+        habitation.cidade.to_s.strip.present? &&
+        habitation.bairro.to_s.strip.present? &&
+        habitation.endereco.to_s.strip.present?
+    end
+
+    def self.image_urls_for(habitation, app_host: DEFAULT_APP_HOST)
+      habitation.image_urls.filter_map do |url|
+        absolute = absolute_url(url, app_host: app_host)
+        absolute if supported_image_url?(absolute)
+      end
+    end
+
+    def self.title_for(habitation)
+      habitation.titulo_anuncio.presence || "Imóvel #{habitation.codigo}"
+    end
+
+    def self.sanitize_cep(cep)
+      cep.to_s.gsub(/\D/, "")
+    end
+
+    def self.absolute_url(url, app_host: DEFAULT_APP_HOST)
+      value = url.to_s.strip
+      return nil if value.blank?
+      return value if value.match?(%r{\Ahttps?://}i)
+
+      path = value.start_with?("/") ? value : "/#{value}"
+      "#{app_host.to_s.sub(%r{/*\z}, "")}#{path}"
+    end
+
+    def self.supported_image_url?(url)
+      url.to_s.match?(SUPPORTED_IMAGE_EXTENSION)
     end
 
     def to_xml
@@ -19,16 +70,19 @@ module Portal
         "xmlns:xsi" => "http://www.w3.org/2001/XMLSchema-instance",
         "xsi:schemaLocation" => "#{SCHEMA_URL} #{SCHEMA_XSD}"
       ) do
-        xml.Listings do
-          xml.Header do
-            xml.Provider "Salute"
-            xml.Email "contato@saluteimoveis.com.br"
-            xml.ContactName "SALUTE IMOVEIS"
-            xml.PublishDate Time.current.iso8601
-            xml.Telephone "(47) 3311-1067"
-          end
+        xml.Header do
+          xml.Provider "Salute"
+          xml.Email "contato@saluteimoveis.com.br"
+          xml.ContactName "SALUTE IMOVEIS"
+          xml.PublishDate Time.current.iso8601
+          xml.Telephone "(47) 3311-1067"
+        end
 
+        xml.Listings do
           @habitations.each do |habitation|
+            image_urls = image_urls_for(habitation)
+            next unless valid_listing_for_vrsync?(habitation, image_urls)
+
             xml.Listing do
               xml.ListingID habitation.codigo
               xml.UpdateDate (habitation.updated_at || Time.current).iso8601
@@ -90,7 +144,7 @@ module Portal
               xml.Title { xml.cdata!(title_for(habitation)) }
 
               xml.Media do
-                habitation.image_urls.first(30).each_with_index do |url, idx|
+                image_urls.first(30).each_with_index do |url, idx|
                   attrs = { "medium" => "image", "caption" => "" }
                   attrs["primary"] = "true" if idx.zero?
                   xml.Item(attrs) { xml.text!(url.to_s) }
@@ -115,7 +169,7 @@ module Portal
     end
 
     def title_for(habitation)
-      habitation.titulo_anuncio.presence || "Imóvel #{habitation.codigo}"
+      self.class.title_for(habitation)
     end
 
     # Valores oficiais do enum VRSync.
@@ -150,13 +204,19 @@ module Portal
     end
 
     def display_address_for(habitation)
+      case habitation.try(:divulgar_endereco_viva_real).to_s
+      when "exata" then return "All"
+      when "rua" then return "Street"
+      when "bairro" then return "Neighborhood"
+      end
+
       return "Neighborhood" if habitation.endereco.to_s.strip.blank?
       return "Street" if habitation.numero.to_s.strip.present?
       "Street"
     end
 
     def sanitize_cep(cep)
-      cep.to_s.gsub(/\D/, "")
+      self.class.sanitize_cep(cep)
     end
 
     def coordinate(habitation, kind)
@@ -169,6 +229,9 @@ module Portal
     end
 
     def publication_type_for(habitation)
+      explicit = PUBLICATION_TYPES[habitation.try(:tipo_publicacao_viva_real).to_s]
+      return explicit if explicit.present?
+
       habitation.destaque_web_flag ? "PREMIUM" : "STANDARD"
     end
 
@@ -176,6 +239,7 @@ module Portal
       has_sale = habitation.valor_venda_cents.to_i.positive?
       has_rent = habitation.valor_locacao_cents.to_i.positive?
 
+      return "Sale/Rent" if has_sale && has_rent
       return "For Sale" if has_sale && !has_rent
       return "For Rent" if has_rent && !has_sale
 
@@ -197,6 +261,26 @@ module Portal
 
     def cents_to_units(cents)
       cents.to_i / 100
+    end
+
+    def valid_listing_for_vrsync?(habitation, image_urls)
+      self.class.exportable?(habitation, image_urls: image_urls, app_host: app_host)
+    end
+
+    def image_urls_for(habitation)
+      self.class.image_urls_for(habitation, app_host: app_host)
+    end
+
+    def absolute_url(url)
+      self.class.absolute_url(url, app_host: app_host)
+    end
+
+    def supported_image_url?(url)
+      self.class.supported_image_url?(url)
+    end
+
+    def app_host
+      ENV.fetch("APP_HOST", DEFAULT_APP_HOST).to_s.sub(%r{/*\z}, "")
     end
 
     def state_name_for(uf)
