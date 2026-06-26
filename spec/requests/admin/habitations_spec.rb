@@ -2992,6 +2992,10 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("IA para título e descrição")
     expect(response.body).to include("Gerar prévia")
+    page = Nokogiri::HTML(response.body)
+    generate_ai_link = page.at_css(%(a[href="#{generate_ai_preview_admin_habitation_path(habitation)}"]))
+    expect(generate_ai_link["data-turbo"]).to eq("true")
+    expect(generate_ai_link["data-turbo-method"]).to eq("post")
 
     administrative_profile = Profile.create!(
       name: "Administrativo",
