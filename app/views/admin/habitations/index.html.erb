@@ -1770,8 +1770,10 @@
           <div class="row g-0 h-100">
             <!-- Image Column -->
             <div class="col-md-4 col-lg-3 position-relative h-100">
-              <% if imovel.primary_image.present? %>
-                <img src="<%= imovel.primary_image['url_pequena'] || imovel.primary_image['url'] %>" class="img-fluid h-100 w-100 object-fit-cover" alt="<%= imovel.display_title %>">
+              <% primary_card_image = imovel.primary_image %>
+              <% primary_card_image_url = primary_card_image.is_a?(Hash) ? (primary_card_image["url"].presence || primary_card_image["url_pequena"].presence) : primary_card_image %>
+              <% if primary_card_image_url.present? %>
+                <img src="<%= primary_card_image_url %>" class="img-fluid h-100 w-100 object-fit-cover" alt="<%= imovel.display_title %>">
               <% else %>
                 <div class="bg-light h-100 w-100 d-flex align-items-center justify-content-center text-muted">
                   <i class="bi bi-image display-4 opacity-25"></i>
