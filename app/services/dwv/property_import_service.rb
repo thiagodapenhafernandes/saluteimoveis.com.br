@@ -137,6 +137,19 @@ module Dwv
       constructor = find_or_build_constructor
       address_attrs = extract_address
       description = extract_description
+      raw_category = value(
+        ["unit", "floor_plan", "category", "title"],
+        ["unit", "type"],
+        ["unit", "section", "name"],
+        ["third_party_property", "type"],
+        ["type", "name"],
+        ["type"],
+        ["category"],
+        ["categoria"]
+      )
+      category = normalize_category(raw_category)
+      development_name = development_name_for_import(category)
+      advertisement_title = advertisement_title_for_import(development_name)
 
       attrs = {
         codigo_dwv: dwv_id,
@@ -147,13 +160,13 @@ module Dwv
         valor_condominio_cents: first_cents(value(["condominium_fee"], ["valor_condominio"], ["third_party_property", "administration_fee"])) || habitation.valor_condominio_cents,
         valor_iptu_cents: first_cents(value(["property_tax"], ["valor_iptu"], ["third_party_property", "property_tax"])) || habitation.valor_iptu_cents,
         exibir_no_site_flag: active_on_site?,
-        titulo_anuncio: text_value(["advertisement_title"], ["title"], ["name"], ["titulo"], ["third_party_property", "title"], ["unit", "title"]) || habitation.titulo_anuncio,
-        categoria: normalize_category(value(["unit", "floor_plan", "category", "title"], ["unit", "type"], ["unit", "section", "name"], ["third_party_property", "type"], ["type", "name"], ["type"], ["category"], ["categoria"])) || habitation.categoria || DEFAULT_CATEGORY,
+        titulo_anuncio: advertisement_title || habitation.titulo_anuncio,
+        categoria: category || habitation.categoria || DEFAULT_CATEGORY,
         categoria_grupo: text_value(["unit", "floor_plan", "category", "tag"], ["unit", "additional_category"], ["third_party_property", "additional_category"]) || habitation.categoria_grupo,
         situacao: map_situation(value(["construction_stage_raw"], ["construction_stage"], ["property_condition"], ["situacao"])) || habitation.situacao,
         tipo: detect_record_type || habitation.tipo || "Unitário",
         codigo_empreendimento: local_development_code || habitation.codigo_empreendimento,
-        nome_empreendimento: text_value(["building", "title"]) || habitation.nome_empreendimento,
+        nome_empreendimento: development_name || habitation.nome_empreendimento,
         data_entrega: parse_date(value(["building", "delivery_date"], ["third_party_property", "delivery_date"])) || habitation.data_entrega,
         dormitorios_qtd: first_int(value(["bedrooms"], ["unit_bedrooms"], ["quartos"], ["unit", "dorms"], ["third_party_property", "dorms"])) || habitation.dormitorios_qtd,
         suites_qtd: first_int(value(["unit_suites"], ["suites"], ["suites_qtd"], ["unit", "suites"], ["third_party_property", "suites"])) || habitation.suites_qtd,
@@ -269,6 +282,64 @@ module Dwv
       development = Habitation.empreendimentos.find_by(codigo_dwv: raw_code, imovel_dwv: "Sim") ||
                     Habitation.empreendimentos.find_by(codigo: raw_code)
       development&.codigo
+    end
+
+    def development_name_for_import(category)
+      explicit_name = text_value(
+        ["building", "title"],
+        ["building", "name"],
+        ["building", "display_name"],
+        ["building", "commercial_name"],
+        ["incorporation", "title"],
+        ["incorporation", "name"],
+        ["incorporation", "display_name"],
+        ["incorporation", "commercial_name"],
+        ["third_party_property", "building_name"],
+        ["third_party_property", "condominium_name"],
+        ["third_party_property", "development_name"]
+      )
+      return explicit_name if explicit_name.present?
+
+      return nil unless third_party_title_can_be_development_name?(category)
+
+      text_value(["third_party_property", "title"])
+    end
+
+    def third_party_title_can_be_development_name?(category)
+      return false unless third_party?
+
+      category.to_s.match?(/apartamento|cobertura|flat|loft|studio|kitnet|sala|conjunto/i)
+    end
+
+    def advertisement_title_for_import(development_name)
+      candidates = [
+        text_value(["advertisement_title"]),
+        text_value(["titulo"]),
+        text_value(["unit", "advertisement_title"]),
+        text_value(["third_party_property", "advertisement_title"]),
+        text_value(["third_party_property", "ad_title"]),
+        text_value(["third_party_property", "title"]),
+        text_value(["title"]),
+        text_value(["name"])
+      ].compact
+
+      candidates.find do |candidate|
+        !same_development_name?(candidate, development_name) && !unit_label_title?(candidate)
+      end
+    end
+
+    def same_development_name?(candidate, development_name)
+      normalized_candidate = candidate.to_s.parameterize
+      normalized_development = development_name.to_s.parameterize
+      return false if normalized_candidate.blank? || normalized_development.blank?
+
+      normalized_candidate == normalized_development ||
+        normalized_candidate.include?(normalized_development) ||
+        normalized_development.include?(normalized_candidate)
+    end
+
+    def unit_label_title?(candidate)
+      candidate.to_s.strip.match?(/\A(?:unidade|ap(?:artamento)?\.?)?\s*[a-z]?\d+[a-z]?\z/i)
     end
 
     def normalize_category(raw)
@@ -390,8 +461,10 @@ module Dwv
       raw_sources += media_items(value(["unit", "images"]))
       raw_sources += media_items(value(["unit", "pictures"]))
       raw_sources += media_items(value(["unit", "photos"]))
+      raw_sources += gallery_media_items(value(["unit", "additional_galleries"]))
       raw_sources += media_items(value(["third_party_property", "cover"]))
       raw_sources += media_items(value(["third_party_property", "gallery"]))
+      raw_sources += gallery_media_items(value(["third_party_property", "additional_galleries"]))
       raw_sources += media_items(value(["selected_photos"]))
       raw_sources += media_items(value(["images"]))
       raw_sources += media_items(value(["pictures"]))
@@ -436,6 +509,19 @@ module Dwv
       return raw if raw.is_a?(Array)
 
       [raw]
+    end
+
+    def gallery_media_items(raw)
+      Array(raw).flat_map do |gallery|
+        next gallery if gallery.is_a?(String)
+        next [] unless gallery.is_a?(Hash)
+
+        media_items(gallery["files"] || gallery[:files]) +
+          media_items(gallery["images"] || gallery[:images]) +
+          media_items(gallery["pictures"] || gallery[:pictures]) +
+          media_items(gallery["photos"] || gallery[:photos]) +
+          media_items(gallery["gallery"] || gallery[:gallery])
+      end
     end
 
     def media_from(item, fallback_order:, type:)

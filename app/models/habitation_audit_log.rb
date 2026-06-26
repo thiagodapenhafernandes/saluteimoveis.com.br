@@ -38,7 +38,7 @@ class HabitationAuditLog < ApplicationRecord
     "valor_vendido_terceiros_cents" => "Valor vendido por terceiros",
     "valor_condominio_cents" => "Condomínio",
     "valor_iptu_cents" => "IPTU",
-    "valor_promocional_cents" => "Valor promocional",
+    "valor_promocional_cents" => "Venda atual",
     "valor_comissao_cents" => "Valor da comissão",
     "valor_livre_proprietario_cents" => "Proprietário (livre)",
     "proprietario" => "Proprietário",

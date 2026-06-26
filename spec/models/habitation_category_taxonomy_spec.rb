@@ -4,7 +4,8 @@ RSpec.describe "Habitation category taxonomy" do
   it "keeps Vista category groups available for intake forms" do
     groups = Habitation::CategoryTaxonomy::INTAKE_CATEGORY_GROUPS
 
-    expect(groups["comerciais_industriais"]).to include("Box", "Galpão", "Sala Comercial")
+    expect(groups["comerciais_industriais"]).to include("Box", "Galpão", "Galpão em condomínio", "Sala Comercial")
+    expect(groups["comerciais_industriais"]).not_to include("Galpão para condomínio")
     expect(groups["comerciais_industriais"]).not_to include("Salas/Conjuntos")
     expect(groups["empreendimento"]).to include("Condomínio", "Empreendimento")
     expect(groups["imoveis_residenciais"]).to include("Apartamento", "Kitnet", "Studio")
@@ -29,6 +30,15 @@ RSpec.describe "Habitation category taxonomy" do
     expect(Habitation.category_group_for("Salas/Conjuntos")).to eq("comerciais_industriais")
   end
 
+  it "normalizes legacy Galpão para condomínio category to Galpão em condomínio" do
+    habitation = build(:habitation, categoria: "Galpão para condomínio")
+
+    habitation.valid?
+
+    expect(habitation.categoria).to eq("Galpão em condomínio")
+    expect(Habitation.category_group_for("Galpão para condomínio")).to eq("comerciais_industriais")
+  end
+
   it "filters feature options by property kind while preserving selected values" do
     terrain_options = Habitation.feature_options_for_kind(
       "terreno",
@@ -44,6 +54,12 @@ RSpec.describe "Habitation category taxonomy" do
     residential_options = Habitation.feature_options_for_kind("residencial", ["Churrasqueira à carvão"])
 
     expect(residential_options).to include("Churrasqueira a carvão", "Churrasqueira a gás")
+  end
+
+  it "keeps sea-position options available for residential features" do
+    residential_options = Habitation.feature_options_for_kind("residencial")
+
+    expect(residential_options).to include("Frente mar", "Quadra mar", "Vista mar")
   end
 
   it "keeps Cinema available for development infrastructure" do

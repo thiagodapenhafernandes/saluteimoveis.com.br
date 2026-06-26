@@ -1351,7 +1351,7 @@
                     </div>
                   </div>
                   <div class="col-md-8">
-                    <%= f.label :valor_promocional_formatted, "Valor promocional", class: "form-label extra-small fw-bold mb-1" %>
+                    <%= f.label :valor_promocional_formatted, "Venda atual", class: "form-label extra-small fw-bold mb-1" %>
                     <div class="input-group input-group-sm">
                       <span class="input-group-text">R$</span>
                       <%= f.text_field :valor_promocional_formatted, class: "form-control form-control-sm", data: { controller: "mask", mask_type_value: "currency" } %>
@@ -1360,7 +1360,7 @@
                   <div class="col-md-4 d-flex align-items-end">
                     <label class="custom-checkbox-card w-100">
                       <%= check_box_tag :valor_promocional_indicador, "1", f.object.valor_promocional_cents.to_i > 0, class: "form-check-input mt-0", disabled: true %>
-                      <span class="small fw-semibold">Valor Promocional</span>
+                      <span class="small fw-semibold">Venda atual</span>
                     </label>
                   </div>
                 </div>

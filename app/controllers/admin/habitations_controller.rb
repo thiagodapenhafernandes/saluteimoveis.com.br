@@ -44,6 +44,7 @@ class Admin::HabitationsController < Admin::BaseController
     "Semi Mobiliado", "Terraço", "Vigilância 24h", "Vista Panorâmica", "Vista para o Mar",
     "Vista frente para o Mar", *CUSTOM_FEATURE_OPTIONS, "Zelador"
   ].freeze
+  DEFAULT_STATUS_FILTERS = ["Venda", "Aluguel", "Diária"].freeze
   EXPORT_FIELDS = {
     "codigo" => "Referencia",
     "categoria" => "Categoria",
@@ -873,6 +874,7 @@ class Admin::HabitationsController < Admin::BaseController
   def load_index_filters
     @q = params[:q]
     @referencia = params[:referencia]
+    @status_filter_submitted = params.key?(:status)
     @status = params[:status]
     @categorias = extract_multi_select_strings(:categoria)
     @categoria = @categorias
@@ -954,7 +956,7 @@ class Admin::HabitationsController < Admin::BaseController
     scope = scope.where("LOWER(TRIM(habitations.codigo)) = LOWER(?)", @referencia.to_s.strip) if @referencia.present?
     scope = scope.admin_search_text(@q) if @q.present?
 
-    scope = apply_status_filter(scope, @status)
+    scope = apply_status_filter(scope, @status, submitted: @status_filter_submitted)
     scope = apply_category_filter(scope, @categoria)
     scope = scope.where(
       "unaccent(CONCAT_WS(' ', " \
@@ -1553,9 +1555,11 @@ class Admin::HabitationsController < Admin::BaseController
     end
   end
 
-  def apply_status_filter(scope, raw_status)
+  def apply_status_filter(scope, raw_status, submitted: false)
     status = Habitation.normalize_status(raw_status)
-    return without_inactive_statuses(scope) if status.blank? || status == "Todos"
+    return scope if submitted && (status.blank? || status == "Todos")
+    return scope.where(status: DEFAULT_STATUS_FILTERS) if status.blank?
+    return scope if status == "Todos"
 
     scope.where("unaccent(TRIM(habitations.status)) = unaccent(?)", status)
   end
@@ -1828,8 +1832,21 @@ class Admin::HabitationsController < Admin::BaseController
 
     permitted.delete(:intake_status) unless @habitation&.broker_intake? && can_manage_intake_status?(@habitation)
     sync_general_exchange_flag!(permitted)
+    apply_default_development_photos_flag!(permitted)
 
     permitted
+  end
+
+  def apply_default_development_photos_flag!(permitted)
+    return unless permitted.key?(:codigo_empreendimento)
+    return if permitted.key?(:use_development_photos_flag)
+    return if permitted[:tipo].to_s == "Empreendimento"
+
+    new_development_code = permitted[:codigo_empreendimento].to_s.strip.presence
+    current_development_code = @habitation&.codigo_empreendimento.to_s.strip.presence
+    return if new_development_code.blank? || current_development_code.present?
+
+    permitted[:use_development_photos_flag] = "1"
   end
 
   def habitation_photo_params

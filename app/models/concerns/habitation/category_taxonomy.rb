@@ -4,13 +4,14 @@ module Habitation::CategoryTaxonomy
   extend ActiveSupport::Concern
 
   CATEGORY_ALIASES = {
+    "Galpão para condomínio" => "Galpão em condomínio",
     "Salas/Conjuntos" => "Sala Comercial"
   }.freeze
 
   INTAKE_CATEGORY_GROUPS = {
     "comerciais_industriais" => [
       "Box", "Built to Suit", "Casa comercial", "Condomínio Industrial", "Coworking",
-      "Depósito", "Galpão", "Galpão Industrial", "Galpão para condomínio", "Loja",
+      "Depósito", "Galpão", "Galpão Industrial", "Galpão em condomínio", "Loja",
       "Loteamento Industrial", "Pavilhão", "Ponto Comercial", "Prédio Comercial",
       "Sala Comercial"
     ],
@@ -45,13 +46,13 @@ module Habitation::CategoryTaxonomy
       "Copa/cozinha", "Cozinha", "Cozinha americana", "Cozinha com tanque",
       "Cozinha montada", "Cozinha planejada", "Deck",
       "Dependência de empregada", "Despensa", "Dormitório com armário", "Edícula",
-      "Escritório", "Estar íntimo", "Fechadura digital", "Hidromassagem",
+      "Escritório", "Estar íntimo", "Fechadura digital", "Frente mar", "Hidromassagem",
       "Home theater", "Jardim de inverno", "Lareira", "Lavabo", "Living", "Living hall",
       "Mobiliado", "Mobiliado decorado", "Pátio", "Piscina", "Porão", "Quintal",
       "Reformado", "Sacada", "Sacada aberta", "Sacada com churrasqueira",
       "Sacada fechada", "Sacada integrada", "Sala", "Sala com armários",
       "Sala de estar", "Sala de jantar", "Sala de TV", "Sauna", "Semi mobiliado",
-      "Sol da manhã", "Sol da tarde", "Sol o dia todo", "Split", "Suíte master",
+      "Sol da manhã", "Sol da tarde", "Sol o dia todo", "Split", "Suíte master", "Quadra mar",
       "Sótão", "Terraço", "TV a cabo", "Vista mar", "Vista panorâmica", "WC empregada"
     ],
     "comercial" => [
