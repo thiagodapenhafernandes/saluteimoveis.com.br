@@ -1187,7 +1187,7 @@ RSpec.describe "Admin::Habitations", type: :request do
       codigo: "PREDIO-UNIT-#{SecureRandom.hex(6)}",
       tipo: "Unitário",
       codigo_empreendimento: nil,
-      nome_empreendimento: "Residencial Sem Cadastro",
+      nome_empreendimento: "Edifício Concorde",
       titulo_anuncio: "Unidade com prédio direto"
     )
     other_property = create(
@@ -1202,13 +1202,36 @@ RSpec.describe "Admin::Habitations", type: :request do
     get admin_habitations_path
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include("Residencial Sem Cadastro")
+    expect(response.body).to include("Edifício Concorde")
 
-    get admin_habitations_path(empreendimento_codigo: "Residencial Sem Cadastro")
+    get admin_habitations_path(empreendimento_codigo: "Edificio concorde")
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include(standalone_unit.titulo_anuncio)
     expect(response.body).not_to include(other_property.titulo_anuncio)
+  end
+
+  it "usa a imagem original no card admin quando a miniatura da API vem recortada" do
+    original_url = "https://dwvimagesv1.b-cdn.net/images/properties/demo/original.jpg"
+    cropped_url = "#{original_url}?crop=200,300"
+    habitation = create(
+      :habitation,
+      codigo: "IMG-CARD-#{SecureRandom.hex(6)}",
+      titulo_anuncio: "Imóvel com thumbnail recortado",
+      pictures: [
+        {
+          "url" => original_url,
+          "url_pequena" => cropped_url,
+          "ordem" => 1
+        }
+      ]
+    )
+
+    get admin_habitations_path(referencia: habitation.codigo)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(%(src="#{original_url}"))
+    expect(response.body).not_to include(%(src="#{cropped_url}"))
   end
 
   it "filtra empreendimento por corretor sem erro de distinct com ordenação" do

@@ -1031,7 +1031,7 @@ class Admin::HabitationsController < Admin::BaseController
     scope = scope.where(key_location: @key_location) if @key_location.present?
     if @empreendimento_codigo.present?
       scope = scope.where(
-        "codigo_empreendimento = :term OR codigo = :term OR unaccent(nome_empreendimento) = unaccent(:term)",
+        "codigo_empreendimento = :term OR codigo = :term OR lower(unaccent(nome_empreendimento)) = lower(unaccent(:term))",
         term: @empreendimento_codigo.to_s.strip
       )
     end
