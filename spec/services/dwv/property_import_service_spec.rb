@@ -30,6 +30,7 @@ RSpec.describe Dwv::PropertyImportService do
       expect(habitation.infra_estrutura).to include("Piscina")
       expect(habitation.caracteristicas.values).to include("Frente mar", "Sacada com churrasqueira")
       expect(habitation.pictures.map { |pic| pic["url"] }).to include("https://cdn.dwv.test/unit-cover.jpg")
+      expect(habitation.pictures.map { |pic| pic["url"] }).to include("https://cdn.dwv.test/unit-gallery-1.jpg", "https://cdn.dwv.test/unit-gallery-2.jpg")
       expect(habitation.fotos_empreendimento.map { |pic| pic["url"] }).to include("https://cdn.dwv.test/building-cover.jpg")
       expect(habitation.videos.map { |video| video["url"] }).to include("https://cdn.dwv.test/video.mp4")
       expect(habitation.plantas.map { |planta| planta["url"] }).to include("https://cdn.dwv.test/planta.jpg")
@@ -141,6 +142,8 @@ RSpec.describe Dwv::PropertyImportService do
 
       expect(habitation.status).to eq("Aluguel")
       expect(habitation.categoria).to eq("Casa")
+      expect(habitation.titulo_anuncio).to eq("Casa para locação")
+      expect(habitation.nome_empreendimento).to be_blank
       expect(habitation.valor_locacao_cents).to eq(12_000_00)
       expect(habitation.valor_condominio_cents).to eq(450_00)
       expect(habitation.valor_iptu_cents).to eq(180_00)
@@ -150,6 +153,17 @@ RSpec.describe Dwv::PropertyImportService do
       expect(habitation.address.logradouro).to eq("1000")
       expect(habitation.address.numero).to eq("55")
       expect(habitation.address.complemento).to eq("Casa 2")
+    end
+
+    it "maps third party apartment title as development name when it is not an ad title" do
+      result = described_class.new(third_party_apartment_payload).perform
+      habitation = result[:habitation]
+
+      expect(habitation.categoria).to eq("Apartamento")
+      expect(habitation.nome_empreendimento).to eq("La Madeson")
+      expect(habitation.titulo_anuncio).to be_blank
+      expect(habitation.display_title).to eq("Apartamento 3 dormitórios em Centro Balneário Camboriú")
+      expect(habitation.address.complemento).to eq("Apartamento 604")
     end
   end
 
@@ -179,6 +193,14 @@ RSpec.describe Dwv::PropertyImportService do
           "cover" => { "url" => "https://cdn.dwv.test/unit-cover.jpg" },
           "payment_conditions" => [
             { "name" => "Entrada", "price" => "1000000.00" }
+          ],
+          "additional_galleries" => [
+            {
+              "files" => [
+                { "url" => "https://cdn.dwv.test/unit-gallery-1.jpg" },
+                { "url" => "https://cdn.dwv.test/unit-gallery-2.jpg" }
+              ]
+            }
           ],
           "floor_plan" => {
             "category" => { "title" => "Apartamento", "tag" => "Residencial" },
@@ -246,6 +268,38 @@ RSpec.describe Dwv::PropertyImportService do
             "city" => "Itapema",
             "state" => "SC",
             "zip_code" => "88220-000"
+          }
+        }
+      }
+    }
+  end
+
+  def third_party_apartment_payload
+    {
+      "data" => {
+        "id" => 644692,
+        "title" => "La Madeson",
+        "advertisement_title" => "La Madeson",
+        "status" => "active",
+        "deleted" => false,
+        "third_party_property" => {
+          "title" => "La Madeson",
+          "type" => "Apartamento",
+          "price" => "1850000.00",
+          "private_area" => "122.0",
+          "dorms" => 3,
+          "suites" => 3,
+          "bathroom" => 4,
+          "parking_spaces" => 2,
+          "unit_info" => "Apartamento 604",
+          "cover" => { "url" => "https://cdn.dwv.test/la-madeson.jpg" },
+          "address" => {
+            "street_name" => "Rua 1131",
+            "street_number" => "101",
+            "neighborhood" => "Centro",
+            "city" => "Balneário Camboriú",
+            "state" => "SC",
+            "zip_code" => "88330-786"
           }
         }
       }

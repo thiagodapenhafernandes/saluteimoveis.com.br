@@ -1797,7 +1797,6 @@ class Habitation < ApplicationRecord
     return unless old_cents.positive? && new_cents.positive? && new_cents < old_cents
 
     self.valor_locacao_anterior_cents = old_cents
-    self.valor_promocional_cents = new_cents
   end
   
   def clear_cache

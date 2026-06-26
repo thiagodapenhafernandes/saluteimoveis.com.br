@@ -103,6 +103,15 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include("Salvar e sair")
   end
 
+  it "exibe venda atual no lugar de valor promocional no bloco comercial" do
+    get new_admin_habitation_path
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Venda atual")
+    expect(response.body).not_to include("Valor promocional")
+    expect(response.body).not_to include("Valor Promocional")
+  end
+
   it "renderiza permuta por tipo e parcelamento sem checkbox geral duplicado" do
     get new_admin_habitation_path
 
@@ -609,8 +618,10 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).not_to include(vista_property.titulo_anuncio)
   end
 
-  it "oculta imóveis inativos da aba todos até o usuário filtrar pelo status" do
+  it "usa venda, aluguel e diária como status padrão e abre todos quando o filtro status Todos é enviado" do
     active = create(:habitation, codigo: "ATIVO-#{SecureRandom.hex(6)}", status: "Venda", titulo_anuncio: "Imóvel ativo visível")
+    rental = create(:habitation, codigo: "ALUGUEL-#{SecureRandom.hex(6)}", status: "Aluguel", titulo_anuncio: "Imóvel aluguel visível")
+    daily = create(:habitation, codigo: "DIARIA-#{SecureRandom.hex(6)}", status: "Diária", titulo_anuncio: "Imóvel diária visível")
     sold = create(:habitation, codigo: "VENDIDO-#{SecureRandom.hex(6)}", status: "Vendido terceiros", titulo_anuncio: "Imóvel vendido oculto", imovel_dwv: "Sim")
     rented = create(:habitation, codigo: "ALUGADO-#{SecureRandom.hex(6)}", status: "Alugado terceiros", titulo_anuncio: "Imóvel alugado oculto")
 
@@ -618,8 +629,19 @@ RSpec.describe "Admin::Habitations", type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include(active.titulo_anuncio)
+    expect(response.body).to include(rental.titulo_anuncio)
+    expect(response.body).to include(daily.titulo_anuncio)
     expect(response.body).not_to include(sold.titulo_anuncio)
     expect(response.body).not_to include(rented.titulo_anuncio)
+
+    get admin_habitations_path(ownership: "all", status: "")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(active.titulo_anuncio)
+    expect(response.body).to include(rental.titulo_anuncio)
+    expect(response.body).to include(daily.titulo_anuncio)
+    expect(response.body).to include(sold.titulo_anuncio)
+    expect(response.body).to include(rented.titulo_anuncio)
 
     get admin_habitations_path(ownership: "all", status: "Vendido terceiros")
 
@@ -2554,6 +2576,86 @@ RSpec.describe "Admin::Habitations", type: :request do
     )
   end
 
+  it "liga fotos do empreendimento por padrão quando vincula uma unidade pelo admin" do
+    development = create(
+      :habitation,
+      tipo: "Empreendimento",
+      categoria: "Empreendimento",
+      codigo: "DEV-FOTOS-#{SecureRandom.hex(4)}",
+      nome_empreendimento: "Brava Garden"
+    )
+    habitation = create(
+      :habitation,
+      codigo: "UNIT-FOTOS-#{SecureRandom.hex(4)}",
+      categoria: "Apartamento",
+      codigo_empreendimento: nil,
+      nome_empreendimento: nil,
+      use_development_photos_flag: false
+    )
+    habitation.create_address!(
+      logradouro: "Rua Unidade #{SecureRandom.hex(4)}",
+      numero: "100",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+
+    patch admin_habitation_path(habitation), params: {
+      save_navigation: "stay",
+      habitation: {
+        categoria: "Apartamento",
+        tipo: "Unitário",
+        status: "Venda",
+        codigo_empreendimento: development.codigo
+      }
+    }
+
+    expect(response).to redirect_to(edit_admin_habitation_path(habitation, return_to: nil))
+    expect(habitation.reload).to have_attributes(
+      codigo_empreendimento: development.codigo,
+      use_development_photos_flag: true
+    )
+  end
+
+  it "preserva fotos do empreendimento desligado quando o toggle é enviado no cadastro vinculado" do
+    development = create(
+      :habitation,
+      tipo: "Empreendimento",
+      categoria: "Empreendimento",
+      codigo: "DEV-FOTOS-OFF-#{SecureRandom.hex(4)}",
+      nome_empreendimento: "Brava Garden"
+    )
+    habitation = create(
+      :habitation,
+      codigo: "UNIT-FOTOS-OFF-#{SecureRandom.hex(4)}",
+      categoria: "Apartamento",
+      codigo_empreendimento: development.codigo,
+      nome_empreendimento: "Brava Garden",
+      use_development_photos_flag: true
+    )
+    habitation.create_address!(
+      logradouro: "Rua Unidade #{SecureRandom.hex(4)}",
+      numero: "101",
+      bairro: "Centro",
+      cidade: "Balneário Camboriú",
+      uf: "SC"
+    )
+
+    patch admin_habitation_path(habitation), params: {
+      save_navigation: "stay",
+      habitation: {
+        categoria: "Apartamento",
+        tipo: "Unitário",
+        status: "Venda",
+        codigo_empreendimento: development.codigo,
+        use_development_photos_flag: "0"
+      }
+    }
+
+    expect(response).to redirect_to(edit_admin_habitation_path(habitation, return_to: nil))
+    expect(habitation.reload.use_development_photos_flag).to be(false)
+  end
+
   it "mostra resumo e fotos no detalhe sem expor cadastro interno para corretor não captador" do
     broker_profile = Profile.create!(
       name: "Corretor show restrito #{SecureRandom.hex(6)}",
@@ -2647,6 +2749,48 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).not_to include("(47) 99999-9999")
     expect(response.body).not_to include("ficha-sigilosa.txt")
     expect(response.body).not_to include("Anexos e documentos internos")
+  end
+
+  it "oculta total aluguel no detalhe admin quando ele repete a locação" do
+    habitation = create(
+      :habitation,
+      codigo: "TOTAL-IGUAL-#{SecureRandom.hex(6)}",
+      status: "Aluguel",
+      valor_venda_cents: 0,
+      valor_locacao_cents: 6_900_00,
+      valor_total_aluguel_cents: 6_900_00,
+      valor_condominio_cents: 650_00,
+      valor_iptu_cents: 150_00
+    )
+
+    get admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    page_text = Nokogiri::HTML(response.body).text.squish
+    expect(page_text).to include("Locação R$ 6.900,00")
+    expect(page_text).to include("Condomínio R$ 650,00")
+    expect(page_text).to include("IPTU R$ 150,00")
+    expect(page_text).not_to include("Total aluguel")
+  end
+
+  it "exibe total aluguel no detalhe admin quando ele é maior que a locação" do
+    habitation = create(
+      :habitation,
+      codigo: "TOTAL-MAIOR-#{SecureRandom.hex(6)}",
+      status: "Aluguel",
+      valor_venda_cents: 0,
+      valor_locacao_cents: 6_900_00,
+      valor_total_aluguel_cents: 7_700_00,
+      valor_condominio_cents: 650_00,
+      valor_iptu_cents: 150_00
+    )
+
+    get admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    page_text = Nokogiri::HTML(response.body).text.squish
+    expect(page_text).to include("Locação R$ 6.900,00")
+    expect(page_text).to include("Total aluguel R$ 7.700,00")
   end
 
   it "mantém proprietário e anexos fora do detalhe simplificado para o captador do imóvel" do

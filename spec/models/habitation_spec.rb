@@ -472,14 +472,14 @@ RSpec.describe Habitation, type: :model do
       )
     end
 
-    it "stores previous rent price and promotional value when rent price decreases" do
+    it "stores previous rent price without changing sale current value when rent price decreases" do
       habitation = create(:habitation, valor_venda_cents: 0, valor_locacao_cents: 6_000_00, valor_promocional_cents: nil)
 
       habitation.update!(valor_locacao_cents: 5_500_00)
 
       expect(habitation).to have_attributes(
         valor_locacao_anterior_cents: 6_000_00,
-        valor_promocional_cents: 5_500_00
+        valor_promocional_cents: nil
       )
     end
   end

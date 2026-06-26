@@ -325,6 +325,8 @@
     ["Face", @habitation.face]
   ]
 
+  show_total_rent = @habitation.valor_total_aluguel_cents.to_i > @habitation.valor_locacao_cents.to_i
+
   value_fields = if broker_compact_view
     [
       ["Venda", money.call(@habitation.valor_venda_cents)],
@@ -336,7 +338,7 @@
     [
       ["Venda", money.call(@habitation.valor_venda_cents)],
       ["Locação", money.call(@habitation.valor_locacao_cents)],
-      ["Total aluguel", money.call(@habitation.valor_total_aluguel_cents)],
+      ["Total aluguel", show_total_rent ? money.call(@habitation.valor_total_aluguel_cents) : nil],
       ["Condomínio", money.call(@habitation.valor_condominio_cents)],
       ["IPTU", money.call(@habitation.valor_iptu_cents)],
       ["Aceita financiamento", yes_no.call(@habitation.aceita_financiamento_flag)],
