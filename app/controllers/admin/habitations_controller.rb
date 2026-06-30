@@ -1336,7 +1336,10 @@ class Admin::HabitationsController < Admin::BaseController
   def can_manage_intake_status?(habitation)
     return false unless habitation&.broker_intake?
 
-    current_admin_user&.admin? || owns_all_resource?(:imoveis) || can?(:review, :captacoes)
+    # Card #3: alterar manualmente o "Status da captação" é função exclusiva do
+    # Administrador geral. Demais perfis veem o campo apenas em leitura — o avanço
+    # do fluxo continua acontecendo pelos botões dedicados (Salvar interno / Devolver).
+    current_admin_user&.admin?
   end
 
   def can_manage_internal_documents?
