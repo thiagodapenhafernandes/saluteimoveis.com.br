@@ -1174,7 +1174,12 @@ class Habitation < ApplicationRecord
     if images.is_a?(Array)
       images.filter_map do |pic|
         payload = pic.is_a?(Hash) ? pic : { "url" => pic }
-        payload unless picture_hidden_from_site?(payload)
+        next if picture_hidden_from_site?(payload)
+        # Ignora pictures sem URL utilizável (ex.: {} ou string vazia) para não
+        # quebrar a montagem de imagens no site/compartilhamento.
+        next if payload["attachment"].blank? && picture_image_url(payload).to_s.strip.blank?
+
+        payload
       end
     else
       []

@@ -843,12 +843,25 @@ class Admin::HabitationsController < Admin::BaseController
     @filter_regioes_foco = Habitation::REGIAO_FOCO_OPTIONS
     internal_features = (AttributeOption.where(context: 'habitation', category: 'feature').order(name: :asc).pluck(:name) + CUSTOM_FEATURE_OPTIONS).uniq.sort
     external_features = AttributeOption.where(context: 'habitation', category: 'infrastructure').order(name: :asc).pluck(:name)
-    @apartment_feature_filter_options = Habitation.feature_options_for_kind("residencial", internal_features)
-    @enterprise_amenity_filter_options = (
+    @apartment_feature_filter_options = dedupe_filter_labels(
+      Habitation.feature_options_for_kind("residencial", internal_features)
+    )
+    @enterprise_amenity_filter_options = dedupe_filter_labels(
       AMENITY_FILTER_OPTIONS +
       Habitation.feature_options_for_kind("empreendimento", internal_features) +
       Habitation.infrastructure_options_for_kind("empreendimento", external_features)
-    ).uniq.sort
+    )
+  end
+
+  # Card "Ajuste função criar características": remove opções de filtro duplicadas
+  # por diferença de maiúscula/minúscula/acento (ex.: "Quadra de Esportes" x
+  # "Quadra de esportes"), mantendo a primeira ocorrência e ordenando.
+  def dedupe_filter_labels(labels)
+    Array(labels)
+      .map { |label| label.to_s.strip }
+      .reject(&:blank?)
+      .uniq { |label| I18n.transliterate(label).downcase }
+      .sort_by { |label| I18n.transliterate(label).downcase }
   end
 
   def extract_multi_select_integers(param_key)

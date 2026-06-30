@@ -50,6 +50,14 @@ RSpec.describe Admin::HabitationsController, type: :controller do
     end
   end
 
+  describe "#dedupe_filter_labels" do
+    it "remove duplicatas por maiúscula/minúscula/acento e ordena" do
+      result = controller.send(:dedupe_filter_labels, ["Quadra de Esportes", "Quadra de esportes", "Frente Mar", "Frente mar", "Ar Central"])
+
+      expect(result).to eq(["Ar Central", "Frente Mar", "Quadra de Esportes"])
+    end
+  end
+
   describe "#can_filter_by_proprietor?" do
     it "libera o filtro administrativo para o perfil Gerente" do
       gerente = Profile.find_or_create_by!(name: "Gerente") { |p| p.permissions = Profile.default_permissions_for("Gerente") }

@@ -431,15 +431,26 @@
     min-height: 240px;
   }
   .habitations-master-pane .property-card-horizontal > .row > .position-relative.h-100 {
-    height: auto !important;
-    min-height: 240px;
+    height: 220px !important;
+    min-height: 0;
+    align-self: center;
   }
   .habitations-master-pane .property-card-horizontal > .row > .position-relative.h-100 > img,
-  .habitations-master-pane .property-card-horizontal > .row > .position-relative.h-100 > .bg-light {
+  .habitations-master-pane .property-card-horizontal > .row > .position-relative.h-100 > .bg-light,
+  .habitations-master-pane .property-card-horizontal > .row > .position-relative.h-100 > [data-controller~="fancybox-gallery"] {
     position: absolute;
     inset: 0;
     height: 100% !important;
     width: 100%;
+  }
+  .habitations-master-pane .property-card-horizontal > .row > .position-relative.h-100 > [data-controller~="fancybox-gallery"] > a {
+    display: block;
+    height: 100%;
+    width: 100%;
+  }
+  .habitations-master-pane .property-card-horizontal > .row > .position-relative.h-100 img {
+    object-fit: cover;
+    object-position: center;
   }
   .property-card-horizontal.property-card--inactive {
     background: #f1f3f5;

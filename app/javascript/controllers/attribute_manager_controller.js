@@ -260,6 +260,16 @@ export default class extends Controller {
 
       // Check if it's a Checkbox Container (div)
     } else if (container.tagName === 'DIV' && container.id.includes('checkbox-list')) {
+      const sortKey = (text) => text.normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLowerCase()
+      const newKey = sortKey(attr.name)
+
+      // Evita duplicar uma opção já presente na lista (case/acento-insensível).
+      const alreadyPresent = Array.from(container.children).some((existing) => {
+        const value = existing.querySelector('input[type="checkbox"]')?.value || existing.textContent
+        return sortKey(value || "") === newKey
+      })
+      if (alreadyPresent) return
+
       const col = document.createElement('div')
       col.className = 'col animate__animated animate__fadeIn'
 
@@ -269,7 +279,17 @@ export default class extends Controller {
           <span class="extra-small fw-semibold text-truncate ms-2" title="${attr.name}">${attr.name}</span>
         </label>
       `
-      container.appendChild(col)
+
+      // Insere em ordem alfabética em vez de no final.
+      const reference = Array.from(container.children).find((existing) => {
+        const value = existing.querySelector('input[type="checkbox"]')?.value || existing.textContent
+        return sortKey(value || "") > newKey
+      })
+      if (reference) {
+        container.insertBefore(col, reference)
+      } else {
+        container.appendChild(col)
+      }
 
     } else {
       // Standard Select

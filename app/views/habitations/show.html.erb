@@ -274,6 +274,12 @@
                 <dd class="font-bold text-green-700">Taxas inclusas</dd>
               </div>
             <% end %>
+            <% if has_rent_price && @habitation.salute_rental_management_label == "Sim" %>
+              <div class="flex justify-between gap-4">
+                <dt class="text-gray-500">Administração</dt>
+                <dd class="font-bold text-green-700">Sim</dd>
+              </div>
+            <% end %>
           </dl>
 
           <button type="button"
