@@ -714,6 +714,21 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(matches.size).to eq(1)
   end
 
+  it "distingue Semi Mobiliado de totalmente Mobiliado no filtro de características" do
+    semi = create(:habitation, codigo: "SEMI-#{SecureRandom.hex(6)}", status: "Aluguel", caracteristicas: ["Semi Mobiliado"], titulo_anuncio: "Imóvel semi mobiliado #{SecureRandom.hex(4)}")
+    full = create(:habitation, codigo: "FULL-#{SecureRandom.hex(6)}", status: "Aluguel", caracteristicas: ["Mobiliado"], mobiliado_flag: true, titulo_anuncio: "Imóvel totalmente mobiliado #{SecureRandom.hex(4)}")
+
+    get admin_habitations_path(ownership: "all", amenities: ["Semi Mobiliado"])
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(semi.titulo_anuncio)
+    expect(response.body).not_to include(full.titulo_anuncio)
+
+    get admin_habitations_path(ownership: "all", amenities: ["Mobiliado"])
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(full.titulo_anuncio)
+    expect(response.body).not_to include(semi.titulo_anuncio)
+  end
+
   it "filtra imóveis pela cidade do proprietário" do
     prop_bc = create(:proprietor, city: "Balneário Camboriú")
     prop_itajai = create(:proprietor, city: "Itajaí")

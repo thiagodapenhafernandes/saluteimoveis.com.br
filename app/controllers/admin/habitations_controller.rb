@@ -1784,10 +1784,22 @@ class Admin::HabitationsController < Admin::BaseController
       scope.where("varanda_gourmet_flag = true OR " \
                   "(jsonb_typeof(caracteristicas) = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(caracteristicas) value WHERE unaccent(lower(value)) ILIKE unaccent('%sacada%'))) OR " \
                   "(jsonb_typeof(caracteristicas) = 'object' AND EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) kv WHERE unaccent(lower(kv.key)) ILIKE unaccent('%sacada%') OR unaccent(lower(kv.value)) ILIKE unaccent('%sacada%')))")
+    when /semi.*mobiliad/
+      # Card "erro filtro": "Semi Mobiliado" não deve usar o mobiliado_flag (que
+      # é do totalmente mobiliado); casa apenas a característica semi mobiliado.
+      scope.where(
+        "(jsonb_typeof(caracteristicas) = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(caracteristicas) value WHERE unaccent(lower(value)) ILIKE unaccent('%semi%mobiliad%'))) OR " \
+        "(jsonb_typeof(caracteristicas) = 'object' AND EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) kv WHERE unaccent(lower(kv.key)) ILIKE unaccent('%semi%mobiliad%') OR unaccent(lower(kv.value)) ILIKE unaccent('%semi%mobiliad%')))"
+      )
     when /mobiliado/
-      scope.where("mobiliado_flag = true OR " \
-                  "(jsonb_typeof(caracteristicas) = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(caracteristicas) value WHERE unaccent(lower(value)) ILIKE unaccent('%mobiliado%'))) OR " \
-                  "(jsonb_typeof(caracteristicas) = 'object' AND EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) kv WHERE unaccent(lower(kv.key)) ILIKE unaccent('%mobiliado%') OR unaccent(lower(kv.value)) ILIKE unaccent('%mobiliado%')))")
+      # "Mobiliado" (totalmente) exclui explicitamente os "Semi Mobiliado".
+      scope.where(
+        "(mobiliado_flag = true OR " \
+        "(jsonb_typeof(caracteristicas) = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(caracteristicas) value WHERE unaccent(lower(value)) ILIKE unaccent('%mobiliado%'))) OR " \
+        "(jsonb_typeof(caracteristicas) = 'object' AND EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) kv WHERE unaccent(lower(kv.key)) ILIKE unaccent('%mobiliado%') OR unaccent(lower(kv.value)) ILIKE unaccent('%mobiliado%')))) AND " \
+        "NOT ((jsonb_typeof(caracteristicas) = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(caracteristicas) value WHERE unaccent(lower(value)) ILIKE unaccent('%semi%mobiliad%'))) OR " \
+        "(jsonb_typeof(caracteristicas) = 'object' AND EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) kv WHERE unaccent(lower(kv.key)) ILIKE unaccent('%semi%mobiliad%') OR unaccent(lower(kv.value)) ILIKE unaccent('%semi%mobiliad%'))))"
+      )
     when /cozinha.*gourmet.*churrasqueir/
       scope.cozinha_gourmet_churrasqueira
     when /sol.*manha/
