@@ -144,31 +144,33 @@ module Habitation::CategoryTaxonomy
       INTAKE_CATEGORY_GROUPS[group.to_s]&.first
     end
 
-    def feature_options_for_kind(kind, catalog_options = [], selected_options: [])
-      options_for_kind(FEATURE_OPTIONS_BY_KIND, kind, catalog_options, selected_options: selected_options)
+    def feature_options_for_kind(kind, catalog_options = [], selected_options: [], forced_options: [])
+      options_for_kind(FEATURE_OPTIONS_BY_KIND, kind, catalog_options, selected_options: selected_options, forced_options: forced_options)
     end
 
-    def infrastructure_options_for_kind(kind, catalog_options = [], selected_options: [])
-      options_for_kind(INFRASTRUCTURE_OPTIONS_BY_KIND, kind, catalog_options, selected_options: selected_options, category: "infrastructure")
+    def infrastructure_options_for_kind(kind, catalog_options = [], selected_options: [], forced_options: [])
+      options_for_kind(INFRASTRUCTURE_OPTIONS_BY_KIND, kind, catalog_options, selected_options: selected_options, forced_options: forced_options, category: "infrastructure")
     end
 
     private
 
-    def options_for_kind(source, kind, catalog_options, selected_options:, category: "feature")
+    def options_for_kind(source, kind, catalog_options, selected_options:, forced_options: [], category: "feature")
       kind_key = source.key?(kind.to_s) ? kind.to_s : "residencial"
       allowed = source.fetch(kind_key)
       allowed_keys = normalized_option_keys(allowed, category: category)
-      # Chaves conhecidas em qualquer tipo, para identificar características custom.
       known_keys = normalized_option_keys(source.values.flatten, category: category)
+
+      # Características SEM tipo vinculado seguem a lista por tipo (whitelist) ou,
+      # se forem totalmente custom (fora de qualquer tipo), aparecem em todos.
       catalog = Array(catalog_options).select do |option|
         key = normalized_option_key(option, category: category)
-        # Mantém as características do tipo atual e também as custom (criadas em
-        # attribute_options e não mapeadas em nenhum tipo), para que toda
-        # característica nova apareça dinamicamente no filtro. (Card #9)
         allowed_keys.include?(key) || known_keys.exclude?(key)
       end
 
-      normalize_options(allowed + catalog + Array(selected_options), category: category)
+      # Card "Ajuste função criar características": forced_options são as
+      # características explicitamente vinculadas a este tipo — entram sempre,
+      # independentemente da whitelist.
+      normalize_options(allowed + catalog + Array(forced_options) + Array(selected_options), category: category)
     end
 
     def normalize_options(options, category: "feature")
@@ -221,12 +223,25 @@ module Habitation::CategoryTaxonomy
     property_kind == "empreendimento"
   end
 
-  def feature_catalog_options(catalog_options = [])
-    self.class.feature_options_for_kind(feature_catalog_kind, catalog_options, selected_options: caracteristicas_imovel)
+  # Características sempre disponíveis em qualquer tipo (histórico).
+  ALWAYS_AVAILABLE_FEATURE_LABELS = [
+    "Cozinha gourmet com churrasqueira", "Sol da manhã", "Sol da tarde", "Sol o dia todo"
+  ].freeze
+
+  # Card "Ajuste função criar características": o catálogo de características vem
+  # filtrado pelo tipo de imóvel — característica criada em um tipo só aparece
+  # naquele tipo (filtro, ficha de captação e cadastro). Características sem tipo
+  # vinculado continuam valendo para todos.
+  def feature_catalog_options(_catalog_options = nil)
+    catalog = AttributeOption.unassigned_catalog_names("feature") + ALWAYS_AVAILABLE_FEATURE_LABELS
+    forced = AttributeOption.kind_catalog_names("feature", feature_catalog_kind)
+    self.class.feature_options_for_kind(feature_catalog_kind, catalog, forced_options: forced, selected_options: caracteristicas_imovel)
   end
 
-  def infrastructure_catalog_options(catalog_options = [])
-    self.class.infrastructure_options_for_kind(feature_catalog_kind, catalog_options, selected_options: caracteristicas_predio)
+  def infrastructure_catalog_options(_catalog_options = nil)
+    catalog = AttributeOption.unassigned_catalog_names("infrastructure")
+    forced = AttributeOption.kind_catalog_names("infrastructure", feature_catalog_kind)
+    self.class.infrastructure_options_for_kind(feature_catalog_kind, catalog, forced_options: forced, selected_options: caracteristicas_predio)
   end
 
   def default_intake_feature_options

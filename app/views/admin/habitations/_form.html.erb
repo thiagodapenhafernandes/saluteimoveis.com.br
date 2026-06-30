@@ -30,6 +30,7 @@
 <div class="habitation-form-ui"
      data-controller="attribute-manager habitation-form habitation-duplicate-check transaction-value-toggle"
      data-attribute-manager-modal-id-value="attributeManagerModal"
+     data-attribute-manager-property-kind-value="<%= habitation.feature_catalog_kind %>"
      data-habitation-form-categories-by-type-value="<%= json_escape(cadastro_categories.to_json) %>"
      data-habitation-form-tipo-by-type-value="<%= json_escape(cadastro_tipo_by_type.to_json) %>"
      data-habitation-form-developments-value="<%= json_escape(development_lookup.to_json) %>"

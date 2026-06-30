@@ -1,8 +1,6 @@
 <%
   kind = @captacao.property_kind.to_s
-  features_predio = captacao_feature_options(
-    @captacao.class.infrastructure_options_for_kind(@captacao.feature_catalog_kind, @external_features)
-  )
+  features_predio = captacao_feature_options(@captacao.infrastructure_catalog_options)
   show_infrastructure_checklist = (@captacao.uses_building_infrastructure? || @captacao.property_kind_empreendimento?) && features_predio.any?
 %>
 

@@ -870,7 +870,9 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     AttributeOption.create!(context: "habitation", category: "feature", name: "Piso elevado")
     AttributeOption.create!(context: "habitation", category: "feature", name: "Murado")
 
-    terrain = create(:habitation, :broker_intake, admin_user: admin, categoria: "Terreno", intake_step: "caracteristicas")
+    # caracteristicas: [] para testar apenas a filtragem das opções DISPONÍVEIS
+    # por tipo (uma característica já selecionada permanece de propósito).
+    terrain = create(:habitation, :broker_intake, admin_user: admin, categoria: "Terreno", intake_step: "caracteristicas", caracteristicas: [])
     get edit_admin_captacao_path(terrain, step: "caracteristicas")
 
     expect(response).to have_http_status(:ok)
@@ -878,7 +880,7 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(response.body).not_to include("Sacada")
     expect(response.body).not_to include("Piso elevado")
 
-    warehouse = create(:habitation, :broker_intake, admin_user: admin, categoria: "Galpão", intake_step: "caracteristicas")
+    warehouse = create(:habitation, :broker_intake, admin_user: admin, categoria: "Galpão", intake_step: "caracteristicas", caracteristicas: [])
     get edit_admin_captacao_path(warehouse, step: "caracteristicas")
 
     expect(response).to have_http_status(:ok)

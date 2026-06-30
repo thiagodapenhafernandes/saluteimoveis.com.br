@@ -660,6 +660,21 @@ RSpec.describe Habitation, type: :model do
     end
   end
 
+  describe "#feature_catalog_options (roteamento por tipo)" do
+    it "inclui características do tipo do imóvel e as sem tipo, excluindo de outros tipos" do
+      galpao_opt = AttributeOption.create!(context: "habitation", category: "feature", name: "Doca de carga ZZ", property_kinds: ["galpao"])
+      resid_opt = AttributeOption.create!(context: "habitation", category: "feature", name: "Closet planejado ZZ", property_kinds: ["residencial"])
+      universal_opt = AttributeOption.create!(context: "habitation", category: "feature", name: "Detalhe universal ZZ", property_kinds: [])
+
+      apartamento = build(:habitation, categoria: "Apartamento")
+      options = apartamento.feature_catalog_options
+
+      expect(options).to include(resid_opt.name)
+      expect(options).to include(universal_opt.name)
+      expect(options).not_to include(galpao_opt.name)
+    end
+  end
+
   describe "#sync_admin_user_from_primary_captador" do
     it "sincroniza admin_user_id a partir do captador definido no Comercial" do
       captador = create(:admin_user)

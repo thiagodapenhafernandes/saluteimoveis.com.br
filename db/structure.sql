@@ -1,4 +1,4 @@
-\restrict zUa1SO3wxzW5kHix5fukPahncgEEdqyrOylgtimnfIG0AZd9CWhXDYvSyFdxc80
+\restrict rz9dzDt3nYX24n1vygMxwhBA5AsooZIiuvIAaGJX6JsUwGrlXEgI3RtZDKC9zbd
 
 -- Dumped from database version 17.9 (Homebrew)
 -- Dumped by pg_dump version 17.9 (Homebrew)
@@ -505,7 +505,8 @@ CREATE TABLE public.attribute_options (
     category character varying NOT NULL,
     context character varying NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    property_kinds jsonb DEFAULT '[]'::jsonb NOT NULL
 );
 
 
@@ -8453,11 +8454,12 @@ ALTER TABLE ONLY public.push_subscriptions
 -- PostgreSQL database dump complete
 --
 
-\unrestrict zUa1SO3wxzW5kHix5fukPahncgEEdqyrOylgtimnfIG0AZd9CWhXDYvSyFdxc80
+\unrestrict rz9dzDt3nYX24n1vygMxwhBA5AsooZIiuvIAaGJX6JsUwGrlXEgI3RtZDKC9zbd
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260630140000'),
 ('20260630120000'),
 ('20260622162257'),
 ('20260620120000'),

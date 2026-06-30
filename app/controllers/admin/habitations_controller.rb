@@ -841,15 +841,26 @@ class Admin::HabitationsController < Admin::BaseController
                                                                                  .distinct
                                                                                  .pluck(:estado_conservacao)).uniq.sort
     @filter_regioes_foco = Habitation::REGIAO_FOCO_OPTIONS
-    internal_features = (AttributeOption.where(context: 'habitation', category: 'feature').order(name: :asc).pluck(:name) + CUSTOM_FEATURE_OPTIONS).uniq.sort
-    external_features = AttributeOption.where(context: 'habitation', category: 'infrastructure').order(name: :asc).pluck(:name)
+    # Card "Ajuste função criar características": cada seção do filtro usa as
+    # características sem tipo (catalog) + as vinculadas ao tipo da seção (forced).
+    unassigned_features = AttributeOption.unassigned_catalog_names("feature")
     @apartment_feature_filter_options = dedupe_filter_labels(
-      Habitation.feature_options_for_kind("residencial", internal_features)
+      Habitation.feature_options_for_kind(
+        "residencial",
+        unassigned_features + CUSTOM_FEATURE_OPTIONS,
+        forced_options: AttributeOption.kind_catalog_names("feature", "residencial")
+      )
     )
     @enterprise_amenity_filter_options = dedupe_filter_labels(
       AMENITY_FILTER_OPTIONS +
-      Habitation.feature_options_for_kind("empreendimento", internal_features) +
-      Habitation.infrastructure_options_for_kind("empreendimento", external_features)
+      Habitation.feature_options_for_kind(
+        "empreendimento", unassigned_features,
+        forced_options: AttributeOption.kind_catalog_names("feature", "empreendimento")
+      ) +
+      Habitation.infrastructure_options_for_kind(
+        "empreendimento", AttributeOption.unassigned_catalog_names("infrastructure"),
+        forced_options: AttributeOption.kind_catalog_names("infrastructure", "empreendimento")
+      )
     )
   end
 
