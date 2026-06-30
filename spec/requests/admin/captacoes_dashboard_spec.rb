@@ -22,6 +22,7 @@ RSpec.describe "Admin::Captacoes dashboard", type: :request do
     expect(response.body).to include("Região foco Venda")
     expect(response.body).to include("Região foco Locação")
     expect(response.body).to include("Captação com Adm")
+    expect(response.body).to include("Com ADM")
     expect(response.body).to include("de 2 captações de venda")
     expect(response.body).to include("de 2 captações de locação")
     expect(response.body).to include("50%")
