@@ -1937,7 +1937,11 @@
             <% attached_media_photo_filenames = attached_media_photos.filter_map { |photo| photo.blob&.filename&.to_s&.downcase } %>
             <% api_media_pictures = habitation.pictures.is_a?(Array) ? habitation.pictures.each_with_index.filter_map { |pic, index|
                  pic_url = pic.is_a?(String) ? pic : (pic.try(:[], "url") || pic.try(:[], "src") || pic.try(:[], "link"))
-                 [pic, index, pic_url] if pic_url.present?
+                 next if pic_url.blank?
+                 # Card #14: nao exibe a foto do Vista que ja existe como anexo local (o Vista nao sobrescreve o nosso).
+                 pic_basename = File.basename(pic_url.to_s.split("?").first.to_s).downcase
+                 next if pic_basename.present? && attached_media_photo_filenames.include?(pic_basename)
+                 [pic, index, pic_url]
                } : [] %>
             <% media_gallery_count =
                  attached_media_photos.size +

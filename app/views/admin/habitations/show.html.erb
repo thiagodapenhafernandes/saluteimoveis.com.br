@@ -252,9 +252,12 @@
     }
   } : []
 
+  attached_photo_basenames = @habitation.attached_photo_basenames
   api_photo_sources = @habitation.pictures.is_a?(Array) ? @habitation.pictures.each_with_index.filter_map { |pic, index|
     pic_url = pic.is_a?(String) ? pic : (pic.try(:[], "url") || pic.try(:[], "src") || pic.try(:[], "link") || pic.try(:[], "url_pequena"))
     next if pic_url.blank?
+    # Card #14: oculta a foto do Vista que já existe como anexo local (sem duplicar).
+    next if @habitation.picture_duplicate_of_attached?(pic, attached_photo_basenames)
 
     {
       url: pic_url,

@@ -1265,6 +1265,35 @@ class Habitation < ApplicationRecord
     picture.try(:[], "url") || picture.try(:[], :url) || picture.try(:[], "src") || picture.try(:[], :src) || picture.try(:[], "link") || picture.try(:[], :link)
   end
 
+  # URL exibível de uma picture (API/Vista), cobrindo as variações de chave.
+  def picture_image_url(picture)
+    picture.is_a?(String) ? picture : (picture.try(:[], "url") || picture.try(:[], "src") || picture.try(:[], "link") || picture.try(:[], "url_pequena"))
+  end
+
+  # Card #14: o Vista não pode sobrescrever/duplicar fotos já anexadas localmente.
+  # Conjunto dos nomes-base das fotos anexadas, usado para ocultar pictures do
+  # Vista que sejam a mesma imagem já presente como anexo.
+  def attached_photo_basenames
+    return Set.new unless photos.attached?
+
+    ordered_photos.filter_map { |photo|
+      next unless photo.blob&.persisted?
+
+      photo.blob.filename.to_s.downcase.presence
+    }.to_set
+  end
+
+  def picture_duplicate_of_attached?(picture, attached_basenames = nil)
+    attached_basenames ||= attached_photo_basenames
+    return false if attached_basenames.empty?
+
+    url = picture_image_url(picture)
+    return false if url.blank?
+
+    basename = File.basename(url.to_s.split("?").first.to_s).downcase
+    basename.present? && attached_basenames.include?(basename)
+  end
+
   def sync_intake_answers
     self.aceita_permuta_flag = aceita_permuta_answer == "sim" if aceita_permuta_answer.present?
     # Os 3 flags específicos (veículo/imóvel/outros) são a fonte de verdade da

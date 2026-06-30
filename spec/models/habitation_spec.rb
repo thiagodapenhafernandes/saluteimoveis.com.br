@@ -633,6 +633,16 @@ RSpec.describe Habitation, type: :model do
     end
   end
 
+  describe "#picture_duplicate_of_attached?" do
+    it "considera duplicada a picture do Vista cujo nome de arquivo já está anexado" do
+      habitation = create(:habitation)
+      habitation.photos.attach(io: StringIO.new("x"), filename: "foto1.jpg", content_type: "image/jpeg")
+
+      expect(habitation.picture_duplicate_of_attached?({ "url" => "https://cdn.vista/fotos/foto1.jpg" })).to be(true)
+      expect(habitation.picture_duplicate_of_attached?({ "url" => "https://cdn.vista/fotos/outra.jpg" })).to be(false)
+    end
+  end
+
   describe ".feature_options_for_kind" do
     it "inclui características custom (fora da whitelist) no filtro" do
       sem_custom = described_class.feature_options_for_kind("empreendimento", [])
