@@ -50,9 +50,12 @@ module Admin
         @admin_users = @admin_users.where(profile_id: params[:profile_id])
       end
 
+      # Card "Lista corretores e usuários sistema": por padrão traz somente os
+      # ativos. "all" mostra todos; "inactive" só os inativos.
       case params[:status]
-      when "active"   then @admin_users = @admin_users.active
+      when "all"      then @admin_users
       when "inactive" then @admin_users = @admin_users.inactive
+      else                 @admin_users = @admin_users.active
       end
 
       @admin_users = @admin_users.order(name: :asc).paginate(page: params[:page], per_page: 20)
