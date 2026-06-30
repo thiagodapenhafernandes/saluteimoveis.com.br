@@ -624,4 +624,59 @@ RSpec.describe Habitation, type: :model do
       expect(habitation.display_neighborhood).to eq("Centro")
     end
   end
+
+  describe "#display_area_m2" do
+    it "usa a área total/terreno para terrenos quando a privativa está zerada" do
+      terreno = build(:habitation, categoria: "Terreno", area_total_m2: 252, area_privativa_m2: 0)
+
+      expect(terreno.display_area_m2.to_f).to eq(252.0)
+    end
+  end
+
+  describe "#compose_dimensoes_terreno" do
+    it "mantém dimensoes_terreno em sincronia a partir de frente e fundo" do
+      terreno = create(:habitation, categoria: "Terreno", frente_terreno_m: 12, fundo_terreno_m: 30)
+
+      expect(terreno.reload.dimensoes_terreno).to eq("12x30")
+    end
+  end
+
+  describe "#picture_duplicate_of_attached?" do
+    it "considera duplicada a picture do Vista cujo nome de arquivo já está anexado" do
+      habitation = create(:habitation)
+      habitation.photos.attach(io: StringIO.new("x"), filename: "foto1.jpg", content_type: "image/jpeg")
+
+      expect(habitation.picture_duplicate_of_attached?({ "url" => "https://cdn.vista/fotos/foto1.jpg" })).to be(true)
+      expect(habitation.picture_duplicate_of_attached?({ "url" => "https://cdn.vista/fotos/outra.jpg" })).to be(false)
+    end
+  end
+
+  describe ".feature_options_for_kind" do
+    it "inclui características custom (fora da whitelist) no filtro" do
+      sem_custom = described_class.feature_options_for_kind("empreendimento", [])
+      com_custom = described_class.feature_options_for_kind("empreendimento", ["Espaço Gourmet Exclusivo ZZ"])
+
+      expect(com_custom.size).to be > sem_custom.size
+    end
+  end
+
+  describe "#sync_admin_user_from_primary_captador" do
+    it "sincroniza admin_user_id a partir do captador definido no Comercial" do
+      captador = create(:admin_user)
+      habitation = create(:habitation, admin_user: nil)
+
+      habitation.update!(broker_assignments_attributes: [{ admin_user_id: captador.id, role: "captador" }])
+
+      expect(habitation.reload.admin_user_id).to eq(captador.id)
+    end
+
+    it "não altera admin_user_id quando não há captador nos responsáveis" do
+      dono = create(:admin_user)
+      habitation = create(:habitation, admin_user: dono)
+
+      habitation.update!(broker_assignments_attributes: [{ admin_user_id: create(:admin_user).id, role: "promotor" }])
+
+      expect(habitation.reload.admin_user_id).to eq(dono.id)
+    end
+  end
 end

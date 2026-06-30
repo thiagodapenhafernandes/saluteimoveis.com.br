@@ -188,8 +188,19 @@
     padding: 1rem;
     background: #0d253f;
   }
+  /* Card #5: no modo TV o filtro de data continua acessível (barra fixa, canto superior esquerdo). */
   body.capt-dashboard-tv-active .capt-filter-card {
-    display: none !important;
+    position: fixed;
+    top: .75rem;
+    left: .75rem;
+    z-index: 20;
+    margin: 0;
+    width: auto;
+    max-width: 60vw;
+    opacity: .85;
+  }
+  body.capt-dashboard-tv-active .capt-filter-card:hover {
+    opacity: 1;
   }
   body.capt-dashboard-tv-active .capt-tv-toolbar {
     position: fixed;
@@ -656,7 +667,7 @@
           <div class="card-body">
             <h6 class="fw-bold text-muted text-uppercase small mb-3">Ranking de corretores</h6>
             <div class="capt-ranking-scroll">
-              <%= render "ranking_table", rows: @ranking_locacao, value_key: :total_value, value_label: "Total Locação" %>
+              <%= render "ranking_table", rows: @ranking_locacao, value_key: :total_value, value_label: "Total Locação", adm_column: true %>
             </div>
           </div>
         </div>

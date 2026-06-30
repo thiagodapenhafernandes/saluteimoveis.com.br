@@ -853,7 +853,7 @@
     permuta_vehicle permuta_property permuta_others permuta_min_value permuta_location
     permuta_min_dorms permuta_min_suites permuta_min_garagens
     situacao face ocupacao_status estado_conservacao area_total_min area_total_max area_privativa_min area_privativa_max
-    destaque_web festival_salute exibir_no_site tem_placa exclusivo proprietor_id regiao_foco
+    destaque_web festival_salute exibir_no_site tem_placa exclusivo proprietor_id proprietor_city regiao_foco
     publicar_imovelweb_2 publicar_lais_ai
     publicar_chaves_na_mao publicar_casa_mineira publicar_imovelweb publicar_viva_real_vrsync
     captacao_inicio captacao_fim somente_com_imagens somente_sem_imagens somente_dwv
@@ -1036,10 +1036,10 @@
 
         <%
           loc_open = %w[logradouro numero cep cidade bairro bairro_comercial].any? { |k| params[k].present? }
-          neg_open = %w[situacao promotion_status accepts_exchange key_location salute_rental_management permuta_vehicle permuta_property permuta_others permuta_min_value permuta_location permuta_min_dorms permuta_min_suites permuta_min_garagens captacao_inicio captacao_fim atualizacao_inicio atualizacao_fim].any? { |k| params[k].present? }
+          neg_open = %w[situacao promotion_status accepts_exchange key_location salute_rental_management permuta_vehicle permuta_property permuta_others].any? { |k| params[k].present? }
           apt_open = (%w[face ocupacao_status estado_conservacao area_total_min area_total_max area_privativa_min area_privativa_max].any? { |k| params[k].present? }) || %w[banheiros dorms suites vagas amenities].any? { |k| Array(params[k]).reject(&:blank?).any? }
           emp_open = Array(params[:amenities]).reject(&:blank?).any?
-          adm_open = (%w[proprietor_id regiao_foco destaque_web festival_salute exibir_no_site somente_com_imagens somente_sem_imagens tem_placa exclusivo somente_dwv].any? { |k| params[k].present? }) || Array(params[:foto_classificacao]).reject(&:blank?).any? || %w[publicar_imovelweb_2 publicar_lais_ai publicar_chaves_na_mao publicar_casa_mineira publicar_imovelweb publicar_viva_real_vrsync].any? { |k| params[k].present? }
+          adm_open = (%w[proprietor_id proprietor_city regiao_foco destaque_web festival_salute exibir_no_site somente_com_imagens somente_sem_imagens tem_placa exclusivo somente_dwv captacao_inicio captacao_fim atualizacao_inicio atualizacao_fim].any? { |k| params[k].present? }) || Array(params[:foto_classificacao]).reject(&:blank?).any? || %w[publicar_imovelweb_2 publicar_lais_ai publicar_chaves_na_mao publicar_casa_mineira publicar_imovelweb publicar_viva_real_vrsync].any? { |k| params[k].present? }
         %>
 
         <details class="filter-accordion"<%= " open".html_safe if loc_open %>>
@@ -1138,55 +1138,6 @@
                   <%= check_box_tag :permuta_others, "1", params[:permuta_others] == "1", class: "form-check-input", id: "permuta_others_filter" %>
                   <%= label_tag :permuta_others_filter, "Aceita permuta outros", class: "form-check-label" %>
                 </div>
-              </div>
-              <div class="col-md-4">
-                <label class="form-label small fw-bold text-muted text-uppercase">Valor mín. permuta</label>
-                <div class="input-group">
-                  <span class="input-group-text bg-white">R$</span>
-                  <%= f.text_field :permuta_min_value,
-                                   value: params[:permuta_min_value],
-                                   class: "form-control money-mask",
-                                   placeholder: "0",
-                                   autocomplete: "off",
-                                   inputmode: "numeric",
-                                   data: { controller: "currency-mask", action: "input->currency-mask#format" } %>
-                </div>
-              </div>
-              <div class="col-md-8">
-                <label class="form-label small fw-bold text-muted text-uppercase">Localização permuta</label>
-                <%= f.text_field :permuta_location, value: params[:permuta_location], class: "form-control", placeholder: "Cidade, bairro ou região" %>
-              </div>
-              <div class="col-md-4">
-                <label class="form-label small fw-bold text-muted text-uppercase">Dormit. mín.</label>
-                <%= f.number_field :permuta_min_dorms, value: params[:permuta_min_dorms], class: "form-control", min: 0 %>
-              </div>
-              <div class="col-md-4">
-                <label class="form-label small fw-bold text-muted text-uppercase">Suítes mín.</label>
-                <%= f.number_field :permuta_min_suites, value: params[:permuta_min_suites], class: "form-control", min: 0 %>
-              </div>
-              <div class="col-md-4">
-                <label class="form-label small fw-bold text-muted text-uppercase">Garagens mín.</label>
-                <%= f.number_field :permuta_min_garagens, value: params[:permuta_min_garagens], class: "form-control", min: 0 %>
-              </div>
-            </div>
-
-            <div class="filter-subgroup-title">Datas</div>
-            <div class="filter-date-grid">
-              <div>
-                <label class="form-label small fw-bold text-muted text-uppercase">Cadastro de</label>
-                <%= f.date_field :captacao_inicio, value: params[:captacao_inicio], class: "form-control" %>
-              </div>
-              <div>
-                <label class="form-label small fw-bold text-muted text-uppercase">Cadastro até</label>
-                <%= f.date_field :captacao_fim, value: params[:captacao_fim], class: "form-control" %>
-              </div>
-              <div>
-                <label class="form-label small fw-bold text-muted text-uppercase">Atualiz. de</label>
-                <%= f.date_field :atualizacao_inicio, value: params[:atualizacao_inicio], class: "form-control" %>
-              </div>
-              <div>
-                <label class="form-label small fw-bold text-muted text-uppercase">Atualiz. até</label>
-                <%= f.date_field :atualizacao_fim, value: params[:atualizacao_fim], class: "form-control" %>
               </div>
             </div>
           </div>
@@ -1343,6 +1294,20 @@
                              } %>
               </div>
               <div class="col-md-4">
+                <label class="form-label small fw-bold text-muted text-uppercase">Cidade do proprietário</label>
+                <%= f.select :proprietor_city,
+                             @filter_proprietor_cities,
+                             { include_blank: "Todas", selected: params[:proprietor_city] },
+                             {
+                               class: "form-select",
+                               data: {
+                                 controller: "tom-select",
+                                 tom_select_create_value: false,
+                                 tom_select_options_value: { placeholder: "Selecione a cidade do proprietário" }
+                               }
+                             } %>
+              </div>
+              <div class="col-md-4">
                 <label class="form-label small fw-bold text-muted text-uppercase">Região foco?</label>
                 <%= f.select :regiao_foco, @filter_regioes_foco, { include_blank: "Todas", selected: params[:regiao_foco] }, class: "form-select" %>
               </div>
@@ -1450,6 +1415,26 @@
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            <div class="filter-subgroup-title">Datas</div>
+            <div class="filter-date-grid">
+              <div>
+                <label class="form-label small fw-bold text-muted text-uppercase">Cadastro de</label>
+                <%= f.date_field :captacao_inicio, value: params[:captacao_inicio], class: "form-control" %>
+              </div>
+              <div>
+                <label class="form-label small fw-bold text-muted text-uppercase">Cadastro até</label>
+                <%= f.date_field :captacao_fim, value: params[:captacao_fim], class: "form-control" %>
+              </div>
+              <div>
+                <label class="form-label small fw-bold text-muted text-uppercase">Atualiz. de</label>
+                <%= f.date_field :atualizacao_inicio, value: params[:atualizacao_inicio], class: "form-control" %>
+              </div>
+              <div>
+                <label class="form-label small fw-bold text-muted text-uppercase">Atualiz. até</label>
+                <%= f.date_field :atualizacao_fim, value: params[:atualizacao_fim], class: "form-control" %>
               </div>
             </div>
           </div>
@@ -1728,14 +1713,10 @@
   active_filter_chips << "Permuta veículo: Sim" if params[:permuta_vehicle] == "1"
   active_filter_chips << "Permuta imóvel: Sim" if params[:permuta_property] == "1"
   active_filter_chips << "Permuta outros: Sim" if params[:permuta_others] == "1"
-  active_filter_chips << "Valor mín. permuta: R$ #{params[:permuta_min_value]}" if params[:permuta_min_value].present?
-  active_filter_chips << "Localização permuta: #{params[:permuta_location]}" if params[:permuta_location].present?
-  active_filter_chips << "Dorms permuta ≥ #{params[:permuta_min_dorms]}" if params[:permuta_min_dorms].present?
-  active_filter_chips << "Suítes permuta ≥ #{params[:permuta_min_suites]}" if params[:permuta_min_suites].present?
-  active_filter_chips << "Garagens permuta ≥ #{params[:permuta_min_garagens]}" if params[:permuta_min_garagens].present?
   active_filter_chips << "Empreendimento: #{params[:empreendimento_codigo]}" if params[:empreendimento_codigo].present?
   active_filter_chips << "Corretor: #{params[:corretor_id]}" if params[:corretor_id].present?
   active_filter_chips << "Proprietário: #{params[:proprietor_id]}" if can_filter_by_proprietor? && params[:proprietor_id].present?
+  active_filter_chips << "Cidade do proprietário: #{params[:proprietor_city]}" if can_filter_by_proprietor? && params[:proprietor_city].present?
   active_filter_chips << "Região foco?: #{params[:regiao_foco]}" if params[:regiao_foco].present?
   active_filter_chips << "Meus imóveis" if @ownership_scope == "mine"
   active_filter_chips << "Pendente de revisão" if @intake_review == "pending"
@@ -1770,10 +1751,29 @@
           <div class="row g-0 h-100">
             <!-- Image Column -->
             <div class="col-md-4 col-lg-3 position-relative h-100">
-              <% primary_card_image = imovel.primary_image %>
-              <% primary_card_image_url = primary_card_image.is_a?(Hash) ? (primary_card_image["url"].presence || primary_card_image["url_pequena"].presence) : primary_card_image %>
+              <%
+                card_gallery_sources = imovel.card_image_sources(30)
+                card_gallery_urls = card_gallery_sources.map { |src| src.is_a?(Hash) ? (src["url"].presence || src["url_pequena"].presence) : src }.compact
+                primary_card_image_url = card_gallery_urls.first
+              %>
               <% if primary_card_image_url.present? %>
-                <img src="<%= primary_card_image_url %>" class="img-fluid h-100 w-100 object-fit-cover" alt="<%= imovel.display_title %>">
+                <%# Card #16: clicar na foto abre a galeria com todas as fotos sem navegar para a ficha %>
+                <div class="h-100 w-100" data-controller="fancybox-gallery">
+                  <a href="<%= primary_card_image_url %>"
+                     class="d-block h-100 w-100"
+                     data-fancybox="catalog-card-<%= imovel.id %>"
+                     data-caption="<%= imovel.display_title %>"
+                     title="Ver todas as fotos"
+                     onclick="event.stopPropagation();">
+                    <img src="<%= primary_card_image_url %>" class="img-fluid h-100 w-100 object-fit-cover" alt="<%= imovel.display_title %>">
+                  </a>
+                  <% card_gallery_urls.drop(1).each do |photo_url| %>
+                    <a href="<%= photo_url %>"
+                       class="d-none"
+                       data-fancybox="catalog-card-<%= imovel.id %>"
+                       data-caption="<%= imovel.display_title %>"></a>
+                  <% end %>
+                </div>
               <% else %>
                 <div class="bg-light h-100 w-100 d-flex align-items-center justify-content-center text-muted">
                   <i class="bi bi-image display-4 opacity-25"></i>
@@ -1941,8 +1941,8 @@
                     <div class="d-flex align-items-center text-dark small fw-semibold" title="Vagas">
                        <i class="bi bi-car-front me-1 text-secondary"></i> <%= imovel.vagas_qtd %> <span class="text-muted fw-normal ms-1">Vagas</span>
                     </div>
-                    <div class="d-flex align-items-center text-dark small fw-semibold" title="Área Privativa">
-                       <i class="bi bi-arrows-angle-expand me-1 text-secondary"></i> <%= imovel.area_privativa_m2 %> <span class="text-muted fw-normal ms-1">m²</span>
+                    <div class="d-flex align-items-center text-dark small fw-semibold" title="Área">
+                       <i class="bi bi-arrows-angle-expand me-1 text-secondary"></i> <%= imovel.display_area_m2 || imovel.area_privativa_m2 %> <span class="text-muted fw-normal ms-1">m²</span>
                     </div>
                  </div>
 

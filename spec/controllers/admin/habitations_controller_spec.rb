@@ -31,4 +31,32 @@ RSpec.describe Admin::HabitationsController, type: :controller do
       expect(result).to contain_exactly(suspended)
     end
   end
+
+  describe "#can_manage_intake_status?" do
+    let(:intake) { create(:habitation, :broker_intake) }
+
+    it "permite apenas o Administrador geral" do
+      admin = create(:admin_user, :admin)
+      allow(controller).to receive(:current_admin_user).and_return(admin)
+
+      expect(controller.send(:can_manage_intake_status?, intake)).to be true
+    end
+
+    it "bloqueia perfis não-admin" do
+      non_admin = create(:admin_user)
+      allow(controller).to receive(:current_admin_user).and_return(non_admin)
+
+      expect(controller.send(:can_manage_intake_status?, intake)).to be_falsey
+    end
+  end
+
+  describe "#can_filter_by_proprietor?" do
+    it "libera o filtro administrativo para o perfil Gerente" do
+      gerente = Profile.find_or_create_by!(name: "Gerente") { |p| p.permissions = Profile.default_permissions_for("Gerente") }
+      user = create(:admin_user, profile: gerente)
+      allow(controller).to receive(:current_admin_user).and_return(user)
+
+      expect(controller.send(:can_filter_by_proprietor?)).to be_truthy
+    end
+  end
 end

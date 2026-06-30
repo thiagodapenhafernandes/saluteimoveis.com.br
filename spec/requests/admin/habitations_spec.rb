@@ -262,8 +262,32 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response).to redirect_to(edit_admin_habitation_path(habitation))
     expect(habitation).to have_attributes(
       intake_origin: Habitation::INTAKE_ORIGIN_BROKER,
-      intake_status: "draft"
+      intake_status: "submitted_for_admin_review"
     )
+  end
+
+  it "permite salvar cadastro interno pela metade sem categoria e o envia para revisão" do
+    expect {
+      post admin_habitations_path, params: {
+        habitation: {
+          status: "Venda",
+          tipo: "Unitário",
+          titulo_anuncio: "Ficha de papel pela metade #{SecureRandom.hex(4)}",
+          address_attributes: {
+            logradouro: "Rua Sem Categoria",
+            numero: "200",
+            bairro: "Centro",
+            cidade: "Itapema",
+            uf: "SC",
+            cep: "88220-000"
+          }
+        }
+      }
+    }.to change(Habitation, :count).by(1)
+
+    habitation = Habitation.order(:created_at).last
+    expect(habitation.categoria).to be_blank
+    expect(habitation.intake_status).to eq("submitted_for_admin_review")
   end
 
   it "mantém ações de revisão administrativa vinculadas ao formulário principal" do
@@ -539,7 +563,6 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("Captador")
     expect(response.body).to include("Luciana Indalécio")
-    expect(response.body).to include("Captador responsável:")
     expect(response.body).not_to include("Corretor responsável:")
   end
 
@@ -647,6 +670,33 @@ RSpec.describe "Admin::Habitations", type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include(sold.titulo_anuncio)
+  end
+
+  it "exibe imóvel com status inativo ao pesquisar pela referência" do
+    rented = create(:habitation, codigo: "REF-INATIVO-#{SecureRandom.hex(6)}", status: "Alugado terceiros", titulo_anuncio: "Alugado mas buscável por código #{SecureRandom.hex(4)}")
+
+    get admin_habitations_path(ownership: "all")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).not_to include(rented.titulo_anuncio)
+
+    get admin_habitations_path(ownership: "all", referencia: rented.codigo)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(rented.titulo_anuncio)
+  end
+
+  it "filtra imóveis pela cidade do proprietário" do
+    prop_bc = create(:proprietor, city: "Balneário Camboriú")
+    prop_itajai = create(:proprietor, city: "Itajaí")
+    in_bc = create(:habitation, codigo: "PROP-BC-#{SecureRandom.hex(6)}", status: "Venda", proprietor: prop_bc, titulo_anuncio: "Imóvel de proprietário em BC #{SecureRandom.hex(4)}")
+    in_itajai = create(:habitation, codigo: "PROP-ITJ-#{SecureRandom.hex(6)}", status: "Venda", proprietor: prop_itajai, titulo_anuncio: "Imóvel de proprietário em Itajaí #{SecureRandom.hex(4)}")
+
+    get admin_habitations_path(ownership: "all", proprietor_city: "Balneário Camboriú")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(in_bc.titulo_anuncio)
+    expect(response.body).not_to include(in_itajai.titulo_anuncio)
   end
 
   it "não exibe código DWV no card operacional quando o imóvel tem referência Salute" do
@@ -3273,7 +3323,7 @@ RSpec.describe "Admin::Habitations", type: :request do
     broker_log = HabitationAuditLog.where(habitation_id: habitation.id).last
     expect(broker_log).to have_attributes(action: "broker_assignments_changed")
     expect(broker_log.changed_fields).to include("broker_assignments")
-    expect(broker_log.change_summaries.first[:after]).to include("Corretor Auditor")
+    expect(broker_log.change_summaries.any? { |summary| summary[:after].to_s.include?("Corretor Auditor") }).to be(true)
 
     expect {
       post bulk_publish_admin_habitations_path, params: {

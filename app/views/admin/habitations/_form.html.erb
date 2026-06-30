@@ -667,18 +667,6 @@
                       </div>
                     </div>
 
-                    <div class="col-md-4">
-                      <%= f.label :admin_user_id, "Captador responsável:", class: "form-label small fw-bold mb-1" %>
-                      <%= f.collection_select :admin_user_id,
-                            AdminUser.active.order(:name),
-                            :id, :name,
-                            { include_blank: "— sem corretor —" },
-                            { class: "form-select form-select-sm",
-                              data: { controller: "tom-select", placeholder: "Selecione..." } } %>
-                      <div class="form-text text-muted extra-small mt-1">
-                        Captador principal do imóvel. Pode ser atualizado automaticamente via sync Vista.
-                      </div>
-                    </div>
                   <% end %>
                   <div class="col-md-3">
                     <%= f.label :perfil_construcao, "Perfil de construção:", class: "form-label small fw-bold mb-1" %>
@@ -916,9 +904,19 @@
                  <span class="input-group-text">m²</span>
               </div>
             </div>
-            <div class="col-md-3">
-              <%= f.label :dimensoes_terreno, "Dimensões Terreno:", class: "form-label small fw-bold mb-1" %>
-              <%= f.text_field :dimensoes_terreno, class: "form-control form-control-sm", placeholder: "Ex: 12x30" %>
+            <div class="col-md-2">
+              <%= f.label :frente_terreno_m, "Frente terreno:", class: "form-label small fw-bold mb-1" %>
+              <div class="input-group input-group-sm">
+                <%= f.number_field :frente_terreno_m, step: :any, min: 0, class: "form-control form-control-sm", placeholder: "Ex: 12" %>
+                <span class="input-group-text">m</span>
+              </div>
+            </div>
+            <div class="col-md-2">
+              <%= f.label :fundo_terreno_m, "Fundo terreno:", class: "form-label small fw-bold mb-1" %>
+              <div class="input-group input-group-sm">
+                <%= f.number_field :fundo_terreno_m, step: :any, min: 0, class: "form-control form-control-sm", placeholder: "Ex: 30" %>
+                <span class="input-group-text">m</span>
+              </div>
             </div>
             <div class="col-md-3">
               <%= f.label :topografia, "Topografia:", class: "form-label small fw-bold mb-1" %>
@@ -1949,7 +1947,11 @@
             <% attached_media_photo_filenames = attached_media_photos.filter_map { |photo| photo.blob&.filename&.to_s&.downcase } %>
             <% api_media_pictures = habitation.pictures.is_a?(Array) ? habitation.pictures.each_with_index.filter_map { |pic, index|
                  pic_url = pic.is_a?(String) ? pic : (pic.try(:[], "url") || pic.try(:[], "src") || pic.try(:[], "link"))
-                 [pic, index, pic_url] if pic_url.present?
+                 next if pic_url.blank?
+                 # Card #14: nao exibe a foto do Vista que ja existe como anexo local (o Vista nao sobrescreve o nosso).
+                 pic_basename = File.basename(pic_url.to_s.split("?").first.to_s).downcase
+                 next if pic_basename.present? && attached_media_photo_filenames.include?(pic_basename)
+                 [pic, index, pic_url]
                } : [] %>
             <% media_gallery_count =
                  attached_media_photos.size +

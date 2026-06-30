@@ -3,7 +3,7 @@
 # Table name: habitations
 #
 class Habitation < ApplicationRecord
-  attr_accessor :skip_auto_audit, :auto_audit_destroy_snapshot
+  attr_accessor :skip_auto_audit, :auto_audit_destroy_snapshot, :partial_intake_save
 
   # Concerns organizados por responsabilidade
   include Habitation::PriceFormatting
@@ -282,7 +282,10 @@ class Habitation < ApplicationRecord
 
   # Validations
   validates :codigo, presence: true, uniqueness: true
-  validates :categoria, presence: true
+  # Card #2: ao salvar um cadastro interno pela metade (ficha de papel), a
+  # categoria não é obrigatória — só nome e endereço. A obrigatoriedade volta
+  # ao concluir a revisão (botões Salvar interno / Devolver captador).
+  validates :categoria, presence: true, unless: :partial_intake_save
   validates :captador_commission_percentage,
             numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 100 },
             allow_nil: true
@@ -308,6 +311,8 @@ class Habitation < ApplicationRecord
   before_save :capture_price_reductions
   before_save :sync_flags_from_features
   before_save :sync_intake_answers
+  before_save :compose_dimensoes_terreno
+  before_save :sync_admin_user_from_primary_captador
   after_save :clear_cache
   after_destroy :clear_cache
   after_create_commit :record_auto_audit_create, unless: :skip_auto_audit?
@@ -382,6 +387,23 @@ class Habitation < ApplicationRecord
 
   def primary_captador
     primary_captador_assignment&.admin_user || admin_user
+  end
+
+  # Card #1: o captador passou a ser gerenciado apenas no bloco Comercial
+  # (broker_assignments). Mantém admin_user_id — usado em ownership/permissões —
+  # em sincronia com o captador definido ali. Só age quando as assignments estão
+  # carregadas (ex.: submissão do formulário), para não interferir no sync da
+  # Vista ou em operações em lote que não tocam nos responsáveis.
+  def sync_admin_user_from_primary_captador
+    # Lê apenas os responsáveis já em memória (construídos via nested attributes
+    # do formulário ou carregados), sem forçar consulta ao banco — assim não
+    # interfere no sync da Vista nem em operações em lote que não tocam neles.
+    assignments = broker_assignments.target
+    return if assignments.blank?
+
+    captador = assignments.reject(&:marked_for_destruction?)
+                          .find { |assignment| assignment.role == "captador" && assignment.admin_user_id.present? }
+    self.admin_user_id = captador.admin_user_id if captador
   end
 
   def primary_captador_name
@@ -631,10 +653,21 @@ class Habitation < ApplicationRecord
   def area_total = area_total_m2
   def area_privativa = area_privativa_m2
   def display_area_m2
-    primary_area = property_kind_terreno? ? area_total_m2 : area_privativa_m2
-    fallback_area = property_kind_terreno? ? area_privativa_m2 : area_total_m2
+    if property_kind_terreno?
+      # Card #15: terreno mostra a área total/do terreno (a privativa costuma ser 0).
+      positive_decimal(area_total_m2) || positive_decimal(area_terreno_m2) || positive_decimal(area_privativa_m2)
+    else
+      positive_decimal(area_privativa_m2) || positive_decimal(area_total_m2)
+    end
+  end
 
-    positive_decimal(primary_area) || positive_decimal(fallback_area)
+  # Card #13: a frente e o fundo do terreno são campos separados; mantém o campo
+  # legado dimensoes_terreno ("FxF") em sincronia para compatibilidade (site,
+  # exportações, etc.). Só recompõe quando ambos estão preenchidos.
+  def compose_dimensoes_terreno
+    return unless frente_terreno_m.present? && fundo_terreno_m.present?
+
+    self.dimensoes_terreno = "#{format('%g', frente_terreno_m.to_f)}x#{format('%g', fundo_terreno_m.to_f)}"
   end
 
   def dormitorios = dormitorios_qtd
@@ -1240,6 +1273,35 @@ class Habitation < ApplicationRecord
 
   def picture_url_for_visibility(picture)
     picture.try(:[], "url") || picture.try(:[], :url) || picture.try(:[], "src") || picture.try(:[], :src) || picture.try(:[], "link") || picture.try(:[], :link)
+  end
+
+  # URL exibível de uma picture (API/Vista), cobrindo as variações de chave.
+  def picture_image_url(picture)
+    picture.is_a?(String) ? picture : (picture.try(:[], "url") || picture.try(:[], "src") || picture.try(:[], "link") || picture.try(:[], "url_pequena"))
+  end
+
+  # Card #14: o Vista não pode sobrescrever/duplicar fotos já anexadas localmente.
+  # Conjunto dos nomes-base das fotos anexadas, usado para ocultar pictures do
+  # Vista que sejam a mesma imagem já presente como anexo.
+  def attached_photo_basenames
+    return Set.new unless photos.attached?
+
+    ordered_photos.filter_map { |photo|
+      next unless photo.blob&.persisted?
+
+      photo.blob.filename.to_s.downcase.presence
+    }.to_set
+  end
+
+  def picture_duplicate_of_attached?(picture, attached_basenames = nil)
+    attached_basenames ||= attached_photo_basenames
+    return false if attached_basenames.empty?
+
+    url = picture_image_url(picture)
+    return false if url.blank?
+
+    basename = File.basename(url.to_s.split("?").first.to_s).downcase
+    basename.present? && attached_basenames.include?(basename)
   end
 
   def sync_intake_answers

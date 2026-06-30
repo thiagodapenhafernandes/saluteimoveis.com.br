@@ -382,6 +382,7 @@ class Admin::HabitationsController < Admin::BaseController
     end
 
     assign_proprietor_from_legacy_fields(@habitation) if current_admin_user&.admin?
+    @habitation.partial_intake_save = admin_paper_intake_form? && !releasing_to_broker && !saving_internal_intake
     normalize_admin_paper_intake_plain_save_status(@habitation, releasing_to_broker:, saving_internal_intake:)
     apply_intake_status_transition_metadata(@habitation)
 
@@ -460,6 +461,9 @@ class Admin::HabitationsController < Admin::BaseController
     end
 
     assign_proprietor_from_legacy_fields(@habitation) if current_admin_user&.admin?
+    @habitation.partial_intake_save = admin_paper_intake_form? && !releasing_to_broker && !saving_internal_intake &&
+                                      @habitation.broker_intake? &&
+                                      %w[draft submitted_for_admin_review returned_to_broker].include?(@habitation.intake_status.to_s)
     apply_intake_status_transition_metadata(@habitation)
     if @habitation.save
       new_photo_attachment_ids = attach_new_photos(@habitation, new_photo_uploads, apply_watermark: apply_photo_watermark_requested?)
@@ -817,6 +821,13 @@ class Admin::HabitationsController < Admin::BaseController
     @filter_empreendimentos = filter_empreendimento_options
     @filter_brokers = AdminUser.order(name: :asc).pluck(:name, :id)
     @filter_proprietors = Proprietor.order(name: :asc).pluck(:name, :id)
+    @filter_proprietor_cities = Proprietor.where("NULLIF(TRIM(city), '') IS NOT NULL AND city != '.'")
+                                          .distinct
+                                          .pluck(:city)
+                                          .map { |city| city.to_s.strip }
+                                          .reject(&:blank?)
+                                          .uniq
+                                          .sort
     @filter_situacoes = (Habitation::SITUATIONS + Habitation.where("NULLIF(TRIM(situacao), '') IS NOT NULL AND situacao != '.'")
                                                           .distinct
                                                           .pluck(:situacao)).uniq.sort
@@ -909,6 +920,7 @@ class Admin::HabitationsController < Admin::BaseController
     @empreendimento_codigo = params[:empreendimento_codigo]
     @corretor_id = params[:corretor_id]
     @proprietor_id = can_filter_by_proprietor? ? params[:proprietor_id] : nil
+    @proprietor_city = can_filter_by_proprietor? ? params[:proprietor_city] : nil
     @destaque_web = params[:destaque_web]
     @festival_salute = params[:festival_salute]
     @exibir_no_site = params[:exibir_no_site].presence || params[:exibir_no_site_salute]
@@ -956,7 +968,9 @@ class Admin::HabitationsController < Admin::BaseController
     scope = scope.where("LOWER(TRIM(habitations.codigo)) = LOWER(?)", @referencia.to_s.strip) if @referencia.present?
     scope = scope.admin_search_text(@q) if @q.present?
 
-    scope = apply_status_filter(scope, @status, submitted: @status_filter_submitted)
+    # Busca por referência/código exibe o imóvel independente do status (inclusive
+    # inativos como Vendido/Alugado/Suspenso, que o filtro padrão esconde). Card #11.
+    scope = apply_status_filter(scope, @status, submitted: @status_filter_submitted) if @referencia.blank?
     scope = apply_category_filter(scope, @categoria)
     scope = scope.where(
       "unaccent(CONCAT_WS(' ', " \
@@ -1049,6 +1063,13 @@ class Admin::HabitationsController < Admin::BaseController
 	      )
     end
     scope = scope.where(proprietor_id: @proprietor_id) if @proprietor_id.present?
+    if @proprietor_city.present?
+      scope = scope.where(
+        "EXISTS (SELECT 1 FROM proprietors WHERE proprietors.id = habitations.proprietor_id " \
+        "AND unaccent(TRIM(proprietors.city)) = unaccent(?))",
+        @proprietor_city.to_s.strip
+      )
+    end
 
     scope = apply_boolean_filter(scope, @salute_rental_management, :salute_rental_management_flag)
     scope = apply_price_range_filter(scope)
@@ -1319,7 +1340,10 @@ class Admin::HabitationsController < Admin::BaseController
   def can_manage_intake_status?(habitation)
     return false unless habitation&.broker_intake?
 
-    current_admin_user&.admin? || owns_all_resource?(:imoveis) || can?(:review, :captacoes)
+    # Card #3: alterar manualmente o "Status da captação" é função exclusiva do
+    # Administrador geral. Demais perfis veem o campo apenas em leitura — o avanço
+    # do fluxo continua acontecendo pelos botões dedicados (Salvar interno / Devolver).
+    current_admin_user&.admin?
   end
 
   def can_manage_internal_documents?
@@ -1498,8 +1522,10 @@ class Admin::HabitationsController < Admin::BaseController
     return if releasing_to_broker || saving_internal_intake
     return unless habitation.new_record? && admin_paper_intake_form?
     return unless habitation.broker_intake? && habitation.intake_draft?
-    return if habitation.admin_user_id.blank? || habitation.admin_user_id == current_admin_user&.id
 
+    # Card #2: o cadastro interno salvo pela administração deve ir para
+    # "Pendente de revisão", e não ficar como rascunho nas Captações — mesmo
+    # quando o próprio admin figura como captador (sem selecionar outro).
     habitation.intake_status = "submitted_for_admin_review"
     habitation.intake_step = "review" if habitation.intake_step.blank? || habitation.intake_step == "intro"
   end
@@ -2238,7 +2264,7 @@ class Admin::HabitationsController < Admin::BaseController
       :tipo_publicacao_imovelweb_2, :mostrar_mapa_imovelweb_2,
       :exclusivo_flag, :ocupacao_status, :estado_conservacao,
       :andar, :ano_construcao, :demi_suites_qtd, :numero_box, :tipo_vaga,
-      :dimensoes_terreno, :topografia, :foto_classificacao, :podcast_url,
+      :dimensoes_terreno, :frente_terreno_m, :fundo_terreno_m, :topografia, :foto_classificacao, :podcast_url,
       :matricula_imovel, :zona, :numero_prestacoes, :responsavel_reserva, :zelador_nome, :zelador_telefone, :regiao_foco,
       :construtora, :tipo_fachada, :andares_qtd, :perfil_construcao, :face,
       :tipo_veiculo_aceito_permuta, :ano_minimo_veiculo_aceito_permuta,
@@ -2346,7 +2372,8 @@ class Admin::HabitationsController < Admin::BaseController
   end
 
   def can_filter_by_proprietor?
-    current_admin_user&.admin? || administrative_profile? || can_view_proprietors?
+    # Card #8: o perfil Gerente também tem acesso ao filtro Administrativo.
+    current_admin_user&.admin? || administrative_profile? || manager_profile? || can_view_proprietors?
   end
 
   def can_filter_by_broker?

@@ -252,9 +252,12 @@
     }
   } : []
 
+  attached_photo_basenames = @habitation.attached_photo_basenames
   api_photo_sources = @habitation.pictures.is_a?(Array) ? @habitation.pictures.each_with_index.filter_map { |pic, index|
     pic_url = pic.is_a?(String) ? pic : (pic.try(:[], "url") || pic.try(:[], "src") || pic.try(:[], "link") || pic.try(:[], "url_pequena"))
     next if pic_url.blank?
+    # Card #14: oculta a foto do Vista que já existe como anexo local (sem duplicar).
+    next if @habitation.picture_duplicate_of_attached?(pic, attached_photo_basenames)
 
     {
       url: pic_url,
@@ -341,7 +344,8 @@
       ["Total aluguel", show_total_rent ? money.call(@habitation.valor_total_aluguel_cents) : nil],
       ["Condomínio", money.call(@habitation.valor_condominio_cents)],
       ["IPTU", money.call(@habitation.valor_iptu_cents)],
-      ["Aceita financiamento", yes_no.call(@habitation.aceita_financiamento_flag)],
+      ["Aceita parcelamento", yes_no.call(@habitation.aceita_parcelamento_flag)],
+      ["Quantidade de prestações", (@habitation.numero_prestacoes.to_i if @habitation.aceita_parcelamento_flag? && @habitation.numero_prestacoes.to_i.positive?)&.then { |n| "#{n}x" }],
       ["Aceita permuta", yes_no.call(@habitation.aceita_permuta_flag)]
     ].tap do |fields|
       fields << ["Administração de locação feita pela Salute", @habitation.salute_rental_management_label] if @habitation.rental_intake?
