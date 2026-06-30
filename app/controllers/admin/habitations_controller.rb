@@ -755,21 +755,24 @@ class Admin::HabitationsController < Admin::BaseController
       base_address_scope = Habitation.left_outer_joins(:address)
 
       {
-        cities: base_address_scope
-          .where("NULLIF(TRIM(COALESCE(addresses.cidade, habitations.cidade)), '') IS NOT NULL AND COALESCE(addresses.cidade, habitations.cidade) != '.'")
-          .distinct
-          .pluck(Arel.sql("COALESCE(addresses.cidade, habitations.cidade)"))
-          .sort,
-        neighborhoods: base_address_scope
-          .where("NULLIF(TRIM(COALESCE(addresses.bairro, habitations.bairro)), '') IS NOT NULL AND COALESCE(addresses.bairro, habitations.bairro) != '.'")
-          .distinct
-          .pluck(Arel.sql("COALESCE(addresses.bairro, habitations.bairro)"))
-          .sort,
-        commercial_neighborhoods: base_address_scope
-          .where("NULLIF(TRIM(addresses.bairro_comercial), '') IS NOT NULL AND addresses.bairro_comercial != '.'")
-          .distinct
-          .pluck(Arel.sql("addresses.bairro_comercial"))
-          .sort,
+        # Card "Ajuste de Bairros": deduplica cidades/bairros por variação de
+        # maiúscula/minúscula/acento (ex.: "Praia Brava" x "praia brava"),
+        # mantendo a grafia mais comum — consistente com o filtro público.
+        cities: Habitation.canonical_location_labels(
+          base_address_scope
+            .where("NULLIF(TRIM(COALESCE(addresses.cidade, habitations.cidade)), '') IS NOT NULL AND COALESCE(addresses.cidade, habitations.cidade) != '.'")
+            .pluck(Arel.sql("COALESCE(addresses.cidade, habitations.cidade)"))
+        ),
+        neighborhoods: Habitation.canonical_location_labels(
+          base_address_scope
+            .where("NULLIF(TRIM(COALESCE(addresses.bairro, habitations.bairro)), '') IS NOT NULL AND COALESCE(addresses.bairro, habitations.bairro) != '.'")
+            .pluck(Arel.sql("COALESCE(addresses.bairro, habitations.bairro)"))
+        ),
+        commercial_neighborhoods: Habitation.canonical_location_labels(
+          base_address_scope
+            .where("NULLIF(TRIM(addresses.bairro_comercial), '') IS NOT NULL AND addresses.bairro_comercial != '.'")
+            .pluck(Arel.sql("addresses.bairro_comercial"))
+        ),
         badges: AttributeOption.where(context: 'habitation', category: 'unique_feature').order(name: :asc).pluck(:name),
         imediacoes_options: AttributeOption.where(context: 'habitation', category: 'imediacoes').order(name: :asc).pluck(:name),
         internal_features: (AttributeOption.where(context: 'habitation', category: 'feature').order(name: :asc).pluck(:name) + CUSTOM_FEATURE_OPTIONS).uniq.sort,

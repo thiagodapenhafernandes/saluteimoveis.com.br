@@ -699,6 +699,22 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).not_to include(d5.titulo_anuncio)
   end
 
+  it "não duplica bairros por maiúscula/minúscula no select do cadastro" do
+    h1 = create(:habitation, codigo: "BV1-#{SecureRandom.hex(6)}", status: "Venda")
+    h1.create_address!(logradouro: "R A", numero: "1", bairro: "Praia Brava", cidade: "Itajaí", uf: "SC")
+    h2 = create(:habitation, codigo: "BV2-#{SecureRandom.hex(6)}", status: "Venda")
+    h2.create_address!(logradouro: "R B", numero: "2", bairro: "praia brava", cidade: "Itajaí", uf: "SC")
+    target = create(:habitation, codigo: "TGT-#{SecureRandom.hex(6)}", status: "Venda")
+
+    get edit_admin_habitation_path(target)
+
+    expect(response).to have_http_status(:ok)
+    bairro_select = Nokogiri::HTML(response.body).at_css('select[name="habitation[address_attributes][bairro]"]')
+    expect(bairro_select).to be_present
+    matches = bairro_select.css("option").map { |option| I18n.transliterate(option.text).downcase.strip }.select { |text| text == "praia brava" }
+    expect(matches.size).to eq(1)
+  end
+
   it "não duplica cidade no filtro por variação de acento ou caixa" do
     h1 = create(:habitation, codigo: "BC1-#{SecureRandom.hex(6)}", status: "Venda")
     h1.create_address!(logradouro: "Rua A", numero: "1", bairro: "Centro", cidade: "Balneário Camboriú", uf: "SC")
