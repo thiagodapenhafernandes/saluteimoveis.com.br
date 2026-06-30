@@ -155,7 +155,7 @@
       </div>
     <% end %>
     <div class="actions d-flex gap-2">
-      <%= link_to (@return_to_path || admin_habitations_path), class: "btn btn-outline-secondary btn-sm" do %>
+      <%= link_to (@return_to_path || admin_habitations_path), class: "btn btn-outline-secondary btn-sm", data: { "save-state-leave-guard": "" } do %>
         <i class="bi bi-arrow-left"></i><span class="ms-1">Voltar</span>
       <% end %>
       <%= render "shared/broker_share_menu", property: @habitation, appearance: "toolbar" %>

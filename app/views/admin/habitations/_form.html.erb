@@ -2434,7 +2434,7 @@
         <% end %>
       </div>
       <div class="habitation-action-buttons">
-         <%= link_to "Cancelar", (@return_to_path || admin_habitations_path), class: "btn btn-outline-secondary px-4 px-md-4", data: { save_state_target: "cancelButton" } %>
+         <%= link_to "Cancelar", (@return_to_path || admin_habitations_path), class: "btn btn-outline-secondary px-4 px-md-4", data: { save_state_target: "cancelButton", "save-state-leave-guard": "" } %>
          <% if can_release_intake_to_broker?(habitation) || (habitation.new_record? && can_complete_admin_intake_review?(habitation)) %>
            <%= f.button type: "submit",
                         name: "release_to_broker_after_save",
