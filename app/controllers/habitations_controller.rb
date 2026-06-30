@@ -194,9 +194,11 @@ class HabitationsController < ApplicationController
     @related_properties = []
     
     if @habitation.present?
-      # Calcular faixa de preço (±20%)
-      base_price = @habitation.valor_venda_cents || @habitation.valor_locacao_cents
-      
+      # Calcular faixa de preço (±20%). Card "Imóveis de Aluguel não tem Imóveis
+      # Semelhantes": para locação o valor de venda é 0 (truthy em Ruby), então
+      # usamos o valor de locação quando o de venda não for positivo.
+      base_price = @habitation.valor_venda_cents.to_i.positive? ? @habitation.valor_venda_cents.to_i : @habitation.valor_locacao_cents.to_i
+
       if base_price && base_price > 0
         min_price = (base_price * 0.8).to_i
         max_price = (base_price * 1.2).to_i

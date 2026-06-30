@@ -407,6 +407,22 @@ RSpec.describe "Habitation details", type: :request do
       expect(response.body).to include("Sim")
     end
 
+    it "mostra imóveis semelhantes para imóveis de locação" do
+      endereco = { logradouro: "Rua das Flores", bairro: "Centro", cidade: "Balneário Camboriú", uf: "SC" }
+      similar = create(:habitation, codigo: "SIMLOC-#{SecureRandom.hex(4)}", slug: "similar-locacao-#{SecureRandom.hex(4)}",
+                       status: "Aluguel", valor_venda_cents: 0, valor_locacao_cents: 310_000,
+                       dormitorios_qtd: 2, address_attributes: endereco, titulo_anuncio: "Aluguel semelhante #{SecureRandom.hex(4)}")
+      base = create(:habitation, codigo: "BASELOC-#{SecureRandom.hex(4)}", slug: "base-locacao-#{SecureRandom.hex(4)}",
+                    status: "Aluguel", valor_venda_cents: 0, valor_locacao_cents: 300_000,
+                    dormitorios_qtd: 2, address_attributes: endereco)
+
+      get habitation_path(base)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Imóveis Semelhantes")
+      expect(response.body).to include(similar.titulo_anuncio)
+    end
+
     it "shows reduced rent in the public details page" do
       habitation = create(
         :habitation,
