@@ -20,6 +20,24 @@ export default class extends Controller {
     this.element.addEventListener("direct-upload:progress", this.boundDirectUploadProgress)
     this.element.addEventListener("direct-uploads:end", this.boundDirectUploadsEnd)
     this.element.addEventListener("direct-upload:error", this.boundDirectUploadError)
+
+    // Aviso de alterações não salvas: marca a ficha como "suja" quando o
+    // usuário edita algum campo e avisa antes de sair sem salvar.
+    this.formDirty = false
+    this.allowLeave = false
+    this.readyForDirty = false
+    this.dirtyReadyTimer = window.setTimeout(() => { this.readyForDirty = true }, 1200)
+
+    this.boundMarkDirty = this.markDirty.bind(this)
+    this.element.addEventListener("input", this.boundMarkDirty)
+    this.element.addEventListener("change", this.boundMarkDirty)
+
+    this.boundBeforeUnload = this.beforeUnload.bind(this)
+    window.addEventListener("beforeunload", this.boundBeforeUnload)
+
+    this.boundLeaveGuard = this.leaveGuard.bind(this)
+    this.leaveGuardLinks = Array.from(document.querySelectorAll("[data-save-state-leave-guard]"))
+    this.leaveGuardLinks.forEach((link) => link.addEventListener("click", this.boundLeaveGuard))
   }
 
   disconnect() {
@@ -27,6 +45,40 @@ export default class extends Controller {
     this.element.removeEventListener("direct-upload:progress", this.boundDirectUploadProgress)
     this.element.removeEventListener("direct-uploads:end", this.boundDirectUploadsEnd)
     this.element.removeEventListener("direct-upload:error", this.boundDirectUploadError)
+
+    this.element.removeEventListener("input", this.boundMarkDirty)
+    this.element.removeEventListener("change", this.boundMarkDirty)
+    window.removeEventListener("beforeunload", this.boundBeforeUnload)
+    if (this.dirtyReadyTimer) window.clearTimeout(this.dirtyReadyTimer)
+    if (this.leaveGuardLinks) {
+      this.leaveGuardLinks.forEach((link) => link.removeEventListener("click", this.boundLeaveGuard))
+    }
+  }
+
+  markDirty() {
+    if (!this.readyForDirty || this.submittingNow) return
+    this.formDirty = true
+  }
+
+  beforeUnload(event) {
+    if (!this.formDirty || this.submittingNow || this.allowLeave) return
+    event.preventDefault()
+    event.returnValue = ""
+    return ""
+  }
+
+  leaveGuard(event) {
+    if (!this.formDirty || this.submittingNow || this.allowLeave) return
+
+    const confirmed = window.confirm(
+      "Você tem alterações não salvas nesta ficha.\nDeseja sair sem salvar? As alterações serão perdidas."
+    )
+
+    if (confirmed) {
+      this.allowLeave = true
+    } else {
+      event.preventDefault()
+    }
   }
 
   confirm(event) {

@@ -150,7 +150,11 @@ class HabitationAuditLog < ApplicationRecord
   end
 
   def display_noop?(field, before, after)
-    audit_display_value_for_compare(field, before) == audit_display_value_for_compare(field, after)
+    return true if audit_display_value_for_compare(field, before) == audit_display_value_for_compare(field, after)
+
+    # Mesmo com tipos diferentes (ex.: 0 e nil em campos de valor), se o que
+    # seria exibido para o usuário é idêntico, não houve alteração real.
+    display_value(field, before) == display_value(field, after)
   end
 
   def audit_display_value_for_compare(field, value)

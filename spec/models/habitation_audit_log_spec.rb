@@ -63,5 +63,21 @@ RSpec.describe HabitationAuditLog, type: :model do
         after: "Vendido terceiros"
       )
     end
+
+    it "esconde campos de valor que ficam vazios em ambos os lados (0 vs nil)" do
+      log = build(
+        :habitation_audit_log,
+        changeset: {
+          "valor_venda_cents" => { "before" => 900_000_00, "after" => 950_000_00 },
+          "valor_vendido_terceiros_cents" => { "before" => 0, "after" => nil },
+          "valor_alugado_terceiros_cents" => { "before" => nil, "after" => 0 },
+          "valor_condominio_cents" => { "before" => 0, "after" => "0" }
+        }
+      )
+
+      summaries = log.change_summaries
+
+      expect(summaries.map { |summary| summary[:field] }).to eq(["valor_venda_cents"])
+    end
   end
 end
