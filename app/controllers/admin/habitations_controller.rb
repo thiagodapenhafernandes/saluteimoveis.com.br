@@ -1086,9 +1086,17 @@ class Admin::HabitationsController < Admin::BaseController
     scope = scope.where("COALESCE(permuta_garagens_qtd, 0) >= ?", @permuta_min_garagens.to_i) if @permuta_min_garagens.present?
     scope = scope.where(key_location: @key_location) if @key_location.present?
     if @empreendimento_codigo.present?
+      term = @empreendimento_codigo.to_s.strip
+      # Card "não puxa com filtro empreendimento": o valor selecionado costuma ser
+      # o CÓDIGO do empreendimento, mas imóveis vindos do DWV têm só o NOME (sem o
+      # código do empreendimento). Resolve o código para o nome e casa também por
+      # nome, para trazer esses imóveis.
+      empreendimento_name = Habitation.empreendimentos.where(codigo: term).limit(1).pick(:nome_empreendimento)
       scope = scope.where(
-        "codigo_empreendimento = :term OR codigo = :term OR lower(unaccent(nome_empreendimento)) = lower(unaccent(:term))",
-        term: @empreendimento_codigo.to_s.strip
+        "codigo_empreendimento = :term OR codigo = :term OR " \
+        "lower(unaccent(nome_empreendimento)) = lower(unaccent(:term)) OR " \
+        "(:name <> '' AND lower(unaccent(nome_empreendimento)) = lower(unaccent(:name)))",
+        term: term, name: empreendimento_name.to_s.strip
       )
     end
     if @corretor_id.present?

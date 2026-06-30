@@ -729,6 +729,18 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).not_to include(semi.titulo_anuncio)
   end
 
+  it "traz imóveis do empreendimento mesmo quando têm só o nome (DWV)" do
+    empreendimento = create(:habitation, tipo: "Empreendimento", categoria: "Empreendimento", codigo: "CVA-#{SecureRandom.hex(4)}", nome_empreendimento: "Carmel Vista Alta")
+    dwv = create(:habitation, codigo: "DWVCVA-#{SecureRandom.hex(4)}", status: "Venda", nome_empreendimento: "Carmel Vista Alta", titulo_anuncio: "Apto DWV Carmel #{SecureRandom.hex(4)}")
+    outro = create(:habitation, codigo: "OUTRO-#{SecureRandom.hex(4)}", status: "Venda", nome_empreendimento: "Outro Residencial", titulo_anuncio: "Apto outro empreendimento #{SecureRandom.hex(4)}")
+
+    get admin_habitations_path(ownership: "all", empreendimento_codigo: empreendimento.codigo)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(dwv.titulo_anuncio)
+    expect(response.body).not_to include(outro.titulo_anuncio)
+  end
+
   it "filtra imóveis pela cidade do proprietário" do
     prop_bc = create(:proprietor, city: "Balneário Camboriú")
     prop_itajai = create(:proprietor, city: "Itajaí")
