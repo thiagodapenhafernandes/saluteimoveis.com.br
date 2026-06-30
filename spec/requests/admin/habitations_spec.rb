@@ -686,6 +686,61 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include(rented.titulo_anuncio)
   end
 
+  it "filtra dormitórios por faixa mínima e máxima" do
+    d1 = create(:habitation, codigo: "DOR1-#{SecureRandom.hex(6)}", status: "Venda", dormitorios_qtd: 1, titulo_anuncio: "Um dormitório #{SecureRandom.hex(4)}")
+    d3 = create(:habitation, codigo: "DOR3-#{SecureRandom.hex(6)}", status: "Venda", dormitorios_qtd: 3, titulo_anuncio: "Três dormitórios #{SecureRandom.hex(4)}")
+    d5 = create(:habitation, codigo: "DOR5-#{SecureRandom.hex(6)}", status: "Venda", dormitorios_qtd: 5, titulo_anuncio: "Cinco dormitórios #{SecureRandom.hex(4)}")
+
+    get admin_habitations_path(ownership: "all", dorms_min: 2, dorms_max: 4)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(d3.titulo_anuncio)
+    expect(response.body).not_to include(d1.titulo_anuncio)
+    expect(response.body).not_to include(d5.titulo_anuncio)
+  end
+
+  it "não duplica cidade no filtro por variação de acento ou caixa" do
+    h1 = create(:habitation, codigo: "BC1-#{SecureRandom.hex(6)}", status: "Venda")
+    h1.create_address!(logradouro: "Rua A", numero: "1", bairro: "Centro", cidade: "Balneário Camboriú", uf: "SC")
+    h2 = create(:habitation, codigo: "BC2-#{SecureRandom.hex(6)}", status: "Venda")
+    h2.create_address!(logradouro: "Rua B", numero: "2", bairro: "Centro", cidade: "Balneario Camboriu", uf: "SC")
+
+    get admin_habitations_path(ownership: "all")
+
+    expect(response).to have_http_status(:ok)
+    cidade_select = Nokogiri::HTML(response.body).at_css('select[name="cidade"]')
+    expect(cidade_select).to be_present
+    matches = cidade_select.css("option").map { |option| I18n.transliterate(option.text).downcase.strip }.select { |text| text == "balneario camboriu" }
+    expect(matches.size).to eq(1)
+  end
+
+  it "distingue Semi Mobiliado de totalmente Mobiliado no filtro de características" do
+    semi = create(:habitation, codigo: "SEMI-#{SecureRandom.hex(6)}", status: "Aluguel", caracteristicas: ["Semi Mobiliado"], titulo_anuncio: "Imóvel semi mobiliado #{SecureRandom.hex(4)}")
+    full = create(:habitation, codigo: "FULL-#{SecureRandom.hex(6)}", status: "Aluguel", caracteristicas: ["Mobiliado"], mobiliado_flag: true, titulo_anuncio: "Imóvel totalmente mobiliado #{SecureRandom.hex(4)}")
+
+    get admin_habitations_path(ownership: "all", amenities: ["Semi Mobiliado"])
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(semi.titulo_anuncio)
+    expect(response.body).not_to include(full.titulo_anuncio)
+
+    get admin_habitations_path(ownership: "all", amenities: ["Mobiliado"])
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(full.titulo_anuncio)
+    expect(response.body).not_to include(semi.titulo_anuncio)
+  end
+
+  it "traz imóveis do empreendimento mesmo quando têm só o nome (DWV)" do
+    empreendimento = create(:habitation, tipo: "Empreendimento", categoria: "Empreendimento", codigo: "CVA-#{SecureRandom.hex(4)}", nome_empreendimento: "Carmel Vista Alta")
+    dwv = create(:habitation, codigo: "DWVCVA-#{SecureRandom.hex(4)}", status: "Venda", nome_empreendimento: "Carmel Vista Alta", titulo_anuncio: "Apto DWV Carmel #{SecureRandom.hex(4)}")
+    outro = create(:habitation, codigo: "OUTRO-#{SecureRandom.hex(4)}", status: "Venda", nome_empreendimento: "Outro Residencial", titulo_anuncio: "Apto outro empreendimento #{SecureRandom.hex(4)}")
+
+    get admin_habitations_path(ownership: "all", empreendimento_codigo: empreendimento.codigo)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(dwv.titulo_anuncio)
+    expect(response.body).not_to include(outro.titulo_anuncio)
+  end
+
   it "filtra imóveis pela cidade do proprietário" do
     prop_bc = create(:proprietor, city: "Balneário Camboriú")
     prop_itajai = create(:proprietor, city: "Itajaí")

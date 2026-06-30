@@ -1,8 +1,6 @@
 <%
   kind = @captacao.property_kind.to_s
-  features_imovel = captacao_feature_options(
-    @captacao.class.feature_options_for_kind(@captacao.feature_catalog_kind, @internal_features)
-  )
+  features_imovel = captacao_feature_options(@captacao.feature_catalog_options)
 %>
 
 <h1 class="wizard-section-title"><i class="bi bi-rulers text-primary me-2"></i>Características do imóvel</h1>

@@ -800,11 +800,15 @@ class Admin::HabitationsController < Admin::BaseController
                                    .distinct.pluck(:categoria).sort
     city_sql = "COALESCE(NULLIF(TRIM(addresses.cidade), ''), NULLIF(TRIM(habitations.cidade), ''))"
     commercial_neighborhood_sql = "COALESCE(NULLIF(TRIM(addresses.bairro_comercial), ''), NULLIF(TRIM(habitations.bairro_comercial), ''))"
-    @filter_cities = Habitation.left_outer_joins(:address)
-                               .where("#{city_sql} IS NOT NULL AND #{city_sql} != '.'")
-                               .distinct
-                               .pluck(Arel.sql(city_sql))
-                               .sort
+    # Card "Tem 2x balneário camboriú no filtro cidade": deduplica variações de
+    # acento/maiúscula (ex.: "Balneário Camboriú" x "Balneario Camboriu") que o
+    # distinct do banco não unifica. O filtro em si já é unaccent.
+    @filter_cities = dedupe_filter_labels(
+      Habitation.left_outer_joins(:address)
+                .where("#{city_sql} IS NOT NULL AND #{city_sql} != '.'")
+                .distinct
+                .pluck(Arel.sql(city_sql))
+    )
     @filter_bairros_comerciais = Habitation.left_outer_joins(:address)
                                            .where("#{commercial_neighborhood_sql} IS NOT NULL AND #{commercial_neighborhood_sql} != '.'")
                                            .distinct
@@ -841,15 +845,26 @@ class Admin::HabitationsController < Admin::BaseController
                                                                                  .distinct
                                                                                  .pluck(:estado_conservacao)).uniq.sort
     @filter_regioes_foco = Habitation::REGIAO_FOCO_OPTIONS
-    internal_features = (AttributeOption.where(context: 'habitation', category: 'feature').order(name: :asc).pluck(:name) + CUSTOM_FEATURE_OPTIONS).uniq.sort
-    external_features = AttributeOption.where(context: 'habitation', category: 'infrastructure').order(name: :asc).pluck(:name)
+    # Card "Ajuste função criar características": cada seção do filtro usa as
+    # características sem tipo (catalog) + as vinculadas ao tipo da seção (forced).
+    unassigned_features = AttributeOption.unassigned_catalog_names("feature")
     @apartment_feature_filter_options = dedupe_filter_labels(
-      Habitation.feature_options_for_kind("residencial", internal_features)
+      Habitation.feature_options_for_kind(
+        "residencial",
+        unassigned_features + CUSTOM_FEATURE_OPTIONS,
+        forced_options: AttributeOption.kind_catalog_names("feature", "residencial")
+      )
     )
     @enterprise_amenity_filter_options = dedupe_filter_labels(
       AMENITY_FILTER_OPTIONS +
-      Habitation.feature_options_for_kind("empreendimento", internal_features) +
-      Habitation.infrastructure_options_for_kind("empreendimento", external_features)
+      Habitation.feature_options_for_kind(
+        "empreendimento", unassigned_features,
+        forced_options: AttributeOption.kind_catalog_names("feature", "empreendimento")
+      ) +
+      Habitation.infrastructure_options_for_kind(
+        "empreendimento", AttributeOption.unassigned_catalog_names("infrastructure"),
+        forced_options: AttributeOption.kind_catalog_names("infrastructure", "empreendimento")
+      )
     )
   end
 
@@ -872,6 +887,16 @@ class Admin::HabitationsController < Admin::BaseController
       .map(&:to_i)
       .reject(&:zero?)
       .uniq
+  end
+
+  # Card "Filtro ajuste": aplica faixa Mín/Máx em colunas inteiras (column é um
+  # símbolo controlado internamente, seguro para interpolação).
+  def apply_integer_range_filter(scope, column, min_value, max_value)
+    min = min_value.to_s.strip
+    max = max_value.to_s.strip
+    scope = scope.where("#{column} >= ?", min.to_i) if min.match?(/\A\d+\z/)
+    scope = scope.where("#{column} <= ?", max.to_i) if max.match?(/\A\d+\z/)
+    scope
   end
 
   def extract_multi_select_strings(param_key)
@@ -908,9 +933,13 @@ class Admin::HabitationsController < Admin::BaseController
     @cidade = params[:cidade]
     @bairro = params[:bairro]
     @bairro_comercial = params[:bairro_comercial]
-    @dorms = extract_multi_select_integers(:dorms)
-    @suites = extract_multi_select_integers(:suites)
-    @vagas = extract_multi_select_integers(:vagas)
+    # Card "Filtro ajuste": dormitórios, suítes e vagas passam a usar faixa Mín/Máx.
+    @dorms_min = params[:dorms_min]
+    @dorms_max = params[:dorms_max]
+    @suites_min = params[:suites_min]
+    @suites_max = params[:suites_max]
+    @vagas_min = params[:vagas_min]
+    @vagas_max = params[:vagas_max]
     @banheiros = extract_multi_select_integers(:banheiros)
     @situacao = params[:situacao]
     @face = params[:face]
@@ -1006,9 +1035,9 @@ class Admin::HabitationsController < Admin::BaseController
     scope = scope.where("unaccent(COALESCE(NULLIF(TRIM(addresses.cidade), ''), NULLIF(TRIM(habitations.cidade), ''))) = unaccent(?)", @cidade) if @cidade.present?
     scope = scope.where("unaccent(COALESCE(NULLIF(TRIM(addresses.bairro), ''), NULLIF(TRIM(habitations.bairro), ''))) ILIKE unaccent(?)", "%#{@bairro}%") if @bairro.present?
     scope = scope.where("unaccent(COALESCE(NULLIF(TRIM(addresses.bairro_comercial), ''), NULLIF(TRIM(habitations.bairro_comercial), ''))) ILIKE unaccent(?)", "%#{@bairro_comercial}%") if @bairro_comercial.present?
-    scope = scope.where(dormitorios_qtd: @dorms) if @dorms.any?
-    scope = scope.where(suites_qtd: @suites) if @suites.any?
-    scope = scope.where(vagas_qtd: @vagas) if @vagas.any?
+    scope = apply_integer_range_filter(scope, :dormitorios_qtd, @dorms_min, @dorms_max)
+    scope = apply_integer_range_filter(scope, :suites_qtd, @suites_min, @suites_max)
+    scope = apply_integer_range_filter(scope, :vagas_qtd, @vagas_min, @vagas_max)
     scope = scope.where(banheiros_qtd: @banheiros) if @banheiros.any?
     scope = scope.where(situacao: @situacao) if @situacao.present?
     scope = scope.where(face: @face) if @face.present?
@@ -1057,9 +1086,17 @@ class Admin::HabitationsController < Admin::BaseController
     scope = scope.where("COALESCE(permuta_garagens_qtd, 0) >= ?", @permuta_min_garagens.to_i) if @permuta_min_garagens.present?
     scope = scope.where(key_location: @key_location) if @key_location.present?
     if @empreendimento_codigo.present?
+      term = @empreendimento_codigo.to_s.strip
+      # Card "não puxa com filtro empreendimento": o valor selecionado costuma ser
+      # o CÓDIGO do empreendimento, mas imóveis vindos do DWV têm só o NOME (sem o
+      # código do empreendimento). Resolve o código para o nome e casa também por
+      # nome, para trazer esses imóveis.
+      empreendimento_name = Habitation.empreendimentos.where(codigo: term).limit(1).pick(:nome_empreendimento)
       scope = scope.where(
-        "codigo_empreendimento = :term OR codigo = :term OR lower(unaccent(nome_empreendimento)) = lower(unaccent(:term))",
-        term: @empreendimento_codigo.to_s.strip
+        "codigo_empreendimento = :term OR codigo = :term OR " \
+        "lower(unaccent(nome_empreendimento)) = lower(unaccent(:term)) OR " \
+        "(:name <> '' AND lower(unaccent(nome_empreendimento)) = lower(unaccent(:name)))",
+        term: term, name: empreendimento_name.to_s.strip
       )
     end
     if @corretor_id.present?
@@ -1755,10 +1792,22 @@ class Admin::HabitationsController < Admin::BaseController
       scope.where("varanda_gourmet_flag = true OR " \
                   "(jsonb_typeof(caracteristicas) = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(caracteristicas) value WHERE unaccent(lower(value)) ILIKE unaccent('%sacada%'))) OR " \
                   "(jsonb_typeof(caracteristicas) = 'object' AND EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) kv WHERE unaccent(lower(kv.key)) ILIKE unaccent('%sacada%') OR unaccent(lower(kv.value)) ILIKE unaccent('%sacada%')))")
+    when /semi.*mobiliad/
+      # Card "erro filtro": "Semi Mobiliado" não deve usar o mobiliado_flag (que
+      # é do totalmente mobiliado); casa apenas a característica semi mobiliado.
+      scope.where(
+        "(jsonb_typeof(caracteristicas) = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(caracteristicas) value WHERE unaccent(lower(value)) ILIKE unaccent('%semi%mobiliad%'))) OR " \
+        "(jsonb_typeof(caracteristicas) = 'object' AND EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) kv WHERE unaccent(lower(kv.key)) ILIKE unaccent('%semi%mobiliad%') OR unaccent(lower(kv.value)) ILIKE unaccent('%semi%mobiliad%')))"
+      )
     when /mobiliado/
-      scope.where("mobiliado_flag = true OR " \
-                  "(jsonb_typeof(caracteristicas) = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(caracteristicas) value WHERE unaccent(lower(value)) ILIKE unaccent('%mobiliado%'))) OR " \
-                  "(jsonb_typeof(caracteristicas) = 'object' AND EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) kv WHERE unaccent(lower(kv.key)) ILIKE unaccent('%mobiliado%') OR unaccent(lower(kv.value)) ILIKE unaccent('%mobiliado%')))")
+      # "Mobiliado" (totalmente) exclui explicitamente os "Semi Mobiliado".
+      scope.where(
+        "(mobiliado_flag = true OR " \
+        "(jsonb_typeof(caracteristicas) = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(caracteristicas) value WHERE unaccent(lower(value)) ILIKE unaccent('%mobiliado%'))) OR " \
+        "(jsonb_typeof(caracteristicas) = 'object' AND EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) kv WHERE unaccent(lower(kv.key)) ILIKE unaccent('%mobiliado%') OR unaccent(lower(kv.value)) ILIKE unaccent('%mobiliado%')))) AND " \
+        "NOT ((jsonb_typeof(caracteristicas) = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(caracteristicas) value WHERE unaccent(lower(value)) ILIKE unaccent('%semi%mobiliad%'))) OR " \
+        "(jsonb_typeof(caracteristicas) = 'object' AND EXISTS (SELECT 1 FROM jsonb_each_text(caracteristicas) kv WHERE unaccent(lower(kv.key)) ILIKE unaccent('%semi%mobiliad%') OR unaccent(lower(kv.value)) ILIKE unaccent('%semi%mobiliad%'))))"
+      )
     when /cozinha.*gourmet.*churrasqueir/
       scope.cozinha_gourmet_churrasqueira
     when /sol.*manha/

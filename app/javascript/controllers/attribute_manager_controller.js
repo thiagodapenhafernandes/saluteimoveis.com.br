@@ -6,6 +6,7 @@ export default class extends Controller {
     context: String,
     category: String,
     fieldName: String, // e.g. "habitation[caracteristicas][]"
+    propertyKind: String, // tipo de imóvel a que a nova característica pertence
     modalId: { type: String, default: "attributeManagerModal" }
   }
 
@@ -115,6 +116,7 @@ export default class extends Controller {
     const name = input.value.trim()
     const context = this.contextValue || this.element.dataset.attributeManagerContextValue
     const category = this.categoryValue || this.element.dataset.attributeManagerCategoryValue
+    const propertyKind = this.propertyKindValue || this.element.dataset.attributeManagerPropertyKindValue
 
     if (!name) return
     if (!context || !category) {
@@ -138,7 +140,14 @@ export default class extends Controller {
         },
         credentials: 'same-origin',
         body: JSON.stringify({
-          attribute_option: { name: name, category: category, context: context }
+          attribute_option: {
+            name: name,
+            category: category,
+            context: context,
+            // Vincula a nova característica ao tipo de imóvel em edição, para que
+            // ela apareça só nesse tipo (filtro, ficha e cadastro).
+            property_kinds: propertyKind ? [propertyKind] : []
+          }
         })
       })
 

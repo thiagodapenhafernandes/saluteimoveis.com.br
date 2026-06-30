@@ -641,6 +641,15 @@ RSpec.describe Habitation, type: :model do
     end
   end
 
+  describe "#address_complement_label" do
+    it "usa 'Apto.' só para apartamentos e 'Compl.' para casa/terreno/galpão" do
+      expect(build(:habitation, categoria: "Apartamento").address_complement_label).to eq("Apto.")
+      expect(build(:habitation, categoria: "Casa em Condomínio").address_complement_label).to eq("Compl.")
+      expect(build(:habitation, categoria: "Terreno").address_complement_label).to eq("Compl.")
+      expect(build(:habitation, categoria: "Galpão").address_complement_label).to eq("Compl.")
+    end
+  end
+
   describe "#picture_duplicate_of_attached?" do
     it "considera duplicada a picture do Vista cujo nome de arquivo já está anexado" do
       habitation = create(:habitation)
@@ -657,6 +666,21 @@ RSpec.describe Habitation, type: :model do
       com_custom = described_class.feature_options_for_kind("empreendimento", ["Espaço Gourmet Exclusivo ZZ"])
 
       expect(com_custom.size).to be > sem_custom.size
+    end
+  end
+
+  describe "#feature_catalog_options (roteamento por tipo)" do
+    it "inclui características do tipo do imóvel e as sem tipo, excluindo de outros tipos" do
+      galpao_opt = AttributeOption.create!(context: "habitation", category: "feature", name: "Doca de carga ZZ", property_kinds: ["galpao"])
+      resid_opt = AttributeOption.create!(context: "habitation", category: "feature", name: "Closet planejado ZZ", property_kinds: ["residencial"])
+      universal_opt = AttributeOption.create!(context: "habitation", category: "feature", name: "Detalhe universal ZZ", property_kinds: [])
+
+      apartamento = build(:habitation, categoria: "Apartamento")
+      options = apartamento.feature_catalog_options
+
+      expect(options).to include(resid_opt.name)
+      expect(options).to include(universal_opt.name)
+      expect(options).not_to include(galpao_opt.name)
     end
   end
 

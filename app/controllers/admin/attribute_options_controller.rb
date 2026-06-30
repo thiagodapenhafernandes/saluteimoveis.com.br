@@ -79,7 +79,7 @@ module Admin
     end
 
     def attribute_option_params
-      params.require(:attribute_option).permit(:name, :category, :context)
+      params.require(:attribute_option).permit(:name, :category, :context, property_kinds: [])
     end
 
     def modal_request?
