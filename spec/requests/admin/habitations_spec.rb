@@ -539,7 +539,6 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("Captador")
     expect(response.body).to include("Luciana Indalécio")
-    expect(response.body).to include("Captador responsável:")
     expect(response.body).not_to include("Corretor responsável:")
   end
 
@@ -3300,7 +3299,7 @@ RSpec.describe "Admin::Habitations", type: :request do
     broker_log = HabitationAuditLog.where(habitation_id: habitation.id).last
     expect(broker_log).to have_attributes(action: "broker_assignments_changed")
     expect(broker_log.changed_fields).to include("broker_assignments")
-    expect(broker_log.change_summaries.first[:after]).to include("Corretor Auditor")
+    expect(broker_log.change_summaries.any? { |summary| summary[:after].to_s.include?("Corretor Auditor") }).to be(true)
 
     expect {
       post bulk_publish_admin_habitations_path, params: {

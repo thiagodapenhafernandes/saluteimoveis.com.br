@@ -624,4 +624,24 @@ RSpec.describe Habitation, type: :model do
       expect(habitation.display_neighborhood).to eq("Centro")
     end
   end
+
+  describe "#sync_admin_user_from_primary_captador" do
+    it "sincroniza admin_user_id a partir do captador definido no Comercial" do
+      captador = create(:admin_user)
+      habitation = create(:habitation, admin_user: nil)
+
+      habitation.update!(broker_assignments_attributes: [{ admin_user_id: captador.id, role: "captador" }])
+
+      expect(habitation.reload.admin_user_id).to eq(captador.id)
+    end
+
+    it "não altera admin_user_id quando não há captador nos responsáveis" do
+      dono = create(:admin_user)
+      habitation = create(:habitation, admin_user: dono)
+
+      habitation.update!(broker_assignments_attributes: [{ admin_user_id: create(:admin_user).id, role: "promotor" }])
+
+      expect(habitation.reload.admin_user_id).to eq(dono.id)
+    end
+  end
 end

@@ -308,6 +308,7 @@ class Habitation < ApplicationRecord
   before_save :capture_price_reductions
   before_save :sync_flags_from_features
   before_save :sync_intake_answers
+  before_save :sync_admin_user_from_primary_captador
   after_save :clear_cache
   after_destroy :clear_cache
   after_create_commit :record_auto_audit_create, unless: :skip_auto_audit?
@@ -382,6 +383,23 @@ class Habitation < ApplicationRecord
 
   def primary_captador
     primary_captador_assignment&.admin_user || admin_user
+  end
+
+  # Card #1: o captador passou a ser gerenciado apenas no bloco Comercial
+  # (broker_assignments). Mantém admin_user_id — usado em ownership/permissões —
+  # em sincronia com o captador definido ali. Só age quando as assignments estão
+  # carregadas (ex.: submissão do formulário), para não interferir no sync da
+  # Vista ou em operações em lote que não tocam nos responsáveis.
+  def sync_admin_user_from_primary_captador
+    # Lê apenas os responsáveis já em memória (construídos via nested attributes
+    # do formulário ou carregados), sem forçar consulta ao banco — assim não
+    # interfere no sync da Vista nem em operações em lote que não tocam neles.
+    assignments = broker_assignments.target
+    return if assignments.blank?
+
+    captador = assignments.reject(&:marked_for_destruction?)
+                          .find { |assignment| assignment.role == "captador" && assignment.admin_user_id.present? }
+    self.admin_user_id = captador.admin_user_id if captador
   end
 
   def primary_captador_name
