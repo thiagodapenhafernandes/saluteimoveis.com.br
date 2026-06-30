@@ -641,6 +641,15 @@ RSpec.describe Habitation, type: :model do
     end
   end
 
+  describe "#address_complement_label" do
+    it "usa 'Apto.' só para apartamentos e 'Compl.' para casa/terreno/galpão" do
+      expect(build(:habitation, categoria: "Apartamento").address_complement_label).to eq("Apto.")
+      expect(build(:habitation, categoria: "Casa em Condomínio").address_complement_label).to eq("Compl.")
+      expect(build(:habitation, categoria: "Terreno").address_complement_label).to eq("Compl.")
+      expect(build(:habitation, categoria: "Galpão").address_complement_label).to eq("Compl.")
+    end
+  end
+
   describe "#picture_duplicate_of_attached?" do
     it "considera duplicada a picture do Vista cujo nome de arquivo já está anexado" do
       habitation = create(:habitation)

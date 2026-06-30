@@ -189,7 +189,7 @@
 
 <%
   linked_development = @habitation.empreendimento if @habitation.codigo_empreendimento.present?
-  address_parts = [@habitation.endereco, @habitation.numero, @habitation.complemento.presence && "Apto. #{@habitation.complemento}", @habitation.bairro, @habitation.cidade, @habitation.uf].compact_blank
+  address_parts = [@habitation.endereco, @habitation.numero, @habitation.complemento.presence && "#{@habitation.address_complement_label} #{@habitation.complemento}", @habitation.bairro, @habitation.cidade, @habitation.uf].compact_blank
   description = @habitation.display_description
   profile_name = current_admin_user&.profile&.name.to_s
   broker_compact_view = current_admin_user.present? &&
