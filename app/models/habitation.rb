@@ -178,7 +178,7 @@ class Habitation < ApplicationRecord
   ESTADO_CONSERVACAO = ["Novo", "Ótimo", "Bom", "Regular", "Seminovo", "Usado", "Reformado", "Original", "Em Obras", "Na Planta"].freeze
   TOPOGRAFIA_OPTIONS = ["Plano", "Aclive", "Declive", "Irregular"].freeze
   FOTO_CLASSIFICACAO = ["Profissionais", "Boas", "Aceitáveis", "Amadoras", "Não tem fotos"].freeze
-  KEY_LOCATION_OPTIONS = ["Imobiliária", "Corretor(a)", "Proprietário", "Zelador", "Portaria", "Inquilino", "Outro"].freeze
+  KEY_LOCATION_OPTIONS = ["Imobiliária", "Corretor(a)", "Proprietário", "Construtora", "Zelador", "Portaria", "Inquilino", "Outro"].freeze
   RENTAL_GUARANTEE_METHOD_OPTIONS = ["Seguro fiança", "Caução", "Fiador", "Título de capitalização", "Garantidora", "A combinar"].freeze
   REGIAO_FOCO_OPTIONS = ["Sim", "Não"].freeze
   PORTAL_PUBLICATION_FIELDS = {

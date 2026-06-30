@@ -92,6 +92,21 @@ export default class extends Controller {
     window.open(`https://twitter.com/intent/tweet?url=${url}&text=${text}`, "twitter-share-dialog", "width=626,height=436")
   }
 
+  // O Instagram não tem URL de compartilhamento na web: copia o link e abre o
+  // Instagram para o usuário colar no story/direct.
+  async instagram(event) {
+    event.preventDefault()
+    event.stopPropagation()
+    const url = await this.ensureSharedUrl()
+    try {
+      await navigator.clipboard.writeText(url)
+      this.flashStatus("Link copiado — cole no Instagram")
+    } catch (_error) {
+      this.flashStatus("Copie o link e cole no Instagram")
+    }
+    window.open("https://www.instagram.com/", "instagram-share", "noopener")
+  }
+
   async ensureSharedUrl() {
     if (!this.generateUrlValue) return this.fallbackUrlValue || window.location.href
     if (this.sharedUrl && this.sharedUrl.includes("share_token=")) return this.sharedUrl

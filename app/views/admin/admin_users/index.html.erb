@@ -39,7 +39,7 @@
         <%= f.collection_select :profile_id, Profile.all, :id, :name, { selected: params[:profile_id], prompt: "Todos os Perfis" }, { class: "form-select", onchange: "this.form.submit()" } %>
       </div>
       <div class="col-md-2">
-        <%= f.select :status, [["Todos status", ""], ["Apenas ativos", "active"], ["Apenas inativos", "inactive"]], { selected: params[:status] }, { class: "form-select", onchange: "this.form.submit()" } %>
+        <%= f.select :status, [["Apenas ativos", "active"], ["Apenas inativos", "inactive"], ["Todos", "all"]], { selected: params[:status].presence || "active" }, { class: "form-select", onchange: "this.form.submit()" } %>
       </div>
       <div class="col-md-2">
         <%= f.submit "Filtrar", class: "btn btn-primary w-100 fw-bold" %>
