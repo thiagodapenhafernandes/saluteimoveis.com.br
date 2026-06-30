@@ -885,6 +885,16 @@ class Admin::HabitationsController < Admin::BaseController
       .uniq
   end
 
+  # Card "Filtro ajuste": aplica faixa Mín/Máx em colunas inteiras (column é um
+  # símbolo controlado internamente, seguro para interpolação).
+  def apply_integer_range_filter(scope, column, min_value, max_value)
+    min = min_value.to_s.strip
+    max = max_value.to_s.strip
+    scope = scope.where("#{column} >= ?", min.to_i) if min.match?(/\A\d+\z/)
+    scope = scope.where("#{column} <= ?", max.to_i) if max.match?(/\A\d+\z/)
+    scope
+  end
+
   def extract_multi_select_strings(param_key)
     Array(params[param_key])
       .flatten
@@ -919,9 +929,13 @@ class Admin::HabitationsController < Admin::BaseController
     @cidade = params[:cidade]
     @bairro = params[:bairro]
     @bairro_comercial = params[:bairro_comercial]
-    @dorms = extract_multi_select_integers(:dorms)
-    @suites = extract_multi_select_integers(:suites)
-    @vagas = extract_multi_select_integers(:vagas)
+    # Card "Filtro ajuste": dormitórios, suítes e vagas passam a usar faixa Mín/Máx.
+    @dorms_min = params[:dorms_min]
+    @dorms_max = params[:dorms_max]
+    @suites_min = params[:suites_min]
+    @suites_max = params[:suites_max]
+    @vagas_min = params[:vagas_min]
+    @vagas_max = params[:vagas_max]
     @banheiros = extract_multi_select_integers(:banheiros)
     @situacao = params[:situacao]
     @face = params[:face]
@@ -1017,9 +1031,9 @@ class Admin::HabitationsController < Admin::BaseController
     scope = scope.where("unaccent(COALESCE(NULLIF(TRIM(addresses.cidade), ''), NULLIF(TRIM(habitations.cidade), ''))) = unaccent(?)", @cidade) if @cidade.present?
     scope = scope.where("unaccent(COALESCE(NULLIF(TRIM(addresses.bairro), ''), NULLIF(TRIM(habitations.bairro), ''))) ILIKE unaccent(?)", "%#{@bairro}%") if @bairro.present?
     scope = scope.where("unaccent(COALESCE(NULLIF(TRIM(addresses.bairro_comercial), ''), NULLIF(TRIM(habitations.bairro_comercial), ''))) ILIKE unaccent(?)", "%#{@bairro_comercial}%") if @bairro_comercial.present?
-    scope = scope.where(dormitorios_qtd: @dorms) if @dorms.any?
-    scope = scope.where(suites_qtd: @suites) if @suites.any?
-    scope = scope.where(vagas_qtd: @vagas) if @vagas.any?
+    scope = apply_integer_range_filter(scope, :dormitorios_qtd, @dorms_min, @dorms_max)
+    scope = apply_integer_range_filter(scope, :suites_qtd, @suites_min, @suites_max)
+    scope = apply_integer_range_filter(scope, :vagas_qtd, @vagas_min, @vagas_max)
     scope = scope.where(banheiros_qtd: @banheiros) if @banheiros.any?
     scope = scope.where(situacao: @situacao) if @situacao.present?
     scope = scope.where(face: @face) if @face.present?

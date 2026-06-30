@@ -856,7 +856,7 @@
 </div>
 
 <%
-  array_filter_keys = %w[dorms suites vagas banheiros]
+  array_filter_keys = %w[banheiros]
   extra_filter_keys = %w[
     logradouro numero cep cidade bairro bairro_comercial promotion_status accepts_exchange key_location salute_rental_management min_price max_price
     foto_classificacao
@@ -876,7 +876,7 @@
   extras_open = true
   vista_advanced_keys = %w[
     situacao face ocupacao_status estado_conservacao area_total_min area_total_max area_privativa_min area_privativa_max
-    destaque_web festival_salute exibir_no_site tem_placa exclusivo banheiros dorms suites vagas
+    destaque_web festival_salute exibir_no_site tem_placa exclusivo banheiros dorms_min dorms_max suites_min suites_max vagas_min vagas_max
     foto_classificacao
     amenities
     publicar_imovelweb_2 publicar_lais_ai
@@ -1048,7 +1048,7 @@
         <%
           loc_open = %w[logradouro numero cep cidade bairro bairro_comercial].any? { |k| params[k].present? }
           neg_open = %w[situacao promotion_status accepts_exchange key_location salute_rental_management permuta_vehicle permuta_property permuta_others].any? { |k| params[k].present? }
-          apt_open = (%w[face ocupacao_status estado_conservacao area_total_min area_total_max area_privativa_min area_privativa_max].any? { |k| params[k].present? }) || %w[banheiros dorms suites vagas amenities].any? { |k| Array(params[k]).reject(&:blank?).any? }
+          apt_open = (%w[face ocupacao_status estado_conservacao area_total_min area_total_max area_privativa_min area_privativa_max dorms_min dorms_max suites_min suites_max vagas_min vagas_max].any? { |k| params[k].present? }) || %w[banheiros amenities].any? { |k| Array(params[k]).reject(&:blank?).any? }
           emp_open = Array(params[:amenities]).reject(&:blank?).any?
           adm_open = (%w[proprietor_id proprietor_city regiao_foco destaque_web festival_salute exibir_no_site somente_com_imagens somente_sem_imagens tem_placa exclusivo somente_dwv captacao_inicio captacao_fim atualizacao_inicio atualizacao_fim].any? { |k| params[k].present? }) || Array(params[:foto_classificacao]).reject(&:blank?).any? || %w[publicar_imovelweb_2 publicar_lais_ai publicar_chaves_na_mao publicar_casa_mineira publicar_imovelweb publicar_viva_real_vrsync].any? { |k| params[k].present? }
         %>
@@ -1186,49 +1186,28 @@
                              } %>
               </div>
               <div class="col-md-3">
-                <label class="form-label small fw-bold text-muted text-uppercase">Dormitórios (exato)</label>
-                <%= f.select :dorms,
-                             options_for_select((1..8).map { |n| [n.to_s, n] }, @dorms),
-                             {},
-                             {
-                               multiple: true,
-                               class: "form-select filter-multi-compact",
-                               data: {
-                                 controller: "tom-select",
-                                 tom_select_create_value: false,
-                                 tom_select_options_value: { placeholder: "Selecione dormitórios" }
-                               }
-                             } %>
+                <label class="form-label small fw-bold text-muted text-uppercase">Dormitórios mín.</label>
+                <%= f.number_field :dorms_min, value: params[:dorms_min], class: "form-control", min: "0", step: "1", placeholder: "0" %>
               </div>
               <div class="col-md-3">
-                <label class="form-label small fw-bold text-muted text-uppercase">Suítes (exato)</label>
-                <%= f.select :suites,
-                             options_for_select((1..8).map { |n| [n.to_s, n] }, @suites),
-                             {},
-                             {
-                               multiple: true,
-                               class: "form-select filter-multi-compact",
-                               data: {
-                                 controller: "tom-select",
-                                 tom_select_create_value: false,
-                                 tom_select_options_value: { placeholder: "Selecione suítes" }
-                               }
-                             } %>
+                <label class="form-label small fw-bold text-muted text-uppercase">Dormitórios máx.</label>
+                <%= f.number_field :dorms_max, value: params[:dorms_max], class: "form-control", min: "0", step: "1", placeholder: "0" %>
               </div>
               <div class="col-md-3">
-                <label class="form-label small fw-bold text-muted text-uppercase">Vagas (exato)</label>
-                <%= f.select :vagas,
-                             options_for_select((1..8).map { |n| [n.to_s, n] }, @vagas),
-                             {},
-                             {
-                               multiple: true,
-                               class: "form-select filter-multi-compact",
-                               data: {
-                                 controller: "tom-select",
-                                 tom_select_create_value: false,
-                                 tom_select_options_value: { placeholder: "Selecione vagas" }
-                               }
-                             } %>
+                <label class="form-label small fw-bold text-muted text-uppercase">Suítes mín.</label>
+                <%= f.number_field :suites_min, value: params[:suites_min], class: "form-control", min: "0", step: "1", placeholder: "0" %>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small fw-bold text-muted text-uppercase">Suítes máx.</label>
+                <%= f.number_field :suites_max, value: params[:suites_max], class: "form-control", min: "0", step: "1", placeholder: "0" %>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small fw-bold text-muted text-uppercase">Vagas mín.</label>
+                <%= f.number_field :vagas_min, value: params[:vagas_min], class: "form-control", min: "0", step: "1", placeholder: "0" %>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small fw-bold text-muted text-uppercase">Vagas máx.</label>
+                <%= f.number_field :vagas_max, value: params[:vagas_max], class: "form-control", min: "0", step: "1", placeholder: "0" %>
               </div>
               <div class="col-md-3">
                 <label class="form-label small fw-bold text-muted text-uppercase">Área Total mín. (m²)</label>

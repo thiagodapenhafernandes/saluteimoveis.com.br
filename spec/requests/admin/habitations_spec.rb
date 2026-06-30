@@ -686,6 +686,19 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include(rented.titulo_anuncio)
   end
 
+  it "filtra dormitórios por faixa mínima e máxima" do
+    d1 = create(:habitation, codigo: "DOR1-#{SecureRandom.hex(6)}", status: "Venda", dormitorios_qtd: 1, titulo_anuncio: "Um dormitório #{SecureRandom.hex(4)}")
+    d3 = create(:habitation, codigo: "DOR3-#{SecureRandom.hex(6)}", status: "Venda", dormitorios_qtd: 3, titulo_anuncio: "Três dormitórios #{SecureRandom.hex(4)}")
+    d5 = create(:habitation, codigo: "DOR5-#{SecureRandom.hex(6)}", status: "Venda", dormitorios_qtd: 5, titulo_anuncio: "Cinco dormitórios #{SecureRandom.hex(4)}")
+
+    get admin_habitations_path(ownership: "all", dorms_min: 2, dorms_max: 4)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(d3.titulo_anuncio)
+    expect(response.body).not_to include(d1.titulo_anuncio)
+    expect(response.body).not_to include(d5.titulo_anuncio)
+  end
+
   it "filtra imóveis pela cidade do proprietário" do
     prop_bc = create(:proprietor, city: "Balneário Camboriú")
     prop_itajai = create(:proprietor, city: "Itajaí")
