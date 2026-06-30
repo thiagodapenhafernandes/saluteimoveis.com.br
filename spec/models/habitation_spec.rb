@@ -633,6 +633,14 @@ RSpec.describe Habitation, type: :model do
     end
   end
 
+  describe "#compose_dimensoes_terreno" do
+    it "mantém dimensoes_terreno em sincronia a partir de frente e fundo" do
+      terreno = create(:habitation, categoria: "Terreno", frente_terreno_m: 12, fundo_terreno_m: 30)
+
+      expect(terreno.reload.dimensoes_terreno).to eq("12x30")
+    end
+  end
+
   describe "#picture_duplicate_of_attached?" do
     it "considera duplicada a picture do Vista cujo nome de arquivo já está anexado" do
       habitation = create(:habitation)

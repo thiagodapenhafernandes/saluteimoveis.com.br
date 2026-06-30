@@ -2264,7 +2264,7 @@ class Admin::HabitationsController < Admin::BaseController
       :tipo_publicacao_imovelweb_2, :mostrar_mapa_imovelweb_2,
       :exclusivo_flag, :ocupacao_status, :estado_conservacao,
       :andar, :ano_construcao, :demi_suites_qtd, :numero_box, :tipo_vaga,
-      :dimensoes_terreno, :topografia, :foto_classificacao, :podcast_url,
+      :dimensoes_terreno, :frente_terreno_m, :fundo_terreno_m, :topografia, :foto_classificacao, :podcast_url,
       :matricula_imovel, :zona, :numero_prestacoes, :responsavel_reserva, :zelador_nome, :zelador_telefone, :regiao_foco,
       :construtora, :tipo_fachada, :andares_qtd, :perfil_construcao, :face,
       :tipo_veiculo_aceito_permuta, :ano_minimo_veiculo_aceito_permuta,

@@ -311,6 +311,7 @@ class Habitation < ApplicationRecord
   before_save :capture_price_reductions
   before_save :sync_flags_from_features
   before_save :sync_intake_answers
+  before_save :compose_dimensoes_terreno
   before_save :sync_admin_user_from_primary_captador
   after_save :clear_cache
   after_destroy :clear_cache
@@ -658,6 +659,15 @@ class Habitation < ApplicationRecord
     else
       positive_decimal(area_privativa_m2) || positive_decimal(area_total_m2)
     end
+  end
+
+  # Card #13: a frente e o fundo do terreno são campos separados; mantém o campo
+  # legado dimensoes_terreno ("FxF") em sincronia para compatibilidade (site,
+  # exportações, etc.). Só recompõe quando ambos estão preenchidos.
+  def compose_dimensoes_terreno
+    return unless frente_terreno_m.present? && fundo_terreno_m.present?
+
+    self.dimensoes_terreno = "#{format('%g', frente_terreno_m.to_f)}x#{format('%g', fundo_terreno_m.to_f)}"
   end
 
   def dormitorios = dormitorios_qtd

@@ -1,4 +1,4 @@
-\restrict dUdQRB0n7ium5A2Ou2kbILnFEbGRGmMXeesmNvsItUMJ2A71JyR462LxvxqAAfC
+\restrict zUa1SO3wxzW5kHix5fukPahncgEEdqyrOylgtimnfIG0AZd9CWhXDYvSyFdxc80
 
 -- Dumped from database version 17.9 (Homebrew)
 -- Dumped by pg_dump version 17.9 (Homebrew)
@@ -1444,7 +1444,9 @@ CREATE TABLE public.habitations (
     site_hidden_photo_ids jsonb DEFAULT '[]'::jsonb NOT NULL,
     dwv_payload jsonb DEFAULT '{}'::jsonb NOT NULL,
     rental_guarantee_method character varying,
-    permuta_valor_percentual integer
+    permuta_valor_percentual integer,
+    frente_terreno_m numeric(10,2),
+    fundo_terreno_m numeric(10,2)
 );
 
 
@@ -8451,11 +8453,12 @@ ALTER TABLE ONLY public.push_subscriptions
 -- PostgreSQL database dump complete
 --
 
-\unrestrict dUdQRB0n7ium5A2Ou2kbILnFEbGRGmMXeesmNvsItUMJ2A71JyR462LxvxqAAfC
+\unrestrict zUa1SO3wxzW5kHix5fukPahncgEEdqyrOylgtimnfIG0AZd9CWhXDYvSyFdxc80
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260630120000'),
 ('20260622162257'),
 ('20260620120000'),
 ('20260619114704'),
