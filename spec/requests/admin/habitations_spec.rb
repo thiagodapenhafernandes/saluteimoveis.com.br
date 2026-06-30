@@ -649,6 +649,20 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include(sold.titulo_anuncio)
   end
 
+  it "exibe imóvel com status inativo ao pesquisar pela referência" do
+    rented = create(:habitation, codigo: "REF-INATIVO-#{SecureRandom.hex(6)}", status: "Alugado terceiros", titulo_anuncio: "Alugado mas buscável por código #{SecureRandom.hex(4)}")
+
+    get admin_habitations_path(ownership: "all")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).not_to include(rented.titulo_anuncio)
+
+    get admin_habitations_path(ownership: "all", referencia: rented.codigo)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(rented.titulo_anuncio)
+  end
+
   it "não exibe código DWV no card operacional quando o imóvel tem referência Salute" do
     dwv_property = create(
       :habitation,

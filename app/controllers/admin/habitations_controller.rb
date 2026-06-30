@@ -956,7 +956,9 @@ class Admin::HabitationsController < Admin::BaseController
     scope = scope.where("LOWER(TRIM(habitations.codigo)) = LOWER(?)", @referencia.to_s.strip) if @referencia.present?
     scope = scope.admin_search_text(@q) if @q.present?
 
-    scope = apply_status_filter(scope, @status, submitted: @status_filter_submitted)
+    # Busca por referência/código exibe o imóvel independente do status (inclusive
+    # inativos como Vendido/Alugado/Suspenso, que o filtro padrão esconde). Card #11.
+    scope = apply_status_filter(scope, @status, submitted: @status_filter_submitted) if @referencia.blank?
     scope = apply_category_filter(scope, @categoria)
     scope = scope.where(
       "unaccent(CONCAT_WS(' ', " \
