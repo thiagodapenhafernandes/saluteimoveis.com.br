@@ -817,6 +817,13 @@ class Admin::HabitationsController < Admin::BaseController
     @filter_empreendimentos = filter_empreendimento_options
     @filter_brokers = AdminUser.order(name: :asc).pluck(:name, :id)
     @filter_proprietors = Proprietor.order(name: :asc).pluck(:name, :id)
+    @filter_proprietor_cities = Proprietor.where("NULLIF(TRIM(city), '') IS NOT NULL AND city != '.'")
+                                          .distinct
+                                          .pluck(:city)
+                                          .map { |city| city.to_s.strip }
+                                          .reject(&:blank?)
+                                          .uniq
+                                          .sort
     @filter_situacoes = (Habitation::SITUATIONS + Habitation.where("NULLIF(TRIM(situacao), '') IS NOT NULL AND situacao != '.'")
                                                           .distinct
                                                           .pluck(:situacao)).uniq.sort
@@ -909,6 +916,7 @@ class Admin::HabitationsController < Admin::BaseController
     @empreendimento_codigo = params[:empreendimento_codigo]
     @corretor_id = params[:corretor_id]
     @proprietor_id = can_filter_by_proprietor? ? params[:proprietor_id] : nil
+    @proprietor_city = can_filter_by_proprietor? ? params[:proprietor_city] : nil
     @destaque_web = params[:destaque_web]
     @festival_salute = params[:festival_salute]
     @exibir_no_site = params[:exibir_no_site].presence || params[:exibir_no_site_salute]
@@ -1049,6 +1057,13 @@ class Admin::HabitationsController < Admin::BaseController
 	      )
     end
     scope = scope.where(proprietor_id: @proprietor_id) if @proprietor_id.present?
+    if @proprietor_city.present?
+      scope = scope.where(
+        "EXISTS (SELECT 1 FROM proprietors WHERE proprietors.id = habitations.proprietor_id " \
+        "AND unaccent(TRIM(proprietors.city)) = unaccent(?))",
+        @proprietor_city.to_s.strip
+      )
+    end
 
     scope = apply_boolean_filter(scope, @salute_rental_management, :salute_rental_management_flag)
     scope = apply_price_range_filter(scope)

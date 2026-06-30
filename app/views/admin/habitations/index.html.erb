@@ -853,7 +853,7 @@
     permuta_vehicle permuta_property permuta_others permuta_min_value permuta_location
     permuta_min_dorms permuta_min_suites permuta_min_garagens
     situacao face ocupacao_status estado_conservacao area_total_min area_total_max area_privativa_min area_privativa_max
-    destaque_web festival_salute exibir_no_site tem_placa exclusivo proprietor_id regiao_foco
+    destaque_web festival_salute exibir_no_site tem_placa exclusivo proprietor_id proprietor_city regiao_foco
     publicar_imovelweb_2 publicar_lais_ai
     publicar_chaves_na_mao publicar_casa_mineira publicar_imovelweb publicar_viva_real_vrsync
     captacao_inicio captacao_fim somente_com_imagens somente_sem_imagens somente_dwv
@@ -1039,7 +1039,7 @@
           neg_open = %w[situacao promotion_status accepts_exchange key_location salute_rental_management permuta_vehicle permuta_property permuta_others permuta_min_value permuta_location permuta_min_dorms permuta_min_suites permuta_min_garagens captacao_inicio captacao_fim atualizacao_inicio atualizacao_fim].any? { |k| params[k].present? }
           apt_open = (%w[face ocupacao_status estado_conservacao area_total_min area_total_max area_privativa_min area_privativa_max].any? { |k| params[k].present? }) || %w[banheiros dorms suites vagas amenities].any? { |k| Array(params[k]).reject(&:blank?).any? }
           emp_open = Array(params[:amenities]).reject(&:blank?).any?
-          adm_open = (%w[proprietor_id regiao_foco destaque_web festival_salute exibir_no_site somente_com_imagens somente_sem_imagens tem_placa exclusivo somente_dwv].any? { |k| params[k].present? }) || Array(params[:foto_classificacao]).reject(&:blank?).any? || %w[publicar_imovelweb_2 publicar_lais_ai publicar_chaves_na_mao publicar_casa_mineira publicar_imovelweb publicar_viva_real_vrsync].any? { |k| params[k].present? }
+          adm_open = (%w[proprietor_id proprietor_city regiao_foco destaque_web festival_salute exibir_no_site somente_com_imagens somente_sem_imagens tem_placa exclusivo somente_dwv].any? { |k| params[k].present? }) || Array(params[:foto_classificacao]).reject(&:blank?).any? || %w[publicar_imovelweb_2 publicar_lais_ai publicar_chaves_na_mao publicar_casa_mineira publicar_imovelweb publicar_viva_real_vrsync].any? { |k| params[k].present? }
         %>
 
         <details class="filter-accordion"<%= " open".html_safe if loc_open %>>
@@ -1339,6 +1339,20 @@
                                  controller: "tom-select",
                                  tom_select_create_value: false,
                                  tom_select_options_value: { placeholder: "Selecione proprietário" }
+                               }
+                             } %>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-bold text-muted text-uppercase">Cidade do proprietário</label>
+                <%= f.select :proprietor_city,
+                             @filter_proprietor_cities,
+                             { include_blank: "Todas", selected: params[:proprietor_city] },
+                             {
+                               class: "form-select",
+                               data: {
+                                 controller: "tom-select",
+                                 tom_select_create_value: false,
+                                 tom_select_options_value: { placeholder: "Selecione a cidade do proprietário" }
                                }
                              } %>
               </div>
@@ -1736,6 +1750,7 @@
   active_filter_chips << "Empreendimento: #{params[:empreendimento_codigo]}" if params[:empreendimento_codigo].present?
   active_filter_chips << "Corretor: #{params[:corretor_id]}" if params[:corretor_id].present?
   active_filter_chips << "Proprietário: #{params[:proprietor_id]}" if can_filter_by_proprietor? && params[:proprietor_id].present?
+  active_filter_chips << "Cidade do proprietário: #{params[:proprietor_city]}" if can_filter_by_proprietor? && params[:proprietor_city].present?
   active_filter_chips << "Região foco?: #{params[:regiao_foco]}" if params[:regiao_foco].present?
   active_filter_chips << "Meus imóveis" if @ownership_scope == "mine"
   active_filter_chips << "Pendente de revisão" if @intake_review == "pending"
