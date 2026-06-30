@@ -341,7 +341,8 @@
       ["Total aluguel", show_total_rent ? money.call(@habitation.valor_total_aluguel_cents) : nil],
       ["Condomínio", money.call(@habitation.valor_condominio_cents)],
       ["IPTU", money.call(@habitation.valor_iptu_cents)],
-      ["Aceita financiamento", yes_no.call(@habitation.aceita_financiamento_flag)],
+      ["Aceita parcelamento", yes_no.call(@habitation.aceita_parcelamento_flag)],
+      ["Quantidade de prestações", (@habitation.numero_prestacoes.to_i if @habitation.aceita_parcelamento_flag? && @habitation.numero_prestacoes.to_i.positive?)&.then { |n| "#{n}x" }],
       ["Aceita permuta", yes_no.call(@habitation.aceita_permuta_flag)]
     ].tap do |fields|
       fields << ["Administração de locação feita pela Salute", @habitation.salute_rental_management_label] if @habitation.rental_intake?
