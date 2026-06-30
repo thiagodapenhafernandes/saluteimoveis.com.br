@@ -382,6 +382,7 @@ class Admin::HabitationsController < Admin::BaseController
     end
 
     assign_proprietor_from_legacy_fields(@habitation) if current_admin_user&.admin?
+    @habitation.partial_intake_save = admin_paper_intake_form? && !releasing_to_broker && !saving_internal_intake
     normalize_admin_paper_intake_plain_save_status(@habitation, releasing_to_broker:, saving_internal_intake:)
     apply_intake_status_transition_metadata(@habitation)
 
@@ -460,6 +461,9 @@ class Admin::HabitationsController < Admin::BaseController
     end
 
     assign_proprietor_from_legacy_fields(@habitation) if current_admin_user&.admin?
+    @habitation.partial_intake_save = admin_paper_intake_form? && !releasing_to_broker && !saving_internal_intake &&
+                                      @habitation.broker_intake? &&
+                                      %w[draft submitted_for_admin_review returned_to_broker].include?(@habitation.intake_status.to_s)
     apply_intake_status_transition_metadata(@habitation)
     if @habitation.save
       new_photo_attachment_ids = attach_new_photos(@habitation, new_photo_uploads, apply_watermark: apply_photo_watermark_requested?)
@@ -1518,8 +1522,10 @@ class Admin::HabitationsController < Admin::BaseController
     return if releasing_to_broker || saving_internal_intake
     return unless habitation.new_record? && admin_paper_intake_form?
     return unless habitation.broker_intake? && habitation.intake_draft?
-    return if habitation.admin_user_id.blank? || habitation.admin_user_id == current_admin_user&.id
 
+    # Card #2: o cadastro interno salvo pela administração deve ir para
+    # "Pendente de revisão", e não ficar como rascunho nas Captações — mesmo
+    # quando o próprio admin figura como captador (sem selecionar outro).
     habitation.intake_status = "submitted_for_admin_review"
     habitation.intake_step = "review" if habitation.intake_step.blank? || habitation.intake_step == "intro"
   end

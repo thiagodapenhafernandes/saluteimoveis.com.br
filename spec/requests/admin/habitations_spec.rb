@@ -262,8 +262,32 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response).to redirect_to(edit_admin_habitation_path(habitation))
     expect(habitation).to have_attributes(
       intake_origin: Habitation::INTAKE_ORIGIN_BROKER,
-      intake_status: "draft"
+      intake_status: "submitted_for_admin_review"
     )
+  end
+
+  it "permite salvar cadastro interno pela metade sem categoria e o envia para revisão" do
+    expect {
+      post admin_habitations_path, params: {
+        habitation: {
+          status: "Venda",
+          tipo: "Unitário",
+          titulo_anuncio: "Ficha de papel pela metade #{SecureRandom.hex(4)}",
+          address_attributes: {
+            logradouro: "Rua Sem Categoria",
+            numero: "200",
+            bairro: "Centro",
+            cidade: "Itapema",
+            uf: "SC",
+            cep: "88220-000"
+          }
+        }
+      }
+    }.to change(Habitation, :count).by(1)
+
+    habitation = Habitation.order(:created_at).last
+    expect(habitation.categoria).to be_blank
+    expect(habitation.intake_status).to eq("submitted_for_admin_review")
   end
 
   it "mantém ações de revisão administrativa vinculadas ao formulário principal" do

@@ -3,7 +3,7 @@
 # Table name: habitations
 #
 class Habitation < ApplicationRecord
-  attr_accessor :skip_auto_audit, :auto_audit_destroy_snapshot
+  attr_accessor :skip_auto_audit, :auto_audit_destroy_snapshot, :partial_intake_save
 
   # Concerns organizados por responsabilidade
   include Habitation::PriceFormatting
@@ -282,7 +282,10 @@ class Habitation < ApplicationRecord
 
   # Validations
   validates :codigo, presence: true, uniqueness: true
-  validates :categoria, presence: true
+  # Card #2: ao salvar um cadastro interno pela metade (ficha de papel), a
+  # categoria não é obrigatória — só nome e endereço. A obrigatoriedade volta
+  # ao concluir a revisão (botões Salvar interno / Devolver captador).
+  validates :categoria, presence: true, unless: :partial_intake_save
   validates :captador_commission_percentage,
             numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 100 },
             allow_nil: true
