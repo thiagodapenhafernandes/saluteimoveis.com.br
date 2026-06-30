@@ -791,11 +791,25 @@ module Vista
         codigo_imovel: habitation.codigo,
         source_url: source_url,
         filename: filename,
-        active_storage_name: "autorizacoes_venda",
+        active_storage_name: document_active_storage_name(document, filename),
         position: integer(document["Ordem"]) || index + 1,
         metadata: asset.metadata.to_h.merge("api" => document)
       )
       asset.save!
+    end
+
+    # Card #10: o Vista traz a ficha do corretor E a autorização de comercialização
+    # como anexos (campo "Anexo"). Roteia a ficha para fichas_cadastro pela
+    # descrição/nome; os demais documentos seguem em autorizacoes_venda.
+    def document_active_storage_name(document, filename = nil)
+      descriptor = [
+        value(document["Descricao"]),
+        value(document["NomeArquivo"]),
+        value(document["Anexo"]),
+        filename
+      ].compact.join(" ").downcase
+
+      descriptor.match?(/ficha/) ? "fichas_cadastro" : "autorizacoes_venda"
     end
 
     def document_source_url(document)

@@ -258,4 +258,14 @@ RSpec.describe Vista::PropertyReconciliationService do
       expect(flag).to be(true)
     end
   end
+
+  describe "#document_active_storage_name" do
+    let(:service) { described_class.new(codigos: ["8395"], dry_run: true) }
+
+    it "roteia a ficha do corretor para fichas_cadastro e os demais para autorizacoes_venda" do
+      expect(service.send(:document_active_storage_name, { "Descricao" => "Ficha de captação preenchida" })).to eq("fichas_cadastro")
+      expect(service.send(:document_active_storage_name, { "NomeArquivo" => "ficha_corretor.pdf" })).to eq("fichas_cadastro")
+      expect(service.send(:document_active_storage_name, { "Descricao" => "Autorização de comercialização" })).to eq("autorizacoes_venda")
+    end
+  end
 end
