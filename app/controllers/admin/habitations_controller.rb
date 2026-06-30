@@ -800,11 +800,15 @@ class Admin::HabitationsController < Admin::BaseController
                                    .distinct.pluck(:categoria).sort
     city_sql = "COALESCE(NULLIF(TRIM(addresses.cidade), ''), NULLIF(TRIM(habitations.cidade), ''))"
     commercial_neighborhood_sql = "COALESCE(NULLIF(TRIM(addresses.bairro_comercial), ''), NULLIF(TRIM(habitations.bairro_comercial), ''))"
-    @filter_cities = Habitation.left_outer_joins(:address)
-                               .where("#{city_sql} IS NOT NULL AND #{city_sql} != '.'")
-                               .distinct
-                               .pluck(Arel.sql(city_sql))
-                               .sort
+    # Card "Tem 2x balneário camboriú no filtro cidade": deduplica variações de
+    # acento/maiúscula (ex.: "Balneário Camboriú" x "Balneario Camboriu") que o
+    # distinct do banco não unifica. O filtro em si já é unaccent.
+    @filter_cities = dedupe_filter_labels(
+      Habitation.left_outer_joins(:address)
+                .where("#{city_sql} IS NOT NULL AND #{city_sql} != '.'")
+                .distinct
+                .pluck(Arel.sql(city_sql))
+    )
     @filter_bairros_comerciais = Habitation.left_outer_joins(:address)
                                            .where("#{commercial_neighborhood_sql} IS NOT NULL AND #{commercial_neighborhood_sql} != '.'")
                                            .distinct

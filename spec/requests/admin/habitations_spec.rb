@@ -699,6 +699,21 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).not_to include(d5.titulo_anuncio)
   end
 
+  it "não duplica cidade no filtro por variação de acento ou caixa" do
+    h1 = create(:habitation, codigo: "BC1-#{SecureRandom.hex(6)}", status: "Venda")
+    h1.create_address!(logradouro: "Rua A", numero: "1", bairro: "Centro", cidade: "Balneário Camboriú", uf: "SC")
+    h2 = create(:habitation, codigo: "BC2-#{SecureRandom.hex(6)}", status: "Venda")
+    h2.create_address!(logradouro: "Rua B", numero: "2", bairro: "Centro", cidade: "Balneario Camboriu", uf: "SC")
+
+    get admin_habitations_path(ownership: "all")
+
+    expect(response).to have_http_status(:ok)
+    cidade_select = Nokogiri::HTML(response.body).at_css('select[name="cidade"]')
+    expect(cidade_select).to be_present
+    matches = cidade_select.css("option").map { |option| I18n.transliterate(option.text).downcase.strip }.select { |text| text == "balneario camboriu" }
+    expect(matches.size).to eq(1)
+  end
+
   it "filtra imóveis pela cidade do proprietário" do
     prop_bc = create(:proprietor, city: "Balneário Camboriú")
     prop_itajai = create(:proprietor, city: "Itajaí")
