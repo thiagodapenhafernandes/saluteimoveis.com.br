@@ -625,6 +625,15 @@ RSpec.describe Habitation, type: :model do
     end
   end
 
+  describe ".feature_options_for_kind" do
+    it "inclui características custom (fora da whitelist) no filtro" do
+      sem_custom = described_class.feature_options_for_kind("empreendimento", [])
+      com_custom = described_class.feature_options_for_kind("empreendimento", ["Espaço Gourmet Exclusivo ZZ"])
+
+      expect(com_custom.size).to be > sem_custom.size
+    end
+  end
+
   describe "#sync_admin_user_from_primary_captador" do
     it "sincroniza admin_user_id a partir do captador definido no Comercial" do
       captador = create(:admin_user)

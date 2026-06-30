@@ -158,8 +158,14 @@ module Habitation::CategoryTaxonomy
       kind_key = source.key?(kind.to_s) ? kind.to_s : "residencial"
       allowed = source.fetch(kind_key)
       allowed_keys = normalized_option_keys(allowed, category: category)
+      # Chaves conhecidas em qualquer tipo, para identificar características custom.
+      known_keys = normalized_option_keys(source.values.flatten, category: category)
       catalog = Array(catalog_options).select do |option|
-        allowed_keys.include?(normalized_option_key(option, category: category))
+        key = normalized_option_key(option, category: category)
+        # Mantém as características do tipo atual e também as custom (criadas em
+        # attribute_options e não mapeadas em nenhum tipo), para que toda
+        # característica nova apareça dinamicamente no filtro. (Card #9)
+        allowed_keys.include?(key) || known_keys.exclude?(key)
       end
 
       normalize_options(allowed + catalog + Array(selected_options), category: category)
