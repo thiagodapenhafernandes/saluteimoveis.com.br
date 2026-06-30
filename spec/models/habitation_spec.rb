@@ -625,6 +625,14 @@ RSpec.describe Habitation, type: :model do
     end
   end
 
+  describe "#display_area_m2" do
+    it "usa a área total/terreno para terrenos quando a privativa está zerada" do
+      terreno = build(:habitation, categoria: "Terreno", area_total_m2: 252, area_privativa_m2: 0)
+
+      expect(terreno.display_area_m2.to_f).to eq(252.0)
+    end
+  end
+
   describe ".feature_options_for_kind" do
     it "inclui características custom (fora da whitelist) no filtro" do
       sem_custom = described_class.feature_options_for_kind("empreendimento", [])

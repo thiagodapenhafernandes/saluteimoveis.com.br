@@ -652,10 +652,12 @@ class Habitation < ApplicationRecord
   def area_total = area_total_m2
   def area_privativa = area_privativa_m2
   def display_area_m2
-    primary_area = property_kind_terreno? ? area_total_m2 : area_privativa_m2
-    fallback_area = property_kind_terreno? ? area_privativa_m2 : area_total_m2
-
-    positive_decimal(primary_area) || positive_decimal(fallback_area)
+    if property_kind_terreno?
+      # Card #15: terreno mostra a área total/do terreno (a privativa costuma ser 0).
+      positive_decimal(area_total_m2) || positive_decimal(area_terreno_m2) || positive_decimal(area_privativa_m2)
+    else
+      positive_decimal(area_privativa_m2) || positive_decimal(area_total_m2)
+    end
   end
 
   def dormitorios = dormitorios_qtd
