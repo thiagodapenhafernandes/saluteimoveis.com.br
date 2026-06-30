@@ -663,6 +663,19 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include(rented.titulo_anuncio)
   end
 
+  it "filtra imóveis pela cidade do proprietário" do
+    prop_bc = create(:proprietor, city: "Balneário Camboriú")
+    prop_itajai = create(:proprietor, city: "Itajaí")
+    in_bc = create(:habitation, codigo: "PROP-BC-#{SecureRandom.hex(6)}", status: "Venda", proprietor: prop_bc, titulo_anuncio: "Imóvel de proprietário em BC #{SecureRandom.hex(4)}")
+    in_itajai = create(:habitation, codigo: "PROP-ITJ-#{SecureRandom.hex(6)}", status: "Venda", proprietor: prop_itajai, titulo_anuncio: "Imóvel de proprietário em Itajaí #{SecureRandom.hex(4)}")
+
+    get admin_habitations_path(ownership: "all", proprietor_city: "Balneário Camboriú")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(in_bc.titulo_anuncio)
+    expect(response.body).not_to include(in_itajai.titulo_anuncio)
+  end
+
   it "não exibe código DWV no card operacional quando o imóvel tem referência Salute" do
     dwv_property = create(
       :habitation,
