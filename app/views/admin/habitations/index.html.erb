@@ -1785,10 +1785,29 @@
           <div class="row g-0 h-100">
             <!-- Image Column -->
             <div class="col-md-4 col-lg-3 position-relative h-100">
-              <% primary_card_image = imovel.primary_image %>
-              <% primary_card_image_url = primary_card_image.is_a?(Hash) ? (primary_card_image["url"].presence || primary_card_image["url_pequena"].presence) : primary_card_image %>
+              <%
+                card_gallery_sources = imovel.card_image_sources(30)
+                card_gallery_urls = card_gallery_sources.map { |src| src.is_a?(Hash) ? (src["url"].presence || src["url_pequena"].presence) : src }.compact
+                primary_card_image_url = card_gallery_urls.first
+              %>
               <% if primary_card_image_url.present? %>
-                <img src="<%= primary_card_image_url %>" class="img-fluid h-100 w-100 object-fit-cover" alt="<%= imovel.display_title %>">
+                <%# Card #16: clicar na foto abre a galeria com todas as fotos sem navegar para a ficha %>
+                <div class="h-100 w-100" data-controller="fancybox-gallery">
+                  <a href="<%= primary_card_image_url %>"
+                     class="d-block h-100 w-100"
+                     data-fancybox="catalog-card-<%= imovel.id %>"
+                     data-caption="<%= imovel.display_title %>"
+                     title="Ver todas as fotos"
+                     onclick="event.stopPropagation();">
+                    <img src="<%= primary_card_image_url %>" class="img-fluid h-100 w-100 object-fit-cover" alt="<%= imovel.display_title %>">
+                  </a>
+                  <% card_gallery_urls.drop(1).each do |photo_url| %>
+                    <a href="<%= photo_url %>"
+                       class="d-none"
+                       data-fancybox="catalog-card-<%= imovel.id %>"
+                       data-caption="<%= imovel.display_title %>"></a>
+                  <% end %>
+                </div>
               <% else %>
                 <div class="bg-light h-100 w-100 d-flex align-items-center justify-content-center text-muted">
                   <i class="bi bi-image display-4 opacity-25"></i>
