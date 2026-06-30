@@ -2366,7 +2366,8 @@ class Admin::HabitationsController < Admin::BaseController
   end
 
   def can_filter_by_proprietor?
-    current_admin_user&.admin? || administrative_profile? || can_view_proprietors?
+    # Card #8: o perfil Gerente também tem acesso ao filtro Administrativo.
+    current_admin_user&.admin? || administrative_profile? || manager_profile? || can_view_proprietors?
   end
 
   def can_filter_by_broker?

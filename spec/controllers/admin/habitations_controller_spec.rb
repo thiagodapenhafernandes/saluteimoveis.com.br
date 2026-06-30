@@ -49,4 +49,14 @@ RSpec.describe Admin::HabitationsController, type: :controller do
       expect(controller.send(:can_manage_intake_status?, intake)).to be_falsey
     end
   end
+
+  describe "#can_filter_by_proprietor?" do
+    it "libera o filtro administrativo para o perfil Gerente" do
+      gerente = Profile.find_or_create_by!(name: "Gerente") { |p| p.permissions = Profile.default_permissions_for("Gerente") }
+      user = create(:admin_user, profile: gerente)
+      allow(controller).to receive(:current_admin_user).and_return(user)
+
+      expect(controller.send(:can_filter_by_proprietor?)).to be_truthy
+    end
+  end
 end
