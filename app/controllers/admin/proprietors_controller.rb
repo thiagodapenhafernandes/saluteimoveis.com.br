@@ -154,10 +154,26 @@ module Admin
     def create
       @proprietor = Proprietor.new(proprietor_params)
 
-      if @proprietor.save
+      if @proprietor.save(context: :manual)
         redirect_to admin_proprietors_path, notice: "Proprietário criado com sucesso."
       else
         render :new, status: :unprocessable_entity
+      end
+    end
+
+    # Busca por telefone (ou CPF/CNPJ) para verificar se o proprietário já está
+    # na base — usado na ficha de captação e no cadastro do produto para evitar
+    # duplicidade e permitir puxar o cadastro existente.
+    def search
+      phone = params[:phone].to_s
+      cpf = params[:cpf_cnpj].to_s
+      proprietor = Proprietor.find_by_phone(phone) if phone.present?
+      proprietor ||= Proprietor.find_by_cpf_cnpj(cpf) if cpf.present?
+
+      if proprietor
+        render json: { found: true, proprietor: proprietor_search_json(proprietor) }
+      else
+        render json: { found: false }
       end
     end
 
@@ -181,9 +197,11 @@ module Admin
     end
 
     def update
-      if @proprietor.update(proprietor_params)
+      @proprietor.assign_attributes(proprietor_params)
+      if @proprietor.save(context: :manual)
         redirect_to admin_proprietors_path, notice: "Proprietário atualizado com sucesso."
       else
+        load_habitations
         render :edit, status: :unprocessable_entity
       end
     end
@@ -246,6 +264,23 @@ module Admin
         :mobile_phone,
         :cpf_cnpj
       )
+    end
+
+    def proprietor_search_json(proprietor)
+      {
+        id: proprietor.id,
+        name: proprietor.name,
+        select_label: proprietor.select_label,
+        cpf_cnpj: proprietor.cpf_cnpj,
+        email: proprietor.email,
+        phone_primary: proprietor.phone_primary,
+        mobile_phone: proprietor.mobile_phone,
+        birth_date: proprietor.birth_date,
+        profession: proprietor.profession,
+        marital_status: proprietor.marital_status,
+        city: proprietor.city,
+        edit_url: edit_admin_proprietor_path(proprietor)
+      }
     end
 
     def proprietor_filter_params

@@ -74,6 +74,10 @@ class Proprietor < ApplicationRecord
   has_one_attached :profile_image
 
   validates :name, presence: true
+  # Cidade obrigatória no cadastro manual do proprietário (contexto :manual usado
+  # pelo formulário). Quick-create e sincronização do Vista não exigem, para não
+  # quebrar cadastros rápidos e a importação.
+  validates :city, presence: { message: "é obrigatória" }, on: :manual
   validate :cpf_cnpj_must_be_unique
 
   scope :ordered, -> { order(name: :asc) }

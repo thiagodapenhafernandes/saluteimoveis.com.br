@@ -655,13 +655,21 @@
 
                 <div class="row g-2">
                   <% if current_admin_user&.admin? || current_admin_user&.profile&.name == "Administrativo" %>
-                    <div class="col-md-5">
+                    <div class="col-md-5"
+                         data-controller="proprietor-edit-link"
+                         data-proprietor-edit-link-url-template-value="<%= edit_admin_proprietor_path("__ID__") %>">
                       <%= f.label :proprietor_id, "Proprietário:", class: "form-label small fw-bold mb-1" %>
                       <div class="input-group input-group-sm">
                         <%= f.collection_select :proprietor_id, @proprietors, :id, :select_label, { include_blank: "Selecione..." }, {
                             class: "form-select form-select-sm",
-                            data: { controller: "tom-select", placeholder: "Busque por nome, telefone ou e-mail..." }
+                            data: { controller: "tom-select", placeholder: "Busque por nome, telefone ou e-mail...", proprietor_edit_link_target: "select", action: "change->proprietor-edit-link#update" }
                         } %>
+                        <%= link_to "#", target: "_blank", rel: "noopener",
+                            class: "btn btn-outline-primary d-none",
+                            title: "Editar cadastro do proprietário selecionado",
+                            data: { proprietor_edit_link_target: "link" } do %>
+                          <i class="bi bi-pencil"></i>
+                        <% end %>
                         <%= link_to "#quickProprietorModal",
                             class: "btn btn-outline-secondary",
                             title: "Buscar ou cadastrar proprietário por telefone",

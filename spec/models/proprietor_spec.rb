@@ -41,4 +41,34 @@ RSpec.describe Proprietor, type: :model do
       expect(from_vista).to be_valid
     end
   end
+
+  describe "cidade obrigatória (contexto :manual)" do
+    it "exige cidade no cadastro manual" do
+      proprietor = build(:proprietor, city: nil)
+
+      expect(proprietor.valid?(:manual)).to be(false)
+      expect(proprietor.errors[:city]).to include("é obrigatória")
+    end
+
+    it "aceita cadastro manual com cidade" do
+      expect(build(:proprietor, city: "Itajaí").valid?(:manual)).to be(true)
+    end
+
+    it "não exige cidade fora do contexto manual (quick-create / Vista)" do
+      expect(build(:proprietor, city: nil).valid?).to be(true)
+    end
+  end
+
+  describe ".find_by_phone" do
+    it "encontra por qualquer telefone comparando só os dígitos" do
+      proprietor = create(:proprietor, phone_primary: nil, mobile_phone: "(47) 98888-1234")
+
+      expect(Proprietor.find_by_phone("47988881234")).to eq(proprietor)
+      expect(Proprietor.find_by_phone("(47) 98888-1234")).to eq(proprietor)
+    end
+
+    it "retorna nil quando não encontra" do
+      expect(Proprietor.find_by_phone("47900000000")).to be_nil
+    end
+  end
 end
