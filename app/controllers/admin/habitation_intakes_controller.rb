@@ -18,7 +18,12 @@ module Admin
       @q = params[:q].to_s.strip
       build_index_dashboard
       @habitations = filtered_intakes_scope.includes(:admin_user, :admin_reviewed_by, :address)
-      @habitations = @habitations.order(updated_at: :desc).paginate(page: params[:page], per_page: 20)
+      # Área de trabalho: imóveis de locação com administração Salute sempre no
+      # topo; depois, o restante por ordem da ficha (data mais antiga primeiro).
+      @habitations = @habitations.order(Arel.sql(
+        "(CASE WHEN habitations.salute_rental_management_flag IS TRUE THEN 0 ELSE 1 END) ASC, " \
+        "COALESCE(habitations.data_cadastro_crm, habitations.created_at) ASC"
+      )).paginate(page: params[:page], per_page: 20)
       @captacoes = @habitations
       @captacao_brokers = captacao_broker_options
       render "admin/captacoes/index"
@@ -395,7 +400,16 @@ module Admin
           ambos: modality_counts["ambos"].to_i,
           locacao_diaria: modality_counts["locacao_diaria"].to_i,
           blank: modality_counts[nil].to_i
-        }
+        },
+        # Relatório de liberações por pessoa: quantas fichas cada revisor liberou
+        # (aprovadas/publicadas), para acompanhar o desempenho do time de cadastro.
+        liberacoes_por_pessoa: scope
+          .where(intake_status: %w[admin_approved published])
+          .where.not(admin_reviewed_by_id: nil)
+          .joins(:admin_reviewed_by)
+          .group("admin_users.name")
+          .order(Arel.sql("COUNT(habitations.id) DESC, admin_users.name ASC"))
+          .count("habitations.id")
       }
     end
 

@@ -1996,4 +1996,36 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
       expect(response.body).to include("Edifício Aurora Mar")
     end
   end
+
+  describe "limpar fluxo de trabalho" do
+    it "coloca locação com administração Salute no topo, depois ficha mais antiga" do
+      venda_antiga = create(:habitation, :broker_intake, admin_user: admin,
+                            intake_status: "submitted_for_admin_review", salute_rental_management_flag: false,
+                            data_cadastro_crm: 20.days.ago, titulo_anuncio: "Venda ficha antiga XPTO")
+      locacao_adm_recente = create(:habitation, :broker_intake, admin_user: admin,
+                            intake_status: "submitted_for_admin_review", salute_rental_management_flag: true,
+                            data_cadastro_crm: 1.day.ago, titulo_anuncio: "Locacao com adm recente XPTO")
+
+      get admin_captacoes_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body.index(locacao_adm_recente.titulo_anuncio))
+        .to be < response.body.index(venda_antiga.titulo_anuncio)
+    end
+
+    it "exibe o relatório de liberações por pessoa (aprovadas/publicadas)" do
+      revisor_um = create(:admin_user, name: "Revisor Iasmim")
+      revisor_dois = create(:admin_user, name: "Revisor Andre")
+      create(:habitation, :broker_intake, admin_user: admin, intake_status: "admin_approved", admin_reviewed_by: revisor_um)
+      create(:habitation, :broker_intake, admin_user: admin, intake_status: "published", exibir_no_site_flag: true, admin_reviewed_by: revisor_um)
+      create(:habitation, :broker_intake, admin_user: admin, intake_status: "admin_approved", admin_reviewed_by: revisor_dois)
+
+      get admin_captacoes_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Liberações por pessoa")
+      expect(response.body).to include("Revisor Iasmim")
+      expect(response.body).to include("Revisor Andre")
+    end
+  end
 end
