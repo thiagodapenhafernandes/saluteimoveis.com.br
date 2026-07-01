@@ -72,7 +72,7 @@ class Admin::HabitationsController < Admin::BaseController
     "codigo_empreendimento" => "Cod empreendimento"
   }.freeze
   SORT_OPTIONS = {
-    "data_cadastro_crm" => { label: "Mais recentes", column: "COALESCE(habitations.data_atualizacao_crm, habitations.data_cadastro_crm, habitations.updated_at)", default_direction: "desc" },
+    "data_cadastro_crm" => { label: "Mais recentes", column: "(CASE WHEN habitations.codigo ~ '^[0-9]+$' THEN habitations.codigo::bigint END)", default_direction: "desc" },
     "codigo" => { label: "Referência", column: "(CASE WHEN habitations.codigo ~ '^[0-9]+$' THEN habitations.codigo::bigint END)", default_direction: "asc" },
     "categoria" => { label: "Categoria", column: "categoria", default_direction: "asc" },
     "endereco" => { label: "Endereço", column: "endereco", default_direction: "asc" },
