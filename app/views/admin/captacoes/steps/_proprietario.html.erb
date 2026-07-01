@@ -1,22 +1,33 @@
 <h1 class="wizard-section-title"><i class="bi bi-person-vcard-fill text-primary me-2"></i>Dados do proprietário</h1>
 <p class="wizard-section-subtitle">Informações básicas de contato para a captação.</p>
 
+<div data-controller="proprietor-lookup"
+     data-proprietor-lookup-url-value="<%= search_admin_proprietors_path %>">
 <div class="wizard-field-group">
   <%= f.label :proprietario_nome, "Nome completo", class: "form-label" %>
   <span class="required-star">*</span>
-  <%= f.text_field :proprietario_nome, class: field_state.call(:proprietario_nome), autocomplete: "name" %>
+  <%= f.text_field :proprietario_nome, class: field_state.call(:proprietario_nome), autocomplete: "name", data: { proprietor_lookup_target: "name" } %>
   <% if field_invalid.call(:proprietario_nome) %><div class="invalid-feedback d-block">Informe o nome completo do proprietário.</div><% end %>
 </div>
 
 <div class="wizard-field-group">
   <%= f.label :proprietario_telefone, "Telefone / WhatsApp", class: "form-label" %>
   <span class="required-star">*</span>
-  <%= f.telephone_field :proprietario_telefone,
-                         class: field_state.call(:proprietario_telefone),
-                         placeholder: "(47) 99999-0000",
-                         autocomplete: "tel",
-                         data: { controller: "mask", mask_type_value: "phone" } %>
+  <div class="input-group">
+    <%= f.telephone_field :proprietario_telefone,
+                           class: field_state.call(:proprietario_telefone),
+                           placeholder: "(47) 99999-0000",
+                           autocomplete: "tel",
+                           data: { controller: "mask", mask_type_value: "phone", proprietor_lookup_target: "phone" } %>
+    <button type="button" class="btn btn-outline-primary" data-action="proprietor-lookup#lookup">
+      <i class="bi bi-search me-1"></i>Já cadastrado?
+    </button>
+  </div>
   <% if field_invalid.call(:proprietario_telefone) %><div class="invalid-feedback d-block">Informe o telefone/WhatsApp do proprietário.</div><% end %>
+  <div class="d-flex align-items-center gap-2">
+    <span data-proprietor-lookup-target="status" class="small mt-1 text-muted"></span>
+    <a href="#" target="_blank" rel="noopener" class="small mt-1 d-none" data-proprietor-lookup-target="editLink">Abrir cadastro completo</a>
+  </div>
 </div>
 
 <div class="row g-2">
@@ -26,13 +37,13 @@
       <%= f.text_field :proprietario_cpf_cnpj,
                        class: "form-control",
                        placeholder: "000.000.000-00",
-                       data: { controller: "mask", mask_type_value: "cpf_cnpj" } %>
+                       data: { controller: "mask", mask_type_value: "cpf_cnpj", proprietor_lookup_target: "cpf" } %>
     </div>
   </div>
   <div class="col-md-6">
     <div class="wizard-field-group">
       <%= f.label :proprietario_email, "E-mail", class: "form-label" %>
-      <%= f.email_field :proprietario_email, class: "form-control", autocomplete: "email" %>
+      <%= f.email_field :proprietario_email, class: "form-control", autocomplete: "email", data: { proprietor_lookup_target: "email" } %>
     </div>
   </div>
 </div>
@@ -40,6 +51,7 @@
 <div class="wizard-field-group">
   <%= f.label :proprietario_cidade, "Cidade do proprietário", class: "form-label" %>
   <span class="required-star">*</span>
-  <%= f.text_field :proprietario_cidade, class: field_state.call(:proprietario_cidade), placeholder: "Balneário Camboriú" %>
+  <%= f.text_field :proprietario_cidade, class: field_state.call(:proprietario_cidade), placeholder: "Balneário Camboriú", data: { proprietor_lookup_target: "city" } %>
   <% if field_invalid.call(:proprietario_cidade) %><div class="invalid-feedback d-block">Informe a cidade do proprietário.</div><% end %>
+</div>
 </div>

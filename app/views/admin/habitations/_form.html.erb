@@ -18,6 +18,12 @@
   can_manage_internal_documents = can_manage_internal_documents?
   can_edit_protected_habitation_fields = current_admin_user&.admin? || owns_all_resource?(:imoveis)
   can_edit_public_content_fields = can_manage_habitation_public_content?
+  # Card "Corretor não pode alterar": em imóvel já publicado (site) ou publicado
+  # interno, restringe seções por perfil. Corretor perde Fotos/IA/Portais/SEO;
+  # Gerente também perde Fotos/SEO. Admin e Administrativo mantêm tudo.
+  habitation_publication_locked = habitation.persisted? && (habitation.published_on_site? || habitation.intake_internal?)
+  can_manage_habitation_broker_sections = !habitation_publication_locked || can?(:manage, :imoveis)          # bloqueia Corretor (IA, Portais)
+  can_manage_habitation_admin_sections = !habitation_publication_locked || (can_edit_protected_habitation_fields && !current_admin_user&.manager?) # bloqueia Corretor e Gerente (Fotos, SEO)
   vista_document_assets = Array(@habitation_vista_document_assets)
   show_vista_document_assets = vista_document_assets.any? || habitation.vista_integrated?
   vista_document_status_labels = {
@@ -649,13 +655,21 @@
 
                 <div class="row g-2">
                   <% if current_admin_user&.admin? || current_admin_user&.profile&.name == "Administrativo" %>
-                    <div class="col-md-5">
+                    <div class="col-md-5"
+                         data-controller="proprietor-edit-link"
+                         data-proprietor-edit-link-url-template-value="<%= edit_admin_proprietor_path("__ID__") %>">
                       <%= f.label :proprietor_id, "Proprietário:", class: "form-label small fw-bold mb-1" %>
                       <div class="input-group input-group-sm">
                         <%= f.collection_select :proprietor_id, @proprietors, :id, :select_label, { include_blank: "Selecione..." }, {
                             class: "form-select form-select-sm",
-                            data: { controller: "tom-select", placeholder: "Busque por nome, telefone ou e-mail..." }
+                            data: { controller: "tom-select", placeholder: "Busque por nome, telefone ou e-mail...", proprietor_edit_link_target: "select", action: "change->proprietor-edit-link#update" }
                         } %>
+                        <%= link_to "#", target: "_blank", rel: "noopener",
+                            class: "btn btn-outline-primary d-none",
+                            title: "Editar cadastro do proprietário selecionado",
+                            data: { proprietor_edit_link_target: "link" } do %>
+                          <i class="bi bi-pencil"></i>
+                        <% end %>
                         <%= link_to "#quickProprietorModal",
                             class: "btn btn-outline-secondary",
                             title: "Buscar ou cadastrar proprietário por telefone",
@@ -1122,7 +1136,7 @@
               </div>
             </div>
             <div class="col-md-9">
-              <% if f.object.persisted? && can_manage_ai_content? %>
+              <% if f.object.persisted? && can_manage_ai_content? && can_manage_habitation_broker_sections %>
                 <%= render "ai_content_preview",
                     habitation: f.object,
                     suggestion: @ai_property_suggestion,
@@ -1728,6 +1742,7 @@
                 </div>
               </template>
 
+          <% if can_manage_habitation_broker_sections %>
           <div class="form-section mb-3 portal-publication-section">
             <div class="form-section-header d-flex align-items-center justify-content-between gap-2">
               <span>Publicação em portais</span>
@@ -1889,6 +1904,12 @@
             </div>
             </div>
           </div>
+          <% else %>
+          <div class="form-section mb-3 portal-publication-section">
+            <div class="form-section-header"><span>Publicação em portais</span></div>
+            <p class="small text-muted mb-0">A publicação em portais deste imóvel é gerenciada pelo administrativo. Seu perfil não tem permissão para alterá-la.</p>
+          </div>
+          <% end %>
 
 
                 <!-- Modal for Adding Broker -->
@@ -1961,7 +1982,7 @@
             <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap mb-3">
               <h6 class="small fw-semibold text-uppercase text-muted mb-0">Fotos</h6>
               <div class="d-flex align-items-center gap-2 flex-wrap">
-                <% if linked_development.present? %>
+                <% if linked_development.present? && can_manage_habitation_admin_sections %>
                   <label class="media-development-toggle form-check form-switch mb-0" title="Se o imóvel não tiver fotos próprias, usa as fotos do empreendimento vinculado.">
                     <%= f.check_box :use_development_photos_flag,
                                     class: "form-check-input",
@@ -1981,7 +2002,7 @@
                 <span class="badge rounded-pill media-photo-dirty-status d-none" data-photo-upload-target="dirtyStatus">
                   Alterações em fotos pendentes
                 </span>
-                <% if habitation.persisted? %>
+                <% if habitation.persisted? && can_manage_habitation_admin_sections %>
                   <%= f.button type: "submit",
                                name: "photo_save",
                                value: "1",
@@ -2008,7 +2029,7 @@
               </div>
             </div>
             <div class="media-upload-dropzone mb-3 text-center border border-dashed rounded bg-light">
-               <% if can?(:manage, :imoveis) %>
+               <% if can?(:manage, :imoveis) && can_manage_habitation_admin_sections %>
                  <div class="row justify-content-center mb-2">
                    <div class="col-md-4 col-lg-3">
                      <%= f.label :foto_classificacao, "Classificação das Fotos:", class: "form-label small fw-bold mb-1" %>
@@ -2020,6 +2041,7 @@
                    </div>
                  </div>
                <% end %>
+               <% if can_manage_habitation_admin_sections %>
                <div class="mb-2">
                  <i class="bi bi-images media-upload-icon text-muted"></i>
                </div>
@@ -2048,6 +2070,9 @@
                    id: "habitation_photos",
                    data: { action: "change->photo-upload#preview", photo_upload_target: "input" } %>
                <div class="alert alert-warning small mt-3 mb-0 d-none" data-photo-upload-target="uploadLimitFeedback"></div>
+               <% else %>
+               <p class="small text-muted my-3">A gestão de fotos deste imóvel é feita pelo administrativo. Seu perfil pode visualizar a galeria, mas não alterar as fotos.</p>
+               <% end %>
 	               <%= f.hidden_field :ordered_photo_ids, data: { photo_upload_target: "orderInput" }, value: attached_media_photos.map(&:id).join(',') %>
 	               <%= f.hidden_field :ordered_picture_indices,
 	                   data: { photo_upload_target: "apiOrderInput" },
@@ -2389,6 +2414,7 @@
            <div class="card border-0 shadow-sm mb-4">
              <div class="card-body p-3 p-md-4">
                <h6 class="small fw-semibold text-uppercase text-muted mb-3">Otimização para busca (SEO)</h6>
+               <% if can_manage_habitation_admin_sections %>
                <div class="row g-2">
                  <div class="col-md-6">
                     <%= f.label :slug, "URL Amigável (Slug)", class: "form-label small fw-bold mb-1" %>
@@ -2404,12 +2430,15 @@
                  </div>
                  <div class="col-12 mt-2">
                     <%= f.label :meta_keywords, "Palavras-chave (Tags)", class: "form-label small fw-bold mb-1" %>
-                    <%= f.text_field :meta_keywords, 
+                    <%= f.text_field :meta_keywords,
                         class: "form-control form-control-sm",
                         placeholder: "Digite e Enter...",
                         data: { controller: "tom-select", tom_select_tags_value: true } %>
                  </div>
                </div>
+               <% else %>
+               <p class="small text-muted mb-0">As configurações de SEO deste imóvel são gerenciadas pelo administrativo. Seu perfil não tem permissão para alterá-las.</p>
+               <% end %>
              </div>
            </div>
          </div>

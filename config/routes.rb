@@ -33,6 +33,7 @@ Rails.application.routes.draw do
         get :print
         get :export
         post :quick_create
+        get :search
       end
     end
 
