@@ -1250,26 +1250,26 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).not_to include(owned_by_other.titulo_anuncio)
   end
 
-  it "ordena mais recentes pela referência Salute numérica, ignorando o código DWV" do
-    lower_salute_reference = create(
-      :habitation,
-      codigo: "8826",
-      codigo_dwv: "488124",
-      imovel_dwv: "Sim",
-      titulo_anuncio: "Imóvel DWV com referência Salute menor"
-    )
-    higher_salute_reference = create(
+  it "ordena 'Mais recentes' pela data de atualização, não pelo código" do
+    # Código MAIOR mas atualizado HÁ MAIS TEMPO deve ficar abaixo do código menor
+    # atualizado agora — provando que a ordenação é por data, não por código.
+    older_update_higher_code = create(
       :habitation,
       codigo: "8882",
-      codigo_dwv: "325054",
-      imovel_dwv: "Sim",
-      titulo_anuncio: "Imóvel DWV com referência Salute maior"
+      data_atualizacao_crm: 10.days.ago,
+      titulo_anuncio: "Imóvel código maior atualizado antigo"
+    )
+    recent_update_lower_code = create(
+      :habitation,
+      codigo: "8826",
+      data_atualizacao_crm: 1.hour.ago,
+      titulo_anuncio: "Imóvel código menor atualizado agora"
     )
 
     get admin_habitations_path(sort: "data_cadastro_crm", direction: "desc")
 
     expect(response).to have_http_status(:ok)
-    expect(response.body.index(higher_salute_reference.titulo_anuncio)).to be < response.body.index(lower_salute_reference.titulo_anuncio)
+    expect(response.body.index(recent_update_lower_code.titulo_anuncio)).to be < response.body.index(older_update_higher_code.titulo_anuncio)
   end
 
   it "filtra por rua considerando endereço estruturado e legado" do

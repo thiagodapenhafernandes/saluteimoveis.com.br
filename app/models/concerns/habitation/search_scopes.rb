@@ -274,12 +274,17 @@ module Habitation::SearchScopes
           .uniq
           .first(6)
 
+        # A busca por palavra-chave (campo "Palavra-chave: Empreendimento,
+        # endereço, bairro...") procura por identificadores e localização. A
+        # descrição livre (descricao_web) foi removida de propósito: buscar por
+        # "Central" (nome de avenida) casava com qualquer descrição que contivesse
+        # "central" (ar central, posição central, etc.), trazendo resultados sem
+        # relação. Para buscar em características, use os filtros dedicados.
         searchable_text_sql = <<~SQL.squish
           CONCAT_WS(' ',
             habitations.codigo,
             habitations.codigo_empreendimento,
             habitations.titulo_anuncio,
-            habitations.descricao_web,
             habitations.nome_empreendimento,
             COALESCE(NULLIF(TRIM(addresses.tipo_endereco), ''), NULLIF(TRIM(habitations.tipo_endereco), '')),
             COALESCE(NULLIF(TRIM(addresses.logradouro), ''), NULLIF(TRIM(habitations.endereco), '')),
