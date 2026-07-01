@@ -97,6 +97,20 @@ RSpec.describe Habitation::SearchScopes, type: :model do
       expect(result).to include(matching)
       expect(result).not_to include(other)
     end
+
+    it "não casa palavras que aparecem só na descrição livre (evita ruído)" do
+      on_street = create(:habitation, codigo: "RUA-CENTRAL", descricao_web: nil)
+      Address.create!(addressable: on_street, tipo_endereco: "Avenida", logradouro: "Central",
+                      bairro: "Centro", cidade: "Balneário Camboriú", uf: "SC")
+      only_description = create(:habitation, codigo: "SO-DESC-7001", nome_empreendimento: nil,
+                                titulo_anuncio: "Apartamento amplo",
+                                descricao_web: "Imóvel com ar-condicionado central e posição central.")
+
+      result = Habitation.admin_search_text("Central")
+
+      expect(result).to include(on_street)
+      expect(result).not_to include(only_description)
+    end
   end
 
   describe ".dependencia_empregada" do
