@@ -7,6 +7,22 @@ RSpec.describe Habitation::SearchScopes, type: :model do
     end
   end
 
+  describe ".canonical_location_labels" do
+    it "deduplica e normaliza a capitalização dos bairros (title-case pt-BR)" do
+      result = Habitation.canonical_location_labels([
+        "praia brava de itajaí", "Praia Brava", "CENTRO", "centro", "balneário camboriú"
+      ])
+
+      expect(result).to include("Praia Brava de Itajaí")
+      expect(result).to include("Praia Brava")
+      expect(result).to include("Centro")
+      expect(result).to include("Balneário Camboriú")
+      expect(result).not_to include("praia brava de itajaí")
+      expect(result).not_to include("CENTRO")
+      expect(result.count { |l| l.casecmp?("Centro") }).to eq(1)
+    end
+  end
+
   describe ".with_photos" do
     it "does not treat development photos as public photos for regular units" do
       unit_without_public_photo = create(

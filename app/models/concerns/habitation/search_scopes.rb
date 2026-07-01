@@ -598,14 +598,31 @@ module Habitation::SearchScopes
       cities + neighborhoods
     end
 
-    # Agrupa strings equivalentes (após normalizar) e devolve a grafia mais frequente de cada grupo.
+    # Agrupa strings equivalentes (após normalizar) e devolve a grafia mais
+    # frequente de cada grupo, já com capitalização adequada (evita exibir
+    # bairros mal formatados como "praia brava de itajaí").
     def canonical_location_labels(values)
       values
         .map(&:to_s)
         .reject { |v| v.strip.empty? }
         .group_by { |v| location_normalize_key(v) }
-        .map { |_key, variants| most_common_location_label(variants) }
+        .map { |_key, variants| titleize_location(most_common_location_label(variants)) }
+        .uniq
         .sort_by { |label| location_normalize_key(label) }
+    end
+
+    # Title-case para nomes de lugar em pt-BR: primeira palavra sempre em
+    # maiúscula, conectivos (de, da, do, e...) em minúsculo.
+    def titleize_location(value)
+      small_words = %w[de da do das dos e]
+      value.to_s.strip.split(/\s+/).each_with_index.map do |word, index|
+        down = word.downcase
+        if index.positive? && small_words.include?(down)
+          down
+        else
+          down[0].to_s.upcase + down[1..].to_s
+        end
+      end.join(" ")
     end
 
     # Mesma intenção do LOCATION_NORM (SQL), porém em Ruby: sem acento, minúsculo, espaços colapsados.
