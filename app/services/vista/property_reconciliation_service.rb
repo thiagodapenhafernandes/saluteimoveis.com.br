@@ -121,6 +121,39 @@ module Vista
       result
     end
 
+    # Diagnóstico read-only: busca o "Anexo" do Vista para um código e mostra, por
+    # documento, o que a API retornou e o que seria extraído (URL, nome, destino).
+    # Usado pela rake vista:diagnose_documents para descobrir por que os anexos
+    # (fichas/autorizações) não estão vindo.
+    def document_diagnostics(codigo)
+      api = fetch_api(codigo)
+      raw = api["Anexo"]
+      documents = document_rows(raw)
+
+      {
+        codigo: codigo,
+        anexo_present: !raw.nil?,
+        raw_count: raw.is_a?(Array) ? raw.size : (raw.nil? ? 0 : 1),
+        parsed_count: documents.size,
+        documents: documents.each_with_index.map do |document, index|
+          source_url = document_source_url(document)
+          filename = (document_filename(document, nil, source_url) rescue nil)
+          {
+            index: index,
+            keys: document.keys,
+            descricao: value(document["Descricao"]),
+            anexo: value(document["Anexo"]),
+            arquivo: value(document["Arquivo"]),
+            url_like: value(document["URL"]) || value(document["Url"]) || value(document["Link"]),
+            source_url: source_url,
+            filename: filename,
+            target: document_active_storage_name(document, filename),
+            importable: source_url.present?
+          }
+        end
+      }
+    end
+
     private
 
     def normalize_workers(workers)
