@@ -2013,19 +2013,28 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
         .to be < response.body.index(venda_antiga.titulo_anuncio)
     end
 
-    it "exibe o relatório de liberações por pessoa (aprovadas/publicadas)" do
-      revisor_um = create(:admin_user, name: "Revisor Iasmim")
-      revisor_dois = create(:admin_user, name: "Revisor Andre")
-      create(:habitation, :broker_intake, admin_user: admin, intake_status: "admin_approved", admin_reviewed_by: revisor_um)
-      create(:habitation, :broker_intake, admin_user: admin, intake_status: "published", exibir_no_site_flag: true, admin_reviewed_by: revisor_um)
-      create(:habitation, :broker_intake, admin_user: admin, intake_status: "admin_approved", admin_reviewed_by: revisor_dois)
+    it "exibe o relatório de liberações por pessoa separando site e interno" do
+      revisor_site = create(:admin_user, name: "Revisor Iasmim")
+      revisor_interno = create(:admin_user, name: "Revisor Andre")
+      create(:habitation, :broker_intake, admin_user: admin, intake_status: "published", exibir_no_site_flag: true, admin_reviewed_by: revisor_site)
+      create(:habitation, :broker_intake, admin_user: admin, intake_status: "published", exibir_no_site_flag: true, admin_reviewed_by: revisor_site)
+      create(:habitation, :broker_intake, admin_user: admin, intake_status: "internal", admin_reviewed_by: revisor_interno)
 
       get admin_captacoes_path
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Liberações por pessoa")
+      expect(response.body).to include("Para o site")
+      expect(response.body).to include("Interno")
       expect(response.body).to include("Revisor Iasmim")
       expect(response.body).to include("Revisor Andre")
+    end
+
+    it "mostra o painel de liberações mesmo sem dados (achável)" do
+      get admin_captacoes_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Liberações por pessoa")
     end
   end
 end

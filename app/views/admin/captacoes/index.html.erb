@@ -108,21 +108,40 @@
   </div>
 </div>
 
-<% liberacoes = dashboard[:liberacoes_por_pessoa] || {} %>
-<% if liberacoes.any? %>
-  <div class="card border-0 shadow-sm mb-3">
-    <div class="card-body py-3">
-      <div class="text-muted fw-semibold text-uppercase mb-2">Liberações por pessoa</div>
-      <div class="d-flex flex-wrap gap-2">
-        <% liberacoes.each do |nome, total| %>
-          <span class="badge bg-success-subtle text-success border fw-semibold py-2 px-3">
-            <%= nome.presence || "Sem responsável" %>: <%= total %>
-          </span>
-        <% end %>
-      </div>
+<% liberacoes = dashboard[:liberacoes_por_pessoa] || [] %>
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body py-3">
+    <div class="text-muted fw-semibold text-uppercase mb-2">
+      <i class="bi bi-clipboard-check me-1"></i>Liberações por pessoa (para o site e interno)
     </div>
+    <% if liberacoes.any? %>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead>
+            <tr class="text-muted small text-uppercase">
+              <th>Responsável</th>
+              <th class="text-end">Para o site</th>
+              <th class="text-end">Interno</th>
+              <th class="text-end">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% liberacoes.each do |row| %>
+              <tr>
+                <td class="fw-semibold"><%= row[:nome].presence || "Sem responsável" %></td>
+                <td class="text-end"><span class="badge bg-success-subtle text-success border"><%= row[:site] %></span></td>
+                <td class="text-end"><span class="badge bg-secondary-subtle text-secondary border"><%= row[:interno] %></span></td>
+                <td class="text-end fw-bold"><%= row[:total] %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <p class="text-muted small mb-0">Nenhuma liberação registrada no período/seleção atual.</p>
+    <% end %>
   </div>
-<% end %>
+</div>
 
 <!-- Filtros -->
 <div class="card shadow-sm border-0 mb-3">

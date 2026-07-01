@@ -401,16 +401,23 @@ module Admin
           locacao_diaria: modality_counts["locacao_diaria"].to_i,
           blank: modality_counts[nil].to_i
         },
-        # Relatório de liberações por pessoa: quantas fichas cada revisor liberou
-        # (aprovadas/publicadas), para acompanhar o desempenho do time de cadastro.
-        liberacoes_por_pessoa: scope
-          .where(intake_status: %w[admin_approved published])
-          .where.not(admin_reviewed_by_id: nil)
-          .joins(:admin_reviewed_by)
-          .group("admin_users.name")
-          .order(Arel.sql("COUNT(habitations.id) DESC, admin_users.name ASC"))
-          .count("habitations.id")
+        # Relatório de liberações por pessoa, separando o destino: quantas fichas
+        # cada revisor liberou PARA O SITE (published) e quantas salvou como
+        # INTERNO (internal). Serve para acompanhar o desempenho do time.
+        liberacoes_por_pessoa: liberacoes_por_pessoa(scope)
       }
+    end
+
+    def liberacoes_por_pessoa(scope)
+      base = scope.where.not(admin_reviewed_by_id: nil).joins(:admin_reviewed_by)
+      site = base.where(intake_status: "published").group("admin_users.name").count("habitations.id")
+      interno = base.where(intake_status: "internal").group("admin_users.name").count("habitations.id")
+
+      (site.keys | interno.keys).map do |nome|
+        para_site = site[nome].to_i
+        para_interno = interno[nome].to_i
+        { nome: nome, site: para_site, interno: para_interno, total: para_site + para_interno }
+      end.sort_by { |row| [-row[:total], row[:nome].to_s] }
     end
 
     def missing_photos_count(scope)
