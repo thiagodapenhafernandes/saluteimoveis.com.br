@@ -1021,6 +1021,8 @@ class Habitation < ApplicationRecord
     if requires_parking_info?
       missing << "Tipo de vaga" if tipo_vaga.blank?
       missing << "Vaga de garagem" if vagas_qtd.nil?
+      # Box só é obrigatório quando o apartamento tem vaga (vagas > 0).
+      missing << "Box" if vagas_qtd.to_i.positive? && numero_box.blank?
     end
     missing << "Financeiro e valores" if requires_intake_expense_amount? && valor_condominio_cents.blank? && valor_iptu_cents.blank?
     missing << "Situação" if situacao.blank? && !property_kind_terreno?
