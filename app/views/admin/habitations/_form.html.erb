@@ -2530,6 +2530,25 @@
     </div>
   </div>
 
+  <div class="modal fade" id="unsavedChangesModal" tabindex="-1" aria-labelledby="unsavedChangesTitle" aria-hidden="true" data-save-state-target="leaveModal">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="unsavedChangesTitle"><i class="bi bi-exclamation-triangle text-warning me-2"></i>Alterações não salvas</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0 text-muted">Você tem alterações que ainda não foram salvas nesta ficha. O que deseja fazer?</p>
+        </div>
+        <div class="modal-footer flex-column flex-sm-row align-items-stretch align-items-sm-center">
+          <button type="button" class="btn btn-outline-secondary" data-action="save-state#cancelLeave" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-outline-danger" data-action="save-state#leaveWithoutSaving">Sair sem salvar</button>
+          <button type="button" class="btn btn-primary" data-action="save-state#saveAndLeave">Salvar e sair</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1080;">
     <div class="toast align-items-center text-bg-primary border-0" role="status" aria-live="polite" aria-atomic="true" data-save-state-target="toast" data-habitation-save-options-toast="true">
       <div class="d-flex">

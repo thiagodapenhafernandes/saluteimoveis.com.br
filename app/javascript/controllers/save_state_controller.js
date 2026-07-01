@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["submitButton", "cancelButton", "spinner", "label", "choice", "modal", "toast", "toastBody"]
+  static targets = ["submitButton", "cancelButton", "spinner", "label", "choice", "modal", "toast", "toastBody", "leaveModal"]
   static values = { submittingText: { type: String, default: "Salvando..." } }
 
   connect() {
@@ -70,15 +70,50 @@ export default class extends Controller {
   leaveGuard(event) {
     if (!this.formDirty || this.submittingNow || this.allowLeave) return
 
-    const confirmed = window.confirm(
-      "Você tem alterações não salvas nesta ficha.\nDeseja sair sem salvar? As alterações serão perdidas."
-    )
+    // Intercepta a navegação e abre um pop up com as opções (como no Vista):
+    // Salvar e sair / Sair sem salvar / Cancelar.
+    event.preventDefault()
+    this.pendingLeaveUrl = event.currentTarget && event.currentTarget.href ? event.currentTarget.href : null
 
-    if (confirmed) {
-      this.allowLeave = true
-    } else {
-      event.preventDefault()
+    const bootstrapElement = window.bootstrap || (typeof bootstrap !== "undefined" ? bootstrap : null)
+    if (bootstrapElement?.Modal && this.hasLeaveModalTarget) {
+      bootstrapElement.Modal.getOrCreateInstance(this.leaveModalTarget).show()
+    } else if (window.confirm("Você tem alterações não salvas. Deseja sair sem salvar?")) {
+      // Fallback quando o Bootstrap não está disponível.
+      this.leaveWithoutSaving()
     }
+  }
+
+  hideLeaveModal() {
+    const bootstrapElement = window.bootstrap || (typeof bootstrap !== "undefined" ? bootstrap : null)
+    if (bootstrapElement?.Modal && this.hasLeaveModalTarget) {
+      bootstrapElement.Modal.getOrCreateInstance(this.leaveModalTarget).hide()
+    }
+  }
+
+  // "Salvar e sair": salva a ficha (fluxo normal) e sai para o catálogo.
+  saveAndLeave() {
+    this.allowLeave = true
+    if (this.hasChoiceTarget) this.choiceTarget.value = "exit"
+    this.saveOptionsConfirmed = true
+    this.hideLeaveModal()
+    window.setTimeout(() => this.requestConfirmedSubmit(), 150)
+  }
+
+  // "Sair sem salvar": descarta as alterações e vai para o destino clicado.
+  leaveWithoutSaving() {
+    this.allowLeave = true
+    this.hideLeaveModal()
+    if (this.pendingLeaveUrl) {
+      window.location.href = this.pendingLeaveUrl
+    } else {
+      window.history.back()
+    }
+  }
+
+  // "Cancelar": permanece na ficha.
+  cancelLeave() {
+    this.pendingLeaveUrl = null
   }
 
   confirm(event) {
