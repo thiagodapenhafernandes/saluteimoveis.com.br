@@ -69,4 +69,23 @@ RSpec.describe "Admin::Habitations restrições por perfil", type: :request do
     expect(habitation.publicar_imovelweb_2).to be(true)
     expect(habitation.meta_title).to eq("SEO Original")
   end
+
+  it "não mostra a aba 'Pendente de revisão' na navegação do corretor" do
+    sign_in corretor
+
+    get admin_habitations_path
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).not_to include("Pendente de revisão")
+    expect(response.body).not_to include("intake_review=pending")
+  end
+
+  it "mostra a aba 'Pendente de revisão' para o administrador" do
+    sign_in admin
+
+    get admin_habitations_path
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Pendente de revisão")
+  end
 end
