@@ -40,6 +40,18 @@ class AdminUser < ApplicationRecord
     role == 'admin' || profile&.admin?
   end
 
+  # Perfil comercial de corretor (nem admin, nem gerente).
+  def corretor?
+    return false if admin?
+    profile&.name == "Corretor"
+  end
+
+  # Perfil de gestor/gerente.
+  def manager?
+    return false if admin?
+    profile&.manager? || false
+  end
+
   def can?(action, resource)
     return true if admin?
     return false unless profile
