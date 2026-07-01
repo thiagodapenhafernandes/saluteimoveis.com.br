@@ -2436,6 +2436,13 @@ class Admin::HabitationsController < Admin::BaseController
     current_admin_user&.profile&.manager?
   end
 
+  # A área "Pendente de revisão" é interna: visível só para Administrativo,
+  # Administrador e Gerente (nunca para corretores).
+  def can_view_pending_review?
+    current_admin_user&.admin? || administrative_profile? || manager_profile?
+  end
+  helper_method :can_view_pending_review?
+
   def can_filter_by_proprietor?
     # Card #8: o perfil Gerente também tem acesso ao filtro Administrativo.
     current_admin_user&.admin? || administrative_profile? || manager_profile? || can_view_proprietors?

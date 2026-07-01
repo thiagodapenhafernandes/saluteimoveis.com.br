@@ -1454,8 +1454,10 @@
     <%= link_to admin_habitations_path(ownership_base_params.merge(ownership: "all")), class: "btn btn-sm #{all_active ? 'btn-primary' : 'btn-white bg-white border text-muted'} fw-semibold" do %>
       <i class="bi bi-collection me-1"></i> Todos
     <% end %>
-    <%= link_to admin_habitations_path(ownership_base_params.merge(ownership: "all", intake_review: "pending")), class: "btn btn-sm #{pending_review_active ? 'btn-primary' : 'btn-white bg-white border text-muted'} fw-semibold" do %>
-      <i class="bi bi-clipboard-check me-1"></i> Pendente de revisão
+    <% if can_view_pending_review? %>
+      <%= link_to admin_habitations_path(ownership_base_params.merge(ownership: "all", intake_review: "pending")), class: "btn btn-sm #{pending_review_active ? 'btn-primary' : 'btn-white bg-white border text-muted'} fw-semibold" do %>
+        <i class="bi bi-clipboard-check me-1"></i> Pendente de revisão
+      <% end %>
     <% end %>
   </div>
   <% if mine_active %>
