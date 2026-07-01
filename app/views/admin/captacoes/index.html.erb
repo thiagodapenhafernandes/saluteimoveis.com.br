@@ -108,6 +108,22 @@
   </div>
 </div>
 
+<% liberacoes = dashboard[:liberacoes_por_pessoa] || {} %>
+<% if liberacoes.any? %>
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-3">
+      <div class="text-muted fw-semibold text-uppercase mb-2">Liberações por pessoa</div>
+      <div class="d-flex flex-wrap gap-2">
+        <% liberacoes.each do |nome, total| %>
+          <span class="badge bg-success-subtle text-success border fw-semibold py-2 px-3">
+            <%= nome.presence || "Sem responsável" %>: <%= total %>
+          </span>
+        <% end %>
+      </div>
+    </div>
+  </div>
+<% end %>
+
 <!-- Filtros -->
 <div class="card shadow-sm border-0 mb-3">
   <div class="card-body py-3">

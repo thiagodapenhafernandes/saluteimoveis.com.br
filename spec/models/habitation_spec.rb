@@ -494,6 +494,17 @@ RSpec.describe Habitation, type: :model do
       expect(missing).to include("Vaga de garagem")
     end
 
+    it "exige box no apartamento apenas quando há vaga (vagas > 0)" do
+      com_vaga = build(:habitation, categoria: "Apartamento", tipo_vaga: "Privativa", vagas_qtd: 1, numero_box: nil)
+      expect(com_vaga.intake_missing_requirements).to include("Box")
+
+      com_box = build(:habitation, categoria: "Apartamento", tipo_vaga: "Privativa", vagas_qtd: 1, numero_box: "12")
+      expect(com_box.intake_missing_requirements).not_to include("Box")
+
+      sem_vaga = build(:habitation, categoria: "Apartamento", tipo_vaga: "Privativa", vagas_qtd: 0, numero_box: nil)
+      expect(sem_vaga.intake_missing_requirements).not_to include("Box")
+    end
+
     it "também exige para cobertura, loft e studio" do
       %w[Cobertura Loft Studio].each do |categoria|
         habitation = build(:habitation, categoria: categoria)
