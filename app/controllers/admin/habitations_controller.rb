@@ -2443,6 +2443,14 @@ class Admin::HabitationsController < Admin::BaseController
   end
   helper_method :can_view_pending_review?
 
+  # O alternador "Meus imóveis" na barra de escopo é interno: visível só para
+  # Administrador, Administrativo e Gerente. Corretores veem apenas "Todos" e
+  # acessam os próprios imóveis pelo atalho da tela inicial (field/home).
+  def can_view_ownership_toggle?
+    can_view_pending_review?
+  end
+  helper_method :can_view_ownership_toggle?
+
   def can_filter_by_proprietor?
     # Card #8: o perfil Gerente também tem acesso ao filtro Administrativo.
     current_admin_user&.admin? || administrative_profile? || manager_profile? || can_view_proprietors?

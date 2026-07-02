@@ -1448,8 +1448,10 @@
 %>
 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
   <div class="btn-group ownership-toggle" role="group" aria-label="Escopo dos imóveis">
-    <%= link_to admin_habitations_path(ownership_base_params.merge(ownership: "mine")), class: "btn btn-sm #{mine_active ? 'btn-primary' : 'btn-white bg-white border text-muted'} fw-semibold" do %>
-      <i class="bi bi-person-check me-1"></i> Meus imóveis
+    <% if can_view_ownership_toggle? %>
+      <%= link_to admin_habitations_path(ownership_base_params.merge(ownership: "mine")), class: "btn btn-sm #{mine_active ? 'btn-primary' : 'btn-white bg-white border text-muted'} fw-semibold" do %>
+        <i class="bi bi-person-check me-1"></i> Meus imóveis
+      <% end %>
     <% end %>
     <%= link_to admin_habitations_path(ownership_base_params.merge(ownership: "all")), class: "btn btn-sm #{all_active ? 'btn-primary' : 'btn-white bg-white border text-muted'} fw-semibold" do %>
       <i class="bi bi-collection me-1"></i> Todos
