@@ -692,7 +692,8 @@ class Habitation < ApplicationRecord
   end
 
   def taxes_included_indicator?
-    displayable_condominio_cents.blank? && displayable_iptu_cents.blank?
+    valor_locacao_cents.to_i.positive? &&
+      displayable_condominio_cents.blank? && displayable_iptu_cents.blank?
   end
 
   def rent_discount?
