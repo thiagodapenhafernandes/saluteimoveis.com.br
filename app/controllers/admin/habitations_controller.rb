@@ -951,6 +951,7 @@ class Admin::HabitationsController < Admin::BaseController
     @regiao_foco = params[:regiao_foco]
     @promotion_status = params[:promotion_status]
     @accepts_exchange = params[:accepts_exchange]
+    @aceita_parcelamento = params[:aceita_parcelamento]
     @permuta_vehicle = params[:permuta_vehicle]
     @permuta_property = params[:permuta_property]
     @permuta_others = params[:permuta_others]
@@ -1070,6 +1071,7 @@ class Admin::HabitationsController < Admin::BaseController
     end
 
     scope = apply_boolean_filter(scope, @accepts_exchange, :aceita_permuta_flag)
+    scope = apply_boolean_filter(scope, @aceita_parcelamento, :aceita_parcelamento_flag)
     scope = apply_boolean_filter(scope, @permuta_vehicle, :aceita_permuta_veiculo_flag)
     scope = apply_boolean_filter(scope, @permuta_property, :aceita_permuta_imovel_flag)
     scope = apply_boolean_filter(scope, @permuta_others, :aceita_permuta_outros_flag)

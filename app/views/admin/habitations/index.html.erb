@@ -858,7 +858,7 @@
 <%
   array_filter_keys = %w[banheiros]
   extra_filter_keys = %w[
-    logradouro numero cep cidade bairro bairro_comercial promotion_status accepts_exchange key_location salute_rental_management min_price max_price
+    logradouro numero cep cidade bairro bairro_comercial promotion_status accepts_exchange aceita_parcelamento key_location salute_rental_management min_price max_price
     foto_classificacao
     amenities
     permuta_vehicle permuta_property permuta_others permuta_min_value permuta_location
@@ -1047,7 +1047,7 @@
 
         <%
           loc_open = %w[logradouro numero cep cidade bairro bairro_comercial].any? { |k| params[k].present? }
-          neg_open = %w[situacao promotion_status accepts_exchange key_location salute_rental_management permuta_vehicle permuta_property permuta_others].any? { |k| params[k].present? }
+          neg_open = %w[situacao promotion_status accepts_exchange aceita_parcelamento key_location salute_rental_management permuta_vehicle permuta_property permuta_others].any? { |k| params[k].present? }
           apt_open = (%w[face ocupacao_status estado_conservacao area_total_min area_total_max area_privativa_min area_privativa_max dorms_min dorms_max suites_min suites_max vagas_min vagas_max].any? { |k| params[k].present? }) || %w[banheiros amenities].any? { |k| Array(params[k]).reject(&:blank?).any? }
           emp_open = Array(params[:amenities]).reject(&:blank?).any?
           adm_open = (%w[proprietor_id proprietor_city regiao_foco destaque_web festival_salute exibir_no_site somente_com_imagens somente_sem_imagens tem_placa exclusivo somente_dwv captacao_inicio captacao_fim atualizacao_inicio atualizacao_fim].any? { |k| params[k].present? }) || Array(params[:foto_classificacao]).reject(&:blank?).any? || %w[publicar_imovelweb_2 publicar_lais_ai publicar_chaves_na_mao publicar_casa_mineira publicar_imovelweb publicar_viva_real_vrsync].any? { |k| params[k].present? }
@@ -1115,6 +1115,13 @@
                 <%= f.select :accepts_exchange,
                              [["Sim", "1"], ["Não", "0"]],
                              { include_blank: "Todos", selected: params[:accepts_exchange] },
+                             class: "form-select" %>
+              </div>
+              <div>
+                <label class="form-label small fw-bold text-muted text-uppercase">Aceita parcelamento</label>
+                <%= f.select :aceita_parcelamento,
+                             [["Sim", "1"], ["Não", "0"]],
+                             { include_blank: "Todos", selected: params[:aceita_parcelamento] },
                              class: "form-select" %>
               </div>
               <div>
