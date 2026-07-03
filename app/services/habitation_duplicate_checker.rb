@@ -98,7 +98,17 @@ class HabitationDuplicateChecker
     expected = normalize_unit(@unit)
     actual = normalize_unit(habitation.bloco.presence || habitation.complemento)
 
-    expected.present? && actual == expected
+    return false unless expected.present? && actual == expected
+
+    # Mesma torre/bloco: quando ambos os cadastros têm o número do apartamento no
+    # complemento e eles diferem, são unidades distintas (ex.: torre B apto 401 vs
+    # 801) e não devem ser tratados como duplicados. Se algum complemento estiver
+    # em branco, mantém a comparação apenas por bloco/unidade.
+    expected_complement = normalize(@complement)
+    actual_complement = normalize(habitation.complemento)
+    return true if expected_complement.blank? || actual_complement.blank?
+
+    expected_complement == actual_complement
   end
 
   def same_condominium_unit?(habitation)
