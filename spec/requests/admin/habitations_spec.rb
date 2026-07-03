@@ -3054,7 +3054,8 @@ RSpec.describe "Admin::Habitations", type: :request do
       nome_empreendimento: "Empreendimento Original",
       titulo_anuncio: "Título Original",
       proprietario: "Proprietário Original",
-      proprietario_email: "original@example.com",
+      # E-mail do proprietário liberado para o corretor (demais dados seguem travados).
+      proprietario_email: "alterado@example.com",
       salute_rental_management_flag: false,
       salute_rental_management_answer: "nao",
       foto_classificacao: "Boas"

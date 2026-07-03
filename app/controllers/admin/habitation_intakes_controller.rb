@@ -745,7 +745,6 @@ module Admin
         descricao_interna
         proprietario
         proprietario_celular
-        proprietario_email
         proprietario_codigo
         proprietario_telefone_comercial
         proprietario_telefone_residencial

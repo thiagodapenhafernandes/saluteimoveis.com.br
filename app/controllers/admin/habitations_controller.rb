@@ -1915,7 +1915,7 @@ class Admin::HabitationsController < Admin::BaseController
 
     unless can_view_proprietor_data?(@habitation)
       proprietor_locked_fields = %i[
-        proprietario proprietario_codigo proprietario_email proprietario_celular
+        proprietario proprietario_codigo proprietario_celular
         proprietario_telefone_comercial proprietario_telefone_residencial proprietor_id
       ]
       proprietor_locked_fields.each { |field| permitted.delete(field) }
@@ -2376,7 +2376,6 @@ class Admin::HabitationsController < Admin::BaseController
       descricao_interna
       proprietario
       proprietario_codigo
-      proprietario_email
       proprietario_celular
       proprietario_telefone_comercial
       proprietario_telefone_residencial

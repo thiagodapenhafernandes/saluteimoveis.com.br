@@ -1402,8 +1402,7 @@
                     <div class="col-md-12">
                       <%= f.label :proprietario_email, "E-mail", class: "form-label extra-small fw-bold mb-1" %>
                       <%= f.text_field :proprietario_email,
-                          class: "form-control form-control-sm",
-                          readonly: !can_edit_protected_habitation_fields %>
+                          class: "form-control form-control-sm" %>
                     </div>
                     <div class="col-md-4">
                       <%= f.label :proprietario_celular, "Celular", class: "form-label extra-small fw-bold mb-1" %>
@@ -1435,7 +1434,6 @@
                                          habitation.proprietario_cidade,
                                          id: "habitation_proprietario_cidade",
                                          class: "form-control form-control-sm",
-                                         readonly: !can_edit_protected_habitation_fields,
                                          placeholder: "Ex: Balneário Camboriú" %>
                     </div>
                   </div>
@@ -1488,8 +1486,7 @@
                         <div class="form-check">
                           <%= check_box_tag "habitation[rental_guarantee_method][]", opt, checked,
                                             id: "habitation_rental_guarantee_method_#{i}",
-                                            class: "form-check-input",
-                                            disabled: !can_edit_protected_habitation_fields %>
+                                            class: "form-check-input" %>
                           <%= label_tag "habitation_rental_guarantee_method_#{i}", opt, class: "form-check-label small" %>
                         </div>
                       <% end %>
