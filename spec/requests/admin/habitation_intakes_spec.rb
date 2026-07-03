@@ -1119,6 +1119,28 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(intake.autorizacoes_venda).to be_attached
   end
 
+  it "aplica o logo (watermark) nas fotos enviadas pelo corretor na captação" do
+    PropertySetting.instance.watermark_image.attach(
+      io: StringIO.new("watermark"), filename: "watermark.png", content_type: "image/png"
+    )
+    intake = create(:habitation, :broker_intake, admin_user: admin, intake_step: "fotos", photo_flow_choice: "upload")
+    photo = Rack::Test::UploadedFile.new(
+      StringIO.new("foto nova"),
+      "image/jpeg",
+      original_filename: "foto-nova.jpg"
+    )
+
+    expect {
+      patch admin_captacao_path(intake), params: {
+        current_step: "fotos",
+        direction: "forward",
+        habitation: { photos: [photo] }
+      }
+    }.to have_enqueued_job(HabitationPhotoWatermarkJob)
+
+    expect(intake.reload.photos).to be_attached
+  end
+
   it "bloqueia valor simbólico na negociação" do
     intake = create(:habitation, :broker_intake, admin_user: admin, intake_step: "negociacao")
 

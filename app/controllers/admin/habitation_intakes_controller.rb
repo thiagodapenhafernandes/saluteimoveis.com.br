@@ -87,6 +87,7 @@ module Admin
                           end
       had_no_photos_before_update = !@habitation.has_any_photo?
       uploaded_photos_requested = photo_upload_values_present?(intake_attributes["photos"])
+      existing_photo_ids = @habitation.photos.attachments.ids
 
       @habitation.assign_attributes(intake_attributes)
       link_proprietor_from_intake_fields
@@ -100,6 +101,8 @@ module Admin
       end
 
       if @habitation.save
+        enqueue_watermark_for_new_intake_photos(existing_photo_ids)
+
         unless step_requirements_met?(current_step)
           assign_step_errors(current_step)
           @step = current_step
@@ -1001,6 +1004,19 @@ module Admin
 
         !value.respond_to?(:size) || value.size.to_i.positive?
       end
+    end
+
+    # As fotos enviadas pelo corretor na captação também devem receber o logo.
+    # O fluxo admin dispara o watermark manualmente; aqui aplicamos automaticamente
+    # às fotos recém-anexadas. O job é idempotente (pula blobs já marcados).
+    def enqueue_watermark_for_new_intake_photos(existing_photo_ids)
+      setting = PropertySetting.instance
+      return unless setting&.watermark_configured?
+
+      new_photo_ids = @habitation.photos.attachments.where.not(id: Array(existing_photo_ids)).pluck(:id)
+      return if new_photo_ids.blank?
+
+      HabitationPhotoWatermarkJob.perform_later(@habitation.id, new_photo_ids, setting.id)
     end
 
     def submit_photo_upload_for_admin_review_if_needed!(habitation, had_no_photos:, uploaded_photos:)
