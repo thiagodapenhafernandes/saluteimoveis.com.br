@@ -145,6 +145,12 @@ application.register("watermark-preview", WatermarkPreviewController)
 import ProprietorTableController from "controllers/proprietor_table_controller"
 application.register("proprietor-table", ProprietorTableController)
 
+import ProprietorLookupController from "controllers/proprietor_lookup_controller"
+application.register("proprietor-lookup", ProprietorLookupController)
+
+import ProprietorEditLinkController from "controllers/proprietor_edit_link_controller"
+application.register("proprietor-edit-link", ProprietorEditLinkController)
+
 import RentCalculatorController from "controllers/rent_calculator_controller"
 application.register("rent-calculator", RentCalculatorController)
 
