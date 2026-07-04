@@ -724,7 +724,7 @@ RSpec.describe "Admin::Habitations", type: :request do
     get admin_habitations_path(ownership: "all")
 
     expect(response).to have_http_status(:ok)
-    cidade_select = Nokogiri::HTML(response.body).at_css('select[name="cidade"]')
+    cidade_select = Nokogiri::HTML(response.body).at_css('select[name="cidade[]"]')
     expect(cidade_select).to be_present
     matches = cidade_select.css("option").map { |option| I18n.transliterate(option.text).downcase.strip }.select { |text| text == "balneario camboriu" }
     expect(matches.size).to eq(1)
@@ -3639,5 +3639,21 @@ RSpec.describe "Admin::Habitations", type: :request do
 
     expect(response).to redirect_to(edit_admin_habitation_path(habitation))
     expect(habitation.reload.data_atualizacao_crm).to be > 1.minute.ago
+  end
+
+  it "filtra imóveis por múltiplas cidades (multiseleção)" do
+    h_itajai = create(:habitation, codigo: "MC-ITJ-#{SecureRandom.hex(4)}", status: "Venda", titulo_anuncio: "Imovel Itajai MultiCidade")
+    h_itajai.create_address!(logradouro: "Rua A", numero: "1", bairro: "Centro", cidade: "Itajaí", uf: "SC")
+    h_bc = create(:habitation, codigo: "MC-BC-#{SecureRandom.hex(4)}", status: "Venda", titulo_anuncio: "Imovel BC MultiCidade")
+    h_bc.create_address!(logradouro: "Rua B", numero: "2", bairro: "Centro", cidade: "Balneário Camboriú", uf: "SC")
+    h_other = create(:habitation, codigo: "MC-OTHER-#{SecureRandom.hex(4)}", status: "Venda", titulo_anuncio: "Imovel Outro MultiCidade")
+    h_other.create_address!(logradouro: "Rua C", numero: "3", bairro: "Centro", cidade: "Florianópolis", uf: "SC")
+
+    get admin_habitations_path(cidade: ["Itajaí", "Balneário Camboriú"])
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Imovel Itajai MultiCidade")
+    expect(response.body).to include("Imovel BC MultiCidade")
+    expect(response.body).not_to include("Imovel Outro MultiCidade")
   end
 end

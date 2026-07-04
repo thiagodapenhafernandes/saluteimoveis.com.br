@@ -952,9 +952,9 @@ class Admin::HabitationsController < Admin::BaseController
     @logradouro = params[:logradouro]
     @numero = params[:numero]
     @cep = params[:cep]
-    @cidade = params[:cidade]
+    @cidade = extract_multi_select_strings(:cidade)
     @bairro = params[:bairro]
-    @bairro_comercial = params[:bairro_comercial]
+    @bairro_comercial = extract_multi_select_strings(:bairro_comercial)
     # Card "Filtro ajuste": dormitórios, suítes e vagas passam a usar faixa Mín/Máx.
     @dorms_min = params[:dorms_min]
     @dorms_max = params[:dorms_max]
@@ -963,7 +963,7 @@ class Admin::HabitationsController < Admin::BaseController
     @vagas_min = params[:vagas_min]
     @vagas_max = params[:vagas_max]
     @banheiros = extract_multi_select_integers(:banheiros)
-    @situacao = params[:situacao]
+    @situacao = extract_multi_select_strings(:situacao)
     @face = params[:face]
     @ocupacao_status = params[:ocupacao_status]
     @estado_conservacao = params[:estado_conservacao]
@@ -1055,14 +1055,25 @@ class Admin::HabitationsController < Admin::BaseController
                 scope.where("#{cep_value_sql} ILIKE ?", "%#{@cep}%")
               end
     end
-    scope = scope.where("unaccent(COALESCE(NULLIF(TRIM(addresses.cidade), ''), NULLIF(TRIM(habitations.cidade), ''))) = unaccent(?)", @cidade) if @cidade.present?
+    if @cidade.any?
+      scope = scope.where(
+        "unaccent(COALESCE(NULLIF(TRIM(addresses.cidade), ''), NULLIF(TRIM(habitations.cidade), ''))) IN (SELECT unaccent(n) FROM unnest(ARRAY[?]) AS n)",
+        @cidade
+      )
+    end
     scope = scope.where("unaccent(COALESCE(NULLIF(TRIM(addresses.bairro), ''), NULLIF(TRIM(habitations.bairro), ''))) ILIKE unaccent(?)", "%#{@bairro}%") if @bairro.present?
-    scope = scope.where("unaccent(COALESCE(NULLIF(TRIM(addresses.bairro_comercial), ''), NULLIF(TRIM(habitations.bairro_comercial), ''))) ILIKE unaccent(?)", "%#{@bairro_comercial}%") if @bairro_comercial.present?
+    if @bairro_comercial.any?
+      bairro_comercial_sql = "unaccent(COALESCE(NULLIF(TRIM(addresses.bairro_comercial), ''), NULLIF(TRIM(habitations.bairro_comercial), ''))) ILIKE unaccent(?)"
+      scope = scope.where(
+        Array.new(@bairro_comercial.size, bairro_comercial_sql).join(" OR "),
+        *@bairro_comercial.map { |value| "%#{value}%" }
+      )
+    end
     scope = apply_integer_range_filter(scope, :dormitorios_qtd, @dorms_min, @dorms_max)
     scope = apply_integer_range_filter(scope, :suites_qtd, @suites_min, @suites_max)
     scope = apply_integer_range_filter(scope, :vagas_qtd, @vagas_min, @vagas_max)
     scope = scope.where(banheiros_qtd: @banheiros) if @banheiros.any?
-    scope = scope.where(situacao: @situacao) if @situacao.present?
+    scope = scope.where(situacao: @situacao) if @situacao.any?
     scope = scope.where(face: @face) if @face.present?
     scope = scope.where(ocupacao_status: @ocupacao_status) if @ocupacao_status.present?
     scope = scope.where(estado_conservacao: @estado_conservacao) if @estado_conservacao.present?

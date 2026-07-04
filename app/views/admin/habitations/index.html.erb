@@ -856,7 +856,7 @@
 </div>
 
 <%
-  array_filter_keys = %w[banheiros]
+  array_filter_keys = %w[banheiros cidade bairro_comercial situacao]
   extra_filter_keys = %w[
     logradouro numero cep cidade bairro bairro_comercial promotion_status accepts_exchange aceita_parcelamento key_location salute_rental_management min_price max_price
     foto_classificacao
@@ -1071,7 +1071,18 @@
               </div>
               <div>
                 <label class="form-label small fw-bold text-muted text-uppercase">Cidade</label>
-                <%= f.select :cidade, @filter_cities, { include_blank: "Todas", selected: params[:cidade] }, class: "form-select" %>
+                <%= f.select :cidade,
+                             options_for_select(@filter_cities, Array(@cidade)),
+                             {},
+                             {
+                               multiple: true,
+                               class: "form-select filter-multi-compact",
+                               data: {
+                                 controller: "tom-select",
+                                 tom_select_create_value: false,
+                                 tom_select_options_value: { placeholder: "Todas" }
+                               }
+                             } %>
               </div>
               <div>
                 <label class="form-label small fw-bold text-muted text-uppercase">Bairro</label>
@@ -1080,10 +1091,11 @@
               <div class="wide">
                 <label class="form-label small fw-bold text-muted text-uppercase">Bairro comercial</label>
                 <%= f.select :bairro_comercial,
-                             @filter_bairros_comerciais,
-                             { include_blank: "Todos", selected: params[:bairro_comercial] },
+                             options_for_select(@filter_bairros_comerciais, Array(@bairro_comercial)),
+                             {},
                              {
-                               class: "form-select",
+                               multiple: true,
+                               class: "form-select filter-multi-compact",
                                data: {
                                  controller: "tom-select",
                                  tom_select_create_value: true,
@@ -1101,7 +1113,18 @@
             <div class="filter-business-grid">
               <div>
                 <label class="form-label small fw-bold text-muted text-uppercase">Situação</label>
-                <%= f.select :situacao, @filter_situacoes, { include_blank: "Todas", selected: params[:situacao] }, class: "form-select" %>
+                <%= f.select :situacao,
+                             options_for_select(@filter_situacoes, Array(@situacao)),
+                             {},
+                             {
+                               multiple: true,
+                               class: "form-select filter-multi-compact",
+                               data: {
+                                 controller: "tom-select",
+                                 tom_select_create_value: false,
+                                 tom_select_options_value: { placeholder: "Todas" }
+                               }
+                             } %>
               </div>
               <div>
                 <label class="form-label small fw-bold text-muted text-uppercase">Preço reduzido</label>
@@ -1685,9 +1708,9 @@
   active_filter_chips << "Rua: #{params[:logradouro]}" if params[:logradouro].present?
   active_filter_chips << "Número: #{params[:numero]}" if params[:numero].present?
   active_filter_chips << "CEP: #{params[:cep]}" if params[:cep].present?
-  active_filter_chips << "Cidade: #{params[:cidade]}" if params[:cidade].present?
+  active_filter_chips << "Cidade: #{Array(@cidade).join(', ')}" if Array(@cidade).any?
   active_filter_chips << "Bairro: #{params[:bairro]}" if params[:bairro].present?
-  active_filter_chips << "Bairro comercial: #{params[:bairro_comercial]}" if params[:bairro_comercial].present?
+  active_filter_chips << "Bairro comercial: #{Array(@bairro_comercial).join(', ')}" if Array(@bairro_comercial).any?
   active_filter_chips << "Somente com imagens" if params[:somente_com_imagens] == "1"
   active_filter_chips << "Somente sem imagens" if params[:somente_sem_imagens] == "1"
   active_filter_chips << "Somente imóveis do DWV" if params[:somente_dwv] == "1"
