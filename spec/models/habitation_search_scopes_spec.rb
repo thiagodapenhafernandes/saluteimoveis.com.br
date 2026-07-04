@@ -218,5 +218,15 @@ RSpec.describe Habitation::SearchScopes, type: :model do
       expect(result).to include(matching)
       expect(result).not_to include(non_matching)
     end
+
+    it "filtra por empreendimento (nome), sem acento/caixa" do
+      matching = create(:habitation, categoria: "Apartamento", nome_empreendimento: "Résidence Blue Tower")
+      non_matching = create(:habitation, categoria: "Apartamento", nome_empreendimento: "Edifício Outro")
+
+      result = Habitation.advanced_search(empreendimento: "residence blue tower")
+
+      expect(result).to include(matching)
+      expect(result).not_to include(non_matching)
+    end
   end
 end

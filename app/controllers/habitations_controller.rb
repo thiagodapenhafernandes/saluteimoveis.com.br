@@ -333,6 +333,7 @@ class HabitationsController < ApplicationController
       :accepts_financing,
       :search,
       :sort,
+      :empreendimento,
       category: [],
       city: [],
       characteristics: []
@@ -416,6 +417,14 @@ class HabitationsController < ApplicationController
 
     @location_options = Rails.cache.fetch("habitations_location_options_v2", expires_in: 6.hours) do
       Habitation.public_location_options
+    end
+
+    @empreendimento_options = Rails.cache.fetch("habitations_empreendimento_options_v1", expires_in: 6.hours) do
+      Habitation.active.with_photos
+                .where.not(nome_empreendimento: [nil, ""])
+                .distinct
+                .order(:nome_empreendimento)
+                .pluck(:nome_empreendimento)
     end
   end
 

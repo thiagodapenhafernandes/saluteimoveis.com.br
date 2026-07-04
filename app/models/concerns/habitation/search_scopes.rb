@@ -192,7 +192,16 @@ module Habitation::SearchScopes
       end
     }
     scope :by_state, ->(state) { left_outer_joins(:address).where("COALESCE(addresses.uf, habitations.uf) = ?", state) if state.present? }
-    
+
+    scope :by_empreendimento, ->(name) {
+      if name.is_a?(Array)
+        clean = name.reject(&:blank?)
+        where("unaccent(COALESCE(nome_empreendimento, '')) IN (SELECT unaccent(n) FROM unnest(ARRAY[?]) AS n)", clean) if clean.any?
+      elsif name.present?
+        where("unaccent(COALESCE(nome_empreendimento, '')) ILIKE unaccent(?)", "%#{name}%")
+      end
+    }
+
     # Scopes por características
     scope :with_min_bedrooms, ->(count) { where("dormitorios_qtd >= ?", count) if count.present? }
     scope :with_min_suites, ->(count) { where("suites_qtd >= ?", count) if count.present? }
@@ -675,7 +684,8 @@ module Habitation::SearchScopes
         query = query.by_neighborhood(params[:neighborhood])
       end
       query = query.by_state(params[:state]) if params[:state].present?
-      
+      query = query.by_empreendimento(params[:empreendimento]) if params[:empreendimento].present?
+
       # Características numéricas
       query = query.with_min_bedrooms(params[:min_bedrooms]) if params[:min_bedrooms].present?
       query = query.with_min_suites(params[:min_suites]) if params[:min_suites].present?

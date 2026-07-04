@@ -1,4 +1,15 @@
 
+        <!-- Empreendimento -->
+        <% if (@empreendimento_options || []).any? %>
+          <div class="mb-6">
+            <label class="block text-sm font-bold text-gray-700 mb-2">Empreendimento</label>
+            <%= select_tag :empreendimento,
+                  options_for_select(@empreendimento_options.map { |nome| [nome, nome] }, params[:empreendimento]),
+                  include_blank: "Todos os empreendimentos",
+                  class: "w-full rounded-lg border-gray-200 focus:ring-blue-three focus:border-blue-three" %>
+          </div>
+        <% end %>
+
         <!-- Faixa de Preço (Sincronizada) -->
         <div class="mb-6">
           <label class="block text-sm font-bold text-gray-700 mb-2">Faixa de Preço (R$)</label>
