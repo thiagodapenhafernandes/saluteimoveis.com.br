@@ -165,6 +165,9 @@
       <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#habitationHistoryModal">
         <i class="bi bi-clock-history"></i><span class="ms-1">Timeline</span>
       </button>
+      <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#ownerContactModal">
+        <i class="bi bi-telephone-check"></i><span class="ms-1">Atualizado</span>
+      </button>
       <% if current_admin_user&.admin? %>
         <%= button_to admin_habitation_path(@habitation),
             method: :delete,
@@ -180,4 +183,28 @@
 
   <%= render 'form', habitation: @habitation %>
   <%= render 'audit_history_modal', habitation: @habitation, logs: @habitation_audit_logs || [] %>
+
+  <div class="modal fade" id="ownerContactModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-telephone-check text-success me-2"></i>Atualizar imóvel</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <%= form_with url: register_owner_contact_admin_habitation_path(@habitation), method: :post do %>
+          <div class="modal-body">
+            <p class="mb-3 small text-muted">Registra o contato com o proprietário e zera o relógio de "dias atualizado", sem alterar os dados do imóvel. O evento fica registrado na Timeline.</p>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="owner_contact_option" id="ownerContactNoChange" checked>
+              <label class="form-check-label" for="ownerContactNoChange">Falei com proprietário e não houve alteração</label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <%= submit_tag "Registrar e atualizar", class: "btn btn-success" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
 </div>

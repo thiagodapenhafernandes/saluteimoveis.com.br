@@ -3627,4 +3627,17 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(payload.fetch("duplicate")).to eq(false)
     expect(payload.fetch("matches")).to be_empty
   end
+
+  it "registra contato com o proprietário: zera o relógio e grava na timeline" do
+    habitation = create(:habitation, codigo: "OWNER-CONTACT-#{SecureRandom.hex(4)}", data_atualizacao_crm: 30.days.ago)
+
+    expect {
+      post register_owner_contact_admin_habitation_path(habitation)
+    }.to change {
+      HabitationAuditLog.where(habitation_id: habitation.id, action: "owner_contact_no_change").count
+    }.by(1)
+
+    expect(response).to redirect_to(edit_admin_habitation_path(habitation))
+    expect(habitation.reload.data_atualizacao_crm).to be > 1.minute.ago
+  end
 end

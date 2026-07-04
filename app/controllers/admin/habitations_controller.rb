@@ -5,7 +5,7 @@ class Admin::HabitationsController < Admin::BaseController
   before_action -> { check_permission!(:manage, :imoveis) }, only: [:new, :create]
   before_action :authorize_data_export!, only: [:print, :export]
   before_action :require_admin!, only: [:bulk_publish, :bulk_publish_eligibility]
-  before_action :scope_habitations_by_permission, only: [:edit, :update, :update_photos, :destroy, :sync, :purge_attachment, :generate_ai_preview, :format_ai_suggestion, :apply_ai_suggestion]
+  before_action :scope_habitations_by_permission, only: [:edit, :update, :update_photos, :destroy, :sync, :register_owner_contact, :purge_attachment, :generate_ai_preview, :format_ai_suggestion, :apply_ai_suggestion]
   require "csv"
   require "uri"
 
@@ -88,7 +88,7 @@ class Admin::HabitationsController < Admin::BaseController
     "valor_total_aluguel_cents" => { label: "Valor total aluguel", column: "valor_total_aluguel_cents", default_direction: "desc" }
   }.freeze
 
-  before_action :set_habitation, only: [:show, :edit, :update, :update_photos, :destroy, :generate_ai_preview, :format_ai_suggestion, :apply_ai_suggestion]
+  before_action :set_habitation, only: [:show, :edit, :update, :update_photos, :destroy, :register_owner_contact, :generate_ai_preview, :format_ai_suggestion, :apply_ai_suggestion]
   before_action :authorize_habitation_edit!, only: [:edit, :update, :update_photos]
   before_action :authorize_ai_content_management!, only: [:generate_ai_preview, :format_ai_suggestion, :apply_ai_suggestion]
 
@@ -546,6 +546,25 @@ class Admin::HabitationsController < Admin::BaseController
     record_habitation_destroyed(@habitation)
     @habitation.destroy
     redirect_to admin_habitations_path, notice: "Imóvel excluído com sucesso."
+  end
+
+  # Registra que o corretor falou com o proprietário e não houve alteração:
+  # zera o relógio de "dias atualizado" e grava um evento na timeline do imóvel.
+  def register_owner_contact
+    @habitation.update_column(:data_atualizacao_crm, Time.current)
+    HabitationAuditLog.create!(
+      habitation: @habitation,
+      admin_user: current_admin_user,
+      action: "owner_contact_no_change",
+      source: "admin",
+      changed_fields: [],
+      changeset: {},
+      metadata: { note: "Falei com proprietário e não houve alteração" },
+      ip: request.remote_ip,
+      user_agent: request.user_agent.to_s.first(255)
+    )
+    redirect_back fallback_location: edit_admin_habitation_path(@habitation),
+                  notice: "Contato com o proprietário registrado. Relógio de atualização zerado."
   end
 
   def sync
