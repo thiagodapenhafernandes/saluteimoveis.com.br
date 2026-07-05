@@ -3307,6 +3307,21 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).not_to include("Nenhum documento do Vista vinculado a este imóvel")
   end
 
+  it "não exibe bloco vazio de documentos do Vista quando não há arquivo vinculado" do
+    habitation = create(
+      :habitation,
+      codigo: "VISTA-SEM-DOC-#{SecureRandom.hex(6)}",
+      titulo_anuncio: "Imóvel com referência Vista sem documento",
+      status_vista: "Verificar"
+    )
+
+    get edit_admin_habitation_path(habitation)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).not_to include("Documentos do Vista")
+    expect(response.body).not_to include("Nenhum documento do Vista vinculado a este imóvel")
+  end
+
   it "registra qualquer campo do cadastro do imóvel, mesmo fora da lista principal" do
     habitation = create(:habitation, codigo: "AUD-FULL-#{SecureRandom.hex(6)}", festival_salute_flag: false, ocupacao_status: "Desocupado")
     habitation.create_address!(

@@ -25,7 +25,7 @@
   can_manage_habitation_broker_sections = !habitation_publication_locked || can?(:manage, :imoveis)          # bloqueia Corretor (IA, Portais)
   can_manage_habitation_admin_sections = !habitation_publication_locked || (can_edit_protected_habitation_fields && !current_admin_user&.manager?) # bloqueia Corretor e Gerente (Fotos, SEO)
   vista_document_assets = Array(@habitation_vista_document_assets)
-  show_vista_document_assets = vista_document_assets.any? || habitation.vista_integrated?
+  show_vista_document_assets = vista_document_assets.any?
   vista_document_status_labels = {
     "pending" => "Pendente de download",
     "downloaded" => "Baixado",
