@@ -549,9 +549,18 @@ export default class extends Controller {
       this.hasHiddenPictureUrlsInputTarget ? this.hiddenPictureUrlsInputTarget.value : "",
       this.hasRemovePhotoIdsInputTarget ? this.removePhotoIdsInputTarget.value : "",
       this.hasRemovePictureIndicesInputTarget ? this.removePictureIndicesInputTarget.value : "",
+      this.photoEnvironmentState(),
       this.hasDevelopmentPhotosSwitchTarget ? String(this.developmentPhotosSwitchTarget.checked) : "",
       this.selectedNewFiles.map(entry => this.fileKey(entry.file)).join("|")
     ].join("::")
+  }
+
+  photoEnvironmentState() {
+    if (!this.hasPreviewContainerTarget) return ""
+
+    return Array.from(this.previewContainerTarget.querySelectorAll(".media-photo-environment-select"))
+      .map(select => `${select.name}=${select.value}`)
+      .join("|")
   }
 
   markDirty() {

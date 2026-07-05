@@ -401,7 +401,8 @@
     .habitation-form-ui .media-photo-tile .media-photo-feature-button,
     .habitation-form-ui .media-photo-tile .media-photo-drag-handle,
     .habitation-form-ui .media-photo-tile .media-photo-action-button,
-    .habitation-form-ui .media-photo-tile .media-photo-site-toggle {
+    .habitation-form-ui .media-photo-tile .media-photo-site-toggle,
+    .habitation-form-ui .media-photo-tile .media-photo-environment-select {
       pointer-events: auto;
     }
     .habitation-form-ui .media-photo-site-toggle {
@@ -431,6 +432,14 @@
     }
     .habitation-form-ui .media-photo-drag-handle:active {
       cursor: grabbing;
+    }
+    .habitation-form-ui .media-photo-environment-select {
+      background-color: rgba(255, 255, 255, 0.96);
+      border-color: rgba(15, 23, 42, 0.18);
+      font-size: 0.72rem;
+      min-height: 30px;
+      padding-bottom: 0.2rem;
+      padding-top: 0.2rem;
     }
   </style>
 
@@ -2108,6 +2117,11 @@
 		                              <span><%= photo_hidden_from_site ? 'Interna' : 'Site' %></span>
 		                            </button>
 		                          </div>
+		                          <%= select_tag "habitation[photo_environment_assignments][#{photo.id}]",
+		                              options_for_select([["Ambiente", ""]] + Habitation::PHOTO_ENVIRONMENT_ORDER.map { |environment| [environment, environment] }, habitation.photo_environment_for_attachment(photo)),
+		                              class: "form-select form-select-sm media-photo-environment-select",
+		                              data: { action: "change->photo-upload#markDirty" },
+		                              aria: { label: "Ambiente da foto #{index + 1}" } %>
 		                          <div class="d-flex justify-content-between align-items-end gap-1">
 		                            <span data-photo-featured-control>
 		                              <% if index.zero? %>
@@ -2178,6 +2192,11 @@
 		                              <span><%= picture_hidden_from_site ? 'Interna' : 'Site' %></span>
 		                            </button>
 		                          </div>
+		                          <%= select_tag "habitation[picture_environment_assignments][#{pic_url}]",
+		                              options_for_select([["Ambiente", ""]] + Habitation::PHOTO_ENVIRONMENT_ORDER.map { |environment| [environment, environment] }, habitation.picture_environment(pic)),
+		                              class: "form-select form-select-sm media-photo-environment-select",
+		                              data: { action: "change->photo-upload#markDirty" },
+		                              aria: { label: "Ambiente da foto API #{display_index + 1}" } %>
 		                          <div class="d-flex justify-content-between align-items-end gap-1">
 		                            <span data-photo-featured-control>
 		                              <% if display_index.zero? %>

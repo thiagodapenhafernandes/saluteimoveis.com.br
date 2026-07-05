@@ -182,6 +182,18 @@ class Habitation < ApplicationRecord
   ESTADO_CONSERVACAO = ["Novo", "Ótimo", "Bom", "Regular", "Seminovo", "Usado", "Reformado", "Original", "Em Obras", "Na Planta"].freeze
   TOPOGRAFIA_OPTIONS = ["Plano", "Aclive", "Declive", "Irregular"].freeze
   FOTO_CLASSIFICACAO = ["Profissionais", "Boas", "Aceitáveis", "Amadoras", "Não tem fotos"].freeze
+  PHOTO_ENVIRONMENT_ORDER = [
+    "Fachada",
+    "Sala de estar",
+    "Sacada",
+    "Sala de jantar",
+    "Cozinha",
+    "Lavanderia",
+    "Lavabo",
+    "Quartos",
+    "Banheiros",
+    "Área externa"
+  ].freeze
   KEY_LOCATION_OPTIONS = ["Imobiliária", "Corretor(a)", "Proprietário", "Construtora", "Zelador", "Portaria", "Inquilino", "Outro"].freeze
   RENTAL_GUARANTEE_METHOD_OPTIONS = ["Seguro fiança", "Caução", "Fiador", "Título de capitalização", "Garantidora", "A combinar"].freeze
   REGIAO_FOCO_OPTIONS = ["Sim", "Não"].freeze
@@ -1240,6 +1252,35 @@ class Habitation < ApplicationRecord
     end
   end
 
+  def photo_environment_assignments=(assignments)
+    normalized_assignments = normalize_photo_environment_assignments(assignments)
+    super(normalized_assignments)
+    self.photo_ids_order = photo_ids_order_by_environment if normalized_assignments.present?
+  end
+
+  def picture_environment_assignments=(assignments)
+    return unless pictures.is_a?(Array)
+
+    normalized_assignments = normalize_picture_environment_assignments(assignments)
+    return if normalized_assignments.blank?
+
+    self.pictures = pictures.each_with_index.map do |picture, index|
+      payload = picture.is_a?(Hash) ? picture.deep_dup : { "url" => picture }
+      assignment_key = picture_environment_assignment_key(payload, index, normalized_assignments)
+      if assignment_key
+        environment = normalized_assignments[assignment_key]
+        if environment.present?
+          payload["ambiente"] = environment
+        else
+          payload.delete("ambiente")
+        end
+      end
+      payload
+    end
+
+    sort_pictures_by_environment!
+  end
+
   def ordered_picture_indices=(indices)
     return unless pictures.is_a?(Array)
 
@@ -1287,6 +1328,70 @@ class Habitation < ApplicationRecord
 
   def picture_url_for_visibility(picture)
     picture.try(:[], "url") || picture.try(:[], :url) || picture.try(:[], "src") || picture.try(:[], :src) || picture.try(:[], "link") || picture.try(:[], :link)
+  end
+
+  def photo_environment_for_attachment(photo)
+    photo_environment_assignments.to_h[photo.id.to_s].to_s
+  end
+
+  def picture_environment(picture)
+    picture.try(:[], "ambiente") || picture.try(:[], :ambiente)
+  end
+
+  def self.photo_environment_rank(environment)
+    rank = PHOTO_ENVIRONMENT_ORDER.index(environment.to_s)
+    rank.nil? ? PHOTO_ENVIRONMENT_ORDER.length : rank
+  end
+
+  def photo_environment_rank(environment)
+    self.class.photo_environment_rank(environment)
+  end
+
+  def photo_ids_order_by_environment
+    return [] unless photos.attached?
+
+    ordered_photos.sort_by.with_index do |photo, index|
+      [photo_environment_rank(photo_environment_for_attachment(photo)), index]
+    end.map(&:id)
+  end
+
+  def sort_pictures_by_environment!
+    return unless pictures.is_a?(Array)
+
+    self.pictures = pictures.sort_by.with_index do |picture, index|
+      [photo_environment_rank(picture_environment(picture)), index]
+    end
+  end
+
+  def normalize_photo_environment_assignments(assignments)
+    assignment_hash = assignments.respond_to?(:to_h) ? assignments.to_h : {}
+    assignment_hash.each_with_object({}) do |(raw_id, raw_environment), normalized|
+      id = raw_id.to_s.strip
+      environment = normalize_photo_environment(raw_environment)
+      normalized[id] = environment if id.match?(/\A\d+\z/) && environment.present?
+    end
+  end
+
+  def normalize_picture_environment_assignments(assignments)
+    assignment_hash = assignments.respond_to?(:to_h) ? assignments.to_h : {}
+    assignment_hash.each_with_object({}) do |(raw_index, raw_environment), normalized|
+      index = raw_index.to_s.strip
+      environment = normalize_photo_environment(raw_environment)
+      normalized[index] = environment if index.present?
+    end
+  end
+
+  def normalize_photo_environment(environment)
+    value = environment.to_s.strip
+    PHOTO_ENVIRONMENT_ORDER.include?(value) ? value : nil
+  end
+
+  def picture_environment_assignment_key(picture, index, assignments)
+    picture_url = picture_url_for_visibility(picture).to_s
+    return picture_url if picture_url.present? && assignments.key?(picture_url)
+
+    index_key = index.to_s
+    index_key if assignments.key?(index_key)
   end
 
   # URL exibível de uma picture (API/Vista), cobrindo as variações de chave.

@@ -490,14 +490,14 @@ RSpec.describe "Admin::Habitations", type: :request do
       ]
     )
 
-    get edit_admin_habitation_path(habitation)
-    csrf_token = response.body.match(/<meta name="csrf-token" content="([^"]+)"/)[1]
-
     patch update_photos_admin_habitation_path(habitation), params: {
-      authenticity_token: csrf_token,
       habitation: {
-        ordered_picture_indices: "1,0",
+        ordered_picture_indices: "0,1",
         site_hidden_picture_urls: second_url,
+        picture_environment_assignments: {
+          first_url => "Cozinha",
+          second_url => "Fachada"
+        },
         foto_classificacao: "Profissionais"
       }
     }
@@ -505,6 +505,7 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response).to redirect_to(edit_admin_habitation_path(habitation, anchor: "media"))
     habitation.reload
     expect(habitation.pictures.map { |picture| picture["url"] }).to eq([second_url, first_url])
+    expect(habitation.pictures.map { |picture| picture["ambiente"] }).to eq(["Fachada", "Cozinha"])
     expect(habitation.pictures.first["site_hidden"]).to eq(true)
     expect(habitation.pictures.second["site_hidden"]).to eq(false)
     expect(habitation.foto_classificacao).to eq("Profissionais")
@@ -2281,13 +2282,22 @@ RSpec.describe "Admin::Habitations", type: :request do
       habitation: {
         titulo_anuncio: "Título com fotos internas",
         site_hidden_photo_ids: attachments.second.id.to_s,
-        site_hidden_picture_urls: "https://example.com/api-interna.jpg"
+        site_hidden_picture_urls: "https://example.com/api-interna.jpg",
+        photo_environment_assignments: {
+          attachments.first.id.to_s => "Cozinha",
+          attachments.second.id.to_s => "Fachada"
+        }
       }
     }
 
     expect(response).to redirect_to(admin_habitations_path)
     habitation.reload
     expect(habitation.photos.attachments.map(&:id)).to contain_exactly(*attachments.map(&:id))
+    expect(habitation.photo_ids_order).to eq([attachments.second.id, attachments.first.id])
+    expect(habitation.photo_environment_assignments).to eq(
+      attachments.first.id.to_s => "Cozinha",
+      attachments.second.id.to_s => "Fachada"
+    )
     expect(habitation.site_hidden_photo_ids).to contain_exactly(attachments.second.id)
     expect(habitation.pictures.second["site_hidden"]).to eq(true)
     expect(habitation.public_image_sources.map { |source| source["url"] }).not_to include("https://example.com/api-interna.jpg")

@@ -1980,6 +1980,8 @@ class Admin::HabitationsController < Admin::BaseController
       :site_hidden_picture_urls,
       :use_development_photos_flag,
       :foto_classificacao,
+      photo_environment_assignments: {},
+      picture_environment_assignments: {},
       photos: []
     )
     strip_blank_photo_uploads!(permitted)
@@ -2372,6 +2374,8 @@ class Admin::HabitationsController < Admin::BaseController
       :salute_rental_management_flag, :home_corporate_flag, :home_corporate_position,
       :key_location, :key_location_notes, :ordered_photo_ids, :ordered_picture_indices, :site_hidden_photo_ids, :site_hidden_picture_urls, :intake_status,
       :use_development_photos_flag,
+      photo_environment_assignments: {},
+      picture_environment_assignments: {},
       rental_guarantee_method: [],
       videos: [], plantas: [], fotos_empreendimento: [], photos: [],
       fichas_cadastro: [], autorizacoes_venda: [],
