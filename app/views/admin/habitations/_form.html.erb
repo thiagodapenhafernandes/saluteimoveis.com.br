@@ -284,7 +284,19 @@
       }
     }
     .habitation-form-ui .media-photo-tile {
+      background-color: #eef2f6;
+      background-image:
+        linear-gradient(45deg, rgba(148, 163, 184, .16) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(148, 163, 184, .16) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(148, 163, 184, .16) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(148, 163, 184, .16) 75%);
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+      background-size: 16px 16px;
       overflow: hidden;
+    }
+    .habitation-form-ui .media-photo-image {
+      background: rgba(255, 255, 255, .72);
+      object-fit: contain;
     }
     .habitation-form-ui .media-development-toggle {
       align-items: center;
@@ -413,7 +425,9 @@
     }
     .habitation-form-ui .media-photo-drag-handle {
       cursor: grab;
+      font-weight: 700;
       line-height: 1;
+      min-width: 42px;
     }
     .habitation-form-ui .media-photo-drag-handle:active {
       cursor: grabbing;
@@ -2142,7 +2156,7 @@
 			                        <%= link_to pic_url,
 			                            class: "d-block w-100 h-100",
 		                            data: { fancybox: "habitation-media-gallery", caption: "Foto API/Vista #{display_index + 1}" } do %>
-		                          <%= image_tag pic_url, class: "rounded border w-100 h-100 object-fit-cover opacity-75", loading: "lazy", decoding: "async" %>
+		                          <%= image_tag pic_url, class: "media-photo-image rounded border w-100 h-100 opacity-75", loading: "lazy", decoding: "async" %>
 		                        <% end %>
 			                        <div class="media-photo-overlay position-absolute d-flex flex-column justify-content-between p-1">
 			                          <div class="d-flex justify-content-between align-items-start gap-1">
@@ -2205,7 +2219,7 @@
 		                        <%= link_to development_photo_url,
 		                            class: "d-block w-100 h-100",
 		                            data: { fancybox: "habitation-media-gallery", caption: "Foto do empreendimento #{index + 1}" } do %>
-		                          <%= image_tag development_photo_url, class: "rounded border w-100 h-100 object-fit-cover opacity-75", loading: "lazy", decoding: "async" %>
+		                          <%= image_tag development_photo_url, class: "media-photo-image rounded border w-100 h-100 opacity-75", loading: "lazy", decoding: "async" %>
 		                        <% end %>
 		                        <div class="media-photo-overlay position-absolute d-flex flex-column justify-content-between p-1">
 		                          <div class="d-flex justify-content-between align-items-start gap-1">

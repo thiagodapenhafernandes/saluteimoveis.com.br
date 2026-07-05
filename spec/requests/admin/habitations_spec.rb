@@ -350,6 +350,7 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include("Salvar fotos")
     expect(response.body).to include(update_photos_admin_habitation_path(habitation))
     expect(response.body).to include('data-photo-upload-target="dirtyStatus"')
+    expect(response.body).to include("media-photo-image")
     expect(response.body).to include('class="media-development-toggle form-check form-switch mb-0"')
     expect(response.body).to include('data-photo-upload-target="developmentPhotosSwitch"')
     expect(response.body).to include("Foto original importada da API do Vista")
@@ -489,7 +490,11 @@ RSpec.describe "Admin::Habitations", type: :request do
       ]
     )
 
+    get edit_admin_habitation_path(habitation)
+    csrf_token = response.body.match(/<meta name="csrf-token" content="([^"]+)"/)[1]
+
     patch update_photos_admin_habitation_path(habitation), params: {
+      authenticity_token: csrf_token,
       habitation: {
         ordered_picture_indices: "1,0",
         site_hidden_picture_urls: second_url,

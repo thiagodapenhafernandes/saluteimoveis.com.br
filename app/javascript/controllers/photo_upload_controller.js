@@ -126,9 +126,13 @@ export default class extends Controller {
       forceAutoScrollFallback: true,
       scrollSensitivity: 90,
       scrollSpeed: 18,
+      fallbackTolerance: 4,
+      touchStartThreshold: 5,
+      filter: 'a, button, input, select, textarea, label',
+      preventOnFilter: false,
       ghostClass: 'sortable-ghost',
       handle: '.media-photo-drag-handle',
-      draggable: '.draggable-item',
+      draggable: '.draggable-item:not(.d-none)',
       onStart: () => {
         this.startAutoScroll()
       },
@@ -327,7 +331,7 @@ export default class extends Controller {
 
       imgContainer.innerHTML = `
         <div class="position-relative ratio ratio-1x1 group-hover media-photo-tile">
-          <img src="${previewUrl}" class="rounded border object-fit-cover w-100 h-100" alt="${this.escapeHtml(file.name)}">
+          <img src="${previewUrl}" class="media-photo-image rounded border w-100 h-100" alt="${this.escapeHtml(file.name)}">
           <div class="media-photo-overlay position-absolute d-flex flex-column justify-content-between p-1">
             <div class="d-flex justify-content-between align-items-start gap-1">
               <span class="badge bg-dark bg-opacity-75 border shadow-sm" data-photo-position-badge>#</span>
@@ -351,6 +355,7 @@ export default class extends Controller {
                 </button>
                 <button type="button" class="media-photo-drag-handle btn btn-sm btn-light border py-0 px-1" title="Arrastar foto">
                   <i class="bi bi-grip-vertical"></i>
+                  <span class="visually-hidden">Arrastar foto</span>
                 </button>
               </span>
             </div>

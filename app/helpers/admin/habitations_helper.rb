@@ -30,7 +30,7 @@ module Admin::HabitationsHelper
   end
 
   def admin_habitation_media_preview(attachment)
-    image_classes = "rounded border w-100 h-100 object-fit-cover"
+    image_classes = "media-photo-image rounded border w-100 h-100"
 
     if attachment.blob.representable?
       image_tag attachment.representation(resize_to_limit: [360, 360]),
