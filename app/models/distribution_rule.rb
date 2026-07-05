@@ -19,7 +19,7 @@ class DistributionRule < ApplicationRecord
   scope :active, -> { where(active: true) }
 
   def next_available_agent(candidates = nil)
-    candidates ||= distribution_rule_agents
+    candidates ||= active_distribution_rule_agents
     if rotary?
       candidates.order(position: :asc, last_lead_received_at: :asc).first
     elsif performance?
@@ -50,7 +50,8 @@ class DistributionRule < ApplicationRecord
   #                                 AGORA; se check-in manual sem turno, exige um
   #                                 turno ativo do corretor naquela loja.
   def candidates_filtered_by_checkin
-    return distribution_rule_agents unless require_active_checkin?
+    candidates = active_distribution_rule_agents
+    return candidates unless require_active_checkin?
 
     scope = CheckIn.where(status: :active)
     store_ids = checkin_store_id_list
@@ -61,7 +62,11 @@ class DistributionRule < ApplicationRecord
     scope = scope.includes(:store_shift, :admin_user)
 
     eligible_user_ids = scope.select { |ci| shift_ok?(ci) }.map(&:admin_user_id)
-    distribution_rule_agents.where(admin_user_id: eligible_user_ids)
+    candidates.where(admin_user_id: eligible_user_ids)
+  end
+
+  def active_distribution_rule_agents
+    distribution_rule_agents.joins(:admin_user).merge(AdminUser.active)
   end
 
   def rotate_queue!(just_served_admin_user_id)

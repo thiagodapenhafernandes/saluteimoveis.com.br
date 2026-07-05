@@ -187,6 +187,47 @@ RSpec.describe Habitation, type: :model do
     end
   end
 
+  describe "inactive commercial status publication rules" do
+    it "requires suspension reason and disables site and portal publication" do
+      habitation = build(
+        :habitation,
+        status: "Suspenso",
+        motivo_suspensao: nil,
+        exibir_no_site_flag: true,
+        publicar_lais_ai: true,
+        publicar_imovelweb: true,
+        publicar_imovelweb_2: true,
+        publicar_chaves_na_mao: true,
+        publicar_casa_mineira: true,
+        publicar_viva_real_vrsync: true
+      )
+
+      expect(habitation).not_to be_valid
+      expect(habitation.errors[:motivo_suspensao]).to include("deve ser informado quando o status estiver Suspenso")
+      expect(habitation.exibir_no_site_flag).to be(false)
+      expect(habitation.publicar_lais_ai).to be(false)
+      expect(habitation.publicar_imovelweb).to be(false)
+      expect(habitation.publicar_imovelweb_2).to be(false)
+      expect(habitation.publicar_chaves_na_mao).to be(false)
+      expect(habitation.publicar_casa_mineira).to be(false)
+      expect(habitation.publicar_viva_real_vrsync).to be(false)
+    end
+
+    it "requires rented value for rented statuses" do
+      habitation = build(:habitation, status: "Alugado terceiros", valor_alugado_terceiros_cents: nil)
+
+      expect(habitation).not_to be_valid
+      expect(habitation.errors[:valor_alugado_terceiros_cents]).to include("deve ser informado quando o status estiver Alugado")
+    end
+
+    it "requires sold value for sold statuses" do
+      habitation = build(:habitation, status: "Vendido terceiros", valor_vendido_terceiros_cents: nil)
+
+      expect(habitation).not_to be_valid
+      expect(habitation.errors[:valor_vendido_terceiros_cents]).to include("deve ser informado quando o status estiver Vendido")
+    end
+  end
+
   describe "#display_area_m2" do
     it "uses private area for residential units when total area is zero" do
       habitation = create(:habitation, categoria: "Apartamento", area_total_m2: 0, area_privativa_m2: 130)

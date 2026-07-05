@@ -147,6 +147,10 @@ class Habitation < ApplicationRecord
     !exibir_no_site_flag? || inactive_for_admin_card?
   end
 
+  def inactive_commercial_status?
+    inactive_status_key.present?
+  end
+
   # INTERNAL_FEATURES = [ ... ] (Deprecated in favor of AttributeOption)
   def self.internal_features
     AttributeOption.where(context: 'habitation', category: 'feature').order(name: :asc).pluck(:name)
@@ -297,9 +301,11 @@ class Habitation < ApplicationRecord
   validate :codigo_empreendimento_must_exist, if: :validate_codigo_empreendimento?
   validate :codigo_empreendimento_cannot_reference_self
   validate :key_location_notes_required_for_other
+  validate :inactive_commercial_status_details_required
   
   # Callbacks
   before_validation :normalize_categoria, prepend: true
+  before_validation :unpublish_when_commercial_status_inactive
   before_validation :assign_codigo_automaticamente, on: :create
   before_validation :clear_category_mismatched_slug, prepend: true
   before_validation :set_data_cadastro_crm, on: :create
@@ -1791,6 +1797,39 @@ class Habitation < ApplicationRecord
   end
   
   private
+
+  def inactive_commercial_status_details_required
+    case inactive_status_key
+    when "suspenso"
+      errors.add(:motivo_suspensao, "deve ser informado quando o status estiver Suspenso") if motivo_suspensao.blank?
+    when "alugado"
+      if valor_alugado_terceiros_cents.to_i <= 0
+        errors.add(:valor_alugado_terceiros_cents, "deve ser informado quando o status estiver Alugado")
+      end
+    when "vendido"
+      if valor_vendido_terceiros_cents.to_i <= 0
+        errors.add(:valor_vendido_terceiros_cents, "deve ser informado quando o status estiver Vendido")
+      end
+    end
+  end
+
+  def unpublish_when_commercial_status_inactive
+    return unless inactive_commercial_status?
+
+    self.exibir_no_site_flag = false
+    portal_publication_attribute_names.each do |attribute|
+      public_send("#{attribute}=", false) if respond_to?("#{attribute}=")
+    end
+  end
+
+  def inactive_status_key
+    normalized_status = status.to_s.parameterize
+    INACTIVE_STATUS_KEYWORDS.find { |keyword| normalized_status.include?(keyword) }
+  end
+
+  def portal_publication_attribute_names
+    self.class::PORTAL_PUBLICATION_FIELDS.values.uniq
+  end
 
   def clear_category_mismatched_slug
     self.slug = nil if slug_category_mismatch?

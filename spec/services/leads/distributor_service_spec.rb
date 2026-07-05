@@ -29,6 +29,17 @@ RSpec.describe Leads::DistributorService do
       expect(lead.reload.admin_user_id).to eq(agent_without_checkin.id)
       expect(lead.status).to eq("Aguardando Aceite")
     end
+
+    it "não distribui para corretor inativo mesmo quando a regra não exige check-in" do
+      inactive_agent = create(:admin_user, active: false)
+      rule = create(:distribution_rule, require_active_checkin: false)
+      create(:distribution_rule_agent, distribution_rule: rule, admin_user: inactive_agent)
+
+      lead = build_lead
+      described_class.find_and_distribute(lead)
+
+      expect(lead.reload.admin_user_id).to be_nil
+    end
   end
 
   describe "require_active_checkin=true" do
@@ -89,6 +100,14 @@ RSpec.describe Leads::DistributorService do
       dra2 = create(:distribution_rule_agent, distribution_rule: rule, admin_user: agent_without_checkin)
 
       expect(rule.candidates_filtered_by_checkin.pluck(:id)).to match_array([dra1.id, dra2.id])
+    end
+
+    it "exclui agentes inativos mesmo quando flag de check-in está desligada" do
+      inactive_agent = create(:admin_user, active: false)
+      rule = create(:distribution_rule, require_active_checkin: false)
+      create(:distribution_rule_agent, distribution_rule: rule, admin_user: inactive_agent)
+
+      expect(rule.candidates_filtered_by_checkin).to be_empty
     end
 
     it "filtra apenas agents com check-in ativo quando flag on" do
