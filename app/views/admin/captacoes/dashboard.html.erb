@@ -219,10 +219,49 @@
     color: #fff;
   }
   body.capt-dashboard-tv-active .capt-panel-main {
-    height: min(31vh, 390px);
+    height: min(29vh, 360px);
   }
   body.capt-dashboard-tv-active .capt-panel-secondary {
-    height: min(23vh, 280px);
+    height: min(19vh, 220px);
+  }
+  body.capt-dashboard-tv-active .capt-filter-card .card-body {
+    padding: .5rem .75rem !important;
+  }
+  body.capt-dashboard-tv-active .capt-filter-card label,
+  body.capt-dashboard-tv-active .capt-filter-card .form-control,
+  body.capt-dashboard-tv-active .capt-filter-card .form-select,
+  body.capt-dashboard-tv-active .capt-filter-card .btn {
+    font-size: .78rem;
+  }
+  body.capt-dashboard-tv-active .capt-foco-banner {
+    margin-bottom: .55rem !important;
+    padding: .7rem 1rem;
+  }
+  body.capt-dashboard-tv-active .capt-panel-main .card-body,
+  body.capt-dashboard-tv-active .capt-panel-secondary .card-body {
+    padding: .75rem !important;
+  }
+  body.capt-dashboard-tv-active .capt-panel-main .capt-gauge-wrapper {
+    height: calc(100% - 42px) !important;
+  }
+  body.capt-dashboard-tv-active .capt-donut-wrapper {
+    height: 150px;
+    min-height: 150px;
+  }
+  body.capt-dashboard-tv-active .capt-donut-title,
+  body.capt-dashboard-tv-active .capt-ranking-card h6 {
+    font-size: .72rem;
+    margin-bottom: .2rem !important;
+  }
+  body.capt-dashboard-tv-active .capt-ranking-scroll table {
+    font-size: .82rem;
+  }
+  body.capt-dashboard-tv-active .capt-ranking-row .bar-cell {
+    height: 18px;
+  }
+  body.capt-dashboard-tv-active .capt-ranking-row .bar-cell .label {
+    font-size: .76rem;
+    line-height: 18px;
   }
   body.capt-dashboard-tv-active [data-capt-tv-tab],
   body.capt-dashboard-tv-active [data-capt-active-tv] {
@@ -360,16 +399,8 @@
   <div class="col-md col-6">
     <div class="card border-0 shadow-sm">
       <div class="card-body">
-        <div class="small text-muted text-uppercase fw-semibold">Rascunhos</div>
-        <div class="display-6 fw-bold text-warning"><%= @pre_cadastro_draft %></div>
-      </div>
-    </div>
-  </div>
-  <div class="col-md col-6">
-    <div class="card border-0 shadow-sm">
-      <div class="card-body">
-        <div class="small text-muted text-uppercase fw-semibold">Devolvidos</div>
-        <div class="display-6 fw-bold text-danger"><%= @pre_cadastro_returned %></div>
+        <div class="small text-muted text-uppercase fw-semibold">Rascunho/Devolvido</div>
+        <div class="display-6 fw-bold text-warning"><%= @pre_cadastro_draft + @pre_cadastro_returned %></div>
       </div>
     </div>
   </div>
