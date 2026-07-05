@@ -103,13 +103,16 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).to include("Salvar e sair")
   end
 
-  it "exibe venda atual no lugar de valor promocional no bloco comercial" do
+  it "centraliza a edição de preço nos campos principais do bloco comercial" do
     get new_admin_habitation_path
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include("Venda atual")
+    expect(response.body).to include("Reduções são registradas automaticamente")
+    expect(response.body).to include("Venda anterior")
+    expect(response.body).to include("Aluguel anterior")
     expect(response.body).not_to include("Valor promocional")
     expect(response.body).not_to include("Valor Promocional")
+    expect(response.body).not_to include("Venda atual")
   end
 
   it "renderiza permuta por tipo e parcelamento sem checkbox geral duplicado" do

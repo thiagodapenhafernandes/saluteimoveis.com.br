@@ -1335,46 +1335,28 @@
             <div class="col-md-6">
               <div class="border rounded p-3 h-100">
                 <h6 class="small fw-semibold text-uppercase text-muted mb-2">Valores</h6>
+                <p class="text-muted extra-small mb-2">
+                  Reduções são registradas automaticamente ao salvar um valor de venda ou aluguel menor que o anterior.
+                </p>
                 <div class="row g-2">
-                  <div class="col-md-4">
+                  <div class="col-md-6">
                     <%= f.label :valor_venda_anterior_formatted, "Venda anterior", class: "form-label extra-small fw-bold mb-1" %>
                     <div class="input-group input-group-sm">
                       <span class="input-group-text">R$</span>
-                      <%= f.text_field :valor_venda_anterior_formatted, class: "form-control form-control-sm", data: { controller: "mask", mask_type_value: "currency" } %>
+                      <%= f.text_field :valor_venda_anterior_formatted, class: "form-control form-control-sm bg-light", readonly: true %>
                     </div>
                   </div>
-                  <div class="col-md-4">
+                  <div class="col-md-6">
                     <%= f.label :valor_locacao_anterior_formatted, "Aluguel anterior", class: "form-label extra-small fw-bold mb-1" %>
                     <div class="input-group input-group-sm">
                       <span class="input-group-text">R$</span>
-                      <%= f.text_field :valor_locacao_anterior_formatted, class: "form-control form-control-sm", data: { controller: "mask", mask_type_value: "currency" } %>
+                      <%= f.text_field :valor_locacao_anterior_formatted, class: "form-control form-control-sm bg-light", readonly: true %>
                     </div>
                   </div>
-                  <div class="col-md-4">
-                    <%= f.label :valor_locacao_formatted, "Aluguel atual", class: "form-label extra-small fw-bold mb-1" %>
-                    <div class="input-group input-group-sm">
-                      <span class="input-group-text">R$</span>
-                      <%= f.text_field :valor_locacao_formatted, class: "form-control form-control-sm",
-                          data: {
-                            controller: "mask",
-                            mask_type_value: "currency",
-                            habitation_form_sync_field: "valor_locacao_formatted",
-                            action: "input->habitation-form#syncMirroredField"
-                          } %>
+                  <div class="col-12">
+                    <div class="alert alert-light border py-2 px-3 mb-0 extra-small text-muted">
+                      Valor atual de venda e aluguel deve ser alterado somente nos campos principais de <strong>Financeiro e valores</strong>.
                     </div>
-                  </div>
-                  <div class="col-md-8">
-                    <%= f.label :valor_promocional_formatted, "Venda atual", class: "form-label extra-small fw-bold mb-1" %>
-                    <div class="input-group input-group-sm">
-                      <span class="input-group-text">R$</span>
-                      <%= f.text_field :valor_promocional_formatted, class: "form-control form-control-sm", data: { controller: "mask", mask_type_value: "currency" } %>
-                    </div>
-                  </div>
-                  <div class="col-md-4 d-flex align-items-end">
-                    <label class="custom-checkbox-card w-100">
-                      <%= check_box_tag :valor_promocional_indicador, "1", f.object.valor_promocional_cents.to_i > 0, class: "form-check-input mt-0", disabled: true %>
-                      <span class="small fw-semibold">Venda atual</span>
-                    </label>
                   </div>
                 </div>
               </div>
