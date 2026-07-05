@@ -38,6 +38,10 @@
     overflow-y: auto;
     overscroll-behavior: contain;
   }
+  .habitations-mobile-filter-toggle,
+  .habitations-mobile-filter-state {
+    display: none;
+  }
   .filter-sticky-toolbar {
     position: sticky;
     top: 0;
@@ -620,6 +624,33 @@
       display: block;
     }
 
+    .habitations-mobile-filter-toggle {
+      align-items: center;
+      background: #fff;
+      border: 1px solid #d5dae2;
+      border-radius: 6px;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, .08);
+      color: #1f2937;
+      cursor: pointer;
+      display: flex;
+      font-size: .9rem;
+      font-weight: 800;
+      gap: .5rem;
+      justify-content: center;
+      margin-bottom: .75rem;
+      min-height: 42px;
+      padding: .55rem .8rem;
+      width: 100%;
+    }
+
+    .habitations-mobile-filter-toggle .filter-active-counter {
+      margin-left: .15rem;
+    }
+
+    .habitations-mobile-filter-state:not(:checked) + .habitations-mobile-filter-toggle + .habitations-master-detail-layout .habitations-detail-pane {
+      display: none;
+    }
+
     .habitations-filter-workspace {
       height: auto;
       max-height: none;
@@ -873,6 +904,12 @@
     value = params[key]
     value.is_a?(Array) ? value.reject(&:blank?).any? : value.present?
   end
+  primary_filter_keys = %w[q referencia status categoria sort direction scope ownership intake_review empreendimento_codigo corretor_id]
+  active_primary_filters_count = primary_filter_keys.count do |key|
+    value = params[key]
+    value.is_a?(Array) ? value.reject(&:blank?).any? : value.present?
+  end
+  active_filters_count = active_primary_filters_count + active_extra_filters_count
   extras_open = true
   vista_advanced_keys = %w[
     situacao face ocupacao_status estado_conservacao area_total_min area_total_max area_privativa_min area_privativa_max
@@ -891,6 +928,20 @@
   end
   clear_extras_params = request.query_parameters.except(*extra_filter_keys, "page")
 %>
+
+<%= check_box_tag :mobile_filters_open,
+                  "1",
+                  active_filters_count.positive?,
+                  id: "habitations_mobile_filter_state",
+                  class: "habitations-mobile-filter-state",
+                  autocomplete: "off" %>
+<label for="habitations_mobile_filter_state" class="habitations-mobile-filter-toggle">
+  <i class="bi bi-sliders"></i>
+  <span>Filtros</span>
+  <% if active_filters_count.positive? %>
+    <span class="filter-active-counter"><%= active_filters_count %></span>
+  <% end %>
+</label>
 
 <div class="habitations-master-detail-layout">
   <aside class="habitations-detail-pane" aria-label="Filtros do catálogo">
