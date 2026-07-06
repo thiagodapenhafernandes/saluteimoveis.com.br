@@ -353,6 +353,52 @@ RSpec.describe "Habitation details", type: :request do
       expect(response.body).not_to include("Residencial Oculto")
     end
 
+    it "renders available development units in compact cards" do
+      development = create(
+        :habitation,
+        codigo: "DEV-COMPACT",
+        slug: "empreendimento-unidades-compactas",
+        tipo: "Empreendimento",
+        categoria: "Empreendimento",
+        nome_empreendimento: "Residencial Compacto"
+      )
+      first_unit = create(
+        :habitation,
+        codigo: "UNIT-COMPACT-1",
+        slug: "unidade-compacta-1",
+        codigo_empreendimento: development.codigo,
+        titulo_anuncio: "Apartamento compacto 1",
+        area_privativa_m2: 90,
+        dormitorios_qtd: 3,
+        vagas_qtd: 2
+      )
+      second_unit = create(
+        :habitation,
+        codigo: "UNIT-COMPACT-2",
+        slug: "unidade-compacta-2",
+        codigo_empreendimento: development.codigo,
+        titulo_anuncio: "Apartamento compacto 2",
+        area_privativa_m2: 110,
+        dormitorios_qtd: 4,
+        vagas_qtd: 3
+      )
+
+      get habitation_path(development)
+
+      expect(response).to have_http_status(:ok)
+      document = Nokogiri::HTML(response.body)
+      unit_cards = document.css("[data-marketing-tracker-placement-value='development_unit_card']")
+
+      expect(unit_cards.size).to eq(2)
+      expect(response.body).to include("grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4")
+      expect(unit_cards.map { |card| card["href"] }).to contain_exactly(
+        habitation_path(first_unit),
+        habitation_path(second_unit)
+      )
+      expect(response.body).to include("Cód. UNIT-COMPACT-1")
+      expect(response.body).to include("Cód. UNIT-COMPACT-2")
+    end
+
     it "does not expose the condominium name in regular property details" do
       habitation = create(
         :habitation,
