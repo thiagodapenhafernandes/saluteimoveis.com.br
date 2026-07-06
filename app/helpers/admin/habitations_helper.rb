@@ -29,6 +29,23 @@ module Admin::HabitationsHelper
     admin_habitation_internal_action_label(habitation)
   end
 
+  def admin_price_update_summary(log)
+    changeset = log&.changeset.to_h
+    price_fields = {
+      "valor_venda_cents" => "Venda",
+      "valor_locacao_cents" => "Aluguel"
+    }
+
+    price_fields.filter_map do |field, label|
+      values = changeset[field].to_h
+      before = values["before"] || values[:before]
+      after = values["after"] || values[:after]
+      next if before.blank? || after.blank?
+
+      "#{label}: #{admin_price_update_value(before)} -> #{admin_price_update_value(after)}"
+    end.join(" | ")
+  end
+
   def admin_habitation_media_preview(attachment)
     image_classes = "media-photo-image rounded border w-100 h-100"
 
@@ -77,5 +94,9 @@ module Admin::HabitationsHelper
   def habitation_matches_current_broker_name?(habitation)
     broker_name = current_admin_user.name.to_s.strip.downcase
     broker_name.present? && habitation.corretor_nome.to_s.downcase.include?(broker_name)
+  end
+
+  def admin_price_update_value(cents)
+    number_to_currency(cents.to_i / 100.0, unit: "R$ ", separator: ",", delimiter: ".")
   end
 end

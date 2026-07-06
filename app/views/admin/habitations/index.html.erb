@@ -2034,6 +2034,20 @@
                              Sob Consulta
                           <% end %>
                        </div>
+                       <% price_update_log = @latest_price_update_logs&.[](imovel.id) %>
+                       <% if price_update_log.present? %>
+                         <% price_update_summary = admin_price_update_summary(price_update_log) %>
+                         <div class="mt-2">
+                           <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle d-inline-flex align-items-center gap-1 rounded-pill px-2 py-1"
+                                 title="<%= price_update_summary.presence || 'Preço do imóvel alterado recentemente' %>">
+                             <i class="bi bi-bell-fill"></i>
+                             Preço atualizado há <%= time_ago_in_words(price_update_log.created_at) %>
+                           </span>
+                           <% if price_update_summary.present? %>
+                             <div class="extra-small text-muted mt-1"><%= price_update_summary %></div>
+                           <% end %>
+                         </div>
+                       <% end %>
                     </div>
                     <div class="d-flex gap-3 text-end">
                        <div>

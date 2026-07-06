@@ -114,6 +114,7 @@ class Admin::HabitationsController < Admin::BaseController
       .order(Arel.sql("#{sort_expression} #{@sort_direction} NULLS LAST"))
 
     @habitations = @habitations.paginate(page: params[:page], per_page: 20)
+    load_latest_price_update_logs
     @page_title = "Gerenciar Imóveis"
     @report_types = REPORT_TYPES
     @export_fields = EXPORT_FIELDS
@@ -927,6 +928,19 @@ class Admin::HabitationsController < Admin::BaseController
       .map { |value| value.to_s.strip }
       .reject { |value| value.blank? || value == "Todas" }
       .uniq
+  end
+
+  def load_latest_price_update_logs
+    habitation_ids = @habitations.map(&:id)
+    @latest_price_update_logs = {}
+    return if habitation_ids.blank?
+
+    @latest_price_update_logs = HabitationAuditLog
+      .where(habitation_id: habitation_ids)
+      .where("changed_fields && ARRAY['valor_venda_cents','valor_locacao_cents']::text[]")
+      .select("DISTINCT ON (habitation_id) habitation_audit_logs.*")
+      .order(:habitation_id, created_at: :desc)
+      .index_by(&:habitation_id)
   end
 
   def excluded_commercial_neighborhood?(name)

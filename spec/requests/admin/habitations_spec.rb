@@ -39,6 +39,34 @@ RSpec.describe "Admin::Habitations", type: :request do
     expect(response.body).not_to include(published.titulo_anuncio)
   end
 
+  it "exibe notificação no card quando o preço do imóvel foi alterado" do
+    habitation = create(
+      :habitation,
+      codigo: "PRICE-NOTIFY-#{SecureRandom.hex(6)}",
+      titulo_anuncio: "Apartamento com preço atualizado",
+      valor_venda_cents: 900_000_00
+    )
+    create(
+      :habitation_audit_log,
+      habitation: habitation,
+      admin_user: admin,
+      changed_fields: ["valor_venda_cents"],
+      changeset: {
+        "valor_venda_cents" => {
+          "before" => 1_000_000_00,
+          "after" => 900_000_00
+        }
+      },
+      created_at: 2.hours.ago
+    )
+
+    get admin_habitations_path(referencia: habitation.codigo)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Preço atualizado há")
+    expect(response.body).to include("Venda: R$ 1.000.000,00 -&gt; R$ 900.000,00")
+  end
+
   it "mostra para o corretor somente suas captações aguardando aceite" do
     broker_profile = Profile.create!(
       name: "Corretor revisão #{SecureRandom.hex(6)}",
