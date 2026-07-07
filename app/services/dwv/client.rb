@@ -7,9 +7,10 @@ module Dwv
       @base_url = base_url.to_s.strip.chomp("/")
     end
 
-    def list_properties(limit: 20, page: 1, deleted: nil)
+    def list_properties(limit: 20, page: 1, deleted: nil, last_updates: nil)
       params = { limit: limit, page: page }
       params[:deleted] = deleted unless deleted.nil?
+      params[:last_updates] = last_updates if last_updates.present?
       get("/integration/properties", params: params)
     end
 
