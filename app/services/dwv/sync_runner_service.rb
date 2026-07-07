@@ -144,10 +144,26 @@ module Dwv
       scope = Habitation.where(imovel_dwv: "Sim", codigo_dwv: removed_ids)
       deleted = 0
       scope.find_each do |habitation|
-        habitation.destroy!
+        deactivate_removed_habitation!(habitation)
         deleted += 1
       end
       deleted
+    end
+
+    def deactivate_removed_habitation!(habitation)
+      attributes = {
+        status: "Suspenso",
+        motivo_suspensao: "Removido na DWV",
+        exibir_no_site_flag: false,
+        last_sync_at: Time.current,
+        last_sync_message: "Marcado como removido na DWV"
+      }
+
+      habitation.send(:portal_publication_attribute_names).each do |attribute|
+        attributes[attribute] = false if habitation.has_attribute?(attribute)
+      end
+
+      habitation.update!(attributes)
     end
 
     def collect_property_ids(client, deleted:, limit:, max_pages:, last_updates: nil)
