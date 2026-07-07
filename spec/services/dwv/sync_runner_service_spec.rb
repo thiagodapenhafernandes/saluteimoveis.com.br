@@ -40,7 +40,7 @@ RSpec.describe Dwv::SyncRunnerService do
       allow(service).to receive(:build_client).and_return(client)
       allow(service).to receive(:pause_if_needed)
 
-      window = [1.day.ago.to_date, Date.current].map { |date| date.strftime("%d/%m/%Y") }.join(",")
+      window = [1.day.ago.to_date, Date.current].map { |date| date.strftime("%Y-%m-%d") }.join(",")
       allow(client).to receive(:list_properties).with(limit: 50, page: 1, deleted: nil, last_updates: window).and_return(
         "data" => [{ "id" => "updated-dwv" }]
       )
@@ -71,7 +71,7 @@ RSpec.describe Dwv::SyncRunnerService do
       allow(service).to receive(:build_client).and_return(client)
       allow(service).to receive(:pause_if_needed)
 
-      window = [1.day.ago.to_date, Date.current].map { |date| date.strftime("%d/%m/%Y") }.join(",")
+      window = [1.day.ago.to_date, Date.current].map { |date| date.strftime("%Y-%m-%d") }.join(",")
       allow(client).to receive(:list_properties).with(limit: 50, page: 1, deleted: nil, last_updates: window).and_return(
         "data" => [{ "id" => "broken-dwv" }, { "id" => "ok-dwv" }]
       )
