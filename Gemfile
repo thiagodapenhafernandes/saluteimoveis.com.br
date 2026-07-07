@@ -33,6 +33,7 @@ gem "will_paginate-bootstrap-style"
 # API & External Services
 gem "rest-client"
 gem "httparty"
+gem "google-apis-calendar_v3", require: false
 gem "koala", "~> 3.0"
 gem "omniauth-facebook"
 gem "omniauth-rails_csrf_protection"

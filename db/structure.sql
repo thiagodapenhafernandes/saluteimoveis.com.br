@@ -1,4 +1,4 @@
-\restrict jtf2sUTYreB0WzbdXhJXoEAKlmwC1ILt9fPj78gDIXa7lg41ZWcG8KK7bRDlYXS
+\restrict bIDE5Od9FJvJceOuEBBG46l0cCIJWDRVVtX4DdHOMaydHfSZA77oxiDLmy745wR
 
 -- Dumped from database version 17.9 (Homebrew)
 -- Dumped by pg_dump version 17.9 (Homebrew)
@@ -1448,7 +1448,11 @@ CREATE TABLE public.habitations (
     permuta_valor_percentual integer,
     frente_terreno_m numeric(10,2),
     fundo_terreno_m numeric(10,2),
-    photo_environment_assignments jsonb DEFAULT '{}'::jsonb NOT NULL
+    photo_environment_assignments jsonb DEFAULT '{}'::jsonb NOT NULL,
+    photo_calendar_provider character varying,
+    photo_calendar_event_id character varying,
+    photo_calendar_error text,
+    photo_calendar_synced_at timestamp(6) without time zone
 );
 
 
@@ -6345,6 +6349,13 @@ CREATE INDEX index_habitations_on_lavabo_flag ON public.habitations USING btree 
 
 
 --
+-- Name: index_habitations_on_photo_calendar_event_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_habitations_on_photo_calendar_event_id ON public.habitations USING btree (photo_calendar_event_id);
+
+
+--
 -- Name: index_habitations_on_pictures; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8455,11 +8466,12 @@ ALTER TABLE ONLY public.push_subscriptions
 -- PostgreSQL database dump complete
 --
 
-\unrestrict jtf2sUTYreB0WzbdXhJXoEAKlmwC1ILt9fPj78gDIXa7lg41ZWcG8KK7bRDlYXS
+\unrestrict bIDE5Od9FJvJceOuEBBG46l0cCIJWDRVVtX4DdHOMaydHfSZA77oxiDLmy745wR
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260706120000'),
 ('20260705120000'),
 ('20260630140000'),
 ('20260630120000'),
