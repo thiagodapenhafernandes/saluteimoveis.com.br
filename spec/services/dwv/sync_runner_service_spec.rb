@@ -2,10 +2,10 @@ require "rails_helper"
 
 RSpec.describe Dwv::SyncRunnerService do
   describe "#call" do
-    it "destroys only DWV habitations returned as removed" do
-      removed_dwv = create(:habitation, codigo_dwv: "removed-dwv", imovel_dwv: "Sim")
-      local_with_same_external_code = create(:habitation, codigo_dwv: "local-code", imovel_dwv: "Não")
-      active_dwv = create(:habitation, codigo_dwv: "active-dwv", imovel_dwv: "Sim")
+    it "deactivates only DWV habitations returned as removed" do
+      removed_dwv = create(:habitation, codigo: "DWV-RM-#{SecureRandom.hex(4)}", codigo_dwv: "removed-dwv", imovel_dwv: "Sim")
+      local_with_same_external_code = create(:habitation, codigo: "DWV-LC-#{SecureRandom.hex(4)}", codigo_dwv: "local-code", imovel_dwv: "Não")
+      active_dwv = create(:habitation, codigo: "DWV-AC-#{SecureRandom.hex(4)}", codigo_dwv: "active-dwv", imovel_dwv: "Sim")
       client = instance_double(Dwv::Client)
       service = described_class.new
 
@@ -23,14 +23,18 @@ RSpec.describe Dwv::SyncRunnerService do
       result = service.call(mode: "deactivate_removed", limit: 50, max_pages: 1)
 
       expect(result[:deleted]).to eq(1)
-      expect(Habitation.exists?(removed_dwv.id)).to eq(false)
+      removed_dwv.reload
+      expect(removed_dwv.status).to eq("Suspenso")
+      expect(removed_dwv.motivo_suspensao).to eq("Removido na DWV")
+      expect(removed_dwv.exibir_no_site_flag).to eq(false)
+      expect(removed_dwv.last_sync_message).to eq("Marcado como removido na DWV")
       expect(Habitation.exists?(local_with_same_external_code.id)).to eq(true)
       expect(Habitation.exists?(active_dwv.id)).to eq(true)
     end
 
-    it "imports recently updated properties and destroys removed ones in incremental mode" do
-      removed_dwv = create(:habitation, codigo_dwv: "removed-dwv", imovel_dwv: "Sim")
-      untouched_dwv = create(:habitation, codigo_dwv: "untouched-dwv", imovel_dwv: "Sim")
+    it "imports recently updated properties and deactivates removed ones in incremental mode" do
+      removed_dwv = create(:habitation, codigo: "DWV-IR-#{SecureRandom.hex(4)}", codigo_dwv: "removed-dwv", imovel_dwv: "Sim")
+      untouched_dwv = create(:habitation, codigo: "DWV-UT-#{SecureRandom.hex(4)}", codigo_dwv: "untouched-dwv", imovel_dwv: "Sim")
       client = instance_double(Dwv::Client)
       service = described_class.new
 
@@ -57,7 +61,7 @@ RSpec.describe Dwv::SyncRunnerService do
       expect(result[:imported]).to eq(1)
       expect(result[:deleted]).to eq(1)
       expect(result[:errors_count]).to eq(0)
-      expect(Habitation.exists?(removed_dwv.id)).to eq(false)
+      expect(removed_dwv.reload.status).to eq("Suspenso")
       expect(Habitation.exists?(untouched_dwv.id)).to eq(true)
     end
 
