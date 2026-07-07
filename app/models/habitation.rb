@@ -114,7 +114,8 @@ class Habitation < ApplicationRecord
   PHOTO_UPLOAD_REVIEWABLE_INTAKE_STATUSES = %w[admin_approved returned_to_broker internal published].freeze
   PHOTO_FLOW_CHOICES = {
     "upload" => "Enviar fotos",
-    "schedule" => "Agendar fotógrafo"
+    "schedule" => "Agendar fotógrafo",
+    "google_calendar" => "Agendar pelo Google Agenda"
   }.freeze
   YES_NO_ANSWERS = {
     "sim" => "Sim",
@@ -136,6 +137,35 @@ class Habitation < ApplicationRecord
 
   def self.photography_schedule_url
     Setting.get("photography_schedule_url", "").to_s.strip
+  end
+
+  def self.google_photography_calendar_enabled?
+    ActiveModel::Type::Boolean.new.cast(Setting.get("photography_google_calendar_enabled", false))
+  end
+
+  def self.google_photography_calendar_id
+    Setting.get("photography_google_calendar_id", "fotografias.saluteimoveis@gmail.com").to_s.strip
+  end
+
+  def self.google_photography_credentials_path
+    Setting.get("photography_google_credentials_path", "").to_s.strip
+  end
+
+  def self.google_photography_credentials_file_present?
+    path = google_photography_credentials_path
+    path.present? && File.exist?(path)
+  end
+
+  def self.google_photography_calendar_configured?
+    google_photography_calendar_enabled? &&
+      google_photography_calendar_id.present? &&
+      google_photography_credentials_file_present?
+  end
+
+  def self.photo_flow_choices_for_intake(current_choice = nil)
+    choices = PHOTO_FLOW_CHOICES.dup
+    choices.delete("google_calendar") unless google_photography_calendar_configured? || current_choice == "google_calendar"
+    choices
   end
 
   def inactive_for_admin_card?
@@ -1055,7 +1085,7 @@ class Habitation < ApplicationRecord
     missing << "Chaves" if requires_intake_key_location? && key_location.blank?
     missing << "Dias de visita" if !skip_visitas? && !intake_visit_days_present?
     missing << "Fotos ou agenda com fotógrafo" if photo_flow_choice == "upload" && !has_any_photo?
-    missing << "Agenda com fotógrafo" if photo_flow_choice == "schedule" && photo_session_requested_at.blank?
+    missing << "Agenda com fotógrafo" if photo_flow_choice.in?(%w[schedule google_calendar]) && photo_session_requested_at.blank?
     missing << "Fotos ou agenda com fotógrafo" if photo_flow_choice.blank? && !has_any_photo?
     missing << "Anexo da autorização do proprietário" unless autorizacoes_venda.attached?
     missing
@@ -1432,6 +1462,7 @@ class Habitation < ApplicationRecord
     end
     self.salute_rental_management_flag = salute_rental_management_answer == "sim" if salute_rental_management_answer.present?
     self.photo_session_url = self.class.photography_schedule_url if photo_flow_choice == "schedule" && photo_session_url.blank?
+    self.photo_calendar_provider = "google_calendar" if photo_flow_choice == "google_calendar"
   end
 
   # Dynamic Field Setters (Array handling)

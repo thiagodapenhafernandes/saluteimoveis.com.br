@@ -88,32 +88,36 @@ export default class extends Controller {
   refreshFlow(event) {
     const value = this.hasFlowSelectTarget ? this.flowSelectTarget.value : ""
     const uploadSelected = value === "upload"
+    const scheduleSelected = value === "schedule"
+    const googleCalendarSelected = value === "google_calendar"
+    const appointmentSelected = scheduleSelected || googleCalendarSelected
     this.toggle(this.uploadPanelTarget, uploadSelected)
     this.toggle(this.newPhotosPanelTarget, uploadSelected)
     if (this.hasExistingPhotosPanelTarget) {
       this.toggle(this.existingPhotosPanelTarget, uploadSelected)
     }
-    this.toggle(this.schedulePanelTarget, value === "schedule")
+    this.toggle(this.schedulePanelTarget, appointmentSelected)
 
     if (this.hasExternalScheduleButtonTarget) {
-      this.toggle(this.externalScheduleButtonTarget, value === "schedule" && this.scheduleUrlValue.length > 0)
+      this.toggle(this.externalScheduleButtonTarget, scheduleSelected && this.scheduleUrlValue.length > 0)
     }
 
     if (this.hasInternalScheduleButtonTarget) {
-      this.toggle(this.internalScheduleButtonTarget, value === "schedule" && this.scheduleUrlValue.length === 0)
+      this.toggle(this.internalScheduleButtonTarget, googleCalendarSelected || (scheduleSelected && this.scheduleUrlValue.length === 0))
     }
 
     if (this.hasScheduledAtGroupTarget) {
-      this.toggle(this.scheduledAtGroupTarget, value === "schedule")
+      this.toggle(this.scheduledAtGroupTarget, appointmentSelected)
     }
 
-    if (event && value === "schedule") {
+    if (event && appointmentSelected) {
       this.openScheduler()
     }
   }
 
   openScheduler() {
-    if (this.scheduleUrlValue.length > 0) {
+    const value = this.hasFlowSelectTarget ? this.flowSelectTarget.value : ""
+    if (value === "schedule" && this.scheduleUrlValue.length > 0) {
       window.open(this.scheduleUrlValue, "_blank", "noopener")
       return
     }

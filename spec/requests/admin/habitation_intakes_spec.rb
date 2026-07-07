@@ -571,7 +571,7 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
 
   it "renderiza a etapa de fotos com lista ordenável e agendamento reativo" do
     Setting.set("photography_schedule_url", "https://calendly.com/fotografias-saluteimoveis/30min")
-    intake = create(:habitation, :broker_intake, admin_user: admin, intake_step: "fotos")
+    intake = create(:habitation, :broker_intake, codigo: "GOOGLE-OPT-#{SecureRandom.hex(6)}", admin_user: admin, intake_step: "fotos")
 
     get edit_admin_captacao_path(intake, step: "fotos")
 
@@ -580,6 +580,22 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(response.body).to include("Fotos selecionadas agora")
     expect(response.body).to include("Abrir agenda de fotos")
     expect(response.body).to include("https://calendly.com/fotografias-saluteimoveis/30min")
+  end
+
+  it "renderiza a opcao de agendamento pelo Google Agenda quando configurada" do
+    credentials_path = Rails.root.join("tmp/google-calendar-intake-test.json").to_s
+    File.write(credentials_path, "{}")
+    Setting.set("photography_google_calendar_enabled", "1")
+    Setting.set("photography_google_calendar_id", "fotografias.saluteimoveis@gmail.com")
+    Setting.set("photography_google_credentials_path", credentials_path)
+    intake = create(:habitation, :broker_intake, codigo: "FOTOS-#{SecureRandom.hex(6)}", admin_user: admin, intake_step: "fotos")
+
+    get edit_admin_captacao_path(intake, step: "fotos")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Agendar pelo Google Agenda")
+  ensure
+    FileUtils.rm_f(credentials_path) if credentials_path.present?
   end
 
   it "bloqueia avanço no próprio step e marca campos obrigatórios" do
@@ -1064,6 +1080,40 @@ RSpec.describe "Admin::HabitationIntakes", type: :request do
     expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "review"))
     expect(intake.reload.photos).to be_attached
     expect(intake.autorizacoes_venda).to be_attached
+  end
+
+  it "agenda fotos pelo Google Agenda e cria job de sincronizacao" do
+    credentials_path = Rails.root.join("tmp/google-calendar-intake-test.json").to_s
+    File.write(credentials_path, "{}")
+    Setting.set("photography_google_calendar_enabled", "1")
+    Setting.set("photography_google_calendar_id", "fotografias.saluteimoveis@gmail.com")
+    Setting.set("photography_google_credentials_path", credentials_path)
+    intake = create(:habitation, :broker_intake, codigo: "GOOGLE-JOB-#{SecureRandom.hex(6)}", admin_user: admin, intake_step: "fotos", photo_flow_choice: "upload")
+    authorization = Rack::Test::UploadedFile.new(
+      StringIO.new("autorizacao"),
+      "image/png",
+      original_filename: "autorizacao.png"
+    )
+    expect {
+      patch admin_captacao_path(intake), params: {
+        current_step: "fotos",
+        direction: "forward",
+        habitation: {
+          photo_flow_choice: "google_calendar",
+          photo_session_requested_at: "2026-07-10T10:00",
+          autorizacoes_venda: [authorization]
+        }
+      }
+    }.to have_enqueued_job(GoogleCalendar::PhotographyEventSyncJob).with(intake.id)
+
+    expect(response).to redirect_to(edit_admin_captacao_path(intake, step: "review"))
+    intake.reload
+    expect(intake.photo_flow_choice).to eq("google_calendar")
+    expect(intake.photo_calendar_provider).to eq("google_calendar")
+    expect(intake.photo_session_requested_at).to be_present
+    expect(intake.autorizacoes_venda).to be_attached
+  ensure
+    FileUtils.rm_f(credentials_path) if credentials_path.present?
   end
 
   it "envia para revisão administrativa quando corretor sobe fotos em captação sem fotos pelo wizard" do

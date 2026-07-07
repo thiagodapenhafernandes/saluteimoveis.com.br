@@ -81,8 +81,52 @@
               </div>
             </div>
 
+            <hr class="my-4">
+
+            <div class="form-check form-switch mb-3">
+              <%= f.check_box :photography_google_calendar_enabled,
+                              { class: "form-check-input", checked: @photography_google_calendar_enabled },
+                              "1",
+                              "0" %>
+              <%= f.label :photography_google_calendar_enabled, "Habilitar opção Google Agenda", class: "form-check-label fw-semibold" %>
+              <div class="form-text">
+                Quando habilitada e configurada, a captação exibe uma terceira opção para criar o evento na agenda de fotografias.
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <%= f.label :photography_google_calendar_id, "ID da agenda Google", class: "form-label fw-semibold" %>
+              <%= f.text_field :photography_google_calendar_id,
+                               class: "form-control",
+                               value: @photography_google_calendar_id,
+                               placeholder: "fotografias.saluteimoveis@gmail.com" %>
+            </div>
+
+            <div class="mb-3">
+              <%= f.label :photography_google_credentials_path, "Caminho do JSON da conta de serviço", class: "form-label fw-semibold" %>
+              <%= f.text_field :photography_google_credentials_path,
+                               class: "form-control",
+                               value: @photography_google_credentials_path,
+                               placeholder: "/home/salute/deploy/shared/config/salute-crm-501321-d820f2203a85.json" %>
+              <div class="form-text">
+                Use caminho absoluto no servidor. O arquivo não deve ficar no repositório.
+              </div>
+            </div>
+
             <%= f.submit "Salvar configuração", class: "btn btn-primary" %>
           <% end %>
+
+          <div class="d-flex align-items-center justify-content-between mt-3">
+            <% if @photography_google_calendar_configured %>
+              <span class="badge bg-success-subtle text-success-emphasis">Google Agenda configurado</span>
+            <% else %>
+              <span class="badge bg-secondary-subtle text-secondary-emphasis">Google Agenda incompleto</span>
+            <% end %>
+            <%= button_to "Testar Google Agenda",
+                          test_google_calendar_admin_scheduling_integration_path,
+                          method: :post,
+                          class: "btn btn-outline-primary btn-sm" %>
+          </div>
         <% else %>
           <p class="text-muted small mb-0">Você pode consultar os imóveis pendentes. A configuração da agenda fica disponível para perfis com permissão de gerenciar.</p>
         <% end %>

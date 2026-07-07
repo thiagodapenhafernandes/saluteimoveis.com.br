@@ -111,6 +111,8 @@ module Admin
           return
         end
 
+        enqueue_google_photography_event_sync(current_step)
+
         photo_upload_submitted_for_review = submit_photo_upload_for_admin_review_if_needed!(
           @habitation,
           had_no_photos: had_no_photos_before_update,
@@ -535,7 +537,7 @@ module Admin
       @photography_blocked_dates = PhotographyScheduleBlock.pluck(:date).map(&:iso8601)
       @photography_booked_slots = Habitation
         .broker_intakes
-        .where(photo_flow_choice: "schedule")
+        .where(photo_flow_choice: %w[schedule google_calendar])
         .where.not(id: @habitation&.id)
         .where.not(photo_session_requested_at: nil)
         .pluck(:photo_session_requested_at)
@@ -622,7 +624,7 @@ module Admin
         missing = []
         missing << "Escolha se vai enviar fotos ou agendar fotógrafo." if @habitation.photo_flow_choice.blank?
         missing << "Envie ao menos uma foto do imóvel." if @habitation.photo_flow_choice == "upload" && !@habitation.has_any_photo?
-        missing << "Informe a data/hora agendada com fotógrafo." if @habitation.photo_flow_choice == "schedule" && @habitation.photo_session_requested_at.blank?
+        missing << "Informe a data/hora agendada com fotógrafo." if @habitation.photo_flow_choice.in?(%w[schedule google_calendar]) && @habitation.photo_session_requested_at.blank?
         missing << "Anexe a autorização do proprietário." unless @habitation.autorizacoes_venda.attached?
         missing
       when "visitas"
@@ -681,7 +683,7 @@ module Admin
       when "fotos"
         fields[:photo_flow_choice] = true if @habitation.photo_flow_choice.blank?
         fields[:photos] = true if @habitation.photo_flow_choice == "upload" && !@habitation.has_any_photo?
-        fields[:photo_session_requested_at] = true if @habitation.photo_flow_choice == "schedule" && @habitation.photo_session_requested_at.blank?
+        fields[:photo_session_requested_at] = true if @habitation.photo_flow_choice.in?(%w[schedule google_calendar]) && @habitation.photo_session_requested_at.blank?
         fields[:autorizacoes_venda] = true unless @habitation.autorizacoes_venda.attached?
       when "visitas"
         fields[:chaves_com] = true if @habitation.requires_intake_key_location? && @habitation.key_location.blank?
@@ -805,6 +807,14 @@ module Admin
       raw.deep_merge!(params[:captacao].permit(*permitted_keys)) if params[:captacao].present?
       raw.permit!
       normalize_captacao_params(raw)
+    end
+
+    def enqueue_google_photography_event_sync(current_step)
+      return unless @habitation.photo_flow_choice == "google_calendar"
+      return if @habitation.photo_session_requested_at.blank?
+      return unless current_step == "fotos" || @habitation.saved_change_to_photo_session_requested_at?
+
+      GoogleCalendar::PhotographyEventSyncJob.perform_later(@habitation.id)
     end
 
     def normalize_captacao_params(raw)

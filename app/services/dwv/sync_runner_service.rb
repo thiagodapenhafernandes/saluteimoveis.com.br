@@ -8,6 +8,8 @@ module Dwv
     DEFAULT_REQUEST_PAUSE_SECONDS = 0.70
     MAX_LIMIT = 50
     MAX_PAGES = 100
+    INCREMENTAL_DEFAULT_MAX_PAGES = 10
+    INCREMENTAL_DEFAULT_LOOKBACK_DAYS = 1
 
     def call(mode: "full", limit: nil, max_pages: nil, status_service: nil)
       ensure_enabled_and_token!
@@ -26,6 +28,9 @@ module Dwv
         sync_active_properties(limit: normalized_limit, max_pages: normalized_max_pages, deactivate_removed: true)
       when "batch"
         sync_active_properties(limit: normalized_limit, max_pages: normalized_max_pages, deactivate_removed: false)
+      when "incremental"
+        incremental_max_pages = normalize_max_pages(max_pages || Setting.get("dwv_incremental_max_pages", INCREMENTAL_DEFAULT_MAX_PAGES))
+        sync_recent_properties(limit: normalized_limit, max_pages: incremental_max_pages)
       when "deactivate_removed"
         { imported: 0, deleted: delete_removed_properties(limit: normalized_limit, max_pages: normalized_max_pages), errors_count: 0 }
       else
@@ -77,6 +82,50 @@ module Dwv
       }
     end
 
+    def sync_recent_properties(limit:, max_pages:)
+      client = build_client
+      window = incremental_window
+      imported = 0
+      errors_count = 0
+      errors_by_reason = Hash.new(0)
+
+      updated_ids = collect_property_ids(client, deleted: nil, limit: limit, max_pages: max_pages, last_updates: window)
+      removed_ids = collect_property_ids(client, deleted: true, limit: limit, max_pages: max_pages, last_updates: window)
+
+      if updated_ids.size >= limit * max_pages
+        Rails.logger.warn("[DWV] Sync incremental atingiu o teto de páginas (#{max_pages}); pode haver imóveis atualizados não processados nesta rodada.")
+      end
+
+      updated_ids.each do |property_id|
+        begin
+          details = client.property_details(property_id)
+          Dwv::PropertyImportService.new(details).perform
+          imported += 1
+        rescue => e
+          errors_count += 1
+          errors_by_reason[normalize_error_message(e.message)] += 1
+          Rails.logger.error("[DWV] Falha ao importar property_id=#{property_id} (incremental): #{e.message}")
+        ensure
+          pause_if_needed
+        end
+      end
+
+      deleted = delete_removed_properties_by_ids(removed_ids)
+
+      {
+        imported: imported,
+        deleted: deleted,
+        errors_count: errors_count,
+        errors_by_reason: errors_by_reason.sort_by { |_, count| -count }.to_h
+      }
+    end
+
+    def incremental_window
+      lookback_days = Setting.get("dwv_incremental_lookback_days", INCREMENTAL_DEFAULT_LOOKBACK_DAYS).to_i.clamp(0, 7)
+      start_date = lookback_days.days.ago.to_date
+      [start_date, Date.current].map { |date| date.strftime("%d/%m/%Y") }.join(",")
+    end
+
     def delete_removed_properties(limit:, max_pages:, client: nil)
       client ||= build_client
       removed_ids = collect_property_ids(client, deleted: true, limit: limit, max_pages: max_pages)
@@ -100,11 +149,11 @@ module Dwv
       deleted
     end
 
-    def collect_property_ids(client, deleted:, limit:, max_pages:)
+    def collect_property_ids(client, deleted:, limit:, max_pages:, last_updates: nil)
       ids = Set.new
 
       (1..max_pages).each do |page|
-        response = client.list_properties(limit: limit, page: page, deleted: deleted)
+        response = client.list_properties(limit: limit, page: page, deleted: deleted, last_updates: last_updates)
         collection = Dwv::PropertyImportService.extract_collection(response)
         break if collection.blank?
 

@@ -151,6 +151,7 @@ Rails.application.routes.draw do
     end
     resource :scheduling_integration, only: [:show, :update] do
       get "pendentes/:id", action: :pending_property, as: :pending_property
+      post :test_google_calendar
       post :block_day
       delete "block_days/:id", action: :unblock_day, as: :unblock_day
     end

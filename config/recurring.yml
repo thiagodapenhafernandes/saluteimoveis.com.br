@@ -22,6 +22,10 @@ production:
     args:
       - mode: "full"
     schedule: every day at 4:20am
+  dwv_incremental_sync:
+    class: DwvIncrementalSyncJob
+    queue: dwv
+    schedule: every 5 minutes
   seo_discovery:
     class: SeoDiscoveryJob
     queue: default

@@ -132,13 +132,32 @@ class Admin::HabitationsController < Admin::BaseController
     end
 
     habitation = resolve_admin_habitation_param(code) || Habitation.find_by(codigo_dwv: code)
+
+    if dwv_single_sync_available?
+      dwv_sync_id = habitation&.dwv_property? ? habitation.codigo_dwv.presence : nil
+      dwv_sync_id ||= code if habitation.blank?
+      dwv_sync_result = sync_single_dwv_property_for_search(dwv_sync_id) if dwv_sync_id.present?
+
+      if dwv_sync_result&.deleted?
+        redirect_back fallback_location: admin_habitations_path, alert: dwv_sync_result.message
+        return
+      end
+
+      habitation = dwv_sync_result.habitation if dwv_sync_result&.habitation.present?
+    end
+
     unless habitation
-      redirect_back fallback_location: admin_habitations_path, alert: "Nenhum cadastro encontrado para o código #{code}."
+      alert = "Nenhum cadastro encontrado para o código #{code}."
+      alert = "#{alert} Falha ao consultar DWV: #{@dwv_search_sync_error}" if @dwv_search_sync_error.present?
+      redirect_back fallback_location: admin_habitations_path, alert: alert
       return
     end
 
     path = can_edit_habitation?(habitation) ? edit_admin_habitation_path(habitation) : admin_habitation_path(habitation)
-    redirect_to path
+    redirect_options = {}
+    redirect_options[:notice] = dwv_sync_result.message if dwv_sync_result&.message.present?
+    redirect_options[:alert] = "Cadastro aberto sem atualizar DWV: #{@dwv_search_sync_error}" if redirect_options.blank? && @dwv_search_sync_error.present?
+    redirect_to path, redirect_options
   end
 
   def print
@@ -742,6 +761,18 @@ class Admin::HabitationsController < Admin::BaseController
       Habitation.friendly.find(identifier)
     end
   rescue ActiveRecord::RecordNotFound
+    nil
+  end
+
+  def dwv_single_sync_available?
+    Setting.get("dwv_enabled", "false") == "true" && Setting.get("dwv_api_token").to_s.present?
+  end
+
+  def sync_single_dwv_property_for_search(property_id)
+    Dwv::SinglePropertySyncService.new(property_id: property_id).call
+  rescue => e
+    Rails.logger.warn("[Admin::HabitationsController] DWV single sync failed for property_id=#{property_id}: #{e.class}: #{e.message}")
+    @dwv_search_sync_error = e.message
     nil
   end
 

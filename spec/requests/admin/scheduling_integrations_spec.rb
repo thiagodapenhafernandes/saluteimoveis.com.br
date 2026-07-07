@@ -10,18 +10,45 @@ RSpec.describe "Admin::SchedulingIntegrations", type: :request do
     sign_in admin
   end
 
-  it "salva a url externa da agenda de fotos" do
+  let(:google_credentials_path) { Rails.root.join("tmp/google-calendar-test.json").to_s }
+
+  after do
+    FileUtils.rm_f(google_credentials_path)
+  end
+
+  it "salva a url externa da agenda de fotos e configuracao do Google Agenda" do
+    File.write(google_credentials_path, "{}")
+
     get admin_scheduling_integration_path
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("Agenda de fotografia")
+    expect(response.body).to include("Habilitar opção Google Agenda")
 
     patch admin_scheduling_integration_path, params: {
-      scheduling: { photography_schedule_url: "https://calendly.com/fotografias-saluteimoveis/30min" }
+      scheduling: {
+        photography_schedule_url: "https://calendly.com/fotografias-saluteimoveis/30min",
+        photography_google_calendar_enabled: "1",
+        photography_google_calendar_id: "fotografias.saluteimoveis@gmail.com",
+        photography_google_credentials_path: google_credentials_path
+      }
     }
 
     expect(response).to redirect_to(admin_scheduling_integration_path)
     expect(Setting.get("photography_schedule_url")).to eq("https://calendly.com/fotografias-saluteimoveis/30min")
+    expect(Setting.get("photography_google_calendar_enabled")).to eq("1")
+    expect(Setting.get("photography_google_calendar_id")).to eq("fotografias.saluteimoveis@gmail.com")
+    expect(Setting.get("photography_google_credentials_path")).to eq(google_credentials_path)
+  end
+
+  it "testa a conexao do Google Agenda com a configuracao salva" do
+    allow(GoogleCalendar::PhotographyEventService).to receive(:test_connection).and_return(
+      GoogleCalendar::PhotographyEventService::Result.new(success: true, event_id: "calendar-id")
+    )
+    post test_google_calendar_admin_scheduling_integration_path
+
+    expect(response).to redirect_to(admin_scheduling_integration_path)
+    expect(flash[:notice]).to eq("Conexão com Google Agenda validada com sucesso.")
   end
 
   it "bloqueia e libera dias da agenda interna" do
@@ -51,7 +78,7 @@ RSpec.describe "Admin::SchedulingIntegrations", type: :request do
       }
     )
     photographer = create(:admin_user, profile: profile)
-    habitation = create(:habitation, :broker_intake, titulo_anuncio: "Apartamento com fotos pendentes")
+    habitation = create(:habitation, :broker_intake, codigo: "FOTO-#{SecureRandom.hex(6)}", titulo_anuncio: "Apartamento com fotos pendentes")
 
     sign_out admin
     sign_in photographer
