@@ -56,16 +56,13 @@ class Admin::DwvIntegrationsController < Admin::BaseController
     property_id = params[:property_id].to_s.strip
     return redirect_to(admin_dwv_integrations_path, alert: "Informe o ID do imóvel na DWV.") if property_id.blank?
 
-    payload = dwv_client.property_details(property_id)
-    result = Dwv::PropertyImportService.new(payload).perform
+    result = Dwv::SinglePropertySyncService.new(property_id: property_id, client: dwv_client).call
 
-    if result[:deleted]
-      local_code = result[:habitation]&.codigo
-      message = local_code.present? ? "Imóvel DWV ##{property_id} excluído. Código local: #{local_code}" : "Imóvel DWV ##{property_id} já estava removido na DWV."
-      stamp_sync!(message)
-      redirect_to admin_dwv_integrations_path, notice: message
+    if result.deleted?
+      stamp_sync!(result.message)
+      redirect_to admin_dwv_integrations_path, notice: result.message
     else
-      stamp_sync!("Imóvel DWV ##{property_id} sincronizado. Código local: #{result[:habitation].codigo}")
+      stamp_sync!(result.message)
       redirect_to admin_dwv_integrations_path, notice: "Imóvel sincronizado com sucesso."
     end
   rescue => e

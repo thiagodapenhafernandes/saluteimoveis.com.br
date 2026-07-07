@@ -643,17 +643,71 @@ RSpec.describe "Admin::Habitations", type: :request do
   end
 
   it "abre o cadastro pesquisando pelo código" do
+    code = "987#{rand(100_000..999_999)}"
     development = create(
       :habitation,
       tipo: "Empreendimento",
       categoria: "Empreendimento",
-      codigo: "54",
+      codigo: code,
       nome_empreendimento: "Empreendimento Centro Cod. 54"
     )
 
-    get search_by_code_admin_habitations_path(codigo: "54")
+    get search_by_code_admin_habitations_path(codigo: code)
 
     expect(response).to redirect_to(edit_admin_habitation_path(development))
+  end
+
+  it "sincroniza imóvel DWV específico ao pesquisar um ID ainda inexistente localmente" do
+    dwv_code = "DWVNEW-#{SecureRandom.hex(6)}"
+    Setting.set("dwv_enabled", "true")
+    Setting.set("dwv_api_token", "token-dwv")
+    service = instance_double(Dwv::SinglePropertySyncService)
+    allow(service).to receive(:call) do
+      imported = create(
+        :habitation,
+        codigo: "DWV-LOCAL-#{SecureRandom.hex(6)}",
+        codigo_dwv: dwv_code,
+        imovel_dwv: "Sim"
+      )
+      Dwv::SinglePropertySyncService::Result.new(
+        success: true,
+        habitation: imported,
+        deleted: false,
+        message: "Imóvel DWV ##{dwv_code} sincronizado. Código local: #{imported.codigo}"
+      )
+    end
+    allow(Dwv::SinglePropertySyncService).to receive(:new).with(property_id: dwv_code).and_return(service)
+
+    get search_by_code_admin_habitations_path(codigo: dwv_code)
+
+    imported = Habitation.find_by!(codigo_dwv: dwv_code)
+    expect(response).to redirect_to(edit_admin_habitation_path(imported))
+    expect(flash[:notice]).to eq("Imóvel DWV ##{dwv_code} sincronizado. Código local: #{imported.codigo}")
+  end
+
+  it "atualiza imóvel DWV existente antes de abrir ao pesquisar pelo código DWV" do
+    dwv_code = "DWVEXIST-#{SecureRandom.hex(6)}"
+    Setting.set("dwv_enabled", "true")
+    Setting.set("dwv_api_token", "token-dwv")
+    existing = create(
+      :habitation,
+      codigo: "DWV-EXIST-#{SecureRandom.hex(6)}",
+      codigo_dwv: dwv_code,
+      imovel_dwv: "Sim"
+    )
+    result = Dwv::SinglePropertySyncService::Result.new(
+      success: true,
+      habitation: existing,
+      deleted: false,
+      message: "Imóvel DWV ##{dwv_code} sincronizado. Código local: #{existing.codigo}"
+    )
+    service = instance_double(Dwv::SinglePropertySyncService, call: result)
+    allow(Dwv::SinglePropertySyncService).to receive(:new).with(property_id: dwv_code).and_return(service)
+
+    get search_by_code_admin_habitations_path(codigo: dwv_code)
+
+    expect(response).to redirect_to(edit_admin_habitation_path(existing))
+    expect(flash[:notice]).to eq("Imóvel DWV ##{dwv_code} sincronizado. Código local: #{existing.codigo}")
   end
 
   it "filtra somente imóveis do DWV na listagem" do
