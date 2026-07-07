@@ -90,19 +90,51 @@ RSpec.describe Dwv::PropertyImportService do
       expect(habitation.dwv_payload).to include("id" => 632439)
     end
 
-    it "destroys an existing DWV record when the property payload is deleted" do
+    it "deactivates an existing DWV record when the property payload is deleted" do
+      dwv_id = "DEL-#{SecureRandom.hex(6)}"
       habitation = create(
         :habitation,
-        codigo_dwv: "632439",
+        codigo: "DWV-DEL-#{SecureRandom.hex(4)}",
+        codigo_dwv: dwv_id,
         imovel_dwv: "Sim",
         titulo_anuncio: "Imóvel removido na DWV"
       )
 
-      result = described_class.new("data" => { "id" => 632439, "deleted" => true }).perform
+      result = described_class.new("data" => { "id" => dwv_id, "deleted" => true }).perform
 
       expect(result[:deleted]).to eq(true)
       expect(result[:habitation]).to eq(habitation)
-      expect(Habitation.exists?(habitation.id)).to eq(false)
+      habitation.reload
+      expect(habitation.status).to eq("Suspenso")
+      expect(habitation.motivo_suspensao).to eq("Removido na DWV")
+      expect(habitation.exibir_no_site_flag).to eq(false)
+      expect(habitation.last_sync_message).to eq("Marcado como removido na DWV")
+    end
+
+    it "maps auto inactive without sold value as suspended" do
+      dwv_id = "AUTO-#{SecureRandom.hex(6)}"
+      habitation = create(
+        :habitation,
+        codigo: "DWV-AUTO-#{SecureRandom.hex(4)}",
+        codigo_dwv: dwv_id,
+        imovel_dwv: "Sim",
+        status: "Venda",
+        valor_venda_cents: 0
+      )
+
+      described_class.new(
+        "data" => {
+          "id" => dwv_id,
+          "integration_status" => "auto_inactive",
+          "deleted" => false,
+          "reference" => habitation.codigo
+        }
+      ).perform
+
+      habitation.reload
+      expect(habitation.status).to eq("Suspenso")
+      expect(habitation.motivo_suspensao).to eq("Inativado na DWV")
+      expect(habitation.exibir_no_site_flag).to eq(false)
     end
 
     it "does not destroy a non-DWV record when a deleted DWV payload has the same external code" do
