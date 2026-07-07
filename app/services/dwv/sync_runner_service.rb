@@ -123,7 +123,8 @@ module Dwv
     def incremental_window
       lookback_days = Setting.get("dwv_incremental_lookback_days", INCREMENTAL_DEFAULT_LOOKBACK_DAYS).to_i.clamp(0, 7)
       start_date = lookback_days.days.ago.to_date
-      [start_date, Date.current].map { |date| date.strftime("%d/%m/%Y") }.join(",")
+      # A DWV responde HTTP 500 para datas dd/mm/yyyy; o aceito é o range ISO (ex.: 2026-07-06,2026-07-07).
+      [start_date, Date.current].map { |date| date.strftime("%Y-%m-%d") }.join(",")
     end
 
     def delete_removed_properties(limit:, max_pages:, client: nil)
