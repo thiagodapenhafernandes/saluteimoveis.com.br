@@ -52,7 +52,7 @@ module Dwv
 
       if deleted_payload?
         if existing_record && habitation.dwv_property?
-          habitation.destroy!
+          deactivate_removed_habitation!(habitation)
           return { success: true, habitation: habitation, deleted: true }
         end
 
@@ -155,8 +155,10 @@ module Dwv
         codigo_dwv: dwv_id,
         imovel_dwv: "Sim",
         status: derived_status,
+        motivo_suspensao: suspension_reason_for(derived_status),
         valor_venda_cents: effective_sale,
         valor_locacao_cents: effective_rent,
+        valor_vendido_terceiros_cents: sold_third_party_cents_for(derived_status, effective_sale, habitation),
         valor_condominio_cents: first_cents(value(["condominium_fee"], ["valor_condominio"], ["third_party_property", "administration_fee"])) || habitation.valor_condominio_cents,
         valor_iptu_cents: first_cents(value(["property_tax"], ["valor_iptu"], ["third_party_property", "property_tax"])) || habitation.valor_iptu_cents,
         exibir_no_site_flag: active_on_site?,
@@ -211,8 +213,10 @@ module Dwv
         :codigo_dwv,
         :imovel_dwv,
         :status,
+        :motivo_suspensao,
         :valor_venda_cents,
         :valor_locacao_cents,
+        :valor_vendido_terceiros_cents,
         :valor_condominio_cents,
         :valor_iptu_cents,
         :exibir_no_site_flag,
@@ -224,6 +228,35 @@ module Dwv
       )
       allowed[:last_sync_message] = "Sincronizado via DWV (valor e disponibilidade)"
       allowed
+    end
+
+    def deactivate_removed_habitation!(habitation)
+      attributes = {
+        status: "Suspenso",
+        motivo_suspensao: "Removido na DWV",
+        exibir_no_site_flag: false,
+        last_sync_at: Time.current,
+        last_sync_status: "success",
+        last_sync_message: "Marcado como removido na DWV"
+      }
+
+      habitation.send(:portal_publication_attribute_names).each do |attribute|
+        attributes[attribute] = false if habitation.has_attribute?(attribute)
+      end
+
+      habitation.update!(attributes)
+    end
+
+    def suspension_reason_for(status)
+      return nil unless status.to_s == "Suspenso"
+
+      deleted_payload? ? "Removido na DWV" : "Inativado na DWV"
+    end
+
+    def sold_third_party_cents_for(status, sale_cents, habitation)
+      return habitation.valor_vendido_terceiros_cents unless status.to_s == "Vendido terceiros"
+
+      sale_cents.presence || habitation.valor_vendido_terceiros_cents
     end
 
     def find_existing_habitation(dwv_id:, codigo:)
@@ -379,7 +412,7 @@ module Dwv
 
       [raw_status, raw_integration_status].each do |status|
         next if status.blank?
-        return "Vendido terceiros" if status == "auto_inactive"
+        return sale_cents.to_i.positive? ? "Vendido terceiros" : "Suspenso" if status == "auto_inactive"
         return "Suspenso" if status == "inactive"
       end
 
